@@ -8,12 +8,11 @@ from shapely.geometry import Point
 # Suppress the FutureWarning for now (optional)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# Define your travel time limit in minutes
-travel_time_limit = 60
+travel_time_limit = 30
+trail_name = "DRAGON'S TOOTH"
 
 # Load NF trail heads
-file_path = '/Users/mihiarc/Work/data/'
-geofile = os.path.join(file_path, 'spatial-boundaries', 'nfs-layers', 'trail_heads_08.geojson')
+geofile = os.path.join('trail_heads_08.geojson')
 try:
     nfs_trails = gpd.read_file(geofile)
 except FileNotFoundError:
@@ -22,9 +21,6 @@ except FileNotFoundError:
 
 # Ensure the GeoDataFrame is in EPSG:4326 (WGS84)
 nfs_trails = nfs_trails.to_crs(epsg=4326)
-
-# Test on a specific trail
-trail_name = 'ROBBINS BRANCH'
 
 # Filter the trail_starts GeoDataFrame for the trail
 current_trail = nfs_trails[nfs_trails['TRAIL_NAME'] == trail_name]
@@ -82,7 +78,7 @@ nodes_gdf = gpd.GeoDataFrame(geometry=node_points, crs=G.graph['crs'])
 isochrone = nodes_gdf.unary_union.convex_hull
 
 # Save the isochrone to a new file
-isochrone_file = os.path.join(file_path, 'spatial-boundaries', 'nfs-layers', f'isochrone_{trail_name}.geojson')
+isochrone_file = os.path.join(f'isochrone_{trail_name}.geojson')
 isochrone_gdf = gpd.GeoDataFrame(geometry=[isochrone], crs=G.graph['crs'])
 isochrone_gdf.to_file(isochrone_file, driver='GeoJSON')
 print(f"Isochrone saved to {isochrone_file}")
