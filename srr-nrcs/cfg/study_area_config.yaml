@@ -1,0 +1,80 @@
+study_area:
+  name: "NRCS Conservation Study Area"
+  description: "Study area covering counties across Kansas, New Mexico, Oklahoma, and Texas"
+  
+  counties:
+    Kansas:
+      - name: "Wallace"
+        fips: "20199"
+      - name: "Logan"
+        fips: "20109"
+      - name: "Gove"
+        fips: "20063"
+      - name: "Lane"
+        fips: "20101"
+      - name: "Hamilton"
+        fips: "20075"
+      - name: "Kearny"
+        fips: "20093"
+      - name: "Morton"
+        fips: "20129"
+      - name: "Graham"
+        fips: "20065"
+      - name: "Trego"
+        fips: "20195"
+      - name: "Ellis"
+        fips: "20051"
+      - name: "Ness"
+        fips: "20135"
+      - name: "Rush"
+        fips: "20165"
+      - name: "Hodgeman"
+        fips: "20083"
+      - name: "Ford"
+        fips: "20057"
+      - name: "Meade"
+        fips: "20119"
+    
+    "New Mexico":
+      - name: "Lea"
+        fips: "35025"
+      - name: "Roosevelt"
+        fips: "35041"
+    
+    Oklahoma:
+      - name: "Beaver"
+        fips: "40007"
+      - name: "Ellis"
+        fips: "40045"
+    
+    Texas:
+      - name: "Andrews"
+        fips: "48003"
+      - name: "Lipscomb"
+        fips: "48295"
+      - name: "Roberts"
+        fips: "48393"
+      - name: "Hemphill"
+        fips: "48211"
+      - name: "Gray"
+        fips: "48179"
+
+  states:
+    - name: "Kansas"
+      code: "KS"
+      fips_prefix: "20"
+    - name: "New Mexico"
+      code: "NM"
+      fips_prefix: "35"
+    - name: "Oklahoma"
+      code: "OK"
+      fips_prefix: "40"
+    - name: "Texas"
+      code: "TX"
+      fips_prefix: "48"
+
+  metadata:
+    total_counties: 24
+    states_covered: 4
+    date_created: "2024-03-13"
+    source: "mrla-boundaries.ipynb" 

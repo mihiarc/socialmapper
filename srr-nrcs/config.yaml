@@ -1,0 +1,8 @@
+point_of_interest:
+  name: "Walmart"
+  latitude: 37.7687
+  longitude: -100.03546
+
+isochrone_settings:
+  travel_time_limits: [30, 60, 90, 120]  # minutes
+  output_dir: "hiking-trails/isochrones" 
