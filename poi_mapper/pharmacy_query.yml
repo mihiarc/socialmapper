@@ -1,0 +1,20 @@
+# Pharmacy Query Configuration for Dodge City, Kansas
+# ------------------------------------
+# This file contains parameters for querying OpenStreetMap for pharmacies 
+# in the Dodge City, Kansas area.
+
+# Main POI type
+geocode_area: "Dodge City"
+type: shop
+name: supermarket
+
+
+# Optional: Search for specific names (case insensitive)
+# name: Walgreens
+
+# Bounding box for Dodge City, Kansas (south,west,north,east)
+# Format: south,west,north,east
+# bbox: 37.7253,-100.0332,37.7872,-99.9391
+
+# Query timeout in seconds
+# timeout: 60 
