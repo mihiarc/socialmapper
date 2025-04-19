@@ -201,8 +201,8 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Query POIs from OpenStreetMap via Overpass API")
     parser.add_argument("config_file", help="YAML configuration file")
-    parser.add_argument("-o", "--output", help="Output JSON file (default: output/poi_output.json)",
-                        default="output/poi_output.json")
+    parser.add_argument("-o", "--output", help="Output JSON file (default: output/pois/poi_output.json)",
+                        default="output/pois/poi_output.json")
     parser.add_argument("-v", "--verbose", action="store_true", help="Print the Overpass query")
     args = parser.parse_args()
     

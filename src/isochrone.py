@@ -9,7 +9,9 @@ import geopandas as gpd
 import networkx as nx
 import osmnx as ox
 from shapely.geometry import Point
-from typing import Dict, Any, List, Tuple, Optional, Union
+from typing import Dict, Any, List, Union
+import json
+import pandas as pd
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -18,17 +20,10 @@ logger = logging.getLogger(__name__)
 # Suppress FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-def sanitize_name(name: str) -> str:
-    """Sanitize a name to be filesystem-safe."""
-    return (name.replace(" ", "_")
-                .replace("'", "")
-                .replace('"', '')
-                .replace("/", "_"))
-
 def create_isochrone_from_poi(
     poi: Dict[str, Any],
     travel_time_limit: int,
-    output_dir: str = 'isochrones',
+    output_dir: str = 'output/isochrones',
     save_file: bool = True
 ) -> Union[str, gpd.GeoDataFrame]:
     """
@@ -36,6 +31,7 @@ def create_isochrone_from_poi(
     
     Args:
         poi (Dict[str, Any]): POI dictionary containing at minimum 'lat', 'lon', and 'tags'
+            poi is generated from the query.py module based on a poi_config.yaml file
         travel_time_limit (int): Travel time limit in minutes
         output_dir (str): Directory to save the isochrone file
         save_file (bool): Whether to save the isochrone to a file
@@ -116,12 +112,11 @@ def create_isochrone_from_poi(
     
     if save_file:
         # Save result
-        safe_name = sanitize_name(poi_name)
-        safe_name = safe_name.lower()
+        poi_name = poi_name.lower()
         os.makedirs(output_dir, exist_ok=True)
         isochrone_file = os.path.join(
             output_dir,
-            f'isochrone{travel_time_limit}_{safe_name}.geojson'
+            f'isochrone{travel_time_limit}_{poi_name}.geojson'
         )
         
         isochrone_gdf.to_file(isochrone_file, driver='GeoJSON')
@@ -132,7 +127,7 @@ def create_isochrone_from_poi(
 def create_isochrones_from_poi_list(
     poi_data: Dict[str, List[Dict[str, Any]]],
     travel_time_limit: int,
-    output_dir: str = 'isochrones',
+    output_dir: str = 'output/isochrones',
     save_individual_files: bool = True,
     combine_results: bool = False
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
@@ -141,6 +136,7 @@ def create_isochrones_from_poi_list(
     
     Args:
         poi_data (Dict[str, List[Dict]]): Dictionary with 'pois' key containing list of POIs
+            poi_data is generated from the query.py module based on a poi_config.yaml file
         travel_time_limit (int): Travel time limit in minutes
         output_dir (str): Directory to save isochrone files
         save_individual_files (bool): Whether to save individual isochrone files
@@ -245,10 +241,6 @@ def create_isochrones_from_json_file(
         combine_results=combine_results
     )
 
-# Add missing import
-import json
-import pandas as pd
-
 if __name__ == "__main__":
     # Example usage
     import argparse
@@ -256,7 +248,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate isochrones from POIs")
     parser.add_argument("json_file", help="JSON file containing POIs")
     parser.add_argument("--time", type=int, default=30, help="Travel time limit in minutes")
-    parser.add_argument("--output-dir", default="isochrones", help="Output directory")
+    parser.add_argument("--output-dir", default="output/isochrones", help="Output directory")
     parser.add_argument("--combine", action="store_true", help="Combine all isochrones into a single file")
     args = parser.parse_args()
     
