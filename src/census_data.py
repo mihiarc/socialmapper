@@ -54,11 +54,39 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
             state_block_groups[state] = []
             
         # Ensure GEOID is properly formatted
-        if isinstance(geoid, str) and len(geoid) >= 11:
-            # Already in string format, ensure we have the full 12-character GEOID
-            if len(geoid) == 11:  # Some GEOIDs might be missing leading zeros
-                geoid = state + geoid[2:]  # Replace state portion to ensure consistency
-            state_block_groups[state].append(geoid)
+        if isinstance(geoid, str):
+            # Standardize to 12-character GEOID format used by Census API
+            # Format should be STATE(2) + COUNTY(3) + TRACT(6) + BLKGRP(1)
+            if len(geoid) >= 11:
+                # Some GEOIDs might be missing leading zeros or have different formats
+                # Extract the last 10 digits (county + tract + block group) and prepend state
+                if len(geoid) > 12:  
+                    # If longer than standard, take the rightmost 10 digits and prepend state
+                    geoid = state + geoid[-10:]
+                elif len(geoid) < 12:
+                    # If shorter than standard, ensure proper padding
+                    county_tract_bg = geoid[len(state):]
+                    geoid = state + county_tract_bg.zfill(10)
+                
+                # Now GEOID should be exactly 12 characters
+                state_block_groups[state].append(geoid)
+            else:
+                # Try to construct from separate fields if available
+                county = row.get('COUNTY', '')
+                tract = row.get('TRACT', '')
+                blkgrp = row.get('BLKGRP', '')
+                
+                if county and tract and blkgrp:
+                    # Construct GEOID from components
+                    constructed_geoid = (
+                        state + 
+                        county.zfill(3) + 
+                        tract.zfill(6) + 
+                        blkgrp
+                    )
+                    state_block_groups[state].append(constructed_geoid)
+                else:
+                    print(f"Warning: Cannot standardize GEOID format: {geoid}")
         else:
             print(f"Warning: Invalid GEOID format: {geoid}")
     
@@ -144,12 +172,18 @@ def fetch_census_data_for_states(
     final_df = pd.concat(dfs, ignore_index=True)
     
     # Create a GEOID column to match with GeoJSON - ensure proper formatting with leading zeros
+    # Census API returns components as:
+    # state, county, tract, block group
     final_df['GEOID'] = (
         final_df['state'].str.zfill(2) + 
         final_df['county'].str.zfill(3) + 
         final_df['tract'].str.zfill(6) + 
         final_df['block group']
     )
+    
+    # Print a sample of the GEOIDs for debugging
+    sample_geoids = final_df['GEOID'].head(3).tolist()
+    print(f"Sample GEOIDs from Census API response: {sample_geoids}")
     
     print(f"Successfully retrieved data for {len(final_df)} total block groups")
     return final_df
@@ -178,22 +212,61 @@ def merge_census_data(
     if variable_mapping:
         census_df = census_df.rename(columns=variable_mapping)
     
+    # If GEOIDs might have format inconsistencies, try to standardize them
+    # First, check if we need to standardize GEOIDs in our GeoDataFrame
+    if 'GEOID' in result_gdf.columns:
+        # Extract diagnostic samples before any transformations
+        sample_gdf_geoids = result_gdf['GEOID'].head(3).tolist()
+        sample_census_geoids = census_df['GEOID'].head(3).tolist()
+        print(f"Sample GEOIDs from GeoDataFrame before standardization: {sample_gdf_geoids}")
+        print(f"Sample GEOIDs from Census data: {sample_census_geoids}")
+        
+        # Standardize GEOIDs in the GeoDataFrame if needed
+        if result_gdf['GEOID'].str.len().min() != result_gdf['GEOID'].str.len().max():
+            print("Standardizing variable-length GEOIDs in GeoDataFrame")
+            
+            # We need to work with individual components
+            # Assume we can construct from STATE, COUNTY, TRACT, BLKGRP columns
+            if all(col in result_gdf.columns for col in ['STATE', 'COUNTY', 'TRACT', 'BLKGRP']):
+                result_gdf['GEOID'] = (
+                    result_gdf['STATE'].astype(str).str.zfill(2) + 
+                    result_gdf['COUNTY'].astype(str).str.zfill(3) + 
+                    result_gdf['TRACT'].astype(str).str.zfill(6) + 
+                    result_gdf['BLKGRP'].astype(str)
+                )
+                print("Reconstructed GEOIDs from component fields")
+    
     # Merge the census data with the GeoDataFrame
     result_gdf = result_gdf.merge(census_df, on='GEOID', how='left')
     
     # Check for missing matches - use 'NAME' which is always included
-    # If NAME isn't found, try to use any column from census_df other than GEOID
-    check_column = 'NAME'
-    if check_column not in result_gdf.columns and len(census_df.columns) > 1:
-        for col in census_df.columns:
-            if col != 'GEOID' and col in result_gdf.columns:
-                check_column = col
-                break
-    
-    if check_column in result_gdf.columns:
-        missing_count = result_gdf[check_column].isna().sum()
-        if missing_count > 0:
-            print(f"Warning: {missing_count} out of {len(result_gdf)} block groups have no census data.")
+    missing_count = result_gdf['NAME'].isna().sum() if 'NAME' in result_gdf.columns else 0
+    if missing_count > 0:
+        print(f"Warning: {missing_count} out of {len(result_gdf)} block groups have no census data.")
+        
+        # Try a more flexible match if there are missing values
+        if missing_count == len(result_gdf):
+            print("Attempting flexible GEOID matching...")
+            
+            # Create copies with stripped leading zeros for comparison
+            result_gdf['GEOID_stripped'] = result_gdf['GEOID'].str.lstrip('0')
+            census_df['GEOID_stripped'] = census_df['GEOID'].str.lstrip('0')
+            
+            # Try merging on the stripped GEOIDs
+            flexible_result = result_gdf.merge(
+                census_df.drop(columns=['GEOID']),  # Drop to avoid duplicate columns
+                on='GEOID_stripped', 
+                how='left'
+            )
+            
+            # Remove the temporary column and see if we got matches
+            flexible_result = flexible_result.drop(columns=['GEOID_stripped'])
+            flexible_missing = flexible_result['NAME'].isna().sum() if 'NAME' in flexible_result.columns else 0
+            
+            if flexible_missing < missing_count:
+                print(f"Flexible matching found {missing_count - flexible_missing} more matches!")
+                result_gdf = flexible_result
+                missing_count = flexible_missing
     
     return result_gdf
 
@@ -279,18 +352,46 @@ def get_census_data_for_block_groups(
             
             # Try a more flexible matching approach
             matched_data = []
+            
+            # Create lookup dictionaries for more efficient matching
+            census_lookup = {id.lstrip('0'): row for id, row in all_state_census_data.set_index('GEOID').iterrows()}
+            
             for needed_id in needed_geoids:
                 # Try matching just the digits, ignoring leading zeros
-                for census_id in all_state_census_data['GEOID']:
-                    if needed_id.lstrip('0') == census_id.lstrip('0'):
-                        matched_row = all_state_census_data[all_state_census_data['GEOID'] == census_id].copy()
-                        matched_row['GEOID'] = needed_id  # Use the exact GEOID from our data
-                        matched_data.append(matched_row)
-                        break
+                stripped_needed_id = needed_id.lstrip('0')
+                if stripped_needed_id in census_lookup:
+                    matched_row = census_lookup[stripped_needed_id].copy()
+                    matched_row['GEOID'] = needed_id  # Use the exact GEOID from our data
+                    matched_data.append(matched_row)
             
             if matched_data:
-                census_data = pd.concat(matched_data, ignore_index=True)
+                census_data = pd.DataFrame(matched_data)
                 print(f"After flexible matching: found {len(census_data)} matches")
+            else:
+                # If still no matches, try direct mapping from components
+                print("Attempting component-based matching...")
+                
+                # Create a lookup using state + county + tract + block group
+                census_component_lookup = {
+                    (row['state'] + row['county'] + row['tract'] + row['block group']): row
+                    for _, row in all_state_census_data.iterrows()
+                }
+                
+                matched_by_component = []
+                for needed_id in needed_geoids:
+                    # GEOID format: STATE(2) + COUNTY(3) + TRACT(6) + BLKGRP(1)
+                    if len(needed_id) >= 12:
+                        components = needed_id[:2] + needed_id[2:5] + needed_id[5:11] + needed_id[11:12]
+                        if components in census_component_lookup:
+                            matched_row = census_component_lookup[components].copy()
+                            matched_row['GEOID'] = needed_id
+                            matched_by_component.append(matched_row)
+                
+                if matched_by_component:
+                    census_data = pd.DataFrame(matched_by_component)
+                    print(f"After component matching: found {len(census_data)} matches")
+                
+                # If we still have no matches, we'll fall back to the placeholder approach below
         
         print(f"Filtered from {len(all_state_census_data)} total block groups to {len(census_data)} within the isochrone")
         

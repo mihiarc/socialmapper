@@ -4,7 +4,6 @@ Script to query OpenStreetMap using Overpass API and output POI data as JSON.
 """
 import argparse
 import json
-import os
 import sys
 import yaml
 import overpy
@@ -23,12 +22,6 @@ def build_overpass_query(poi_config):
     """Build an Overpass API query from the configuration."""
     query = "[out:json]"
     
-    # Add timeout if specified
-    if 'timeout' in poi_config:
-        query += f"[timeout:{poi_config['timeout']}]"
-    else:
-        query += "[timeout:30]"
-    
     query += ";\n"
     
     # Handle different area specifications
@@ -46,7 +39,7 @@ def build_overpass_query(poi_config):
             # Then find the city within that state
             query += f"area[name=\"{city}\"](area.state)->.searchArea;\n"
         else:
-            # Simple area query
+            # Simple area based query. If multiple areas have the same name, this will return all of them.
             query += f"area[name=\"{area_name}\"]->.searchArea;\n"
         
         # Use short format for node, way, relation (nwr)
@@ -122,7 +115,23 @@ def query_overpass(query):
         sys.exit(1)
 
 def format_results(result):
-    """Format the Overpass API results into a structured dictionary."""
+    """Format the Overpass API results into a structured dictionary.
+    
+    Args:
+        result: The result from the Overpass API query.
+        
+    Returns:
+        A dictionary containing the POIs in JSON format.
+
+        Keys:
+            pois: A list of dictionaries containing the POIs.
+                Keys:
+                    id: The ID of the POI.
+                    type: The type of the POI.
+                    lat: The latitude of the POI.
+                    lon: The longitude of the POI.
+                    tags: A dictionary containing the tags of the POI.
+    """
     data = {
         "pois": []
     }
@@ -192,8 +201,8 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Query POIs from OpenStreetMap via Overpass API")
     parser.add_argument("config_file", help="YAML configuration file")
-    parser.add_argument("-o", "--output", help="Output JSON file (default: output.json)",
-                        default="output.json")
+    parser.add_argument("-o", "--output", help="Output JSON file (default: output/poi_output.json)",
+                        default="output/poi_output.json")
     parser.add_argument("-v", "--verbose", action="store_true", help="Print the Overpass query")
     args = parser.parse_args()
     

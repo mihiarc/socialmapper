@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example script demonstrating the full poi_query workflow from POI retrieval to census analysis.
+Example script demonstrating the full community mapper workflow from POI retrieval to census analysis and visualization.
 """
 import json
 import os
@@ -8,10 +8,11 @@ import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Import environment setup utilities
-from setup_env import create_directories, activate_venv
 
-# Import poi_query functionalities
+# Import src functionalities
+from src.blockgroups import (
+    isochrone_to_block_groups
+)
 from poi_query import (
     # Query functionality
     load_poi_config, # This is where the user define their POI query
@@ -22,20 +23,13 @@ from poi_query import (
     
     # Isochrone functionality
     create_isochrone_from_poi,
-    create_isochrones_from_poi_list,
     create_isochrones_from_json_file,
     
     # Census block group functionality
-    get_census_block_groups,
-    load_isochrone,
-    find_intersecting_block_groups,
     isochrone_to_block_groups,
     
     # Census data functionality
-    load_block_groups,
-    get_census_data_for_block_groups,
-    get_variable_metadata,
-    merge_census_data
+    get_census_data_for_block_groups
 )
 
 def full_pipeline(config_file, travel_times, state_fips, census_variables=None):

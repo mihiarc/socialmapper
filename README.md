@@ -93,12 +93,13 @@ python run_isochrone_census.py isochrones/isochrone15_walmart_supercenter.geojso
 For retrieving census data for already identified block groups:
 
 ```bash
-python -m poi_query.census_data [path_to_block_groups.geojson] --variables [census_variables] --output [output_path]
+# Run from the project root directory
+python poi_query/census_data.py results/block_groups_isochrone30_walmart_supercenter.geojson --variables B01003_001E B19013_001E --output results/block_groups_isochrone30_walmart_supercenter_with_new_data.geojson
 ```
 
-Example:
+Example with additional options:
 ```bash
-python -m poi_query.census_data results/block_groups_walmart_15min.geojson --variables B01003_001E B19013_001E --output results/block_groups_walmart_15min_with_data.geojson
+python poi_query/census_data.py results/block_groups_walmart_15min.geojson --variables B01003_001E B19013_001E --year 2020 --dataset acs/acs5 --output results/block_groups_walmart_15min_with_data.geojson
 ```
 
 ## Project Structure
