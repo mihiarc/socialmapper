@@ -57,3 +57,4 @@ var/
 .installed.cfg
 *.egg
 .DS_Store
+srr-nrcs/.DS_Store
