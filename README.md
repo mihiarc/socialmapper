@@ -1,34 +1,101 @@
-# Community Mapper Project Overview
+# Community Mapper
 
-The project uses Python-based GIS tools to process spatial data, conduct network analysis for travel time calculations, and merge this with census demographic information to understand the relationship between population centers and points of interest. The purpose is to define community boundaries based on where people live and interact with the social network irrespective of administrative boundaries which may be arbitrary in rural areas. 
+A geospatial toolkit for mapping communities that do not easily conform to administrative boundaries.
 
-## Project Structure and Components:
+## Features
 
-1. Code Directory
-    - Contains Python scripts written for an example use case (access to hiking trails), generating isochrones (travel time zones), analyzing census data, and creating maps
-    - Follows a numbered workflow (`01_process_trails.py`, `02_generate_isochrones.py`, etc.)
-    - Uses libraries like GeoPandas, OSMNX, NetworkX, and Matplotlib for spatial analysis and visualization
+- Generate isochrones (travel time polygons) from Points of Interest
+- Find census block groups that intersect with isochrones
+- Fetch census block group data from the Census API
 
-2. nfs-access
-    - This folder contains all the development code, data, and output from the trail access use case. See the powerpoint for more information about that project.
+## Setup
 
-3. srr-nrcs
-    - The Sustainable Rangleland Roundtable and Natural Resource Conservation Service collaboration to access community attachment to rangeland ecosystems. This project focuses on conservation efforts for the lessor prairie chicken of the southern great plains region.
+This project uses Python with a virtual environment managed by `uv` for package management.
 
-## General Workflow:
+### Prerequisites
 
-1. Define community boundaries:
-    - Identify points of interest that serve as central locations around which communities tend to gather
-    - Generate isochrones (travel time zones) around these points
-    - Potential points of interest may be schools, markets, churches, etc.
+- Python 3.7+
+- Census API key (get one at [api.census.gov](https://api.census.gov/data/key_signup.html))
 
-2. Intersect community boundary with census administrative boundaries
-    - For example, selecting all the census block groups that are within a certain driving distance from the point of interest
+### Installation
 
-2. Demographic Analysis:
-    - Map population data from census block groups
-    - Characterize the community demographics
+#### Automatic Setup (Recommended)
 
-3. Visualization and Reporting:
-    - Create both interactive web maps and static maps for reporting
-    - Visualize forest boundaries, trail networks, and demographic data together
+1. Clone this repository
+2. Run the setup script:
+   - On macOS/Linux: `./setup.sh`
+   - On Windows: `setup.bat`
+3. The script will:
+   - Create a virtual environment in `.venv` directory
+   - Install uv package manager
+   - Install required dependencies
+   - Create a template `.env` file for your API keys
+4. Edit the `.env` file to add your Census API key
+
+#### Manual Setup
+
+If you prefer to set up manually:
+
+1. Clone this repository
+2. Run the Python setup script with options:
+   ```
+   python setup_env.py --all
+   ```
+
+   Additional options:
+   - `--dirs`: Create required directories only
+   - `--env`: Create `.env` file template only
+   - `--upgrade`: Upgrade packages in existing environment
+   - `--force`: Force recreation of virtual environment
+
+3. Edit the `.env` file to add your Census API key
+
+## Usage
+
+### Full Pipeline Example
+
+The `example.py` script demonstrates the complete workflow:
+
+```bash
+python example.py --config your_config.yaml --times 15 30 --states 20 08 48
+```
+
+This will:
+1. Query POIs based on your config
+2. Generate 15 and 30-minute isochrones for each POI
+3. Find census block groups in the specified states that intersect with these isochrones
+4. Save all results to appropriate files
+
+### Find Census Block Groups Within an Isochrone
+
+For just the census block group analysis:
+
+```bash
+python run_isochrone_census.py [path_to_isochrone] --states [state_fips_codes] --output [output_path]
+```
+
+Example:
+```bash
+python run_isochrone_census.py isochrones/isochrone15_walmart_supercenter.geojson --states 20 08 48 --output results/block_groups_walmart_15min.geojson
+```
+
+## Project Structure
+
+- `poi_query/`: Main package with core functionality
+  - `query.py`: POI query functionality
+  - `isochrone.py`: Isochrone generation
+  - `blockgroups.py`: Census block group analysis
+- `setup_env.py`: Environment setup utilities
+- `example.py`: End-to-end example workflow
+- `run_isochrone_census.py`: Census block group analysis script
+- `.venv/`: Virtual environment directory (created by setup)
+
+## Data Sources
+
+- Census block group geometries: [Census Bureau TIGER/Line API](https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer)
+- Isochrones: Generated from POIs using the OpenStreetMap road network via `isochrone.py`
+- POIs: Retrieved from OpenStreetMap via Overpass API
+
+## License
+
+MIT
