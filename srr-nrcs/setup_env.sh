@@ -22,12 +22,23 @@ if ! command -v uv &> /dev/null; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
+# Remove existing virtual environment if it exists
+if [ -d ".venv" ]; then
+    echo "Removing existing virtual environment..."
+    rm -rf .venv
+fi
+
+# Create required directories
+echo "Creating required directories..."
+mkdir -p data output/maps
+
 # Create a virtual environment with uv using Python 3.11
 echo "Creating virtual environment with Python 3.11..."
 uv venv .venv --python=python3.11
 
 # Install dependencies using uv (no need to activate first with uv)
 echo "Installing dependencies with uv..."
+uv pip install --upgrade pip
 uv pip install -r requirements.txt
 
 # Create .env file if it doesn't exist
@@ -52,9 +63,32 @@ if [ -f .env ]; then
     set +a
 fi
 
+# Helper function to run pipeline scripts
+run_pipeline() {
+    echo "Running NRCS Conservation Study Area Analysis pipeline..."
+    
+    # Store current directory
+    local current_dir=$(pwd)
+    
+    # Ensure we're in the correct directory
+    if [[ ! "$current_dir" == */srr-nrcs ]]; then
+        if [ -d "srr-nrcs" ]; then
+            cd srr-nrcs
+        else
+            echo "Error: Must be in or under the srr-nrcs directory"
+            return 1
+        fi
+    fi
+    
+    # Run the Python pipeline script
+    python scripts/run_pipeline.py
+}
+
 echo "NRCS Conservation Study Area Analysis environment activated!"
 echo "Python: $(which python)"
 echo "Version: $(python --version)"
+echo ""
+echo "To run the complete pipeline, use the command: run_pipeline"
 EOF
 
 chmod +x activate.sh
@@ -65,10 +99,7 @@ echo ""
 echo "To activate the environment, run:"
 echo "source activate.sh"
 echo ""
-echo "To run the pipeline scripts:"
-echo "cd scripts/core"
-echo "python fetch_county_boundaries.py"
-echo "python fetch_walmart_locations.py"
-echo "python process_walmart_locations.py"
-echo "python create_maps.py"
+echo "The following directories have been created:"
+echo "- data/: For storing input and intermediate data files"
+echo "- output/maps/: For storing generated maps"
 echo "" 

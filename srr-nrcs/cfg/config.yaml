@@ -1,3 +1,20 @@
+paths:
+  data:
+    root: "data"
+    input:
+      points_of_interest: "data/points_of_interest"
+      county_data: "data/county_data"
+      zipcode_data: "data/zipcode_shapefile"
+    output:
+      analysis: "output/analysis"
+      maps: "output/maps"
+      isochrones: "output/isochrones"
+      temp: "output/temp"
+  cache:
+    root: "cache"
+    api_responses: "cache/api_responses"
+    processed_data: "cache/processed_data"
+
 point_of_interest:
   name: "Walmart"
   latitude: 37.7687
@@ -5,4 +22,37 @@ point_of_interest:
 
 isochrone_settings:
   travel_time_limits: [30, 60, 90, 120]  # minutes
-  output_dir: "hiking-trails/isochrones" 
+  output_dir: "${paths.output.isochrones}/walmart"
+
+study_area:
+  name: "NRCS Conservation Study Area"
+  description: "Study area covering counties across Kansas, New Mexico, and Oklahoma"
+
+  states:
+    - name: "Kansas"
+      abbr: "KS"
+      fips_prefix: "20"
+    - name: "New Mexico"
+      abbr: "NM"
+      fips_prefix: "35"
+    - name: "Oklahoma"
+      abbr: "OK"
+      fips_prefix: "40"
+    - name: "Texas"
+      abbr: "TX"
+      fips_prefix: "48"
+
+  counties:
+    Kansas:
+      - name: "Wallace"
+        fips: "20199"
+      - name: "Logan"
+        fips: "20109"
+      - name: "Gove"
+        fips: "20063"
+      - name: "Lane"
+        fips: "20101"
+      - name: "Hamilton"
+        fips: "20075"
+      - name: "Kearny"
+        fips: "20093"

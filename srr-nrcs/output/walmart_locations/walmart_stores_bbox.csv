@@ -1,0 +1,667 @@
+name,brand,state,city,address,postcode,lat,lon,phone,website,opening_hours,type,id
+Walmart Garden Center,Walmart,NE,Lincoln,3400 North 85th Street,68507,40.849433,-96.6022653,,,,node,2055381757
+Walmart Neighborhood Market,Walmart,CO,Colorado Springs,1622 South Academy Boulevard,80910,38.8075717,-104.7583915,+1-719-244-9294,https://www.walmart.com/store/3082-colorado-springs-co,Mo-Su 05:00-24:00,node,2189955710
+Walmart Garden Center,Walmart,,,,,39.4053689,-104.861013,,,,node,2295366635
+Walmart Tire & Lube,Walmart Auto Care Center,,,,,39.4055658,-104.8603215,,,,node,2295366944
+Walmart Tire & Lube,,,,,,39.5628962,-104.9099703,,,,node,2330009362
+Walmart Garden Center,Walmart,,,,,39.5631919,-104.9106837,,,,node,2330009375
+Walmart Garden Center,Walmart,,,,,38.739912,-104.735779,,,,node,2384940495
+Walmart Garden Center,Walmart,CO,Denver,9400 East Hampden Avenue,80231,39.6525202,-104.878422,+1 720-748-1000,,,node,2752943272
+Walmart Tire & Lube,,CO,Denver,9400 East Hampden Avenue,80231,39.6526874,-104.879245,+1-720-748-1000,https://www.walmart.com/,,node,2752943312
+Walmart Auto Center,,,,,,36.1137364,-97.118157,,,,node,2779920794
+Walmart Garden Center,,,,,,36.1144144,-97.1182838,,,,node,2779920797
+Walmart Supercenter,Walmart,OK,Edmond,2200 West Danforth Road,73003,35.6656209,-97.5120795,+1 405-216-0520,https://www.walmart.com/store/2803-edmond-ok,24/7,node,3253828289
+Walmart Neighborhood Market,Walmart,OK,Norman,2551 Classen Boulevard,73071,35.193447,-97.4223494,+1 405-515-7418,https://www.walmart.com/store/7308/norman-ok,Mo-Su 06:00-23:00,node,3411423181
+Walmart Vision Center,,TX,Buda,690 Old San Antonio Road,78610,30.0867489,-97.8245782,+1-512-295-1687,,,node,3448467774
+Walmart Tire and Lube,,TX,Buda,690 Old San Antonio Road,78610,30.0873118,-97.8253923,+1-512-295-1687,,,node,3448475631
+Walmart Supercenter,Walmart,OK,Chandler,3100 East 1st Street,74834,35.7117543,-96.8420318,+1 405-258-0541,https://www.walmart.com/store/387-chandler-ok,24/7,node,3554958385
+Walmart Tire & Lube Express,,,Lakewood,7455 West Colfax Avenue,80214,39.7428585,-105.080542,+1-303-274-5219,,,node,3628013042
+Walmart Tire & Lube Express,,,,,,33.4491773,-104.5270157,,,,node,3706083421
+Walmart Garden Center,Walmart,,,,,33.4491998,-104.526289,,,,node,3706084979
+Walmart Auto Center,,,,,,35.5627235,-97.6551019,,,,node,3767570260
+Walmart,,,,,,36.1140449,-97.1197538,,,,node,3767572985
+Walmart,,,,,,36.1136,-97.1191433,,,,node,3767573283
+Walmart Auto Center,,,,,,35.526711,-97.5386821,,,,node,3767573285
+Walmart,,,,,,36.1139791,-97.1185711,,,,node,3767573387
+Walmart Garden Center,Walmart,,,,,35.5262899,-97.5385792,,,,node,3767578061
+Walmart Garden Center,,,,,,35.5630753,-97.6548491,,,,node,3767593857
+Walmart Tire & Auto,,,,,,37.4824452,-105.9051993,,,,node,4017488822
+Walmart Garden Center,Walmart,,,,,37.481811,-105.904955,,,,node,4017488902
+Walmart Tire & Lube,,,,,,38.3145581,-104.610316,,https://www.walmart.com/store/842-pueblo-co,,node,4041232429
+Walmart Garden Center,Walmart,,,,,38.3142117,-104.61069,,https://www.walmart.com/store/842-pueblo-co,,node,4041232430
+Walmart Tire & Lube,,,,,,40.7360279,-96.597864,,,,node,4229667789
+Walmart Bakery,,,,,,35.211694,-101.9073747,,,,node,4273091528
+Walmart Tire & Lube,,CO,Aurora,5650 South Chambers Road,80015,39.6130111,-104.811255,,,,node,4275009163
+Walmart Neighborhood Market,Walmart,CO,Westminster,7170 Federal Boulevard,80030,39.826783,-105.02339,+1-303-200-1043,https://www.walmart.com/store/6177/westminster-co/whats-new,Mo-Su 06:00-24:00,node,4313564436
+Walmart,,,,San Miguel El Grande,,28.6976727,-106.1387181,,,,node,4443141696
+Walmart Neighborhood Market,Walmart,OK,Del City,4900 South Sooner Road,73135,35.4150524,-97.4219275,+1 405-458-6255,https://www.walmart.com/store/3202-oklahoma-city-ok,Mo-Su 06:00-23:00,node,4654632493
+Walmart Supercenter,Walmart,OK,Purcell,2015 South Green Avenue,73080,34.9875394,-97.3702158,+1 405-527-5621,https://www.walmart.com/store/139-purcell-ok,Mo-Su 06:00-01:00,node,4664798249
+Walmart Tire & Lube,,,,,,33.1789466,-96.8832388,+1-469-362-6317,,,node,4753534557
+Walmart Neighborhood Market,Walmart,TX,Lancaster,350 North Bluegrove Road,75146,32.5907251,-96.7866614,+1 214-459-9928,https://www.walmart.com/store/7224/lancaster-tx,Mo-Su 06:00-24:00,node,4815456905
+Walmart,Walmart,TX,Seminole,2000 Hobbs Highway,79360,32.7249201,-102.6666609,+1 432-758-9225,https://www.walmart.com/store/626-seminole-tx,Mo-Su 07:00-22:00,node,5315596609
+Walmart,Walmart,OK,Hobart,923 West 11th Street,73651,35.017074,-99.10422,+1 580-726-5693,https://www.walmart.com/store/607-hobart-ok,Mo-Sa 07:00-21:00;Su 09:00-21:00,node,5315596626
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,13503 South Santa Fe Avenue,73170,35.332783,-97.51295,+1 405-300-6419,https://www.walmart.com/store/5323-oklahoma-city-ok,Mo-Su 06:00-24:00,node,5315597619
+Walmart Neighborhood Market,Walmart,TX,El Paso,3000 Saul Kleinfeld Drive,79936,31.783243,-106.282976,+1 915-849-7796,https://www.walmart.com/store/5108-el-paso-tx,Mo-Su 06:00-24:00,node,5315597801
+Walmart Supercenter,Walmart,OK,Altus,2500 North Main Street,73521,34.664235,-99.331291,+1 580-482-8189,https://www.walmart.com/store/479-altus-ok,24/7,node,5315597944
+Walmart Neighborhood Market,Walmart,TX,El Paso,8115 North Loop Drive,79907,31.728537,-106.345055,+1 915-629-0048,https://www.walmart.com/store/4415-el-paso-tx,Mo-Su 06:00-24:00,node,5315598044
+Walmart Neighborhood Market,Walmart,OK,Yukon,1001 East Main Street,73099,35.5091166,-97.7256424,+1 405-577-0049,https://www.walmart.com/store/3637/yukon-ok,Mo-Su 06:00-24:00,node,5315598226
+Walmart Neighborhood Market,Walmart,TX,Pantego,2610 West Pioneer Parkway,76013,32.708505,-97.150711,+1 817-303-4468,https://www.walmart.com/store/3594-pantego-tx,Mo-Su 06:00-24:00,node,5315598254
+Walmart Neighborhood Market,Walmart,TX,Fort Worth,6756 West Vickery Boulevard,76116,32.703367,-97.428115,+1 817-732-2130,https://www.walmart.com/store/3419-fort-worth-tx,Mo-Su 06:00-24:00,node,5315598310
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,2900 Southwest 134th Street,73170,35.3329,-97.5663,+1 405-300-6446,https://www.walmart.com/store/3327-oklahoma-city-ok,Mo-Su 06:00-24:00,node,5315598846
+Walmart,Walmart,TX,Marlin,600 South State Highway 6,76661,31.3044233,-96.8768328,+1 254-883-5556,https://www.walmart.com/store/320-marlin-tx,Mo-Su 06:00-23:00,node,5315598879
+Walmart Neighborhood Market,Walmart,OK,Lawton,3745 Southwest Lee Boulevard,73505,34.595819,-98.438776,+1 580-713-7702,https://www.walmart.com/store/2984/lawton-ok,Mo-Su 06:00-24:00,node,5315598954
+Walmart Neighborhood Market,Walmart,OK,Warr Acres,6437 North Macarthur Boulevard,73132,35.538043,-97.62107,+1 405-495-1001,https://www.walmart.com/store/2875-warr-acres-ok,Mo-Su 06:00-24:00,node,5315598994
+Walmart Neighborhood Market,Walmart,OK,Moore,640 Southeast 4th Street,73160,35.3331,-97.478135,+1 405-794-2724,https://www.walmart.com/store/2393-moore-ok,Mo-Su 06:00-24:00,node,5315599535
+Walmart Supercenter,Walmart,OK,Ada,1419 North Country Club Road,74820,34.789127,-96.65614,+1 580-332-2232,https://www.walmart.com/store/231-ada-ok,24/7,node,5315599559
+Walmart Supercenter,Walmart,OK,Yukon,1200 Garth Brooks Boulevard,73099,35.4903985,-97.7636666,+1 405-350-1900,https://www.walmart.com/store/221-yukon-ok,24/7,node,5315599592
+Walmart Supercenter,Walmart,OK,Chickasha,2001 South 1st Street,73018,35.031027,-97.931081,+1 405-224-1867,https://www.walmart.com/store/113-chickasha-ok,24/7,node,5315602257
+Walmart,Walmart,TX,Carrizo Springs,2214 North 1st Street,78834,28.542786,-99.848551,+1 830-876-2462,https://www.walmart.com/store/1046-carrizo-springs-tx,Mo-Su 06:00-23:00,node,5315602299
+Walmart Supercenter,Walmart,OK,Pauls Valley,2008 West Grant Avenue,73075,34.736602,-97.248862,+1 405-238-7353,https://www.walmart.com/store/1043-pauls-valley-ok,Mo-Su 06:00-01:00,node,5315602300
+Walmart Supercenter,Walmart,,,,,28.727439,-106.1299106,,,Mo-Su 08:00-22:00,node,5459156521
+Walmart Vision Center,,SD,Vermillion,1207 Princeton Avenue,57069,42.7917609,-96.9367936,,,Mo-Fr 09:00-20:00; Sa 09:00-18:00; Su 12:00-17:00,node,5638788987
+Walmart Auto Care Center,,SD,Vermillion,1207 Princeton Avenue,57069,42.7922726,-96.935954,,,,node,5638788988
+Walmart Photo Center,,SD,Vermillion,1207 Princeton Avuenue,57069,42.7919045,-96.9358883,,,Mo-Sa 08:30-22:00; Su 09:30-20:00,node,5638789634
+Walmart Vision Center,,,,,,32.6840799,-96.8250103,,,,node,6412292772
+Walmart Garden Center,Walmart,,,,,42.8175437,-106.374643,,,,node,6923859307
+Walmart Garden Center,Walmart,,,,,34.5283461,-97.9698337,,,,node,6988124001
+Walmart Tire & Lube,,,,,,39.5900715,-104.8608229,,,,node,7542816283
+Walmart Garden Center,Walmart,,,,,39.5910108,-104.860801,,,,node,7542816807
+Walmart Neighborhood Market,Walmart,KS,Wichita,3137 South Seneca Street,67217,37.6380625,-97.3542217,+1 316-361-3345,https://www.walmart.com/store/5991-wichita-ks,07:00-20:30,node,7769770882
+Walmart Garden Center,Walmart,,,,,39.7619613,-104.7734758,,,,node,8098100511
+Walmart Garden Center,Walmart,,,,,39.7689859,-104.8977184,,,,node,8098209256
+Walmart Garden Center,Walmart,,,,,41.1635547,-104.79199,,,,node,8172495779
+Walmart Garden Center,Walmart,,,12900 North Interstate Highway 35 Service Road,,30.4127572,-97.6761612,+1-512-837-9886,https://www.walmart.com/store/3569-austin-tx,06:00-23:00,node,8282165281
+Walmart Deli,,,,,,39.8435555,-96.6053328,,,,node,8380833592
+Walmart Garden Center,Walmart,,,,,32.8483458,-104.4270957,,,,node,8489842164
+Walmart Garden Center,Walmart,,,,,32.4536821,-100.3926573,,,,node,8489842554
+Walmart Garden Center,Walmart,,,,,33.0145236,-97.217377,,,,node,8989288327
+Walmart Automotive Center,,,,,,39.761479,-104.773415,,,,node,9041975620
+Walmart Garden Center,Walmart,,,,,37.998406,-103.592558,,https://www.walmart.com/store/1384-la-junta-co,,node,9078300881
+Walmart Garden Center,Walmart,,,,,38.95058,-104.800264,,,,node,9149273980
+Walmart Garden Center,Walmart,,,,,39.0670628,-104.8528194,,,,node,9149278777
+Walmart Garden Center,Walmart,,,,,38.9419545,-104.7259588,,,,node,9149307316
+Walmart Garden Center,Walmart,,,,,41.126628,-104.7641992,,https://www.walmart.com/store/4653-cheyenne-wy,,node,9166425841
+Walmart Garden Center,Walmart,,,,,37.6485339,-97.3325791,,,,node,9170021591
+Walmart Garden Center,Walmart,,,,,37.6748611,-97.4142511,,,,node,9170039387
+Walmart Garden Center,Walmart,,,,,38.7846815,-97.6147962,,https://www.walmart.com/store/558-salina-ks,,node,9170195585
+Walmart Garden Center,Walmart,,,,,39.6558281,-104.9940997,,https://www.walmart.com/store/2751-englewood-co,,node,9173720728
+Walmart Garden Center,Walmart,,,,,31.0669589,-97.3671082,,https://www.walmart.com/store/746-temple-tx,,node,9177103913
+Walmart Garden Center,Walmart,,,,,32.931531,-97.2672751,,https://www.walmart.com/store/2834-fort-worth-tx,,node,9177145406
+Walmart Garden Center,Walmart,TX,San Antonio,1200 Southeast Military Drive,78214,29.3532975,-98.4804761,+1-210-921-0800,https://www.walmart.com/store/1313-san-antonio-tx,,node,9178788795
+Walmart Garden Center,Walmart,,,,,32.8622438,-96.7548637,,,,node,9178791542
+Walmart Garden Center,Walmart,TX,Vernon,3800 US Highway 287 West,76384,34.1629334,-99.310344,+1-940-552-8029,https://www.walmart.com/store/3229-vernon-tx,,node,9180824046
+Walmart Garden Center,Walmart,OK,Norman,3651 Classen Boulevard,73071,35.1733746,-97.4089046,+1-405-515-7024,https://www.walmart.com/store/7294-norman-ok,,node,9181559484
+Walmart Garden Center,Walmart,TX,Cedar Park,201 Walton Way,78613,30.5219898,-97.8339757,+1-512-528-8746,https://www.walmart.com/store/2991-cedar-park-tx,24/7,node,9215025879
+Walmart Garden Center,Walmart,TX,Frisco,355 Stonebrook Parkway,75034,33.1424575,-96.8901202,+1-972-987-8764,https://www.walmart.com/store/2463-frisco-tx,Mo-Su 06:00-01:00,node,9251154723
+Walmart Garden Center,Walmart,,,,,32.3944673,-104.2229232,,,,node,9254030548
+Walmart Garden Center,Walmart,,,,,32.7321005,-96.6146264,,,,node,9365009560
+Walmart Vision Center,Walmart Vision Center,,,,,38.9031253,-99.3207179,,,,node,9376134748
+Walmart Garden Center,Walmart,,,,,32.6911672,-100.9176104,,,,node,9384114825
+Walmart Garden Center,Walmart,TX,Burleson,951 Southwest Wilshire Boulevard,76028,32.5283626,-97.3374841,+1-817-572-9574,https://www.walmart.com/store/220/burleson-tx/whats-new,24/7,node,9411549538
+Walmart Garden Center,Walmart,OK,Oklahoma City,100 East Interstate 240 Service Road,73149,35.3892357,-97.5116252,,https://www.walmart.com/store/743-oklahoma-city-ok,,node,9434071689
+Walmart Garden Center,Walmart,OK,Moore,501 Southwest 19th Street,73160,35.3221426,-97.4921167,+1-405-790-0021,https://www.walmart.com/store/277-moore-ok,24/7,node,9434088962
+Walmart Garden Center,Walmart,CO,Loveland,250 West 65th Street,80538,40.4574477,-105.0805568,,https://www.walmart.com/store/1008-loveland-co,24/7,node,9487434362
+Walmart Garden Center,Walmart,OK,Lawton,6301 Northwest Quanhah Parker Trail Way,73505,34.6316937,-98.47188,+1-580-510-9130,https://www.walmart.com/store/5071-lawton-ok,24/7,node,9495843810
+Walmart Garden Center,Walmart,CO,Loveland,1325 North Denver Avenue,80537,40.4046841,-105.0457594,+1-970-669-4579,https://www.walmart.com/store/953/loveland-co/whats-new,24/7,node,9537491272
+Walmart Garden Center,Walmart,,,,,29.2343449,-99.7546154,,,,node,9776311407
+Walmart Garden Center,Walmart,,,,,39.5133831,-104.7689401,,,,node,9831455666
+Walmart Garden Center,Walmart,,,,,33.1790495,-96.8842524,,,,node,10268980373
+Walmart Garden Center,Walmart,,,,,32.710997,-97.284179,,,,node,10271878355
+Walmart Garden Center,Walmart,,,,,32.706345,-97.0212556,,,,node,10271927226
+Walmart Auto Center,,,,,,32.906402,-97.1905817,,,,node,10746339552
+Walmart Auto Care Centers,,,,,,32.9949157,-96.8587762,,,,node,10806569109
+Walmart Grab & Go,Walmart,,,,,33.0551604,-96.7696359,,https://www.walmart.com/store/997-plano-tx,,node,10968126915
+Walmart Garden Center,Walmart,,,,,31.4623214,-97.1729501,,,,node,10975268644
+Walmart Auto Center,,,,,,32.9300302,-97.1019411,,,,node,11139452711
+Walmart Garden Center,Walmart,TX,San Antonio,3302 Southeast Military Drive,78223,29.3485002,-98.4325381,+1-210-337-1946,,06:00-23:00,node,11189015310
+Walmart Supercenter,Walmart,,,,,29.3193877,-100.9557818,,,,node,12095974916
+Walmart Garden Center,Walmart,,,,,32.3406731,-97.4158447,,,,node,12124768979
+Walmart Garden Center,Walmart,,,,,40.9436093,-98.3867483,,,,node,12154049660
+Walmart,Walmart,,,,,32.6680279,-97.1334051,,https://www.walmart.com/store/2466-arlington-tx,,node,12241979666
+Walmart,Walmart,,,,,31.0911495,-97.729598,,https://www.walmart.com/store/3816-killeen-tx,,node,12243486911
+Walmart Supercenter,Walmart,,,,,29.9008609,-96.9061142,+1 979-968-3423,https://www.walmart.com/store/846-la-grange-tx,,node,12243557904
+Walmart Auto Care Center,Walmart Auto Care Center,,,,,38.8230012,-104.8374843,,,,node,12335245535
+Walmart Garden Center,Walmart,,,,,38.8229946,-104.8381016,,,,node,12335245536
+Walmart Vision Center,Walmart Vision Center,,,,,38.8237093,-104.8383252,,,,node,12335245537
+Walmart,,TX,Prosper,,,33.2200589,-96.7971737,,,,node,12389098720
+Auto,,,,,,36.123676,-97.0481094,,,,node,2755428620
+Food,,,,,,36.1249094,-97.0488621,,,,node,2755428623
+Garden Center,,,,,,36.1236683,-97.0486622,,,,node,2755428626
+Garden Center,,,,,,36.1237967,-97.0488416,,,,node,2755428629
+main,,,,,,36.1244095,-97.0488645,,,,node,2755428631
+Market,,,,,,30.0860851,-97.8243926,,,,node,2983970683
+General Merchandise / Pharmacy,,,,,,30.0868316,-97.8244175,,,,node,2983970684
+Garden,,,,,,30.0873422,-97.8244346,,,,node,2983970686
+Automotive,,,,,,30.0873937,-97.8252681,,,,node,2983970687
+Pharmacy Entrance,,,,,,30.2326882,-97.8232562,,,,node,9217416643
+Auto Service,,,,,,30.2324437,-97.8243642,,,,node,9217416644
+Lawn and Garden,,,,,,30.2329803,-97.8239245,,,,node,9238943743
+Delivery,,,,,,30.2318853,-97.8223879,,,,node,9238953286
+Auto Repair,,,,,,39.768873,-104.8971545,,,,node,9837280810
+Home & Pharmacy,,,,,,30.1039652,-97.3325296,,,,node,11035602432
+Market,,,,,,30.1037584,-97.3319655,,,,node,11035602433
+Propane Tank Vending Machine,,,,,,37.5327723,-97.2427019,,,,node,12411806052
+Walmart Supercenter,Walmart,TX,Westworth Village,6770 Westworth Boulevard,76114,32.755027125,-97.43390767000001,+1 817-570-9538,https://www.walmart.com/store/940-westworth-village-tx,24/7,way,28320343
+Walmart Supercenter,Walmart,TX,Cedar Park,201 Walton Way,78613,30.522244817391307,-97.83440115652175,+1 512-528-8746,https://www.walmart.com/store/2991-cedar-park-tx,24/7,way,29169601
+Walmart Supercenter,Walmart,TX,Austin,13201 North Ranch Road 620,78717,30.46726049615385,-97.78908444615384,+1 512-331-9924,https://www.walmart.com/store/1129-austin-tx,24/7,way,29177969
+Walmart Supercenter,Walmart,TX,Dallas,1521 North Cockrell Hill Road,75211,32.76283299032258,-96.89693793548388,+1 214-330-7249,https://www.walmart.com/store/5147-dallas-tx,Mo-Su 06:00-24:00,way,29190522
+Walmart Supercenter,Walmart,TX,Irving,1635 Market Place Boulevard,75063,32.92067060000001,-96.96760134499999,+1 214-574-4517,https://www.walmart.com/store/2649-irving-tx,24/7,way,30177356
+Walmart Supercenter,Walmart,TX,Cedar Hill,621 Uptown Boulevard,75104,32.597266338095245,-96.9468566047619,+1 469-272-7344,https://www.walmart.com/store/3285-cedar-hill-tx,24/7,way,30817288
+Walmart Supercenter,Walmart,TX,Austin,9300 South Interstate 35,78748,30.165406717391303,-97.79049493913045,+1 512-292-6973,https://www.walmart.com/store/5317-austin-tx,24/7,way,31695438
+Walmart Supercenter,Walmart,TX,San Angelo,5501 Sherwood Way,76904,31.42635965517241,-100.50962558620687,+1 325-949-9201,https://www.walmart.com/store/601-san-angelo-tx,24/7,way,37221312
+Walmart Supercenter,Walmart,CO,Denver,9400 East Hampden Avenue,80231,39.65197465806451,-104.8791244967742,+1 720-748-1000,https://www.walmart.com/store/3566/denver-co/,Mo-Su 06:00-24:00,way,39142797
+Walmart Supercenter,Walmart,TX,Fort Worth,6300 Oakmont Boulevard,76132,32.66452290983606,-97.40571955737705,+1 817-263-4065,https://www.walmart.com/store/590-fort-worth-tx,24/7,way,40810665
+Walmart Supercenter,Walmart,OK,Enid,5505 West Owen K Garriott Road,73703,36.38806294000002,-97.94532274857141,+1 580-237-7963,https://www.walmart.com/store/499-enid-ok,24/7,way,45158381
+Walmart Supercenter,Walmart,TX,Georgetown,620 South Interstate Highway 35 Frontage Road,78628,30.64508066785714,-97.69225330714286,+1 512-863-4855,https://www.walmart.com/store/1303-georgetown-tx,06:00-23:00,way,45467350
+Walmart Supercenter,Walmart,CO,Thornton,9901 Grant Street,80229,39.87590961052631,-104.98611894736845,+1 303-451-1003,https://www.walmart.com/store/1231-thornton-co,Mo-Su 06:00-24:00,way,45812366
+Walmart Supercenter,Walmart,TX,Sherman,401 East Highway 82,75092,33.67371332380952,-96.61206084285716,+1 903-813-4825,https://www.walmart.com/store/947-sherman-tx,Mo-Su 06:00-22:00,way,47973083
+Walmart Supercenter,Walmart,TX,Fort Worth,8520 North Beach Street,76244,32.895040187096775,-97.28694996451614,+1 817-514-9793,https://www.walmart.com/store/2980-fort-worth-tx,24/7,way,48974492
+Walmart Supercenter,Walmart,TX,Arlington,4801 South Cooper Street,76017,32.668508366666664,-97.13203852857143,+1 817-465-1000,https://www.walmart.com/store/1801-arlington-tx,Mo-Su 06:00-23:00,way,49707398
+Walmart Supercenter,Walmart,CO,Littleton,7700 West Quincy Avenue,80123,39.63642752105263,-105.08340593157895,+1 303-971-0321,https://www.walmart.com/store/1308-littleton-co,Mo-Su 06:00-23:00,way,49953829
+Walmart Supercenter,Walmart,CO,Englewood,601 Englewood Parkway,80110,39.65613957222223,-104.99502348888889,+1 303-789-7201,https://www.walmart.com/store/2751-englewood-co,Mo-Su 06:00-24:00,way,50290783
+Walmart Supercenter,Walmart,KS,Wichita,6110 West Kellogg Drive,67209,37.67525338888888,-97.41352210000001,+1 316-945-2800,https://www.walmart.com/store/1221-wichita-ks,24/7,way,51573235
+Walmart Supercenter,Walmart,CO,Loveland,1325 North Denver Avenue,80537,40.40453678387097,-105.0464075,+1 970-669-4579,https://www.walmart.com/store/953-loveland-co,24/7,way,57844353
+Walmart Supercenter,Walmart,TX,Irving,4100 West Airport Freeway,75062,32.83497313684209,-97.00653127105262,+1 972-313-0707,https://www.walmart.com/store/880-irving-tx,Mo-Su 06:00-24:00,way,61602018
+Walmart Supercenter,Walmart,NM,Ruidoso Downs,26180 US Highway 70,88346,33.3243416625,-105.61418755416669,+1 575-378-8050,https://www.walmart.com/store/851-ruidoso-downs-nm,06:00-23:00,way,61942645
+Walmart Supercenter,Walmart,CO,Denver,2770 West Evans Avenue,80219,39.6774663125,-105.02156038333334,+1 303-222-7043,https://www.walmart.com/store/5676-denver-co,Mo-Su 06:00-24:00,way,66208761
+Walmart Supercenter,Walmart,TX,Temple,3401 South 31st Street,76502,31.06636217692308,-97.36703036153845,+1 254-778-9235,https://www.walmart.com/store/746-temple-tx,06:00-23:00,way,72649036
+Walmart Supercenter,Walmart,TX,Fort Worth,8500 Anderson Boulevard,76120,32.764471863333334,-97.16892515666669,+1 817-276-9021,https://www.walmart.com/store/1455-fort-worth-tx,Mo-Su 06:00-23:00,way,73208074
+Walmart Supercenter,Walmart,TX,Dallas,9382 Lyndon B Johnson Freeway,75243,32.91066926857142,-96.7388255285714,+1 972-437-9146,https://www.walmart.com/store/2427-dallas-tx,24/7,way,73228271
+Walmart Supercenter,Walmart,TX,Marble Falls,2700 North US Highway 281,78654,30.599270144444443,-98.27188388888888,+1 830-693-4461,https://www.walmart.com/store/781-marble-falls-tx,24/7,way,74457755
+Walmart Supercenter,Walmart,KS,Wichita,10600 West 21st Street North,67205,37.72462497027027,-97.4656777972973,+1 316-729-5446,https://www.walmart.com/store/3283-wichita-ks,24/7,way,75041273
+Walmart Supercenter,Walmart,NE,Kearney,5411 North 2nd Avenue,68847,40.726509173333326,-99.08092454000001,+1-308-234-8448,https://www.walmart.com/store/598-kearney-ne,24/7,way,77722209
+Walmart Supercenter,Walmart,CO,Littleton,13420 West Coal Mine Avenue,80127,39.60810288750001,-105.15070135312502,+1 303-979-2064,https://www.walmart.com/store/5049-littleton-co,Mo-Su 05:00-24:00,way,81133307
+Walmart Supercenter,Walmart,KS,Hays,4301 North Vine Street,67601,38.90297652916666,-99.32105265833333,+1 785-625-0001,https://www.walmart.com/store/664-hays-ks,24/7,way,87105161
+Walmart Supercenter,Walmart,CO,Woodland Park,19600 US 24,80863,38.970715370833325,-105.03876194583334,+1 719-687-1065,https://www.walmart.com/store/3805-woodland-park-co,24/7,way,87289904
+Walmart Supercenter,Walmart,KS,Colby,115 West Willow Avenue,67701,39.367299471428574,-101.04775637142858,+1 785-462-8634,https://www.walmart.com/store/1214-colby-ks,24/7,way,87917621
+Walmart Supercenter,Walmart,KS,Marysville,1174 Pony Expressway Highway,66508,39.84344873333334,-96.60494793333334,+1 785-562-2390,https://www.walmart.com/store/341-marysville-ks,24/7,way,95105555
+Walmart Supercenter,Walmart,TX,Arlington,915 East Randol Mill Road,76011,32.75099815333333,-97.09543394,+1 817-274-1040,https://www.walmart.com/store/5416-arlington-tx,24/7,way,96988472
+Walmart Supercenter,Walmart,CO,Lafayette,745 North Highway 287,80026,40.00620224878049,-105.10516909512195,+1 303-666-0340,https://www.walmart.com/store/1045-lafayette-co,24/7,way,97343747
+Walmart Supercenter,Walmart,TX,San Antonio,6703 West Loop 1604 North,78254,29.501285563157897,-98.70451521052631,+1-210-688-3626,https://www.walmart.com/store/2864-san-antonio-tx,24/7,way,101482956
+Walmart Supercenter,Walmart,CO,Colorado Springs,5550 East Woodmen Road,80920,38.94251155555556,-104.72561986666669,+1-719-531-6471,https://www.walmart.com/store/5123-colorado-springs-co,24/7,way,109476491
+Walmart Supercenter,Walmart,CO,Aurora,6101 South Aurora Parkway,80016,39.60623671960785,-104.70483384215682,+1 303-617-1261,https://www.walmart.com/store/5137-aurora-co,24/7,way,111873249
+Walmart Supercenter,Walmart,CO,La Junta,6 Conley Road,81050,37.99831808055555,-103.59320722499996,+1 719-384-5951,https://www.walmart.com/store/1384-la-junta-co,24/7,way,112118650
+Walmart Supercenter,Walmart,CO,Broomfield,500 Summit Boulevard,80021,39.92606828571428,-105.13651985714287,+1 303-466-3928,https://www.walmart.com/store/5341-broomfield-co,Mo-Su 06:00-23:00,way,115984386
+Walmart Supercenter,Walmart,NE,Scottsbluff,3322 Avenue I,69361,41.87988564482759,-103.67855603448275,+1 308-632-2666,https://www.walmart.com/store/867-scottsbluff-ne,24/7,way,117162734
+Walmart Supercenter,Walmart,CO,Lakewood,440 South Wadsworth Boulevard,80226,39.72214108749999,-105.08037278124999,+1 303-205-0754,https://www.walmart.com/store/4284-lakewood-co,Mo-Su 06:00-24:00,way,119765384
+Walmart Supercenter,Walmart,TX,Stephenville,2765 West Washington Street,76401,32.20709716071429,-98.23785156785713,+1 254-965-7766,https://www.walmart.com/store/610-stephenville-tx,24/7,way,120007801
+Walmart Supercenter,Walmart,TX,Denton,1515 South Loop 288,76205,33.191335233333334,-97.09368697272727,+1 940-484-1717,https://www.walmart.com/store/467-denton-tx,24/7,way,120314540
+Walmart Supercenter,Walmart,KS,Wichita,11411 East Kellogg Drive,67207,37.67656885757576,-97.2042414939394,+1 316-683-0735,https://www.walmart.com/store/3492-wichita-ks,24/7,way,120756226
+Walmart Supercenter,Walmart,CO,Salida,7865 US 50,81201,38.5245299,-106.02265982222222,+1 719-539-3566,https://www.walmart.com/store/921-salida-co,Mo-Su 06:00-24:00,way,121130100
+Walmart Supercenter,Walmart,KS,McPherson,205 South Centennial Drive,67460,38.36774661818182,-97.62834326363637,+1 620-241-0800,https://www.walmart.com/store/993-mcpherson-ks,24/7,way,126172023
+Walmart Supercenter,Walmart,NM,Alamogordo,233 South New York Avenue,88310,32.887306943478265,-105.95798872173913,+1 575-434-5870,https://www.walmart.com/store/1306-alamogordo-nm,24/7,way,127122749
+Walmart Supercenter,Walmart,WY,Laramie,4308 East Grand Avenue,82070,41.30184725384615,-105.54018131538461,+1 307-745-6100,https://www.walmart.com/store/1412-laramie-wy,24/7,way,129803651
+Walmart Supercenter,Walmart,CO,Trinidad,2921 Toupal Drive,81082,37.13882193199999,-104.52313863599998,+1-719-846-4477,https://www.walmart.com/store/962-trinidad-co,Mo-Su 06:00-24:00,way,130665363
+Walmart Supercenter,Walmart,CO,Fort Collins,1250 East Magnolia Street,80524,40.58635448999999,-105.05487863333333,+1 970-493-3048,https://www.walmart.com/store/2729-fort-collins-co,24/7,way,130730380
+Walmart Supercenter,Walmart,CO,Denver,7800 Smith Road,80207,39.76937073913044,-104.89729442608696,+1 720-941-0411,https://www.walmart.com/store/3533-denver-co,Mo-Su 06:00-24:00,way,130807103
+Walmart,Walmart,CO,Frisco,840 Summit Boulevard,80443,39.587021740000004,-106.09620766500002,+1 970-668-3959,https://www.walmart.com/store/986-frisco-co,Mo-Su 06:00-24:00,way,131021954
+Walmart Supercenter,Walmart,TX,Garland,5302 North Garland Avenue,75040,32.96271307586207,-96.64252632068964,+1 972-496-2711,https://www.walmart.com/store/1055-garland-tx,24/7,way,131157171
+Walmart Supercenter,Walmart,CO,Commerce City,5990 Dahlia Street,80022,39.80469563478262,-104.92803968260868,+1 303-287-0600,https://www.walmart.com/store/2752-commerce-city-co,Mo-Su 06:00-24:00,way,131426333
+Walmart Supercenter,Walmart,TX,Lancaster,150 North Interstate 35E,75146,32.592007068965515,-96.81932683103447,+1 972-223-9791,https://www.walmart.com/store/471-lancaster-tx,Mo-Su 06:00-24:00,way,132686466
+Walmart Neighborhood Market,Walmart,KS,Liberal,712 North Western Avenue,67901,37.0455230875,-100.94254373749999,+1 620-417-7235,https://www.walmart.com/store/4628/liberal-ks/whats-new,Mo-Su 06:00-24:00,way,133686446
+Walmart Supercenter,Walmart,TX,Bellmead,1521 North Interstate 35,76705,31.599929005882352,-97.10594515882352,+1 254-867-8084,https://www.walmart.com/store/1254-bellmead-tx,24/7,way,133885020
+Walmart Supercenter,Walmart,TX,Round Rock,2701 South Interstate 35,78664,30.483223074999998,-97.67021151666665,+1 512-310-9024,https://www.walmart.com/store/475-round-rock-tx,24/7,way,134166853
+Walmart Supercenter,Walmart,CO,Longmont,2514 Main Street,80504,40.20517025384615,-105.09905088461538,+1-303-774-7513,https://www.walmart.com/store/5370-longmont-co,Mo-Su 07:00-22:00; Tu 06:00-22:00,way,135158146
+Walmart Supercenter,Walmart,TX,Austin,12900 North Interstate Highway 35 Service Road,78753,30.413346639999997,-97.67635051714286,+1 512-837-9886,https://www.walmart.com/store/3569-austin-tx,06:00-23:00,way,135181028
+Walmart Supercenter,Walmart,TX,Desoto,951 West Belt Line Road,75115,32.592826452631584,-96.87987386842103,+1 972-223-1711,https://www.walmart.com/store/3432-desoto-tx,24/7,way,139586928
+Walmart Supercenter,Walmart,NE,Hastings,3803 Osborne Drive West,68901,40.62437141304348,-98.3856332695652,+1 402-462-6000,https://www.walmart.com/store/1460-hastings-ne,24/7,way,140486224
+Walmart Supercenter,Walmart,KS,Concordia,140 East College Drive,66901,39.55076075294118,-97.66029625882354,+1 785-243-2602,https://www.walmart.com/store/1282-concordia-ks,24/7,way,141913763
+Walmart Supercenter,Walmart,NE,York,101 East David Drive,68467,40.82769058387097,-97.59354717096772,+1 402-362-3366,https://www.walmart.com/store/350-york-ne,24/7,way,142453306
+Walmart Supercenter,Walmart,TX,Harker Heights,2020 Heights Drive,76548,31.070124732000004,-97.67424009200002,+1 254-699-1021,https://www.walmart.com/store/3319-harker-heights-tx,24/7,way,148132256
+Walmart Neighborhood Market,Walmart,TX,San Angelo,1852 Sherwood Way,76901,31.454175963636363,-100.46144306363635,+1 325-276-6945,https://www.walmart.com/store/7220-san-angelo-tx,06:00-23:00,way,148512387
+Walmart Supercenter,Walmart,CO,Westminster,9499 Sheridan Boulevard,80031,39.86812542222222,-105.05665870833334,+1 303-427-4882,https://www.walmart.com/store/2223-westminster-co,Mo-Su 06:00-24:00,way,151960439
+Walmart Supercenter,Walmart,CO,Longmont,2285 East Ken Pratt Boulevard,80504,40.15840735849057,-105.04846284528303,+1 303-678-0803,https://www.walmart.com/store/905-longmont-co,24/7,way,152939220
+Walmart Supercenter,Walmart,KS,Wichita,3030 North Rock Road,67226,37.738758704761906,-97.2418832142857,+1 316-636-4482,https://www.walmart.com/store/1507-wichita-ks,24/7,way,153046380
+Walmart Supercenter,Walmart,TX,San Antonio,1603 Vance Jackson Road,78213,29.48824681,-98.5376419,+1 210-738-8218,https://www.walmart.com/store/5145-san-antonio-tx,24/7,way,158976827
+Walmart Supercenter,Walmart,TX,San Antonio,5555 De Zavala Road,78249,29.564748800000007,-98.59608722424241,+1 210-558-2007,https://www.walmart.com/store/2599-san-antonio-tx,24/7,way,159212903
+Walmart Supercenter,Walmart,SD,Vermillion,1207 Princeton Avenue,57069,42.79203554210526,-96.93634633157895,+1 605-624-0215,https://www.walmart.com/store/3734-vermillion-sd,Mo-Su 06:00-01:00,way,159358345
+Walmart Supercenter,Walmart,TX,San Antonio,11210 Potranco Road,78253,29.43380983928571,-98.71362949642857,+1-210-679-7184,https://www.walmart.com/store/3888-san-antonio-tx,24/7,way,164474316
+Walmart Supercenter,Walmart,SD,Yankton,3001 Broadway Avenue,57078,42.907437787878784,-97.40094697575758,+1 605-665-1425,https://www.walmart.com/store/1483-yankton-sd,24/7,way,167708129
+Walmart,,,,,,28.6344287875,-106.119584375,,,,way,168058573
+Walmart Supercenter,Walmart,TX,San Antonio,8030 Bandera Road,78250,29.518568676470586,-98.63338280588233,+1 210-520-6517,https://www.walmart.com/store/5146-san-antonio-tx,24/7,way,169051187
+Walmart Supercenter,Walmart,TX,Denison,401 North Highway 75,75020,33.759242604761916,-96.58779294285713,+1 903-465-9744,https://www.walmart.com/store/147-denison-tx,24/7,way,171969943
+Walmart Supercenter,Walmart,TX,El Paso,12236 Montana Avenue,79938,31.805155282608702,-106.2622786478261,+1 915-255-4031,https://www.walmart.com/store/3763-el-paso-tx,24/7,way,172344111
+Walmart Supercenter,Walmart,TX,Odessa,4210 John Ben Shepperd Parkway Boulevard,79762,31.89539363999999,-102.33220725999999,+1 432-363-9663,https://www.walmart.com/store/537-odessa-tx,24/7,way,172603835
+Walmart Supercenter,Walmart,KS,Salina,2900 South 9th Street,67401,38.78545822972972,-97.6149599918919,+1 785-825-6800,https://www.walmart.com/store/558-salina-ks,24/7,way,174500967
+Walmart Supercenter,Walmart,TX,Austin,5017 West US Highway 290 Service Road,78735,30.232381054166666,-97.82329197916665,+1 512-892-6086,https://www.walmart.com/store/2133-austin-tx,24/7,way,175672482
+Walmart Supercenter,Walmart,TX,Kerrville,1216 Junction Highway,78028,30.062597020000002,-99.16707156000001,+1 830-895-7900,https://www.walmart.com/store/508-kerrville-tx,24/7,way,178409778
+Walmart Supercenter,Walmart,OK,Oklahoma City,1801 Belle Isle Boulevard,73118,35.52628964583333,-97.53938481249999,+1 405-841-6502,https://www.walmart.com/store/2804-oklahoma-city-ok,Mo-Su 06:00-23:00,way,181551093
+Walmart Supercenter,Walmart,OK,Oklahoma City,7800 Northwest Expressway,73132,35.562780193939396,-97.65411940909088,+1 405-773-2625,https://www.walmart.com/store/622-oklahoma-city-ok,Mo-Su 06:00-23:00,way,182877032
+Walmart Supercenter,Walmart,CO,Colorado Springs,8250 Razorback Road,80920,38.94974765238096,-104.79999487142857,+1-719-593-2300,https://www.walmart.com/store/1896-colorado-springs-co,24/7,way,183686855
+Walmart Supercenter,Walmart,TX,Odessa,2450 Northwest Loop 338,79763,31.85634243793103,-102.41067353793102,+1 432-332-6016,https://www.walmart.com/store/2891-odessa-tx,06:00-23:00,way,183688020
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,2217 Northwest 23rd Street,73107,35.49453716111112,-97.55057074444443,+1 405-521-1431,https://www.walmart.com/store/3615-oklahoma-city-ok,Mo-Su 06:00-24:00,way,184101572
+Walmart Supercenter,Walmart,TX,Seguin,550 South Highway 123 Bypass,78155,29.565353820000006,-97.94477475999999,+1 830-372-5993,https://www.walmart.com/store/901-seguin-tx,24/7,way,184995785
+Walmart Supercenter,Walmart,TX,Waco,4320 Franklin Avenue,76710,31.521374573913047,-97.16577155652173,+1 254-751-0464,https://www.walmart.com/store/939-waco-tx,24/7,way,188426179
+Walmart Supercenter,Walmart,TX,Austin,710 East Ben White Boulevard,78704,30.221326523809516,-97.75407067142858,+1 512-443-6601,https://www.walmart.com/store/1253-austin-tx,06:00-23:00,way,188590079
+Walmart Supercenter,Walmart,NE,Sidney,3001 Silverberg Drive,69162,41.116828600000005,-102.94481202,+1 308-254-9138,https://www.walmart.com/store/5170-sidney-ne,24/7,way,191659435
+Walmart Neighborhood Market,Walmart,CO,Denver,1442 South Parker Road,80231,39.69034927,-104.88875489,+1 303-481-0182,https://www.walmart.com/store/3128-denver-co,Mo-Su 06:00-24:00,way,192024160
+Walmart Supercenter,Walmart,OK,Guthrie,1608 South Division Street,73044,35.8628825375,-97.422473975,+1 405-282-7900,https://www.walmart.com/store/108-guthrie-ok,24/7,way,192336595
+Walmart Supercenter,Walmart,NM,Carlsbad,2401 South Canal Street,88220,32.394220127586216,-104.22294494137931,+1 575-885-0727,https://www.walmart.com/store/868-carlsbad-nm,24/7,way,192581877
+Walmart Neighborhood Market,Walmart,OK,The Village,9320 North Pennsylvania Place,73120,35.56504352,-97.5474828,+1 405-840-8435,https://www.walmart.com/store/5286/the-village-ok,Mo-Su 06:00-24:00,way,193072366
+Walmart Supercenter,Walmart,NM,Roswell,4500 North Main Street,88201,33.44976174444445,-104.52657366666666,+1 575-623-2062,https://www.walmart.com/store/611-roswell-nm,24/7,way,193980146
+Walmart Supercenter,Walmart,CO,Colorado Springs,1575 Space Center Drive,80915,38.85455941290323,-104.72213562258064,+1-719-597-7414,https://www.walmart.com/store/3582-colorado-springs-co,24/7,way,194243124
+Walmart Supercenter,Walmart,CO,Colorado Springs,707 South 8th Street,80905,38.82349176206897,-104.83776742413794,+1-719-633-0736,https://www.walmart.com/store/1434-colorado-springs-co,Mo-Su 06:00-23:00,way,194528401
+Walmart Supercenter,Walmart,NM,Hobbs,3800 North Lovington Highway,88240,32.7434188030303,-103.16020646969696,+1 575-492-0120,https://www.walmart.com/store/549-hobbs-nm,24/7,way,194874522
+Walmart Supercenter,Walmart,NE,Lincoln,3400 North 85th Street,68507,40.84885667199999,-96.60180449199999,+1-402-466-0447,https://www.walmart.com/store/3823-lincoln-ne,Mo-Su 06:00-22:00,way,195040388
+Walmart Supercenter,Walmart,TX,Denton,2750 West University Drive,76201,33.233050811764706,-97.16821112941176,+1 940-735-3119,https://www.walmart.com/store/4627-denton-tx,24/7,way,196483558
+Walmart Garden Center,Walmart,,,4700 North 27th Street,68504,40.857622580000005,-96.67839808,,,,way,197626721
+Walmart Supercenter,Walmart,NE,Lincoln,4700 North 27th Street,68521,40.85809669166668,-96.67776561111113,+1 402 438 4377,https://www.walmart.com/store/1943-lincoln-ne,24/7,way,197626744
+Walmart Supercenter,Walmart,TX,Cleburne,1616 West Henderson Street,76033,32.341050995238106,-97.41532734523807,+1 817-645-1575,https://www.walmart.com/store/228-cleburne-tx,06:00-23:00,way,198106110
+Walmart Supercenter,Walmart,KS,Winfield,2202 Pike Road,67156,37.22719957777778,-96.99285105000001,+1 620-221-6233,https://www.walmart.com/store/369-winfield-ks,24/7,way,198396319
+Walmart Supercenter,Walmart,TX,Del Rio,2410 Dodson Avenue,78840,29.395514362068965,-100.90118967931035,+1 830-774-6034,https://www.walmart.com/store/447-del-rio-tx,06:00-23:00,way,199539017
+Walmart Supercenter,Walmart,CO,Thornton,7101 East 128th Avenue,80602,39.93099855,-104.90608618181818,+1 303-209-4339,https://www.walmart.com/store/4567-brighton-co,24/7,way,201070895
+Walmart Garden Center,,,,2202 Pike Road,67156,37.227811839999994,-96.9932858,,,,way,202908642
+Walmart Supercenter,Walmart,KS,Arkansas City,2701 North Summit Street,67005,37.089791830303035,-97.04292577575758,+1 620-442-2063,https://www.walmart.com/store/978-arkansas-city-ks,24/7,way,203542546
+Walmart Supercenter,Walmart,CO,Evergreen,952 Swede Gulch Road,80439,39.700998606666666,-105.32744300666667,+1 303-526-1649,https://www.walmart.com/store/2293-evergreen-co,Mo-Su 06:00-23:00,way,203936466
+Walmart Supercenter,Walmart,CO,Parker,11101 South Parker Road,80134,39.51362731162791,-104.76847883720933,+1 303-805-0029,https://www.walmart.com/store/2892-parker-co,24/7,way,204892400
+Walmart Supercenter,Walmart,CO,Colorado Springs,3201 East Platte Avenue,80909,38.83753359333334,-104.77027096333336,+1-719-578-9164,https://www.walmart.com/store/1200-colorado-springs-co,Mo-Su 05:00-24:00,way,205717296
+Walmart Supercenter,Walmart,KS,Hutchinson,1905 East 17th Avenue,67501,38.07038426764706,-97.89231698529413,+1 620-669-9090,https://www.walmart.com/store/794-hutchinson-ks,24/7,way,207092178
+Walmart,Walmart,NM,Santa Fe,3251 Cerrillos Road,87507,35.652307005263154,-105.99972814736843,+1 505-474-4727,https://www.walmart.com/store/829-santa-fe-nm,Mo-Su 06:00-24:00,way,208182158
+Walmart Supercenter,Walmart,OK,El Reno,2400 South Country Club Road,73036,35.511445195238096,-97.97594471428573,+1 405-262-7354,https://www.walmart.com/store/227-el-reno-ok,24/7,way,208566671
+Walmart Neighborhood Market,Walmart,CO,Colorado Springs,665 North Murray Boulevard,80915,38.84305032352941,-104.74696056470587,+1-719-596-1294,https://www.walmart.com/store/3083-colorado-springs-co,Mo-Su 06:00-24:00,way,208663047
+Walmart Supercenter,Walmart,TX,Dallas,6185 Retail Road,75231,32.86276783913045,-96.75464303913043,+1 972-656-2196,https://www.walmart.com/store/5823-dallas-tx,Mo-Su 06:00-23:00,way,210908130
+Walmart Supercenter,Walmart,TX,San Antonio,3302 Southeast Military Drive,78223,29.348332760606063,-98.43370439696969,+1 210-337-1946,https://www.walmart.com/store/5245-san-antonio-tx,06:00-23:00,way,211124651
+Walmart Supercenter,Walmart,CO,Westminster,7155 Sheridan Boulevard,80003,39.825188730952384,-105.05603100476189,+1 303-487-1412,https://www.walmart.com/store/3824-westminster-co,Mo-Su 06:00-24:00,way,212907153
+Walmart Supercenter,Walmart,NE,Seward,1326 280th Road,68434,40.876545414285715,-97.09875495714286,+1 402-643-6631,https://www.walmart.com/store/885-seward-ne,24/7,way,213025577
+Walmart Supercenter,Walmart,CO,Castle Rock,133 Sam Walton Lane,80104,39.405999400000006,-104.86083211034483,+1 303-688-8200,https://www.walmart.com/store/984-castle-rock-co,Mo-Su 05:00-24:00,way,220411854
+Walmart Supercenter,Walmart,TX,Taylor,3701 North Main Street,76574,30.59885133333334,-97.41845463749998,+1 512-352-5505,https://www.walmart.com/store/77-taylor-tx,24/7,way,220947860
+Walmart Supercenter,Walmart,CO,Brighton,60 West Bromley Lane,80601,39.969700914814815,-104.82387098518518,+1 303-659-1560,https://www.walmart.com/store/1659-brighton-co,24/7,way,220973144
+Walmart Neighborhood Market,Walmart,TX,Dallas,2305 North Central Expressway,75204,32.80067937037037,-96.79404714444445,+1 214-953-0460,https://www.walmart.com/store/3341-dallas-tx,24/7,way,221394561
+Walmart Supercenter,Walmart,TX,Plano,1700 Dallas Parkway,75093,33.02465929629629,-96.82800226296295,+1 972-931-9846,https://www.walmart.com/store/2086-plano-tx,24/7,way,221923132
+Walmart Supercenter,Walmart,TX,Amarillo,4610 South Coulter Street,79119,35.15987139999999,-101.92343435263159,+1 806-354-9300,https://www.walmart.com/store/755-amarillo-tx,24/7,way,222720113
+Walmart Supercenter,Walmart,TX,Plano,6001 North Central Expressway,75023,33.0564730275862,-96.69818338965518,+1 972-422-3000,https://www.walmart.com/store/1117-plano-tx,24/7,way,222842830
+Walmart Supercenter,Walmart,OK,Norman,333 North Interstate Drive,73069,35.221796355172415,-97.48136508620689,+1 405-329-4000,https://www.walmart.com/store/212-norman-ok,Mo-Su 06:00-23:00,way,223299817
+Walmart Supercenter,Walmart,CO,Highlands Ranch,6675 Business Center Drive,80130,39.562400996551716,-104.91083835172415,+1 303-683-3641,https://www.walmart.com/store/1252-highlands-ranch-co,06:00-23:00,way,224176438
+Walmart Supercenter,Walmart,TX,Copperas Cove,2720 East Highway 190,76522,31.118085671428577,-97.87056245714285,+1 254-542-7600,https://www.walmart.com/store/381-copperas-cove-tx,24/7,way,225263774
+Walmart Supercenter,Walmart,CO,Timnath,4500 Weitzel Street,80547-4416,40.526430265384604,-104.99053924999998,+1 970-484-0328,https://www.walmart.com/store/4599-timnath-co,24/7,way,226188434
+Walmart Supercenter,Walmart,TX,Gainesville,1800 Lawrence Street,76240,33.645708479999996,-97.13567043200001,+1 940-668-6898,https://www.walmart.com/store/185-gainesville-tx,24/7,way,228018552
+Walmart Supercenter,Walmart,TX,Amarillo,3700 East Interstate Drive,79103,35.18972519999999,-101.79365175714284,+1 806-342-3030,https://www.walmart.com/store/822-amarillo-tx,06:00-23:00,way,229337581
+Walmart Supercenter,Walmart,CO,Fountain,6310 Highway 85,80817,38.74032417619048,-104.73671115238096,+1 719-391-1700,https://www.walmart.com/store/1273-fountain-co,Mo-Su 06:00-24:00,way,229953440
+Walmart Supercenter,Walmart,WY,Cheyenne,2032 Dell Range Boulevard,82009,41.164077513636364,-104.79145879545453,+1 307-632-4330,https://www.walmart.com/store/1315-cheyenne-wy,24/7,way,230204427
+Walmart Supercenter,Walmart,OK,Stillwater,4545 West 6th Avenue,74074,36.11415827999999,-97.11909599428573,+1 405-707-0744,https://www.walmart.com/store/4241-stillwater-ok,06:00-23:00,way,232565057
+Walmart Supercenter,Walmart,OK,Sulphur,2705 West Broadway Avenue,73086,34.50392729,-97.00426408,+1 580-622-6146,https://www.walmart.com/store/225-sulphur-ok,Mo-Su 06:00-01:00,way,232664539
+Walmart Supercenter,Walmart,CO,Sterling,1510 West Main Street,80751,40.626899048,-103.236559492,+1 970-522-0600,https://www.walmart.com/store/924-sterling-co,24/7,way,235004270
+Walmart Supercenter,Walmart,OK,Stillwater,111 North Perkins Road,74075,36.12450037058824,-97.04837134705883,+1 405-372-2897,https://www.walmart.com/store/137-stillwater-ok,Mo-Su 06:00-23:00,way,236341715
+Walmart Auto Center,,,,,,36.12369691,-97.04800763,,,Mo-Su 07:00-19:00,way,236344915
+Walmart Garden Center,Walmart,,,,,36.123857955555565,-97.04866056666665,,,Mo-Su 06:00-00:00,way,236344947
+Walmart Supercenter,Walmart,TX,Frisco,8555 Preston Road,75034,33.14707604651162,-96.80764513953488,+1 469-237-3768,https://www.walmart.com/store/5866-frisco-tx,24/7,way,236742849
+Walmart Supercenter,Walmart,TX,Buda,690 Old San Antonio Road,78610,30.086856170588238,-97.8250592117647,+1 512-295-1670,https://www.walmart.com/store/4219-buda-tx,24/7,way,237847687
+Walmart Supercenter,Walmart,OK,Oklahoma City,2000 West Memorial Road,73134,35.60478028235294,-97.54609830588235,+1 405-752-1900,https://www.walmart.com/store/1626-oklahoma-city-ok,Mo-Su 06:00-23:00,way,238022245
+Walmart Neighborhood Market,Walmart,OK,Edmond,1301 East 2nd Street,73034,35.654028153846156,-97.46350066153845,+1 405-715-2587,https://www.walmart.com/store/2876-edmond-ok,Mo-Su 06:00-24:00,way,238024750
+Walmart Supercenter,Walmart,OK,Cushing,3100 East Main Street,74023,35.987338763157894,-96.72148057368422,+1 918-225-0578,https://www.walmart.com/store/360-cushing-ok,24/7,way,241517936
+Walmart Supercenter,Walmart,CO,Centennial,10900 East Briarwood Avenue,80112,39.590696092307695,-104.86169708653846,+1-303-706-0071,https://www.walmart.com/store/3313-centennial-co,24/7,way,242851832
+Walmart Supercenter,Walmart,KS,Newton,1701 South Kansas Road,67114,38.02333585128205,-97.33899902564102,+1 316-284-0555,https://www.walmart.com/store/2428-newton-ks,24/7,way,255174534
+Walmart Supercenter,Walmart,TX,San Antonio,8923 West Military Drive,78245,29.442826199999995,-98.64249310000001,+1-210-675-5092,https://www.walmart.com/store/2239-san-antonio-tx,24/7,way,257536842
+Walmart Supercenter,Walmart,TX,Vernon,3800 US Highway 287 West,76384,34.163296957142855,-99.31019084285715,+1 940-552-8029,https://www.walmart.com/store/3229-vernon-tx,Mo-Su 06:00-24:00,way,258575142
+Walmart Supercenter,Walmart,OK,Ponca City,1101 East Prospect Avenue,74601,36.74105604666667,-97.07212842666667,+1 580-762-0395,https://www.walmart.com/store/823-ponca-city-ok,24/7,way,258989607
+Walmart Supercenter,Walmart,TX,Plano,8801 Ohio Drive,75024,33.09752123225805,-96.79951961935485,+1 972-731-9576,https://www.walmart.com/store/2883-plano-tx,24/7,way,259565922
+Walmart Supercenter,Walmart,TX,North Richland Hills,9101 North Tarrant Parkway,76182,32.90606216896551,-97.18987207241378,+1 817-605-1717,https://www.walmart.com/store/3274/north-richland%20hill-tx/whats-new,24/7,way,260290119
+Walmart Supercenter,Walmart,TX,Belton,2604 North Main Street,76513,31.082032956756763,-97.46054355675675,+1 254-939-0962,https://www.walmart.com/store/1232-belton-tx,06:00-23:00,way,262625930
+Walmart Supercenter,Walmart,CO,Westminster,200 West 136th Avenue,80234,39.94046264583333,-104.99080647083333,+1 720-929-1758,https://www.walmart.com/store/3867-westminster-co,24/7,way,264675125
+Walmart Supercenter,Walmart,WY,Casper,4400 East 2nd Street,82609,42.85120344545454,-106.26703894242422,+1 307-237-0991,https://www.walmart.com/store/1617-casper-wy,24/7,way,265112879
+Walmart Supercenter,Walmart,TX,Gatesville,2805 Highway 36,76528,31.425089578125,-97.71300326249998,+1 254-865-8991,https://www.walmart.com/store/476-gatesville-tx,06:00-23:00,way,267024495
+Walmart Supercenter,Walmart,TX,Garland,555 West Interstate 30,75043,32.842355052,-96.597456664,+1 972-303-5865,https://www.walmart.com/store/3224-garland-tx,24/7,way,267160468
+Walmart Neighborhood Market,Walmart,TX,Garland,3959 Broadway Boulevard,75043,32.86480003333334,-96.60697550666667,+1 972-926-6215,https://www.walmart.com/store/2975-garland-tx,Mo-Su 06:00-23:00,way,267162583
+Walmart Supercenter,Walmart,TX,Frisco,12220 Farm-to-Market Road 423,75033,33.179454082758625,-96.8838845413793,+1 469-362-8542,https://www.walmart.com/store/3777-frisco-tx,24/7,way,267430924
+Walmart Supercenter,Walmart,TX,Fredericksburg,1435 East Main Street,78624,30.25505555882353,-98.85222941764704,+1 830-997-2633,https://www.walmart.com/store/1154-fredericksburg-tx,24/7,way,271810750
+Walmart Supercenter,Walmart,TX,San Antonio,5025 Northwest Loop 410,78229,29.490095921052635,-98.587667,+1 210-523-1091,https://www.walmart.com/store/1235-san-antonio-tx,24/7,way,276333640
+Walmart Supercenter,Walmart,TX,Schertz,6102 Natural Bridge Caverns Road,78154,29.604121499999998,-98.27517628064517,+1 210-651-8217,https://www.walmart.com/store/3391-schertz-tx,24/7,way,288845638
+Walmart Supercenter,Walmart,CO,Aurora,14000 East Exposition Avenue,80012,39.701921095454544,-104.82625941818182,+1 303-368-1115,https://www.walmart.com/store/1492-aurora-co,Mo-Su 06:00-22:00,way,289313766
+Walmart Supercenter,Walmart,KS,Great Bend,3503 10th Street,67530,38.35907052222222,-98.78750096666664,+1 620-792-3632,https://www.walmart.com/store/770-great-bend-ks,24/7,way,289494538
+Walmart Supercenter,Walmart,TX,Plano,6000 Coit Road,75023,33.055531384000005,-96.76782577199998,+1 972-612-9637,https://www.walmart.com/store/2926-plano-tx,24/7,way,289960776
+Walmart Supercenter,Walmart,TX,Victoria,9002 North Navarro Street,77904,28.878210434374996,-96.994085475,+1 361-573-0041,https://www.walmart.com/store/330-victoria-tx,24/7,way,291847574
+Walmart Supercenter,Walmart,TX,Big Spring,201 West Marcy Drive,79720,32.22803049629629,-101.46804681481481,+1 432-267-3363,https://www.walmart.com/store/513-big-spring-tx,24/7,way,292330280
+Walmart Supercenter,Walmart,CO,Broomfield,4651 West 121st Avenue,80020,39.91657343809524,-105.04649142380951,+1 303-217-9374,https://www.walmart.com/store/4288/broomfield-co,24/7,way,292810942
+Walmart Supercenter,Walmart,TX,San Marcos,1015 State Highway 80,78666,29.883199280000003,-97.91208960499998,+1 512-353-0617,https://www.walmart.com/store/404-san-marcos-tx,24/7,way,293079449
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,4420 South Western Avenue,73109,35.4213723631579,-97.52805560526319,+1 405-632-4497,https://www.walmart.com/store/5314-oklahoma-city-ok,24/7,way,293636729
+Walmart,Walmart,TX,Pecos,1903 South Cedar Street,79772,31.4087985625,-103.4884464,+1 432-445-4231,https://www.walmart.com/store/898-pecos-tx,Mo-Su 06:00-24:00,way,294826003
+Walmart Supercenter,Walmart,TX,Bowie,1341 East US Highway 287 North,76230,33.54053725714285,-97.83758321428571,+1 940-872-1166,https://www.walmart.com/store/271-bowie-tx,Mo-Su 06:00-24:00,way,299668108
+Walmart Supercenter,Walmart,TX,San Antonio,5626 Walzem Road,78218,29.507595710344834,-98.37517349310346,+1 210-507-0650,https://www.walmart.com/store/2769-san-antonio-tx,Mo-Su 05:00-24:00,way,304564428
+Walmart Neighborhood Market,Walmart,TX,Plano,3100 Custer Road,75075,33.0395059,-96.73133949374999,+1 972-244-6714,https://www.walmart.com/store/5657-plano-tx,Mo-Su 06:00-24:00,way,305868883
+Walmart Supercenter,Walmart,TX,El Paso,10727 Gateway Boulevard West,79935,31.75291997407407,-106.33992495185181,+1 915-594-0243,https://www.walmart.com/store/512-el-paso-tx,24/7,way,305986953
+Walmart Supercenter,Walmart,KS,El Dorado,301 South Village Road,67042,37.81475088378378,-96.8922782810811,+1 316-322-8100,https://www.walmart.com/store/186-el-dorado-ks,24/7,way,311570784
+Walmart Supercenter,Walmart,TX,McKinney,5001 McKinney Ranch Parkway,75070,33.15619146666666,-96.68213455416668,+1 972-529-5046,https://www.walmart.com/store/5211-mckinney-tx,24/7,way,312168180
+Walmart Supercenter,Walmart,TX,San Antonio,8500 Jones Maltsberger Road,78216,29.514849100000003,-98.48182143333334,+1 210-377-1899,https://www.walmart.com/store/2404-san-antonio-tx,24/7,way,314947381
+Walmart Supercenter,Walmart,TX,Bedford,4101 Highway 121,76021,32.86450532580645,-97.10629213548386,+1 817-571-7929,https://www.walmart.com/store/1178-bedford-tx,24/7,way,316773165
+Walmart Supercenter,Walmart,TX,San Antonio,4096 North Foster Road,78244,29.465207745161294,-98.3568836548387,+1 210-507-4958,https://www.walmart.com/store/3112-san-antonio-tx,Mo-Su 06:00-24:00,way,318439243
+Walmart Supercenter,Walmart,TX,Benbrook,8840 Benbrook Boulevard,76126,32.678030451612905,-97.468114883871,+1 682-233-6820,https://www.walmart.com/store/4509-benbrook-tx,24/7,way,323189274
+Walmart Supercenter,Walmart,OK,Norman,601 12th Avenue Northeast,73071,35.22664946451613,-97.42047773870969,+1 405-579-5203,https://www.walmart.com/store/2734-norman-ok,Mo-Su 06:00-23:00,way,323586831
+Walmart Supercenter,Walmart,CO,Fort Morgan,1300 Barlow Road,80701,40.260811753571424,-103.76980397857143,+1 970-542-2272,https://www.walmart.com/store/5033-fort-morgan-co,24/7,way,324628880
+Walmart Supercenter,Walmart,KS,Derby,2020 North Nelson Drive,67037,37.56886223333335,-97.2752246095238,+1 316-788-9400,https://www.walmart.com/store/592-derby-ks,24/7,way,325044162
+Walmart Supercenter,Walmart,TX,Elgin,1320 West US Highway 290,78621,30.349557431578948,-97.39031876842105,+1 512-285-3397,https://www.walmart.com/store/3170-elgin-tx,06:00-23:00,way,325737491
+Walmart Supercenter,Walmart,CO,Greeley,920 47th Avenue,80634,40.422749251351355,-104.75448751891889,+1 970-353-4231,https://www.walmart.com/store/5051-greeley-co,Mo-Su 06:00-24:00,way,326804855
+Walmart Neighborhood Market,Walmart,TX,San Antonio,4226 De Zavala Road,78249,29.574437209999996,-98.56565382999997,+1 210-774-2734,https://www.walmart.com/store/5224-san-antonio-tx,Mo-Su 06:00-24:00,way,330317161
+Walmart Supercenter,Walmart,TX,Round Rock,4700 East Palm Valley Boulevard,78665,30.53365570555555,-97.61150915,+1 512-218-1018,https://www.walmart.com/store/5480-round-rock-tx,24/7,way,333653916
+Walmart Supercenter,Walmart,TX,Midland,200 East Interstate 20,79701,31.974609517241387,-102.0704879103448,+1 432-684-3910,https://www.walmart.com/store/3645-midland-tx,24/7,way,334103042
+Walmart Supercenter,Walmart,NE,Lincoln,2500 Jamie Lane,68512,40.72935978125,-96.6848748875,+1 402-975-6171,https://www.walmart.com/store/2432-lincoln-ne,24/7,way,343553998
+Walmart Neighborhood Market,Walmart,CO,Northglenn,10755 Washington Street,80233,39.891690526666665,-104.97918718666665,+1 303-200-1490,https://www.walmart.com/store/4747-northglenn-co,Mo-Su 06:00-24:00,way,345336082
+Walmart Supercenter,Walmart,TX,El Paso,9441 Alameda Avenue,79907,31.68287082380953,-106.31165381190476,+1 915-860-7171,https://www.walmart.com/store/964-el-paso-tx,24/7,way,346316964
+Walmart Neighborhood Market,Walmart,CO,Aurora,15240 East Iliff Avenue,80014,39.67342538,-104.81132273333331,+1 303-481-3904,https://www.walmart.com/store/4196-aurora-co,Mo-Su 06:00-23:00,way,350214845
+Walmart Supercenter,Walmart,TX,Helotes,12550 Leslie Road,78023,29.559277372413785,-98.6784667,+1-210-507-4979,https://www.walmart.com/store/3057-helotes-tx,24/7,way,355379112
+Walmart Supercenter,Walmart,TX,San Antonio,12639 Blanco Road,78231,29.555807691304352,-98.51854060869567,+1 210-591-6282,https://www.walmart.com/store/4162-san-antonio-tx,Mo-Su 06:00-24:00,way,355687651
+Walmart Garden Center,Walmart,CO,Lakewood,7455 West Colfax Avenue,80214,39.742259985714284,-105.08034348571428,+1 303-274-5211,,,way,357569596
+Walmart Supercenter,Walmart,CO,Lakewood,7455 West Colfax Avenue,80214,39.742618841666676,-105.07964887083335,+1 303-274-5211,https://www.walmart.com/store/2125-lakewood-co,Mo-Su 06:00-24:00,way,357569613
+Walmart Supercenter,Walmart,TX,San Antonio,4331 Thousand Oaks Drive,78217,29.553519352000002,-98.407072204,+1 210-591-4977,https://www.walmart.com/store/1803-san-antonio-tx,Mo-Su 06:00-24:00,way,359509999
+Walmart Supercenter,Walmart,TX,Converse,8135 Farm-to-Market Road 78,78109,29.49760175555556,-98.32493406296298,+1 210-666-6066,https://www.walmart.com/store/5144-converse-tx,24/7,way,359697001
+Walmart Supercenter,Walmart,TX,San Antonio,16503 Nacogdoches Road,78247,29.591614784848485,-98.35567397878789,+1 210-646-6077,https://www.walmart.com/store/765-san-antonio-tx,24/7,way,359906485
+Walmart Neighborhood Market,Walmart,TX,San Antonio,9526 Military Drive West,78251,29.459720933333326,-98.67108842222223,+1 210-536-2088,https://www.walmart.com/store/5226-san-antonio-tx,Mo-Su 06:00-23:00,way,359929898
+Walmart Neighborhood Market,Walmart,TX,San Antonio,9006 Guilbeau Road,78250,29.51809722222222,-98.66090577777777,+1 210-536-3160,https://www.walmart.com/store/2835-san-antonio-tx,Mo-Su 06:00-24:00,way,359929899
+Walmart Neighborhood Market,Walmart,TX,San Antonio,1515 South Ellison Drive,78245,29.416880344444444,-98.67970600000001,+1 210-276-2012,https://www.walmart.com/store/5290-san-antonio-tx,07:00-23:00,way,359929901
+Walmart Supercenter,Walmart,TX,San Antonio,2100 Southeast Loop 410,78220,29.399985842105263,-98.38628748947369,+1 210-648-7194,https://www.walmart.com/store/3279-san-antonio-tx,Mo-Su 06:00-01:00,way,359929902
+Walmart Supercenter,Walmart,TX,San Antonio,1200 Southeast Military Drive,78214,29.352845914814814,-98.48019500000001,+1 210-921-0800,https://www.walmart.com/store/1313-san-antonio-tx,Mo-Su 06:00-24:00,way,359929903
+Walmart Supercenter,Walmart,TX,San Antonio,1515 North Loop 1604 East,78232,29.612410692592594,-98.47030327407408,+1 210-491-0291,https://www.walmart.com/store/1198-san-antonio-tx,24/7,way,359929904
+Walmart Supercenter,Walmart,TX,San Antonio,7239 Southwest Loop 410,78242,29.358731388235288,-98.63462467058824,+1 210-247-5905,https://www.walmart.com/store/999/san-antonio-tx,Mo-Su 06:00-24:00,way,359929905
+Walmart Supercenter,Walmart,TX,San Antonio,9427 Culebra Road,78251,29.487421862962965,-98.66795144444444,+1 210-526-6000,https://www.walmart.com/store/4131-san-antonio-tx,24/7,way,359929906
+Walmart Supercenter,Walmart,TX,San Antonio,8538 Interstate 35 South,78211,29.33855234482759,-98.55470069310346,+1 210-810-3199,https://www.walmart.com/store/3106-san-antonio-tx,Mo-Su 06:00-24:00,way,359929907
+Walmart Supercenter,Walmart,TX,Boerne,1381 South Main Street,78006,29.778555951724137,-98.7243823862069,+1 830-249-6195,https://www.walmart.com/store/1126-boerne-tx,24/7,way,360827464
+Walmart Supercenter,Walmart,TX,Lake Worth,6360 Lake Worth Boulevard,76135,32.81230191379311,-97.4261288862069,+1 817-237-0400,https://www.walmart.com/store/972-lake-worth-tx,24/7,way,361085765
+Walmart Supercenter,Walmart,TX,Weatherford,1836 South Main Street,76086,32.73179672413793,-97.7947612724138,+1 817-594-9193,https://www.walmart.com/store/963-weatherford-tx,24/7,way,363608378
+Walmart Supercenter,Walmart,CO,Aurora,5650 South Chambers Road,80015,39.61373786415094,-104.81165657547169,+1 303-690-6322,https://www.walmart.com/store/1689-aurora-co,Mo-Su 06:00-24:00,way,365353326
+Walmart Neighborhood Market,Walmart,CO,Centennial,16746 East Smoky Hill Road,80015,39.62527818387096,-104.79396830000002,+1 303-305-1110,https://www.walmart.com/store/3126-centennial-co,Mo-Su 06:00-24:00,way,365793223
+Walmart Supercenter,Walmart,TX,New Braunfels,1209 Interstate 35 South,78130,29.683892292592585,-98.12794841481484,+1 830-629-0129,https://www.walmart.com/store/865-new-braunfels-tx,24/7,way,368009228
+Walmart Supercenter,Walmart,TX,Amarillo,4215 Canyon Drive,79110,35.17016999230769,-101.86301493461539,+1 806-352-6360,https://www.walmart.com/store/3383-amarillo-tx,Mo-Su 06:00-24:00,way,368058496
+Walmart Supercenter,Walmart,TX,San Antonio,918 Bandera Road,78228,29.45857739333333,-98.55337888000001,+1 210-536-0576,https://www.walmart.com/store/3058-san-antonio-tx,Mo-Su 06:00-24:00,way,370379202
+Walmart Supercenter,Walmart,TX,Allen,730 West Exchange Parkway,75013,33.119624860975605,-96.67239374634146,+1 972-649-0356,https://www.walmart.com/store/2918-allen-tx,24/7,way,372840367
+Walmart Supercenter,Walmart,OK,Edmond,1225 West I-35 Frontage,73034,35.63997037826086,-97.42911772173915,+1 405-348-8005,https://www.walmart.com/store/389-edmond-ok,24/7,way,373257039
+Walmart Supercenter,Walmart,TX,Dallas,15220 Montfort Road,75248,32.95869314358974,-96.81641242051282,+1 972-233-0438,https://www.walmart.com/store/3406-dallas-tx,24/7,way,375758273
+Walmart Supercenter,Walmart,TX,Mineral Wells,601 FM 1821 North,76067,32.81385931538462,-98.08599949230766,+1 940-325-7808,https://www.walmart.com/store/804-mineral-wells-tx,06:00-23:00,way,375932926
+Walmart Garden Center,Walmart,,,,,30.599306314285716,-97.41843257142857,,,,way,376169742
+Walmart Supercenter,Walmart,CO,Monument,16218 Jackson Creek Parkway,80132,39.067055811764696,-104.85361699999997,+1 719-484-0912,https://www.walmart.com/store/3227-monument-co,24/7,way,377541306
+Walmart Supercenter,Walmart,CO,Greeley,3103 South 23rd Avenue,80631,40.38633155757577,-104.71887852121213,+1 970-330-1452,https://www.walmart.com/store/980-greeley-co,Mo-Su 06:00-24:00,way,379461870
+Walmart Supercenter,Walmart,TX,Pflugerville,1548 FM 685,78660,30.453665635999997,-97.606813112,+1 512-252-0112,https://www.walmart.com/store/5479-pflugerville-tx,24/7,way,380297708
+Walmart Neighborhood Market,Walmart,OK,Norman,3571 West Rock Creek Road,73069,35.248513499999994,-97.49326964444445,+1 405-515-7283,https://www.walmart.com/store/5805-norman-ok,Mo-Su 06:00-23:00,way,380674601
+Walmart Supercenter,Walmart,TX,Austin,2525 West Anderson Lane,78757,30.355792294117652,-97.73503510588235,+1 512-354-3702,https://www.walmart.com/store/4554-austin-tx,Mo-Su 05:00-01:00,way,381786872
+Walmart Neighborhood Market,Walmart,CO,Thornton,850 East 88th Avenue,80229,39.85499759230769,-104.9752190923077,+1 303-287-4404,https://www.walmart.com/store/3019-thornton-co,Mo-Su 06:00-24:00,way,382619510
+Walmart Supercenter,Walmart,TX,Austin,1030 Norwood Park Boulevard,78753,30.339199602777782,-97.68982256111109,+1 512-339-6060,https://www.walmart.com/store/1185-austin-tx,Mo-Su 06:00-23:00,way,384396405
+Walmart Supercenter,Walmart,CO,Canon City,3105 Royal Gorge Boulevard,81212,38.448609196875005,-105.19169389062499,+1 719-275-2375,https://www.walmart.com/store/1019-canon-city-co,24/7,way,389118118
+Walmart Neighborhood Market,Walmart,TX,Allen,1520 East Exchange Parkway,75002,33.11390371,-96.62970517000001,+1 214-547-8579,https://www.walmart.com/store/3574-allen-tx,Mo-Su 06:00-24:00,way,393943046
+Walmart Supercenter,Walmart,OK,Elk City,210 Regional Drive,73644,35.40915611904762,-99.37662957142857,+1 580-225-3003,https://www.walmart.com/store/134-elk-city-ok,24/7,way,396821010
+Walmart,Walmart,,,,,31.63359233333333,-106.39362848333333,,,,way,398267210
+Walmart Neighborhood Market,Walmart,NM,Alamogordo,2401 Indian Wells Road,88310,32.91644347692307,-105.93083804615382,+1 575-812-7045,https://www.walmart.com/store/5726/alamogordo-nm,Mo-Su 06:00-24:00,way,400944132
+Walmart Supercenter,Walmart,TX,Lubbock,6315 82nd Street,79424,33.51639351600001,-101.95541979199997,+1 806-698-6394,https://www.walmart.com/store/4299-lubbock-tx,24/7,way,401290589
+Walmart Supercenter,Walmart,NE,McCook,1902 West B Street,69001,40.19885955416667,-100.65230707916668,+1 308-345-1800,https://www.walmart.com/store/790-mccook-ne,24/7,way,403406067
+Walmart Supercenter,Walmart,TX,Lubbock,4215 South Loop 289,79423,33.527785879166665,-101.90414453749997,+1 806-793-2091,https://www.walmart.com/store/861-lubbock-tx,24/7,way,403664447
+Walmart Supercenter,Walmart,TX,Childress,2801 Avenue F Northwest,79201,34.43501416666667,-100.23434504444444,+1 940-937-6166,https://www.walmart.com/store/900-childress-tx,Mo-Su 06:00-24:00,way,406468544
+Walmart Supercenter,Walmart,OK,Newcastle,3300 Tri City Drive,73065,35.29369185925926,-97.60676977407405,+1 405-387-3400,https://www.walmart.com/store/1056-newcastle-ok,24/7,way,406483005
+Walmart Supercenter,Walmart,TX,San Antonio,24403 Interstate 10 West,78257,29.668663873333337,-98.63548727333334,+1 210-507-0041,https://www.walmart.com/store/3107-san-antonio-tx,Mo-Su 06:00-24:00,way,408608861
+Walmart Sam's Club Center,,,,,,31.895375227272726,-102.3336392090909,,,,way,416722583
+Walmart Supercenter,Walmart,TX,Lewisville,4691 State Highway 121,75056,33.06718677777778,-96.89189278333335,+1 972-625-6000,https://www.walmart.com/store/426-colony-tx,Mo-Su 06:00-23:00,way,422101357
+Walmart Neighborhood Market,Walmart,CO,Colorado Springs,1725 North Union Boulevard,80909,38.85767233125001,-104.79289045000002,+1 719-424-3385,https://www.walmart.com/store/3176-colorado-springs-co,Mo-Su 05:00-24:00,way,422879974
+Walmart Supercenter,Walmart,TX,Dallas,18121 Marsh Lane,75287,32.99529961515152,-96.85820554848488,+1 972-307-6978,https://www.walmart.com/store/2996-dallas-tx,Mo-Su 06:00-23:00,way,423658318
+Walmart Neighborhood Market,Walmart,TX,Carrollton,4025 Old Denton Road,75007,33.01799727058824,-96.91605942352942,+1 469-557-7714,https://www.walmart.com/store/3198-carrollton-tx,Mo-Su 06:00-24:00,way,423752488
+Walmart Supercenter,Walmart,TX,Carrollton,1213 East Trinity Mills Road,75006,32.98599765384614,-96.90605481538462,+1 972-466-2228,https://www.walmart.com/store/1216-carrollton-tx,24/7,way,423752549
+Walmart Supercenter,Walmart,NM,Santa Fe,5701 Herrera Drive,87507,35.619490705555556,-106.03193131111117,+1 505-424-9304,https://www.walmart.com/store/3423-santa-fe-nm,24/7,way,426290022
+Walmart Supercenter,Walmart,TX,Amarillo,5730 West Amarillo Boulevard,79106,35.21256201290322,-101.90764593548386,+1 806-354-9454,https://www.walmart.com/store/5216-amarillo-tx,Mo-Su 06:00-24:00,way,428170843
+Walmart Supercenter,Walmart,TX,Mansfield,930 North Walnut Creek Drive,76063,32.57630647999999,-97.12989728400002,+1 817-473-1189,https://www.walmart.com/store/284-mansfield-tx,24/7,way,433297410
+Walmart Supercenter,Walmart,OK,Oklahoma City,6100 West Reno Avenue,73127,35.463192400000004,-97.62202435200001,+1 405-491-0320,https://www.walmart.com/store/564-oklahoma-city-ok,Mo-Su 06:00-24:00,way,435211448
+Walmart Supercenter,Walmart,TX,Hillsboro,401 Coke Street,76645,32.004150042857134,-97.09986081904762,+1 254-582-2523,https://www.walmart.com/store/211-hillsboro-tx,24/7,way,439648750
+Walmart Supercenter,Walmart,TX,Lubbock,1911 Marsha Sharp Freeway,79415,33.59060276896551,-101.8587626,+1 806-747-3454,https://www.walmart.com/store/3826-lubbock-tx,Mo-Su 06:00-24:00,way,442972069
+Walmart Supercenter,Walmart,CO,Aurora,3301 Tower Road,80011,39.76165171578947,-104.77440797192982,+1 720-374-0278,https://www.walmart.com/store/5334-aurora-co,Mo-Su 06:00-24:00,way,443375873
+Walmart Supercenter,Walmart,TX,Lubbock,702 West Loop 289,79416,33.589222703333334,-101.93777143333332,+1 806-793-9686,https://www.walmart.com/store/945-lubbock-tx,24/7,way,445406021
+Walmart,,TX,Lubbock,11405 Quaker Avenue,79423,33.4901493,-101.9043387,,,,way,447804882
+Walmart Supercenter,Walmart,CO,Fort Collins,4625 South Mason Street,80525,40.5214681631579,-105.07949331578949,+1 970-372-3477,https://www.walmart.com/store/3177-fort-collins-co,Mo-Su 06:00-01:00,way,448903685
+Walmart Supercenter,Walmart,TX,Dallas,15757 Coit Road,75248,32.96335005294117,-96.77031025882353,+1 972-235-0681,https://www.walmart.com/store/8930-dallas-tx,Mo-Su 06:00-01:00,way,457256507
+Walmart Supercenter,Walmart,TX,Kyle,5754 Kyle Parkway,78640,30.010192817647052,-97.85958169411764,+1 512-268-1451,https://www.walmart.com/store/4130-kyle-tx,24/7,way,457968084
+Walmart Supercenter,Walmart,OK,Mustang,951 East State Highway 152,73064,35.393685049999995,-97.7054268,+1 405-376-4549,https://www.walmart.com/store/517-mustang-ok,24/7,way,459001829
+Walmart Supercenter,Walmart,TX,Lubbock,11415 Quaker Avenue,79423,33.489163914285704,-101.90203979714286,+1 806-392-9615,https://www.walmart.com/store/6898-lubbock-tx,24/7,way,459748590
+Walmart Neighborhood Market,Walmart,TX,Lubbock,9809 University Avenue,79423,33.504349392307695,-101.86895291538463,+1 806-401-0423,https://www.walmart.com/store/5702/lubbock-tx,Mo-Su 06:00-24:00,way,460126020
+Walmart Supercenter,Walmart,NM,Artesia,604 North 26th Street,88210,32.84790268275862,-104.42686726206895,+1 575-746-2184,https://www.walmart.com/store/3427-artesia-nm,24/7,way,461586973
+Walmart Supercenter,Walmart,OK,Moore,501 Southwest 19th Street,73160,35.32229887435897,-97.4928188102564,+1 405-790-0021,https://www.walmart.com/store/277-moore-ok,06:00-23:00,way,463199582
+Walmart Supercenter,Walmart,NE,Chadron,510 Linden Street,69337,42.82722423333334,-103.0221191,+1 308-432-6999,https://www.walmart.com/store/2579-chadron-ne,24/7,way,463923384
+Walmart Supercenter,Walmart,TX,Plainview,1501 North Interstate 27,79072,34.19605046666666,-101.75294598181817,+1 806-293-4278,https://www.walmart.com/store/927-plainview-tx,24/7,way,464986733
+Walmart Supercenter,Walmart,TX,Dallas,7401 Samuell Boulevard,75228,32.793891999999985,-96.68964888461541,+1 214-319-2616,https://www.walmart.com/store/2667-dallas-tx,Mo-Su 06:00-24:00,way,465693219
+Walmart Supercenter,Walmart,CO,Pueblo West,78 North McCulloch Boulevard,81007,38.336375753125004,-104.74013610937499,+1 719-647-9861,https://www.walmart.com/store/3382-pueblo-west-co,24/7,way,466464064
+Walmart Supercenter,Walmart,TX,Dallas,4122 Lyndon B Johnson Freeway,75244,32.92203546190477,-96.84041925714286,+1 972-980-2195,https://www.walmart.com/store/2105-dallas-tx,24/7,way,467536601
+Walmart Supercenter,Walmart,KS,Goddard,18631 West Kellogg Drive,67052,37.660764484615385,-97.55467198846151,+1 316-347-2092,https://www.walmart.com/store/3103-goddard-ks,24/7,way,468566771
+Walmart Supercenter,Walmart,TX,Fort Worth,9500 Clifford Street,76108,32.76547208387097,-97.4842156064516,+1 817-367-0042,https://www.walmart.com/store/3773-fort-worth-tx,24/7,way,468745278
+Walmart Supercenter,Walmart,NE,Fairbury,2831 Highway 15,68352,40.16294015714285,-97.17548931428573,+1 402-729-3394,https://www.walmart.com/store/418-fairbury-ne,Mo-Su 06:00-24:00,way,468933798
+Walmart Supercenter,Walmart,TX,Decatur,800 South Highway 287,76234,33.228622155555556,-97.59715690740738,+1 940-627-5546,https://www.walmart.com/store/421-decatur-tx,24/7,way,470786912
+Walmart Garden Center,Walmart,,,,,31.97415294,-102.07063573999999,,,,way,473169859
+Walmart Supercenter,Walmart,TX,Dallas,200 Short Boulevard,75232,32.68382063913043,-96.82518195652176,+1 972-232-6400,https://www.walmart.com/store/3014-dallas-tx,Mo-Su 06:00-24:00,way,473412570
+Walmart Neighborhood Market,Walmart,OK,Stillwater,2315 North Perkins Road,74075,36.14571389090909,-97.0494134090909,+1 405-564-7116,https://www.walmart.com/store/5364-stillwater-ok,Mo-Su 06:00-24:00,way,473910964
+Walmart Supercenter,Walmart,TX,Dallas,9410 Webb Chapel Road,75220,32.86218606538461,-96.85706214999999,+1 972-629-0007,https://www.walmart.com/store/5889-dallas-tx,Mo-Su 06:00-24:00,way,475706099
+Walmart Supercenter,Walmart,CO,Falcon,11550 Meridian Market View,80831,38.93924798510638,-104.61284995957446,+1 719-522-2910,https://www.walmart.com/store/4335-falcon-co,24/7,way,477020111
+Walmart Supercenter,Walmart,TX,Saginaw,1401 North Saginaw Boulevard,76179,32.882373564000005,-97.38686038,+1 817-306-1468,https://www.walmart.com/store/5316-saginaw-tx,24/7,way,479203822
+Walmart Supercenter,Walmart,TX,Eagle Pass,496 South Bibb Avenue,78852,28.701454241379306,-100.48102150344828,+1 830-773-9403,https://www.walmart.com/store/461-eagle-pass-tx,24/7,way,479438571
+Walmart Supercenter,Walmart,OK,Lawton,6301 Northwest Quanhah Parker Trail Way,73505,34.63228746410256,-98.47164289230766,+1 580-510-9130,https://www.walmart.com/store/5071-lawton-ok,24/7,way,480687502
+Walmart Supercenter,Walmart,OK,Oklahoma City,5401 Tinker Diagonal Street,73115,35.44855352,-97.42590059428574,+1 405-670-1007,https://www.walmart.com/store/544-del-city-ok,24/7,way,480944018
+Walmart Supercenter,Walmart,TX,San Angelo,3440 South Bryant Boulevard,76903,31.427170332000006,-100.43855685199998,+1 325-276-6599,https://www.walmart.com/store/7281-san-angelo-tx,24/7,way,481140507
+Walmart Supercenter,Walmart,TX,Highland Village,3060 Justin Road,75077,33.076726910937495,-97.07798976093754,+1 972-317-4951,https://www.walmart.com/store/4240-highland-village-tx,24/7,way,481306777
+Walmart Supercenter,Walmart,OK,Anadarko,1201 West Petree Road,73005,35.060180179999996,-98.26252646,+1 405-247-2535,https://www.walmart.com/store/162-anadarko-ok,Mo-Su 07:00-23:00,way,484376996
+Walmart Supercenter,Walmart,TX,Granbury,735 East US Highway 377,76048,32.432245459090915,-97.7799475590909,+1 817-573-3791,https://www.walmart.com/store/371-granbury-tx,24/7,way,484381587
+Walmart Neighborhood Market,Walmart,OK,Midwest City,7520 East Reno Avenue,73110,35.462493333333335,-97.38970594444444,+1 405-455-4070,https://www.walmart.com/store/5863-midwest-city-ok,Mo-Su 06:00-24:00,way,490616882
+Walmart Supercenter,Walmart,TX,Roanoke,1228 North US Highway 377,76262,33.01412262068965,-97.21726379310347,+1 682-831-9338,https://www.walmart.com/store/5247-roanoke-tx,24/7,way,492668199
+Walmart Supercenter,Walmart,OK,Oklahoma City,9011 Northeast 23rd Street,73141,35.49553142413792,-97.36939100344826,+1 405-769-2164,https://www.walmart.com/store/3430-oklahoma-city-ok,Mo-Su 06:00-24:00,way,494027718
+Walmart Supercenter,Walmart,CO,Colorado Springs,4425 Venetucci Boulevard,80906,38.768507633333336,-104.78086298666666,+1 719-313-4378,https://www.walmart.com/store/3018-fountain-co,Mo-Su 06:00-24:00,way,494030334
+Walmart Supercenter,Walmart,TX,Sachse,8015 Woodbridge Parkway,75048,32.991618596428566,-96.5743988642857,+1 469-440-0290,https://www.walmart.com/store/5673-sachse-tx,24/7,way,495947118
+Walmart Neighborhood Market,Walmart,TX,Fort Worth,7800 Summer Creek Drive,76123,32.62984927857143,-97.40752745714283,+1 682-312-1994,https://www.walmart.com/store/7251-fort-worth-tx,Mo-Su 06:00-24:00,way,496187069
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,1500 Southwest 59th Street,73119,35.40562917142857,-97.54533911428572,+1 405-684-9761,https://www.walmart.com/store/2394-oklahoma-city-ok,24/7,way,497265782
+Walmart Supercenter,Walmart,OK,Oklahoma City,100 East Interstate 240 Service Road,73149,35.38916204137931,-97.51115095172416,+1 405 631 0746,https://www.walmart.com/store/743-oklahoma-city-ok,Mo-Su 06:00-23:00,way,497278793
+Walmart Supercenter,Walmart,TX,Gonzales,1114 East Sarah Dewitt Drive,78629,29.516514182352946,-97.44903342941177,+1 830-672-7573,https://www.walmart.com/store/290-gonzales-tx,24/7,way,497448156
+Walmart Supercenter,Walmart,CO,Lakeside,5957 West 44th Avenue,80212,39.7790786,-105.06108107241378,+1 303-222-4455,https://www.walmart.com/store/5957-lakeside-co,Mo-Su 06:00-24:00,way,497517835
+Walmart Supercenter,Walmart,TX,Fort Worth,3851 Airport Freeway,76111,32.77462034333334,-97.292264695,+1 817-759-2047,https://www.walmart.com/store/5312-fort-worth-tx,24/7,way,497759714
+Walmart Supercenter,Walmart,TX,Anna,521 South Central Expressway,75409,33.34833810000001,-96.58220145238094,+1 972-924-3331,https://www.walmart.com/store/6963-anna-tx,24/7,way,498990970
+Walmart Neighborhood Market,Walmart,TX,El Paso,3590 North Zaragoza Road,79938,31.79576771333333,-106.22983104,+1 915-342-9866,https://www.walmart.com/store/6813-el-paso-tx,Mo-Su 06:00-24:00,way,499332258
+Walmart Neighborhood Market,Walmart,TX,Fort Worth,7401 Park Vista Boulevard,76137,32.87497399130436,-97.27073892608693,+1 817-605-0416,https://www.walmart.com/store/2979-fort-worth-tx,Mo-Su 06:00-24:00,way,499380320
+Walmart Neighborhood Market,Walmart,TX,Fort Worth,717 West Berry Street,76110,32.704645781818186,-97.33215386363636,+1 817-840-0262,https://www.walmart.com/store/3135-fort-worth-tx,Mo-Su 06:00-24:00,way,499979638
+Walmart Neighborhood Market,Walmart,TX,San Antonio,9005 FM 1560,78254,29.525389411111107,-98.71952858888888,+1 210-507-0834,https://www.walmart.com/store/5490-san-antonio-tx,Mo-Su 06:00-24:00,way,502993916
+Walmart Supercenter,Walmart,TX,Fort Worth,2900 Renaissance Square,76105,32.710820336842104,-97.2835537105263,+1 817-900-1909,https://www.walmart.com/store/3044-fort-worth-tx,Mo-Su 06:00-24:00,way,503802799
+Walmart Supercenter,Walmart,TX,Brady,2207 South Bridge Street,76825,31.109671314285713,-99.3307942142857,+1 325-597-3406,https://www.walmart.com/store/917-brady-tx,24/7,way,503879770
+Walmart Supercenter,Walmart,TX,Fort Worth,7451 McCart Avenue,76133,32.636432021052634,-97.36736274473684,+1 817-361-6032,https://www.walmart.com/store/2978-fort-worth-tx,24/7,way,504081820
+Walmart Supercenter,Walmart,TX,Fort Worth,2245 Jacksboro Highway,76114,32.782140586956515,-97.38087253478261,+1 817-569-6238,https://www.walmart.com/store/4165-fort-worth-tx,Mo-Su 06:00-24:00,way,505351823
+Walmart Neighborhood Market,Walmart,TX,Fort Worth,4536 Heritage Trace Parkway,76244,32.91310214615385,-97.28845304615385,+1 817-898-6071,https://www.walmart.com/store/3043/fort-worth-tx,Mo-Su 06:00-24:00,way,508238876
+Walmart Supercenter,Walmart,TX,Haslet,2401 Avondale Haslet Road,76052,32.967645552173906,-97.41154675217395,+1 817-302-1724,https://www.walmart.com/store/5764-fort-worth-tx,24/7,way,510278118
+Walmart Supercenter,Walmart,TX,Grand Prairie,2650 South State Highway 161,75052,32.70676597894736,-97.02073021052632,+1 469-805-6332,https://www.walmart.com/store/4503-grand-prairie-tx,Mo-Su 06:00-24:00,way,510807747
+Walmart Supercenter,Walmart,KS,Pratt,2003 East 1st Street,67124,37.64413992352941,-98.7137370470588,+1 620-672-7548,https://www.walmart.com/store/419-pratt-ks,24/7,way,512363867
+Walmart Supercenter,Walmart,TX,Waxahachie,1200 North US Highway 77,75165,32.41667506086957,-96.83805319130434,+1-972-937-3460,https://www.walmart.com/store/260-waxahachie-tx,Mo-Su 06:00-23:00,way,512466433
+Walmart Supercenter,Walmart,CO,Loveland,250 West 65th Street,80538,40.45686987804878,-105.08067240000001,+1 970-667-3331,https://www.walmart.com/store/1008-loveland-co,24/7,way,515897630
+Walmart Supercenter,Walmart,TX,Lucas,2662 West Lucas Road,75002,33.088379499999995,-96.618708636,+1 469-675-8801,https://www.walmart.com/store/5672-lucas-tx,24/7,way,517747118
+Walmart Neighborhood Market,Walmart,TX,Plano,8040 Independence Parkway,75025,33.08695400526316,-96.74807708947367,+1 972-396-6401,https://www.walmart.com/store/2995-plano-tx,Mo-Su 06:00-24:00,way,518440845
+Walmart Supercenter,Walmart,TX,Horizon City,13900 Horizon Boulevard,79928,31.679865044000003,-106.200438796,+1 915-206-6199,https://www.walmart.com/store/3136-horizon-city-tx,24/7,way,518867785
+Walmart Supercenter,Walmart,TX,Pleasanton,2151 West Oaklawn Road,78064,28.938081166666667,-98.51238405333332,+1 830-569-3879,https://www.walmart.com/store/757-pleasanton-tx,24/7,way,520124880
+Walmart Supercenter,Walmart,NE,Columbus,818 East 23rd Street,68601,41.44109861212121,-97.3170592090909,+1 402-564-1668,https://www.walmart.com/store/774-columbus-ne,24/7,way,520445994
+Walmart Supercenter,Walmart,TX,Midland,4517 North Midland Drive,79707,32.02956316666666,-102.14875224166667,+1 432-697-0871,https://www.walmart.com/store/608-midland-tx,24/7,way,521302986
+Walmart Garden Center,Walmart,,,,,32.02917848571428,-102.14811152857143,,,,way,521302987
+Walmart,Walmart,TX,Cuero,1202 E. Broadway Street,77954,29.08938708571429,-97.2711299857143,+1 361-275-5796,https://www.walmart.com/store/385-cuero-tx,24/7,way,525147382
+Walmart Supercenter,Walmart,NM,Portales,1604 East Spruce Street,88130,34.19820309999999,-103.31896015999999,+1 575-359-3420,https://www.walmart.com/store/2653-portales-nm,24/7,way,532064925
+Walmart Supercenter,Walmart,NE,Ogallala,201 Pony Express Lane,69153,41.1136658875,-101.71892886250001,+1 308-284-0143,https://www.walmart.com/store/7129/ogallala-ne,24/7,way,536210459
+Walmart Supercenter,Walmart,CO,Pueblo,4200 Dillon Drive,81008,38.3139624,-104.60995332727273,+1 719-545-6404,https://www.walmart.com/store/842-pueblo-co,Mo-Su 06:00-24:00,way,536454112
+Walmart Supercenter,Walmart,KS,Wellington,2022 East 16th Street,67152,37.273573519230766,-97.37322289615385,+1 620-326-2261,https://www.walmart.com/store/370/wellington-ks/whats-new,24/7,way,537479186
+Walmart Supercenter,Walmart,TX,Universal City,510 Kitty Hawk Road,78148,29.54733504482759,-98.30844768965515,+1 210-536-8548,https://www.walmart.com/store/4055-universal-city-tx,Mo-Su 06:00-24:00,way,543127610
+Walmart Supercenter,Walmart,TX,Abilene,4350 Southwest Drive,79606,32.41089076896553,-99.78193385172413,+1 325-695-3092,https://www.walmart.com/store/535-abilene-tx,24/7,way,544275263
+Walmart Supercenter,Walmart,TX,Crowley,1221 East FM 1187,76036,32.57706746896552,-97.3386815241379,+1 682-233-7834,https://www.walmart.com/store/3631-crowley-tx,24/7,way,544279620
+Walmart Supercenter,Walmart,TX,Abilene,1650 Highway 351,79601,32.480751511111116,-99.69774885555556,+1 325-677-5584,https://www.walmart.com/store/536-abilene-tx,06:00-23:00,way,544501829
+Walmart Supercenter,Walmart,OK,Norman,3651 Classen Boulevard,73071,35.17378234827586,-97.40868278965519,+1 405-515-7024,https://www.walmart.com/store/7294-norman-ok,Mo-Su 06:00-23:00,way,544579399
+Walmart Supercenter,Walmart,CO,Lamar,1432 East Olive Street,81052,38.086671114285714,-102.60235518571427,+1 719-336-0530,https://www.walmart.com/store/2672-lamar-co,Mo-Su 06:00-01:00,way,544813022
+Walmart Supercenter,Walmart,TX,Spring Branch,305 Singing Oaks,78070,29.801320600000004,-98.4222435117647,+1 830-438-4380,https://www.walmart.com/store/3056-spring-branch-tx,Mo-Su 06:00-24:00,way,547391549
+Walmart,,,,,,29.80254372,-98.41999098,,,,way,547391552
+Walmart Supercenter,Walmart,WY,Cheyenne,580 Livingston Avenue,82007,41.12650083846154,-104.76502036153846,+1 307-823-6810,https://www.walmart.com/store/4653-cheyenne-wy,24/7,way,547693961
+Walmart Neighborhood Market,Walmart,OK,Enid,1018 North Cleveland Street,73703,36.40664774375,-97.90966795,+1 580-599-6008,https://www.walmart.com/store/4390/enid-ok,Mo-Su 06:00-24:00,way,547762059
+Walmart Supercenter,Walmart,TX,Frisco,16066 State Highway 121,75035,33.12807368461539,-96.73651803846155,+1 469-675-1684,https://www.walmart.com/store/202-frisco-tx,Mo-Su 06:00-01:00,way,547957498
+Walmart Supercenter,Walmart,NE,Grand Island,3501 South Locust Street,68803,40.885608,-98.33596090869564,+1 308-381-4970,https://www.walmart.com/store/3395-grand-island-ne,24/7,way,549332908
+Walmart,,,,,,41.1267094,-104.76166717999999,,,,way,549380154
+Walmart Supercenter,Walmart,TX,McKinney,2041 North Redbud Boulevard,75069,33.22185435,-96.62945221666668,+1 972-542-9585,https://www.walmart.com/store/206-mckinney-tx,24/7,way,549601433
+Walmart Supercenter,Walmart,TX,Prosper,500 Richland Boulevard,75078,33.21981468888888,-96.79703746666668,+1 972-347-9467,https://www.walmart.com/store/6300-prosper-tx,06:00-23:00,way,550451223
+Walmart Supercenter,Walmart,NM,Las Vegas,2609 7th Street,87701,35.61958006,-105.22738988666666,+1 505-425-5242,https://www.walmart.com/store/1380-las-vegas-nm,06:00-23:00,way,551359982
+Walmart Supercenter,Walmart,CO,Lamar,1432 East Olive Street,,38.087320999999996,-102.60824056000001,,,,way,551740916
+Walmart,Walmart,,,,,28.619064418181814,-106.02920923636366,,,,way,553390371
+Walmart Supercenter,Walmart,TX,Sweetwater,407 Northeast Georgia Avenue,79556,32.4538162,-100.39345085555556,+1 325-236-9562,https://www.walmart.com/store/3381-sweetwater-tx,24/7,way,554131961
+Walmart Supercenter,Walmart,KS,Goodland,2160 Commerce Road,67735,39.33442962941177,-101.72828712941178,+1 785-899-2111,https://www.walmart.com/store/2562-goodland-ks,24/7,way,557938326
+Walmart Supercenter,Walmart,KS,Junction City,521 East Chestnut Street,66441,39.019185092000015,-96.820890172,+1 785-238-8229,https://www.walmart.com/store/43-junction-city-ks,24/7,way,562704881
+Walmart Supercenter,Walmart,TX,Kenedy,200 Business Park Drive,78119,28.834593628571422,-97.86438107142858,+1 830-583-9825,https://www.walmart.com/store/524-kenedy-tx,24/7,way,563499632
+Walmart Supercenter,Walmart,TX,Pampa,2801 North Charles Street,79065,35.569849033333334,-100.96957777037038,+1 806-665-0727,https://www.walmart.com/store/600-pampa-tx,24/7,way,563679686
+Walmart Supercenter,Walmart,TX,Borger,1501 Roosevelt Street,79007,35.6548655,-101.4119193034483,+1 806-274-7257,https://www.walmart.com/store/1516-borger-tx,24/7,way,563682504
+Walmart Supercenter,Walmart,TX,Hereford,300 West 15th Street,79045,34.83959666896553,-102.40736635862066,+1 806-364-5712,https://www.walmart.com/store/3384-hereford-tx,24/7,way,563861998
+Walmart Supercenter,Walmart,TX,Floresville,305 10th Street,78114,29.16248874137931,-98.17992656551726,+1 830-393-4417,https://www.walmart.com/store/465-floresville-tx,24/7,way,565562084
+Walmart,Walmart,TX,Hallettsville,1506 North Texana Street,77964,29.458483933333337,-96.93788116666666,+1 361-798-4377,https://www.walmart.com/store/1067-hallettsville-tx,24/7,way,566156605
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,11101 North Rockwell Avenue,73162,35.58243435714286,-97.64010581428569,+1 405-773-3555,https://www.walmart.com/store/2877-oklahoma-city-ok,06:00-23:00,way,567258580
+Walmart Supercenter,Walmart,OK,Guymon,2600 North Highway 64,73942,36.7055554590909,-101.48770892727272,+1 580-338-1611,https://www.walmart.com/store/1437-guymon-ok,24/7,way,567698693
+Walmart Supercenter,Walmart,TX,Cibolo,602 Cibolo Valley Drive,78108,29.57377701904762,-98.23619344285713,+1 210-659-9188,https://www.walmart.com/store/4115-cibolo-tx,Mo-Su 06:00-24:00,way,571405585
+Walmart Supercenter,Walmart,TX,Plano,425 Coit Road,75075,33.003996265217395,-96.77170001304346,+1 972-599-1650,https://www.walmart.com/store/3482-plano-tx,24/7,way,572186480
+Walmart Supercenter,Walmart,TX,Manor,11923 US Highway 290 East,78653,30.347667542857145,-97.54415441904762,+1 512-651-9100,https://www.walmart.com/store/3169-manor-tx,06:00-23:00,way,573778741
+Walmart Supercenter,Walmart,CO,Alamosa,3333 Clark Street,81101,37.482075457894744,-105.90436712368418,+1 719-589-9071,https://www.walmart.com/store/869-alamosa-co,24/7,way,577872028
+Walmart Supercenter,Walmart,TX,Hudson Oaks,2801 East Interstate 20 Frontage Road,76087,32.7559137,-97.70945770454546,+1 817-599-7490,https://www.walmart.com/store/3431-hudson-oaks-tx,24/7,way,577898609
+Walmart Neighborhood Market,Walmart,KS,Junction City,1723 McFarland Road,66441,39.017892466666666,-96.86172424666665,+1 785-492-6012,https://www.walmart.com/store/4626-junction-city-ks,Mo-Su 06:00-23:00,way,584957290
+Walmart Supercenter,Walmart,TX,Lewisville,801 West Main Street,75067,33.0470303892857,-97.01421752142858,+1 972-436-3099,https://www.walmart.com/store/217-lewisville-tx,24/7,way,588823094
+Walmart Supercenter,Walmart,OK,Oklahoma City,3301 Southwest 104th Street,73159,35.3654179137931,-97.5768193137931,+1 405-300-6584,https://www.walmart.com/store/7326/oklahoma-city-ok,24/7,way,589101965
+Walmart Neighborhood Market,Walmart,TX,Hurst,720 West Pipeline Road,76053,32.82486407142857,-97.18492214285713,+1 817-799-3526,https://www.walmart.com/store/7347-hurst-tx,Mo-Su 06:00-24:00,way,591142971
+Walmart Convenience Store,,,,,,32.824021900000005,-97.18386616000001,,,,way,591142972
+Walmart Supercenter,Walmart,,,,,28.727387779999997,-106.12982380000001,,,,way,592642153
+Walmart Supercenter,Walmart,TX,Lewisville,190 East Round Grove Road,75067,33.00059298064516,-96.99126703870968,+1 972-315-3398,https://www.walmart.com/store/5092-lewisville-tx,Mo-Su 06:00-23:00; PH closed,way,592779198
+Walmart Supercenter,Walmart,NE,Beatrice,3620 North 6th Street,68310,40.30353254516128,-96.74437616451611,+1 402-228-1244,https://www.walmart.com/store/2784-beatrice-ne,Mo-Su 06:00-01:00,way,593154777
+Walmart Supercenter,Walmart,OK,Ardmore,1715 North Commerce Street,73401,34.19312701904762,-97.14514677142857,+1 580-226-1257,https://www.walmart.com/store/129-ardmore-ok,24/7,way,593416667
+Walmart Supercenter,Walmart,CO,Arvada,9400 Ralston Road,80002,39.80050173333333,-105.10302141333334,+1 720-624-0346,https://www.walmart.com/store/4734-arvada-co,Mo-Su 06:00-24:00,way,595594062
+Walmart Supercenter,Walmart,TX,Wichita Falls,3130 Lawrence Road,76308,33.87605446363636,-98.54223080909088,+1 940-696-3393,https://www.walmart.com/store/1148-wichita-falls-tx,24/7,way,597316215
+Walmart Neighborhood Market,Walmart Neighborhood Market,TX,Richardson,1501 Buckingham Road,75081,32.932547199999995,-96.69736707272727,+1 972-235-9389,https://www.walmart.com/store/2974-richardson-tx,Mo-Su 06:00-24:00,way,597902001
+Walmart Supercenter,Walmart,TX,Midlothian,400 North US Highway 67,76065,32.48520493548388,-97.00593965806453,+1 972-775-6755,https://www.walmart.com/store/4279-midlothian-tx,24/7,way,610257327
+Walmart,Walmart,TX,Giddings,2374 East Austin Street,78942,30.177771284615385,-96.91575991538463,+1 979-542-1375,https://www.walmart.com/store/473-giddings-tx,Mo-Su 07:00-24:00,way,620202494
+Walmart Supercenter,Walmart,TX,Port Lavaca,400 Tiney Browning Boulevard,77979,28.632251023076925,-96.62751818846154,+1 361-552-4116,https://www.walmart.com/store/1098-port-lavaca-tx,24/7,way,623955159
+Walmart Neighborhood Market,,,,7800 Summer Creek Drive,,32.63085658,-97.40780128,,,,way,624651666
+Walmart Supercenter,Walmart,TX,Eastland,1410 East Main Street,76448,32.4047467,-98.79300954285715,+1 254-629-3371,https://www.walmart.com/store/561-eastland-tx,24/7,way,625706848
+Walmart Supercenter,Walmart,WY,Casper,4255 CY Avenue,82604,42.81683654193549,-106.37450744516129,+1 307-232-9593,https://www.walmart.com/store/3778-casper-wy,24/7,way,630669767
+Walmart Supercenter,Walmart,NE,Norfolk,2400 West Pasewalk Avenue,68701,42.023922670588234,-97.44493407647059,+1 402-371-5452,https://www.walmart.com/store/645-norfolk-ne,24/7,way,630945657
+Walmart Supercenter,Walmart,CO,Elizabeth,2100 Legacy Loop,80107,39.360364570370365,-104.62332297777776,+1 303-646-2599,https://www.walmart.com/store/4639-elizabeth-co,Mo-Su 06:00-24:00,way,631399876
+Walmart Supercenter,Walmart,NE,Lexington,200 Frontier Street,68850,40.74464202222222,-99.7422381074074,+1 308-324-7427,https://www.walmart.com/store/637-lexington-ne,24/7,way,632056736
+Walmart Supercenter,Walmart,NE,Grand Island,2250 North Diers Avenue,68803,40.94282628965517,-98.38685056551722,+1 308-381-0333,https://www.walmart.com/store/1326-grand-island-ne,24/7,way,632330523
+Walmart Supercenter,Walmart,NE,Crete,1800 East 29th Street,68333,40.64044787142857,-96.93945022857143,+1 402-826-1002,https://www.walmart.com/store/4322-crete-ne,Mo-Sa 07:00-20:00,way,632337648
+Walmart Supercenter,Walmart,TX,Beeville,502 East Fm 351,78102,28.422055950000008,-97.75344850384613,+1 361-358-4764,https://www.walmart.com/store/463-beeville-tx,24/7,way,634279990
+Walmart Neighborhood Market,Walmart,CO,Denver,5141 Chambers Road,80239,39.78614518928571,-104.81145865,+1 303-218-6237,https://www.walmart.com/store/3127-denver-co,06:00-23:00,way,637029330
+Walmart Neighborhood Market,Walmart,KS,Wichita,10550 West Central Avenue,67212,37.695404466666666,-97.46473616,+1 316-448-3567,https://www.walmart.com/store/5855-wichita-ks,Mo-Su 06:00-24:00,way,638351293
+Walmart Supercenter,Walmart,TX,Garland,1801 Marketplace Drive,75041,32.862948723809524,-96.65206296666666,+1 972-279-8700,https://www.walmart.com/store/1800-garland-tx,24/7,way,641434443
+Walmart Neighborhood Market,Walmart,TX,Farmers Branch,13100 Josey Lane,75234,32.92340834615384,-96.88006160769234,+1 972-656-2282,https://www.walmart.com/store/5624-farmers-branch-tx,Mo-Su 06:00-24:00,way,643590096
+Walmart Supercenter,Walmart,TX,Temple,6801 West Adams Avenue,76502,31.114691346666667,-97.41520718,+1 254-598-7593,https://www.walmart.com/store/6929-temple-tx,06:00-23:00,way,643832949
+Walmart Neighborhood Market,Walmart,TX,Garland,1855 South Garland Avenue,75040,32.89655134615385,-96.64944142307694,+1 972-535-1192,https://www.walmart.com/store/4046-garland-tx,Mo-Su 06:00-24:00,way,645341216
+Walmart Neighborhood Market,Walmart,TX,Garland,101 West Buckingham Road,75040,32.93200745384615,-96.63170461538462,+1 469-304-3399,https://www.walmart.com/store/2433-garland-tx,Mo-Su 06:00-24:00,way,645425946
+Walmart Neighborhood Market,Walmart,TX,Arlington,2121 North Collins Street,76011,32.768116688000006,-97.09558635600003,+1 817-505-1386,https://www.walmart.com/store/5613-arlington-tx,Mo-Su 06:00-24:00,way,646480725
+Walmart Neighborhood Market,Walmart,TX,Abilene,1619 Ambler Avenue,79601,32.473414399999996,-99.73847611111111,+1 325-670-9014,https://www.walmart.com/store/5715/abilene-tx,Mo-Su 06:00-24:00,way,646685020
+Walmart Supercenter,Walmart,TX,Hickory Creek,1035 Hickory Creek Boulevard,75065,33.12809202068966,-97.04605127931033,+1 940-321-5363,https://www.walmart.com/store/3286-hickory-creek-tx,24/7,way,651735514
+Walmart Supercenter,Walmart,TX,Grapevine,1601 West State Highway 114,76051,32.930591475,-97.10160719375001,+1 817-421-4770,https://www.walmart.com/store/266-grapevine-tx,24/7,way,653239292
+Walmart Supercenter,Walmart,NM,Clovis,3728 North Prince Street,88101,34.43779216,-103.20060038,+1 575-769-2261,https://www.walmart.com/store/821-clovis-nm,Mo-Su 06:00-24:00,way,656063942
+Walmart Neighborhood Market,Walmart,TX,Plano,3312 Preston Road,75093,33.043706885714286,-96.79226605238097,+1 469-304-3375,https://www.walmart.com/store/4182-plano-tx,Mo-Su 06:00-24:00,way,659126600
+Walmart Neighborhood Market,Walmart,TX,Amarillo,7251 Arden Road,79109,35.13076848461539,-101.91899130769231,+1 806-513-6238,https://www.walmart.com/store/7349/amarillo-tx,Mo-Su 06:00-24:00,way,660578870
+Walmart Neighborhood Market,Walmart,TX,Amarillo,2711 Southwest 58th Street,79110,35.14824581538461,-101.86704212307693,+1 806-513-6506,https://www.walmart.com/store/4464/amarillo-tx,Mo-Su 06:00-24:00,way,660600125
+Walmart Neighborhood Market,Walmart,TX,Mesquite,1951 Military Parkway,75149,32.769258323076926,-96.6283288846154,+1 469-357-5454,https://www.walmart.com/store/5824-mesquite-tx,Mo-Su 06:00-23:00,way,661174450
+Walmart Supercenter,Walmart,KS,Liberal,250 East Tucker Road,67901,37.066790455555555,-100.91698328148149,+1 620-624-0106,https://www.walmart.com/store/799-liberal-ks,24/7,way,662485380
+Walmart Neighborhood Market,Walmart,TX,Bedford,2108 Bedford Road,76021,32.84344912631579,-97.13210884736843,+1 817-283-9841,https://www.walmart.com/store/3392-bedford-tx,Mo-Su 06:00-24:00,way,663947681
+Walmart Supercenter,Walmart,OK,Alva,914 East Oklahoma Boulevard,73717,36.79938993076923,-98.64511256153847,+1-580-327-4021,https://www.walmart.com/store/178-alva-ok,24/7,way,664197320
+Walmart Neighborhood Market,Walmart,TX,Lewisville,1515 Justin Road,75077,33.07290785,-97.03825424166666,+1 972-966-6215,https://www.walmart.com/store/3287-lewisville-tx,Mo-Su 07:00-23:00,way,665351319
+Walmart Neighborhood Market,Walmart,TX,Mansfield,2951 Matlock Road,76063,32.6051659923077,-97.11657351538462,+1 817-453-5616,https://www.walmart.com/store/2397-mansfield-tx,Mo-Su 06:00-24:00,way,665372222
+Walmart Neighborhood Market,Walmart,TX,Plano,3513 East Park Boulevard,75074,33.032445468421045,-96.6666840842105,+1 469-304-3143,https://www.walmart.com/store/3199-plano-tx,Mo-Su 06:00-24:00,way,665711722
+Walmart Neighborhood Market,Walmart,TX,Arlington,735 West Sublett Road,76017,32.64568857272727,-97.11765302727272,+1 817-557-8001,https://www.walmart.com/store/2977-arlington-tx,Mo-Su 06:00-24:00,way,666200038
+Walmart Supercenter,Walmart,TX,Levelland,407 East State Highway 114,79336,33.59607846428571,-102.36160407857142,+1 806-894-2993,https://www.walmart.com/store/1051-levelland-tx,24/7,way,666396211
+Walmart Neighborhood Market,Walmart,TX,Arlington,5401 Park Springs Boulevard,76017,32.659506192307695,-97.16521220000001,+1 817-466-8217,https://www.walmart.com/store/3870-arlington-tx,Mo-Su 06:00-24:00,way,666776386
+Walmart Supercenter,Walmart,TX,Grand Prairie,2225 West Interstate 20,75052,32.673586647058826,-97.03591700000001,+1 972-660-4200,https://www.walmart.com/store/896-grand-prairie-tx,24/7,way,667264938
+Walmart Supercenter,Walmart,TX,Burleson,951 Southwest Wilshire Boulevard,76028,32.527959347368416,-97.33759514736839,+1 817-572-9574,https://www.walmart.com/store/220-burleson-tx,24/7,way,667757975
+Walmart Supercenter,Walmart,TX,Hurst,1732 Precinct Line Road,76054,32.84700737931034,-97.18390093103447,+1 817-503-7152,https://www.walmart.com/store/5080-hurst-tx,24/7,way,668007478
+Walmart Neighborhood Market,Walmart,CO,Aurora,21475 East Quincy Avenue,80015,39.64014787333333,-104.7376196,+1 303-248-4048,https://www.walmart.com/store/3740-aurora-co,Mo-Su 06:00-24:00,way,668169820
+Walmart Neighborhood Market,Walmart,KS,Derby,1106 South Rock Road,67037,37.5328874368421,-97.24246612105262,+1 316-788-8333,https://www.walmart.com/store/3155-derby-ks,Mo-Su 06:00-24:00,way,669660541
+Walmart Neighborhood Market,Walmart,TX,Mesquite,915 North Town East Boulevard,75150,32.813119172727276,-96.60993267272728,+1 972-613-4253,https://www.walmart.com/store/2976-mesquite-tx,24/7,way,669793749
+Walmart Supercenter,Walmart,TX,North Richland Hills,6401 Northeast Loop 820,76180,32.84259377241379,-97.24601455862071,+1 817-577-2100,https://www.walmart.com/store/807/north-richland%20hill-tx/whats-new,24/7,way,670793683
+Walmart Neighborhood Market,Walmart,OK,Edmond,1101 Northwest 164th Street,73013,35.63966628181819,-97.53257288181818,+1 405-216-8478,https://www.walmart.com/store/3275/edmond-ok,Mo-Su 06:00-24:00,way,672740866
+Walmart Neighborhood Market,Walmart,TX,Dallas,2827 South Buckner Boulevard,75227,32.760024853846154,-96.68450195384615,+1 214-775-0787,https://www.walmart.com/store/3015-dallas-tx,Mo-Su 06:00-24:00,way,673148729
+Walmart Supercenter,Walmart,TX,Mesquite,200 US Highway 80,75149,32.788749696969695,-96.59892215757577,+1 972-329-0191,https://www.walmart.com/store/789-mesquite-tx,24/7,way,673924865
+Walmart Neighborhood Market,Walmart,TX,Converse,10781 Toepperwein Road,78109,29.53604043333333,-98.3336336,+1 210-672-6813,https://www.walmart.com/store/4056/converse-tx,Mo-Su 06:00-24:00,way,674868087
+Walmart Supercenter,Walmart,TX,McKinney,1721 North Custer Road,75071,33.2166270952381,-96.73546629999998,+1 972-548-7270,https://www.walmart.com/store/5311-mckinney-tx,24/7,way,674961691
+Walmart Supercenter,Walmart,KS,Wichita,501 East Pawnee Street,67211,37.648133705882344,-97.33235085000001,+1 316-267-2400,https://www.walmart.com/store/1099-wichita-ks,Mo-Su 06:00-24:00,way,678014370
+Walmart Neighborhood Market,Walmart,TX,Richland Hills,6604 Boulevard 26,76180,32.813664753846155,-97.23919987692307,+1 682-757-9057,https://www.walmart.com/store/6578/richland-hills-tx,Mo-Su 06:00-24:00,way,679318506
+Walmart Supercenter,Walmart,OK,Woodward,3215 Williams Avenue,73801,36.412286425714285,-99.38386115142856,+1 580-254-3331,https://www.walmart.com/store/150-woodward-ok,24/7,way,680558709
+Walmart Neighborhood Market,Walmart,TX,Dallas,2275 Gus Thomasson Road,75228,32.835927543749996,-96.67640440312498,+1 214-660-9579,https://www.walmart.com/store/5021-dallas-tx,Mo-Su 06:00-24:00,way,680601182
+Walmart Supercenter,Walmart,TX,Lampasas,1710 Central Texas Expressway,76550,31.06181738,-98.15877678,+1 512-556-8217,https://www.walmart.com/store/1073-lampasas-tx,Mo-Su 06:00-23:00,way,680818379
+Walmart Supercenter,Walmart,KS,Augusta,719 West 7th Avenue,67010,37.67806662608696,-96.98768270869566,+1 316-775-2254,https://www.walmart.com/store/346-augusta-ks,24/7,way,681666222
+Walmart,Walmart,OK,Blackwell,1219 West Doolin Avenue,74631,36.810193600000005,-97.29726554999998,+1 580-363-4111,https://www.walmart.com/store/136-blackwell-ok,Mo-Sa 07:00-22:00;Su 09:00-21:00,way,681759472
+Walmart Neighborhood Market,Walmart,KS,Wichita,2111 North Amidon Avenue,67203,37.721544794736836,-97.3647858263158,+1 316-361-3325,https://www.walmart.com/store/5990-wichita-ks,Mo-Su 06:00-23:00,way,681766124
+Walmart Supercenter,Walmart,KS,Wichita,5475 North Meridian Avenue,67204,37.78425823846154,-97.37361614871793,+1 316-831-9425,https://www.walmart.com/store/4321-wichita-ks,24/7,way,681868604
+Walmart Supercenter,Walmart,KS,Dodge City,1905 North 14th Avenue,67801,37.76872981714286,-100.035457,+1 620-225-3917,https://www.walmart.com/store/372-dodge-city-ks,24/7,way,682119215
+Walmart Supercenter,Walmart,KS,Garden City,3101 East Kansas Avenue,67846,37.986090299999994,-100.83663537179487,+1 620-275-0775,https://www.walmart.com/store/652-garden-city-ks,24/7,way,682126440
+Walmart Neighborhood Market,Walmart,KS,Garden City,2424 North Taylor Avenue,67846,37.98690326666667,-100.88165778666668,+1 620-765-7042,https://www.walmart.com/store/4625/garden-city-ks,Mo-Su 06:00-24:00,way,682128473
+Walmart Supercenter,Walmart,CO,Pueblo,4080 West Northern Avenue,81005,38.232284647619046,-104.66470581666665,+1 719-561-8495,https://www.walmart.com/store/1001-pueblo-co,Mo-Su 06:00-24:00,way,682492454
+Walmart Neighborhood Market,Walmart,CO,Pueblo,2730 South Prairie Avenue,81005,38.219946065,-104.64165534499998,+1 719-696-6149,https://www.walmart.com/store/5828/pueblo-co,Mo-Su 06:00-23:00,way,682492473
+Walmart Convenience Store,,TX,Lubbock,9805 University Avenue,79424,33.50468944000001,-101.8698423,,,,way,683459329
+Walmart Convenience Store,,TX,Mesquite,2001 Military Parkway,75149,32.76876462,-96.6293408,,,,way,685034447
+Walmart,Walmart,NM,Taos,926 Paseo del Pueblo Sur,87571,36.38726629333333,-105.58647526,+1 575-758-1136,https://www.walmart.com/store/873-taos-nm,Mo-Su 06:00-24:00,way,685115214
+Walmart,Walmart,,,,,28.698104195000003,-106.13881615,,,,way,687887267
+Walmart Neighborhood Market,Walmart,TX,Cedar Hill,820 East Belt Line Road,75104,32.588205349999996,-96.92456135,+1 469-526-1214,https://www.walmart.com/store/3204/cedar-hill-tx,Mo-Su 06:00-24:00,way,691312993
+Walmart Neighborhood Market,Walmart,TX,Keller,2130 Rufe Snow Drive,76248,32.89318270666667,-97.23999627333333,+1 817-427-0413,https://www.walmart.com/store/2981-keller-tx,Mo-Su 06:00-24:00,way,691719873
+Walmart Supercenter,Walmart,TX,Rowlett,2501 Lakeview Parkway,75088,32.910486892592594,-96.578028437037,+1 214-607-9839,https://www.walmart.com/store/3225-rowlett-tx,24/7,way,692452151
+Walmart Neighborhood Market,Walmart,TX,Denton,3930 Teasley Lane,76210,33.159879714285715,-97.10769738571427,+1 940-783-4152,https://www.walmart.com/store/4104/denton-tx,Mo-Su 06:00-24:00,way,694848149
+Walmart Supercenter,Walmart,TX,Canyon,1701 North 23rd Street,79015,34.998238579310346,-101.92254057586204,+1 806-655-1175,https://www.walmart.com/store/793-canyon-tx,24/7,way,697659693
+Walmart Supercenter,Walmart,TX,Balch Springs,12300 Lake June Road,75180,32.73200805909091,-96.61547950454546,+1 972-286-8600,https://www.walmart.com/store/1118-balch-springs-tx,24/7,way,698973771
+Walmart Supercenter,Walmart,,,,,28.665789333333333,-106.1307556,,,,way,699080973
+Walmart Supercenter,Walmart,TX,Castroville,1151 US Highway 90 East,78009,29.35782232727272,-98.8583874,+1 830-538-2110,https://www.walmart.com/store/4102-castroville-tx,Mo-Su 06:00-24:00,way,704171077
+Walmart Supercenter,Walmart,NM,Espanola,1610 North Riverside Drive,87532,36.015369451851846,-106.06757437407408,+1 505-747-0414,https://www.walmart.com/store/2656-espanola-nm/,Mo-Su 06:00-24:00,way,704443651
+Walmart Neighborhood Market,Walmart,TX,Flower Mound,2800 Flower Mound Road,75022,33.01599162941176,-97.07195608235293,+1 972-538-0355,https://www.walmart.com/store/5963-flower-mound-tx,Mo-Su 06:00-24:00,way,707940460
+Walmart Supercenter,Walmart,TX,Hondo,109 22nd Street,78861,29.344116540740742,-99.12689602222224,+1 830-426-4356,https://www.walmart.com/store/443-hondo-tx,06:00-23:00,way,708311005
+Walmart Supercenter,Walmart,TX,Wichita Falls,2700 Central Freeway,76306,33.95131091481482,-98.52905707407407,+1 940-851-0629,https://www.walmart.com/store/420-wichita-falls-tx,06:00-23:00,way,709099804
+Walmart Supercenter,Walmart,TX,Wichita Falls,5131 Greenbriar Road,76302,33.8507756275862,-98.50156404137931,+1 940-397-9650,https://www.walmart.com/store/414-wichita-falls-tx,06:00-23:00,way,709186265
+Walmart Neighborhood Market,Walmart,TX,Sachse,6750 Murphy Road,75048,32.983098022222215,-96.61185703333334,+1 469-366-3942,https://www.walmart.com/store/6851-sachse-tx,06:00-23:00,way,710271353
+Walmart Supercenter,Walmart,NM,Edgewood,66 NM-344,87015-6849,35.0710729257143,-106.18825535714284,+1-505-286-3043,https://www.walmart.com/store/4201-edgewood-nm,Mo-Su 06:00-23:00,way,710392657
+Walmart Supercenter,Walmart,TX,Arlington,4800 Us 287 Highway,76017,32.666836490476186,-97.20908851904764,+1 817-563-1005,https://www.walmart.com/store/3284-arlington-tx,24/7,way,713260349
+Walmart Neighborhood Market,Walmart,TX,Colleyville,4904 Colleyville Boulevard,76034,32.88231972352941,-97.15718400000002,+1-817-770-8334,https://www.walmart.com/store/5614-colleyville-tx,Mo-Su 07:00-23:00,way,713506911
+Walmart Supercenter,Walmart,TX,Ennis,700 East Ennis Avenue,75119,32.333418631578944,-96.6205127368421,+1 972-875-9671,https://www.walmart.com/store/286-ennis-tx,06:00-23:00,way,717723617
+Walmart Supercenter,Walmart,OK,Weatherford,1349 East Eagle Road,73096,35.52406022307693,-98.69094024615384,+1 580-772-1408,https://www.walmart.com/store/392-weatherford-ok,24/7,way,725700208
+Walmart Supercenter,Walmart,TX,El Paso,7101 Gateway Boulevard West,79925,31.777022171052643,-106.38440895263159,+1 915-779-6664,https://www.walmart.com/store/2201-el-paso-tx,06:00-23:00,way,727506728
+Walmart Supercenter,Walmart,TX,Brownwood,401 West Commerce Street,76801,31.731635267999994,-98.98166745200002,+1 325-643-9727,https://www.walmart.com/store/813-brownwood-tx,Mo-Su 06:00-23:00,way,727578168
+Walmart,Walmart,TX,Ballinger,2005 Hutchings Avenue,76821,31.72042582857143,-99.9608277,+1 325-365-5731,https://www.walmart.com/store/1078-ballinger-tx,06:00-23:00,way,728246274
+Walmart Supercenter,Walmart,TX,Snyder,5110 College Avenue,79549,32.690820427272726,-100.91747534545456,+1 325-573-1967,https://www.walmart.com/store/1272-snyder-tx,06:00-23:00,way,729193735
+Walmart Supercenter,Walmart,TX,Graham,2121 State Highway 16 South,76450,33.082522360000006,-98.58098984,+1 940-549-7714,https://www.walmart.com/store/353-graham-tx,24/7,way,734238225
+Walmart Supercenter,Walmart,TX,Red Oak,100 Sourth Ryan Drive,75154,32.53422977407407,-96.81583715185188,+1 972-515-2062,https://www.walmart.com/store/3433-red-oak-tx,24/7,way,734600508
+Walmart Neighborhood Market,Walmart,TX,Socorro,10301 Alameda Avenue,79927,31.654756218181817,-106.28827063636362,+1 915-245-3488,https://www.walmart.com/store/5960-socorro-tx,Mo-Su 06:00-24:00,way,734925153
+Walmart Supercenter,Walmart,TX,El Paso,1850 North Zaragoza Road,79936,31.755931671874997,-106.27113095625002,+1 915-855-6405,https://www.walmart.com/store/2612-el-paso-tx,24/7,way,735005414
+Walmart Neighborhood Market,Walmart,TX,El Paso,1551 North Zaragoza Road,79936,31.742459563157887,-106.28925530526315,+1 915-855-6840,https://www.walmart.com/store/3661-el-paso-tx,Mo-Su 06:00-24:00,way,735005553
+Walmart Garden Center,Walmart,,,,,31.7764245625,-106.38391311249998,,,,way,740145991
+Walmart Garden Center,Walmart,,,,,32.732383000000006,-97.79508041428572,,,,way,745296935
+Walmart Auto Center,,,,,,32.73197654,-97.79563347999999,,,,way,745296936
+Walmart Supercenter,Walmart,OK,Duncan,1845 North Highway 81,73533,34.52800989473684,-97.97019171578947,+1 580-255-5455,https://www.walmart.com/store/1116-duncan-ok,24/7,way,746756408
+Walmart Supercenter,Walmart,TX,Bastrop,488 State Highway 71 West,78602,30.103668616129035,-97.33276503225807,+1 512-321-2288,https://www.walmart.com/store/1042-bastrop-tx,06:00-23:00,way,750115239
+Walmart Supercenter,Walmart,TX,Killeen,1400 Lowes Boulevard,76542,31.089720606060602,-97.72952621212119,+1 254-526-4102,https://www.walmart.com/store/407-killeen-tx,24/7,way,750489200
+Walmart Supercenter,Walmart,TX,Rockdale,709 West Us Highway 79,76567,30.6422826,-97.0323098,+1 512-446-5851,https://www.walmart.com/store/280-rockdale-tx,24/7,way,753416364
+Walmart Supercenter,Walmart,TX,San Angelo,610 West 29th Street,76903,31.487767681250006,-100.460850925,+1 325-655-4949,https://www.walmart.com/store/1249-san-angelo-tx,24/7,way,762184441
+Walmart Neighborhood Market,Walmart,TX,Sherman,2210 North Heritage Parkway,75092,33.655715538461536,-96.6440998923077,+1 903-209-4908,https://www.walmart.com/store/3521-sherman-tx,06:00-23:00,way,764468252
+Walmart Neighborhood Market,Walmart,CO,Colorado Springs,4142 Austin Bluffs Parkway,80918,38.89275794705882,-104.7556064117647,+1 719-244-9776,https://www.walmart.com/store/3175-colorado-springs-co,Mo-Su 06:00-24:00,way,766588628
+Walmart Neighborhood Market,Walmart,TX,Amarillo,2035 Southeast 34th Avenue,79118,35.179792588888894,-101.81552932222225,+1 806-513-6390,https://www.walmart.com/store/7362-amarillo-tx,06:00-23:00,way,770949496
+Walmart Supercenter,Walmart,TX,San Antonio,1430 Austin Highway,78209,29.48990546086956,-98.43736820434782,+1 210-637-1700,https://www.walmart.com/store/1347-san-antonio-tx,06:00-23:00,way,774903529
+Walmart Supercenter,Walmart,TX,Fort Worth,5336 Golden Triangle Boulevard,76244,32.93107900666667,-97.26713447333333,+1 817-898-6122,https://www.walmart.com/store/2834-fort-worth-tx,Mo-Su 06:00-24:00,way,788861230
+Walmart Garden Center,Walmart,,,,,34.99874663333333,-101.92262139999998,,,,way,799044411
+Walmart Supercenter,Walmart,TX,Devine,175 Interstate 35 North,78016,29.13337260909091,-98.89439298181819,+1 830-663-5944,https://www.walmart.com/store/4103-devine-tx,06:00-23:00,way,818143744
+Walmart,Walmart,TX,Pearsall,819 North Oak Street,78061,28.89887369230769,-99.09422090000001,+1 830-334-9451,https://www.walmart.com/store/478-pearsall-tx,06:00-23:00,way,839186653
+Walmart Supercenter,Walmart,OK,Choctaw,14185 Mack Harrington Drive,73020,35.49587726285715,-97.27919874571428,+1 405-390-4262,https://www.walmart.com/store/4195-choctaw-ok,24/7,way,842005676
+Walmart Supercenter,Walmart,TX,Hewitt,215 Enterprise Boulevard,76643,31.462414509523814,-97.1735651095238,+1 254-340-6614,https://www.walmart.com/store/7156-hewitt-tx,06:00-23:00,way,843764567
+Walmart Supercenter,Walmart,TX,Killeen,3404 West Stan Schlueter Loop,76549,31.08333306296297,-97.78757425185186,+1 254-669-6168,https://www.walmart.com/store/6286-killeen-tx,06:00-23:00,way,848544794
+Walmart Supercenter,Walmart,TX,Breckenridge,3800 West Walker Street,76424,32.76190352857143,-98.94679062857143,+1 254-559-6579,https://www.walmart.com/store/438-breckenridge-tx,24/7,way,856951566
+Walmart Supercenter,Walmart,TX,Dallas,7075 West Wheatland Road,75249,32.6496425631579,-96.94430495263157,+1 469-608-6228,https://www.walmart.com/store/5810-dallas-tx,24/7,way,860433243
+Walmart Neighborhood Market,Walmart,TX,San Angelo,5154 Knickerbocker Road,76904,31.409026281818186,-100.4784862090909,+1 325-276-6621,https://www.walmart.com/store/7311-san-angelo-tx,06:00-23:00,way,862181733
+Walmart Supercenter,Walmart,OK,Lawton,1002 Northwest Sheridan Road,73505,34.61898073142858,-98.42433044285715,+1 580-355-9070,https://www.walmart.com/store/269-lawton-ok,24/7,way,875166796
+Walmart,Walmart,TX,Caldwell,475 State Highway 36 North,77836,30.53911087272727,-96.7001850909091,+1 979-567-9807,https://www.walmart.com/store/567-caldwell-tx,Mo-Su 06:00-23:00,way,875181679
+Walmart Supercenter,Walmart,TX,Murphy,115 FM 544,75094,33.01369461200001,-96.61488032000003,+1 972-633-0257,https://www.walmart.com/store/2973-murphy-tx,Mo-Su 06:00-23:00,way,876360431
+Walmart Supercenter,Walmart,OK,Kingfisher,200 Starlite Drive,73750,35.828646600000006,-97.9368178818182,+1 405-375-5743,https://www.walmart.com/store/132-kingfisher-ok,06:00-23:00,way,878439309
+Walmart Supercenter,Walmart,TX,Cedar Park,2801 East Whitestone Boulevard,78613,30.535471403448273,-97.78699360344825,+1 512-690-9340,https://www.walmart.com/store/4163-cedar-park-tx,24/7,way,895989016
+Walmart Supercenter,Walmart,TX,Fort Stockton,2610 West Dickinson Boulevard,79735,30.896420266666663,-102.90727284285714,+1 432-336-3389,https://www.walmart.com/store/897-fort-stockton-tx,24/7,way,901685818
+Walmart Supercenter,Walmart,TX,Waco,600 Hewitt Drive,76712,31.493250278787883,-97.21445802727271,+1 254-666-9021,https://www.walmart.com/store/5389-waco-tx,24/7,way,906293716
+Walmart,,TX,Anna,521 South Central Expressway,75409,33.34624892,-96.58232738,,,,way,907356904
+Walmart,Walmart,TX,Crowley,1301 East FM 1187,76036,32.57659142,-97.33653161999999,+1 817-297-4133,https://www.walmart.com/store/245-crowley-tx,05:00-23:00,way,909436478
+Walmart Neighborhood Market,Walmart,TX,Desoto,108 West Parkerville Road,75115,32.57343975384616,-96.8578547923077,+1 469-643-5012,https://www.walmart.com/store/7232/desoto-tx,Mo-Su 06:00-24:00,way,917487869
+Walmart Supercenter,Walmart,TX,Dumas,2003 South Dumas Avenue,79029,35.840313128571424,-101.97085602380953,+1 806-935-9075,https://www.walmart.com/store/812-dumas-tx,Mo-Su 06:00-23:00,way,921868773
+Walmart Supercenter,Walmart,TX,Victoria,4001 Houston Highway,77901,28.81606392857142,-96.96038402285714,+1 361-827-7272,https://www.walmart.com/store/4194-victoria-tx,06:00-23:00,way,922339583
+Walmart Neighborhood Market,Walmart,OK,Oklahoma City,911 Southwest 104th Street,73139,35.36423773333333,-97.5313148,+1 405-692-3860,https://www.walmart.com/store/2878-oklahoma-city-ok,06:00-23:00,way,947012653
+Walmart Neighborhood Market,Walmart,TX,Harker Heights,960 East Fm 2410,76548,31.055333311111113,-97.65604804444446,+1 254-892-6990,https://www.walmart.com/store/6459/harker-heights-tx,Mo-Su 06:00-24:00,way,952252589
+Walmart Neighborhood Market,Walmart,TX,Killeen,2900 South Clear Creek Road,76549,31.107111611111115,-97.79979504444442,+1 254-669-6809,https://www.walmart.com/store/3450-killeen-tx,06:00-23:00,way,976161061
+Walmart,,,,,,31.10748152,-97.80108522,,,,way,976161064
+Walmart Neighborhood Market,Walmart,TX,Killeen,3801 East Stan Schlueter Loop,76542,31.07232587692308,-97.71124301538461,+1 254-669-6134,https://www.walmart.com/store/3449-killeen-tx,Mo-Su 06:00-23:00,way,1012208733
+Walmart Auto Center,,,,,,38.90245610714286,-99.32149254285714,,,,way,1016549712
+Walmart Garden Center,Walmart,,,,,38.90253224,-99.32067357000001,,,,way,1016549713
+Walmart Supercenter,Walmart,TX,Uvalde,3100 East Main Street,78801,29.23504822222222,-99.75416036296298,+1 830-278-9117,https://www.walmart.com/store/782-uvalde-tx,06:00-23:00,way,1064488269
+Walmart,Walmart,OK,Lindsay,401 Linwood Plaza,73052,34.83515317777778,-97.59751154444446,+1 405-756-9535,https://www.walmart.com/store/893-lindsay-ok,06:00-20:00,way,1076914168
+Walmart Supercenter,Walmart,TX,Frisco,355 Stonebrook Parkway,75034,33.142395085185186,-96.88952167777776,+1 972-987-8764,https://www.walmart.com/store/2463-frisco-tx,Mo-Su 06:00-01:00,way,1095681434
+Walmart Supercenter,Walmart,TX,Lockhart,1904 South Colorado Street,78644,29.856795138888888,-97.66569407222222,+1 512-398-2333,https://www.walmart.com/store/292-lockhart-tx,24/7,way,1102155987
+Walmart Neighborhood Market,Walmart,TX,McKinney,3400 Virginia Parkway,75071,33.19757144285714,-96.66450195000002,+1 214-250-5004,https://www.walmart.com/store/6966-mckinney-tx,Mo-Su 06:00-24:00,way,1117195473
+Walmart Neighborhood Market,Walmart,TX,Burleson,965 Northwest John Jones Drive,76028,32.53775478666666,-97.36146363333334,+1 817-840-4608,https://www.walmart.com/store/3653-burleson-tx,Mo-Su 06:00-23:00,way,1123770392
+Walmart Supercenter,Walmart,TX,Crossroads,11700 US Highway 380,76227,33.227872644,-96.983834688,+1 940-488-7008,https://www.walmart.com/store/5707-cross-roads-tx,24/7,way,1132011237
+Walmart Neighborhood Market,Walmart,TX,Wylie,1400 McCreary Road,75098,33.034420764705885,-96.59352918823528,+1 972-202-4007,https://www.walmart.com/store/6078-wylie-tx,Mo-Su 06:00-23:00,way,1270293580
+Walmart Supercenter,Walmart,OK,Madill,1100 South 1st Street,73446,34.06997163333333,-96.76565247777778,+1 580-795-7383,https://www.walmart.com/store/1295-madill-ok,Mo-Su 06:00-01:00,way,1286124005
+Walmart Supercenter,Walmart,NE,North Platte,1401 South Dewey Street,69101,41.120754270370384,-100.75794312222223,+1 308-532-5529,https://www.walmart.com/store/1585-north-platte-ne,06:00-23:00,way,1291554643
+Walmart Supercenter,Walmart,,,,,29.3196362,-100.95596225999999,,,,way,1306033567
+Walmart Supercenter,Walmart,OK,Shawnee,196 Shawnee Mall Drive,74804,35.38688360952381,-96.92199906190478,+1 405-275-1030,https://www.walmart.com/store/103-shawnee-ok,24/7,way,1308426147
+Walmart Supercenter,Walmart,TX,Azle,721 Boyd Road,76020,32.904137734375,-97.5460933,+1 817-270-5716,https://www.walmart.com/store/5359-azle-tx,24/7,way,1311916436
+Walmart Supercenter,Walmart,OK,Seminole,1500 East Wrangler Boulevard,74868,35.24828095714287,-96.6544907642857,+1 405-382-5290,https://www.walmart.com/store/123-seminole-ok,24/7,way,1313119740
+Walmart Supercenter,Walmart,TX,Stamford,2614 North Swenson Street,79553,32.97215300909091,-99.79934836363637,+1 325-773-2775,https://www.walmart.com/store/1257/stamford-tx,24/7,way,1313123779
+Walmart Supercenter,Walmart,,,,,31.672242861904756,-106.38650356190477,,,,way,1344695882

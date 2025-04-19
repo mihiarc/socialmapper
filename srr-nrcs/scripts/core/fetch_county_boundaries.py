@@ -3,30 +3,35 @@ import pandas as pd
 import yaml
 import json
 from pathlib import Path
+from scripts.core.config import Config
 
 def load_study_area() -> dict:
-    """Load the study area configuration from YAML file."""
-    with open('study_area_config.yaml', 'r') as f:
-        return yaml.safe_load(f)['study_area']
+    """Load the study area configuration."""
+    config = Config()
+    return config.get_study_area()
 
-def get_county_boundaries() -> tuple[pd.DataFrame, dict]:
+def get_county_boundaries(config: Config) -> tuple[pd.DataFrame, dict]:
     """
     Fetch county boundaries from Census TIGER/Web service for the study area counties.
+    
+    Args:
+        config: Configuration object for path management
+    
     Returns:
         tuple: (DataFrame of county metadata, dict of bounding box coordinates)
     """
     # Load study area configuration
-    config = load_study_area()
+    study_area = load_study_area()
     
     # Build list of FIPS codes for our counties
     county_fips = []
-    for state in config['states']:
-        state_counties = config['counties'][state['name']]
+    for state in study_area['states']:
+        state_counties = study_area['counties'][state['name']]
         county_fips.extend([county['fips'] for county in state_counties])
     
     # Print configured counties for verification
     print("\nConfigured counties:")
-    for state_name, counties in config['counties'].items():
+    for state_name, counties in study_area['counties'].items():
         print(f"\n{state_name}:")
         for county in counties:
             print(f"  - {county['name']} County (FIPS: {county['fips']})")
@@ -73,13 +78,14 @@ def get_county_boundaries() -> tuple[pd.DataFrame, dict]:
     if missing_fips:
         print("\nWARNING: Missing configured counties:")
         for fips in missing_fips:
-            for state_name, counties in config['counties'].items():
+            for state_name, counties in study_area['counties'].items():
                 for county in counties:
                     if county['fips'] == fips:
                         print(f"  - {county['name']} County (FIPS: {fips})")
     
     # Save the filtered GeoJSON
-    output_geojson = 'county_boundaries.geojson'
+    output_geojson = Path(config.get_path('data.input.county_data')) / 'county_boundaries.geojson'
+    output_geojson.parent.mkdir(parents=True, exist_ok=True)
     with open(output_geojson, 'w') as f:
         json.dump(geojson_data, f)
     
@@ -118,9 +124,10 @@ def get_county_boundaries() -> tuple[pd.DataFrame, dict]:
     bbox['north'] += height * 0.1  # Add 10% to the north
     
     # Save the bounding box
-    with open('study_area_bbox.json', 'w') as f:
+    bbox_path = Path(config.get_path('data.input.county_data')) / 'study_area_bbox.json'
+    with open(bbox_path, 'w') as f:
         json.dump(bbox, f, indent=2)
-    print("Study area bounding box saved to study_area_bbox.json")
+    print(f"Study area bounding box saved to {bbox_path}")
     
     # Extract county properties to a DataFrame
     counties_data = []
@@ -141,15 +148,18 @@ def get_county_boundaries() -> tuple[pd.DataFrame, dict]:
     df = pd.DataFrame(counties_data)
     
     # Save county metadata to CSV
-    output_csv = 'county_metadata.csv'
+    output_csv = Path(config.get_path('data.input.county_data')) / 'county_metadata.csv'
     df.to_csv(output_csv, index=False)
     print(f"County metadata saved to {output_csv}")
     
     return df, bbox
 
-if __name__ == "__main__":
+def main():
+    # Initialize configuration
+    config = Config()
+    
     # Fetch county boundaries and bounding box
-    counties_df, bbox = get_county_boundaries()
+    counties_df, bbox = get_county_boundaries(config)
     
     # Print summaries
     print("\nStudy Area Bounding Box:")
@@ -161,4 +171,7 @@ if __name__ == "__main__":
     print("\nCounties fetched:")
     print(counties_df.groupby('STATE')['NAME'].count())
     print("\nSample of counties:")
-    print(counties_df[['NAME', 'STATE', 'GEOID']].head()) 
+    print(counties_df[['NAME', 'STATE', 'GEOID']].head())
+
+if __name__ == "__main__":
+    main() 

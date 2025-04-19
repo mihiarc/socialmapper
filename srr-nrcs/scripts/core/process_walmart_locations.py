@@ -4,14 +4,28 @@ import geopandas as gpd
 from pathlib import Path
 import argparse
 from typing import List, Dict, Set, Tuple
+from scripts.core.config import Config
+import matplotlib.pyplot as plt
 
-def load_raw_locations() -> pd.DataFrame:
-    """Load the raw Walmart locations data."""
-    return pd.read_csv('output/walmart_locations/walmart_stores_bbox.csv')
+def load_raw_locations(config: Config) -> pd.DataFrame:
+    """
+    Load the raw Walmart locations data.
+    
+    Args:
+        config: Configuration object for path management
+    """
+    input_file = Path(config.get_path('data.output.analysis')) / 'walmart_stores_bbox.csv'
+    return pd.read_csv(input_file)
 
-def load_county_boundaries() -> gpd.GeoDataFrame:
-    """Load the county boundaries GeoJSON file."""
-    return gpd.read_file('data/county_boundaries.geojson')
+def load_county_boundaries(config: Config) -> gpd.GeoDataFrame:
+    """
+    Load the county boundaries GeoJSON file.
+    
+    Args:
+        config: Configuration object for path management
+    """
+    boundaries_file = Path(config.get_path('data.input.county_data')) / 'county_boundaries.geojson'
+    return gpd.read_file(boundaries_file)
 
 def filter_by_county_intersection(df: pd.DataFrame, counties: gpd.GeoDataFrame) -> Tuple[pd.DataFrame, int]:
     """
@@ -74,6 +88,10 @@ def extract_services_from_name(name: str) -> Set[str]:
         'care center': 'Auto Care',
         'money': 'Money Services'
     }
+    
+    # Special case: if name starts with "neighborhood" it's a Neighborhood Market
+    if name.startswith('neighborhood'):
+        services.add('Neighborhood Market')
     
     # Check for each service keyword in the name
     for keyword, service in service_keywords.items():
@@ -156,6 +174,9 @@ def consolidate_locations(df: pd.DataFrame) -> pd.DataFrame:
     return result_df[cols]
 
 def main():
+    # Initialize configuration
+    config = Config()
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Process Walmart locations data')
     parser.add_argument('--filter-by-counties', action='store_true', 
@@ -164,13 +185,13 @@ def main():
     
     # Load raw data
     print("Loading Walmart locations...")
-    raw_df = load_raw_locations()
+    raw_df = load_raw_locations(config)
     print(f"Loaded {len(raw_df)} raw location records")
     
     # Filter by county boundaries if requested
     if args.filter_by_counties:
         print("\nFiltering locations by county boundaries...")
-        counties = load_county_boundaries()
+        counties = load_county_boundaries(config)
         raw_df, filtered_count = filter_by_county_intersection(raw_df, counties)
         print(f"Filtered out {filtered_count} locations outside study area counties")
         print(f"Kept {len(raw_df)} locations within study area counties")
@@ -180,13 +201,13 @@ def main():
     consolidated_df = consolidate_locations(raw_df)
     print(f"Consolidated to {len(consolidated_df)} unique locations")
     
-    # Ensure output directory exists
-    output_dir = Path('output/walmart_locations')
+    # Get output directory from config
+    output_dir = Path(config.get_path('data.output.analysis'))
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Save results
     output_suffix = "_county_filtered" if args.filter_by_counties else ""
-    output_file = f'output/walmart_locations/walmart_locations_consolidated{output_suffix}.csv'
+    output_file = output_dir / f'walmart_locations_consolidated{output_suffix}.csv'
     consolidated_df.to_csv(output_file, index=False)
     print(f"\nResults saved to {output_file}")
     
@@ -200,12 +221,8 @@ def main():
     for services in consolidated_df['services'].str.split('; '):
         all_services.update(services)
     for service in sorted(all_services):
-        count = consolidated_df['services'].str.contains(service).sum()
-        print(f"{service}: {count} locations")
-    
-    print("\nSample of consolidated locations:")
-    sample_cols = ['name', 'services', 'location_count', 'city', 'state']
-    print(consolidated_df[sample_cols].head())
+        count = consolidated_df[consolidated_df['services'].str.contains(service)].shape[0]
+        print(f"{service}: {count}")
 
 if __name__ == "__main__":
     main() 

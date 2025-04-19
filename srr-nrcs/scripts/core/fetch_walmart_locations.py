@@ -1,29 +1,35 @@
-import overpy
-import pandas as pd
-import yaml
+import requests
 import json
+import pandas as pd
 import time
+import os
 from pathlib import Path
+from scripts.core.config import Config
+import overpy
 
-def load_study_area() -> dict:
-    """Load the study area configuration from YAML file."""
-    with open('cfg/study_area_config.yaml', 'r') as f:
-        return yaml.safe_load(f)['study_area']
-
-def load_bbox() -> dict:
-    """Load the study area bounding box."""
-    with open('cfg/study_area_bbox.json', 'r') as f:
+def load_bbox(config: Config) -> dict:
+    """
+    Load the study area bounding box.
+    
+    Args:
+        config: Configuration object for path management
+    """
+    bbox_path = Path(config.get_path('data.input.county_data')) / 'study_area_bbox.json'
+    with open(bbox_path, 'r') as f:
         return json.load(f)
 
-def get_walmart_stores() -> pd.DataFrame:
+def get_walmart_stores(config: Config) -> pd.DataFrame:
     """
     Fetch Walmart store locations from OpenStreetMap within the study area bounding box.
+    
+    Args:
+        config: Configuration object for path management
     
     Returns:
         pd.DataFrame containing Walmart store information
     """
     # Load bounding box
-    bbox = load_bbox()
+    bbox = load_bbox(config)
     
     api = overpy.Overpass()
     max_retries = 3
@@ -126,22 +132,31 @@ def get_walmart_stores() -> pd.DataFrame:
     
     return df
 
-if __name__ == "__main__":
+def main():
+    # Initialize configuration
+    config = Config()
+    
     # Ensure required files exist
-    if not Path('cfg/study_area_bbox.json').exists():
-        print("Error: cfg/study_area_bbox.json not found! Run fetch_county_boundaries.py first.")
+    bbox_path = Path(config.get_path('data.input.county_data')) / 'study_area_bbox.json'
+    if not bbox_path.exists():
+        print(f"Error: {bbox_path} not found! Run fetch_county_boundaries.py first.")
         exit(1)
     
     # Fetch Walmart stores in the study area
-    stores_df = get_walmart_stores()
+    stores_df = get_walmart_stores(config)
     
-    # Create output directory if it doesn't exist
-    output_dir = Path('output/walmart_locations')
+    # Get output directory from config
+    output_dir = Path(config.get_path('data.output.analysis'))
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Save results to CSV
-    output_file = 'output/walmart_locations/walmart_stores_bbox.csv'
+    output_file = output_dir / 'walmart_stores_bbox.csv'
     stores_df.to_csv(output_file, index=False)
+    
+    # Cache the raw API response
+    cache_dir = Path(config.get_path('cache.api_responses'))
+    cache_file = cache_dir / 'walmart_stores_raw.csv'
+    stores_df.to_csv(cache_file, index=False)
     
     # Print summary statistics
     print("\nSummary of Walmart stores found:")
@@ -152,5 +167,9 @@ if __name__ == "__main__":
         print("\nSample of stores found:")
         print(stores_df[['name', 'state', 'city', 'lat', 'lon']].head())
         print(f"\nResults saved to {output_file}")
+        print(f"Raw data cached to {cache_file}")
     else:
-        print("No stores found.") 
+        print("No stores found.")
+
+if __name__ == "__main__":
+    main() 
