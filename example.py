@@ -29,10 +29,16 @@ from poi_query import (
     get_census_block_groups,
     load_isochrone,
     find_intersecting_block_groups,
-    isochrone_to_block_groups
+    isochrone_to_block_groups,
+    
+    # Census data functionality
+    load_block_groups,
+    get_census_data_for_block_groups,
+    get_variable_metadata,
+    merge_census_data
 )
 
-def full_pipeline(config_file, travel_times, state_fips):
+def full_pipeline(config_file, travel_times, state_fips, census_variables=None):
     """
     Run the full pipeline from POI query to census block group analysis.
     
@@ -40,6 +46,7 @@ def full_pipeline(config_file, travel_times, state_fips):
         config_file: Path to YAML configuration file for POI query
         travel_times: List of travel times in minutes
         state_fips: List of state FIPS codes for census data
+        census_variables: List of census variables to fetch (default population only)
     """
     print("="*80)
     print("FULL PIPELINE WORKFLOW")
@@ -84,6 +91,8 @@ def full_pipeline(config_file, travel_times, state_fips):
     # Load environment variables (for Census API key)
     load_dotenv()
     
+    block_group_files = []
+    
     for isochrone_file in all_isochrone_files:
         # Extract info from filename for output naming
         isochrone_name = Path(isochrone_file).stem
@@ -98,8 +107,51 @@ def full_pipeline(config_file, travel_times, state_fips):
         
         print(f"  - Found {len(result)} intersecting block groups")
         print(f"  - Saved results to {output_file}")
+        
+        block_group_files.append(output_file)
+    
+    # Step 4: Fetch census data for block groups (new step)
+    print("\nStep 4: Fetching census data for block groups...")
+    
+    # Default to population if no variables specified
+    if not census_variables:
+        census_variables = ['B01003_001E']  # Total population
+        
+    # Define a mapping for variable names for better readability
+    variable_mapping = {
+        'B01003_001E': 'total_population',
+        'NAME': 'census_name'
+    }
+    
+    enriched_files = []
+    
+    for block_group_file in block_group_files:
+        # Create output filename for enriched data
+        file_stem = Path(block_group_file).stem
+        enriched_file = f"results/{file_stem}_with_census_data.geojson"
+        
+        print(f"Fetching census data for: {block_group_file}")
+        
+        # Fetch and merge census data
+        enriched_data = get_census_data_for_block_groups(
+            geojson_path=block_group_file,
+            variables=census_variables,
+            output_path=enriched_file,
+            variable_mapping=variable_mapping
+        )
+        
+        print(f"  - Added census data to {len(enriched_data)} block groups")
+        print(f"  - Saved enriched data to {enriched_file}")
+        
+        enriched_files.append(enriched_file)
     
     print("\nFull pipeline completed successfully!")
+    return {
+        "poi_file": output_json,
+        "isochrone_files": all_isochrone_files,
+        "block_group_files": block_group_files,
+        "enriched_files": enriched_files
+    }
 
 def examples():
     """Run the individual examples (for reference)."""
@@ -154,10 +206,46 @@ def examples():
             )
             print(f"Found {len(result)} intersecting block groups")
             print(f"Saved results to {output_file}")
+            
+            # Example 4: Fetch census data for block groups (new example)
+            print("\nExample 4: Fetching census data for block groups...")
+            
+            if Path(output_file).exists():
+                # Define variables to fetch
+                variables = ['B01003_001E', 'B19013_001E']  # Population and median household income
+                
+                # Define variable mapping for readability
+                mapping = {
+                    'B01003_001E': 'total_population',
+                    'B19013_001E': 'median_household_income',
+                    'NAME': 'census_name'
+                }
+                
+                enriched_file = f"results/block_groups_example_with_census_data.geojson"
+                
+                enriched_data = get_census_data_for_block_groups(
+                    geojson_path=output_file,
+                    variables=variables,
+                    output_path=enriched_file,
+                    variable_mapping=mapping
+                )
+                
+                print(f"Added census data to {len(enriched_data)} block groups")
+                print(f"Saved enriched data to {enriched_file}")
+                
+                # Show some statistics
+                if 'total_population' in enriched_data.columns:
+                    total_pop = enriched_data['total_population'].astype(float).sum()
+                    print(f"Total population in these block groups: {total_pop:,.0f}")
+                
+                if 'median_household_income' in enriched_data.columns:
+                    avg_income = enriched_data['median_household_income'].astype(float).mean()
+                    print(f"Average median household income: ${avg_income:,.2f}")
+            
         except Exception as e:
-            print(f"Error processing block groups: {e}")
+            print(f"Error processing examples: {e}")
     else:
-        print("No isochrone files found. Skipping this example.")
+        print("No isochrone files found. Skipping these examples.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run POI query pipeline examples")
@@ -166,6 +254,8 @@ if __name__ == "__main__":
                         help="Travel times in minutes")
     parser.add_argument("--states", nargs="+", default=["20"], 
                         help="State FIPS codes for census data")
+    parser.add_argument("--census-variables", nargs="+", 
+                        help="Census variables to fetch (defaults to population)")
     parser.add_argument("--examples-only", action="store_true",
                         help="Run only the individual examples, not the full pipeline")
     
@@ -181,9 +271,10 @@ if __name__ == "__main__":
     if args.examples_only:
         examples()
     elif args.config:
-        full_pipeline(args.config, args.times, args.states)
+        full_pipeline(args.config, args.times, args.states, args.census_variables)
     else:
         print("Please provide a config file path with --config or use --examples-only.")
         print("Example usage:")
         print("  python example.py --config poi_config.yaml --times 15 30 --states 20 08")
+        print("  python example.py --config poi_config.yaml --census-variables B01003_001E B19013_001E")
         print("  python example.py --examples-only") 

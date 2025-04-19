@@ -7,6 +7,7 @@ A geospatial toolkit for mapping communities that do not easily conform to admin
 - Generate isochrones (travel time polygons) from Points of Interest
 - Find census block groups that intersect with isochrones
 - Fetch census block group data from the Census API
+- Enrich block groups with demographic data from the American Community Survey
 
 ## Setup
 
@@ -57,14 +58,22 @@ If you prefer to set up manually:
 The `example.py` script demonstrates the complete workflow:
 
 ```bash
-python example.py --config your_config.yaml --times 15 30 --states 20 08 48
+python example.py --config your_config.yaml --times 15 30 --states 20 08 48 --census-variables B01003_001E B19013_001E
 ```
 
 This will:
 1. Query POIs based on your config
 2. Generate 15 and 30-minute isochrones for each POI
 3. Find census block groups in the specified states that intersect with these isochrones
-4. Save all results to appropriate files
+4. Fetch demographic data (population and median household income) for these block groups
+5. Save all results to appropriate files
+
+Common Census API variables:
+- `B01003_001E`: Total population
+- `B19013_001E`: Median household income
+- `B02001_002E`: White population
+- `B02001_003E`: Black or African American population
+- `B25077_001E`: Median home value
 
 ### Find Census Block Groups Within an Isochrone
 
@@ -79,12 +88,26 @@ Example:
 python run_isochrone_census.py isochrones/isochrone15_walmart_supercenter.geojson --states 20 08 48 --output results/block_groups_walmart_15min.geojson
 ```
 
+### Fetch Census Data for Block Groups
+
+For retrieving census data for already identified block groups:
+
+```bash
+python -m poi_query.census_data [path_to_block_groups.geojson] --variables [census_variables] --output [output_path]
+```
+
+Example:
+```bash
+python -m poi_query.census_data results/block_groups_walmart_15min.geojson --variables B01003_001E B19013_001E --output results/block_groups_walmart_15min_with_data.geojson
+```
+
 ## Project Structure
 
 - `poi_query/`: Main package with core functionality
   - `query.py`: POI query functionality
   - `isochrone.py`: Isochrone generation
   - `blockgroups.py`: Census block group analysis
+  - `census_data.py`: Census data retrieval and enrichment
 - `setup_env.py`: Environment setup utilities
 - `example.py`: End-to-end example workflow
 - `run_isochrone_census.py`: Census block group analysis script
@@ -93,6 +116,7 @@ python run_isochrone_census.py isochrones/isochrone15_walmart_supercenter.geojso
 ## Data Sources
 
 - Census block group geometries: [Census Bureau TIGER/Line API](https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer)
+- Census demographic data: [Census Bureau API](https://www.census.gov/data/developers/data-sets/acs-5year.html)
 - Isochrones: Generated from POIs using the OpenStreetMap road network via `isochrone.py`
 - POIs: Retrieved from OpenStreetMap via Overpass API
 

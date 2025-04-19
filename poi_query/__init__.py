@@ -22,4 +22,12 @@ from .blockgroups import (
     load_isochrone,
     find_intersecting_block_groups,
     isochrone_to_block_groups,
+)
+
+# Export census data functionality
+from .census_data import (
+    load_block_groups,
+    get_census_data_for_block_groups,
+    get_variable_metadata,
+    merge_census_data,
 ) 
