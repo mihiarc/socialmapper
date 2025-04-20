@@ -191,10 +191,17 @@ def run_community_mapper(
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
     
-    # Generate maps for each census variable
+    # Transform census variable codes to their mapped names for the map generator
+    mapped_variables = []
+    for var in census_variables:
+        # Use the mapped name if available, otherwise use the original code
+        mapped_name = active_variable_mapping.get(var, var)
+        mapped_variables.append(mapped_name)
+    
+    # Generate maps for each census variable using the mapped names
     map_files = generate_maps_for_variables(
         census_data_path=census_data_file,
-        variables=census_variables,
+        variables=mapped_variables,
         output_dir=output_dirs["maps"],
         basename=f"{poi_type}_{poi_name}_{travel_time}min",
         isochrone_path=combined_isochrone_file
