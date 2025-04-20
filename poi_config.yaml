@@ -1,0 +1,19 @@
+# POI Configuration for Supermarkets in Dodge City, Kansas
+# This configuration will search for supermarkets in Dodge City, Kansas
+
+# Location specification
+geocode_area: "Dodge City"
+state: "Kansas"
+city: "Dodge City"
+
+# POI type specification
+type: "shop"
+name: "supermarket"
+
+# Alternatively, you can use tags for more specific queries
+# tags:
+#   shop: "supermarket"
+#   operator: "Dodge City Public Library"
+
+# You can also specify a bounding box instead of a place name
+# bbox: [39.0336, -94.6708, 39.3162, -94.3542]  # [south, west, north, east] 
