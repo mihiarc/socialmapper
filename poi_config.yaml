@@ -1,0 +1,19 @@
+# POI Configuration for Libraries in Kansas City
+# This configuration will search for libraries in Kansas City, Missouri
+
+# Location specification
+geocode_area: "Kansas City"
+state: "Missouri"
+city: "Kansas City"
+
+# POI type specification
+type: "amenity"
+name: "library"
+
+# Alternatively, you can use tags for more specific queries
+# tags:
+#   amenity: "library"
+#   operator: "Kansas City Public Library"
+
+# You can also specify a bounding box instead of a place name
+# bbox: [39.0336, -94.6708, 39.3162, -94.3542]  # [south, west, north, east] 
