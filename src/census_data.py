@@ -286,7 +286,7 @@ def get_census_data_for_block_groups(
     Args:
         geojson_path: Path to GeoJSON file with block groups
         variables: List of Census API variable codes to retrieve
-        output_path: Optional path to save the result GeoJSON
+        output_path: Path to save the result (defaults to output/census_data/[filename]_census.geojson)
         variable_mapping: Optional dictionary mapping Census API variable codes to readable column names
         year: Census year
         dataset: Census dataset
@@ -425,10 +425,21 @@ def get_census_data_for_block_groups(
         if var != 'NAME' and var in result_gdf.columns:
             result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
     
-    # Save to file if output path is provided
-    if output_path:
-        result_gdf.to_file(output_path, driver="GeoJSON")
-        print(f"Saved result with census data to {output_path}")
+    # Generate default output path if none provided
+    if output_path is None:
+        # Extract filename from input path without extension
+        input_name = Path(geojson_path).stem
+        output_path = Path(f"output/census_data/{input_name}_census.geojson")
+    else:
+        output_path = Path(output_path)
+    
+    # Ensure output directory exists
+    output_dir = output_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save to file
+    result_gdf.to_file(output_path, driver="GeoJSON")
+    print(f"Saved result with census data to {output_path}")
     
     return result_gdf
 
@@ -476,7 +487,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch census data for block groups identified by isochrone analysis")
     parser.add_argument("geojson", help="Path to GeoJSON file with block groups")
     parser.add_argument("--variables", required=True, nargs="+", help="Census API variable codes")
-    parser.add_argument("--output", help="Output GeoJSON file path")
+    parser.add_argument("--output", help="Output GeoJSON file path (defaults to output/census_data/[filename]_census.geojson)")
     parser.add_argument("--year", type=int, default=2021, help="Census year")
     parser.add_argument("--dataset", default="acs/acs5", help="Census dataset")
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")

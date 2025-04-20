@@ -173,16 +173,26 @@ def find_intersecting_block_groups(
         block_geom = row.geometry
         isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
         intersection_geom = block_geom.intersection(isochrone_geom)
+        
+        # Get GEOID parts ensuring proper formatting
+        state = str(row['STATE']).zfill(2)
+        county = str(row['COUNTY']).zfill(3)
+        tract = str(row['TRACT']).zfill(6)
+        blkgrp = str(row['BLKGRP'] if 'BLKGRP' in row else '1')
+        
+        # Create properly formatted 12-digit GEOID
+        geoid = state + county + tract + blkgrp
+        
         intersected_geometries.append({
-            "GEOID": row.GEOID if "GEOID" in row else row.BLKGRP,
-            "STATE": row.STATE,
-            "COUNTY": row.COUNTY,
-            "TRACT": row.TRACT,
-            "BLKGRP": row.BLKGRP if "BLKGRP" in row else row.GEOID[-1],
+            "GEOID": geoid,
+            "STATE": row['STATE'],
+            "COUNTY": row['COUNTY'],
+            "TRACT": row['TRACT'],
+            "BLKGRP": row['BLKGRP'] if 'BLKGRP' in row else geoid[-1],
             "geometry": intersection_geom,
-            "poi_id": row.poi_id,
-            "poi_name": row.poi_name,
-            "travel_time_minutes": row.travel_time_minutes,
+            "poi_id": row['poi_id'] if 'poi_id' in row else None,
+            "poi_name": row['poi_name'] if 'poi_name' in row else None,
+            "travel_time_minutes": row['travel_time_minutes'] if 'travel_time_minutes' in row else None,
             "intersection_area_pct": intersection_geom.area / block_geom.area * 100
         })
     
