@@ -137,7 +137,7 @@ def fetch_census_data_for_states(
     for state_code in state_fips_list:
         print(f"Fetching data for state {state_code}...")
         
-        # Define the parameters for this state - following the pattern from 03_get_census_blockgroups_data.py
+        # Define the parameters for this state
         params = {
             'get': ','.join(variables),
             'for': 'block group:*',

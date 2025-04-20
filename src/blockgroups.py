@@ -3,14 +3,13 @@
 Module to find census block groups that intersect with isochrones.
 """
 import os
-import sys
 import argparse
 import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
 from shapely.geometry import shape
-from typing import Dict, Any, List, Union, Optional
+from typing import List, Optional
 
 def get_census_block_groups(
     state_fips: List[str],
@@ -20,12 +19,33 @@ def get_census_block_groups(
     Fetch census block group boundaries for specified states.
     
     Args:
-        state_fips: List of state FIPS codes
+        state_fips: List of state FIPS codes or abbreviations
         api_key: Census API key (optional if using cached data)
         
     Returns:
         GeoDataFrame with block group boundaries
     """
+    # Map of state abbreviations to FIPS codes
+    state_abbr_to_fips = {
+        'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06', 'CO': '08', 'CT': '09',
+        'DE': '10', 'FL': '12', 'GA': '13', 'HI': '15', 'ID': '16', 'IL': '17', 'IN': '18',
+        'IA': '19', 'KS': '20', 'KY': '21', 'LA': '22', 'ME': '23', 'MD': '24', 'MA': '25',
+        'MI': '26', 'MN': '27', 'MS': '28', 'MO': '29', 'MT': '30', 'NE': '31', 'NV': '32',
+        'NH': '33', 'NJ': '34', 'NM': '35', 'NY': '36', 'NC': '37', 'ND': '38', 'OH': '39',
+        'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44', 'SC': '45', 'SD': '46', 'TN': '47',
+        'TX': '48', 'UT': '49', 'VT': '50', 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55',
+        'WY': '56', 'DC': '11'
+    }
+    
+    # Convert any state abbreviations to FIPS codes
+    normalized_state_fips = []
+    for state in state_fips:
+        if state in state_abbr_to_fips:
+            normalized_state_fips.append(state_abbr_to_fips[state])
+        else:
+            # Assume it's already a FIPS code
+            normalized_state_fips.append(state)
+    
     # Check for cached block group data
     cache_dir = Path("cache")
     cache_dir.mkdir(exist_ok=True)
@@ -34,7 +54,7 @@ def get_census_block_groups(
     cached_gdfs = []
     all_cached = True
     
-    for state in state_fips:
+    for state in normalized_state_fips:
         cache_file = cache_dir / f"block_groups_{state}.geojson"
         if cache_file.exists():
             try:
@@ -53,17 +73,19 @@ def get_census_block_groups(
         return pd.concat(cached_gdfs, ignore_index=True)
     
     # If not all states were cached or there was an error, fetch from Census API
-    if not api_key:
-        api_key = os.getenv('CENSUS_API_KEY')
-        if not api_key:
-            raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
+    api_key = os.getenv('CENSUS_API_KEY')
+
+    if api_key:
+        print("Using Census API key from environment variable")
+    else:
+        print("No Census API key found in environment variables.")
     
     # We'll use the Census Bureau's TIGER/Line API to get block group geometries
     base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/8/query"
     
     all_block_groups = []
     
-    for state in state_fips:
+    for state in normalized_state_fips:
         print(f"Fetching block groups for state {state}...")
         
         params = {
@@ -73,17 +95,28 @@ def get_census_block_groups(
             'f': 'geojson'
         }
         
+        # Add the API key to the request parameters
+        if api_key:
+            params['token'] = api_key
+        
         response = requests.get(base_url, params=params)
         
         if response.status_code == 200:
-            gdf = gpd.GeoDataFrame.from_features(response.json()['features'], crs="EPSG:4326")
+            response_json = response.json()
             
-            # Save to cache
-            cache_file = cache_dir / f"block_groups_{state}.geojson"
-            gdf.to_file(cache_file, driver="GeoJSON")
-            print(f"Saved block groups for state {state} to cache")
-            
-            all_block_groups.append(gdf)
+            # Check if the response has features with geometry
+            if 'features' in response_json and response_json['features']:
+                gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
+                gdf['STATE'] = state
+                
+                # Save to cache
+                cache_file = cache_dir / f"block_groups_{state}.geojson"
+                gdf.to_file(cache_file, driver="GeoJSON")
+                print(f"Saved block groups for state {state} to cache")
+                
+                all_block_groups.append(gdf)
+            else:
+                print(f"Error: No block group features found for state {state}")
         else:
             print(f"Error fetching block groups for state {state}: {response.status_code}")
             print(response.text)
@@ -113,7 +146,8 @@ def load_isochrone(isochrone_path: str) -> gpd.GeoDataFrame:
 
 def find_intersecting_block_groups(
     isochrone_gdf: gpd.GeoDataFrame,
-    block_groups_gdf: gpd.GeoDataFrame
+    block_groups_gdf: gpd.GeoDataFrame,
+    predicate: str = "intersects"
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with the isochrone.
@@ -133,7 +167,6 @@ def find_intersecting_block_groups(
     intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate="intersects")
     
     # For partially intersecting block groups, we can calculate the intersection geometry
-    # (This is optional and might be computationally intensive for large datasets)
     intersected_geometries = []
     
     for idx, row in intersection.iterrows():
@@ -170,7 +203,7 @@ def isochrone_to_block_groups(
     Args:
         isochrone_path: Path to isochrone GeoJSON file
         state_fips: List of state FIPS codes to fetch block groups for
-        output_path: Optional path to save result GeoJSON
+        output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)
         
     Returns:
@@ -185,19 +218,31 @@ def isochrone_to_block_groups(
     # Find intersecting block groups
     result_gdf = find_intersecting_block_groups(isochrone_gdf, block_groups_gdf)
     
-    # Save to file if output path is provided
-    if output_path:
-        result_gdf.to_file(output_path, driver="GeoJSON")
-        print(f"Saved result to {output_path}")
+    # Generate default output path if none provided
+    if output_path is None:
+        # Extract filename from isochrone path without extension
+        isochrone_name = Path(isochrone_path).stem
+        output_path = Path(f"output/blockgroups/{isochrone_name}_blockgroups.geojson")
+    else:
+        output_path = Path(output_path)
+    
+    # Ensure output directory exists
+    output_dir = output_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save to file
+    result_gdf.to_file(output_path, driver="GeoJSON")
+    print(f"Saved result to {output_path}")
     
     return result_gdf
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Find census block groups intersecting with an isochrone")
     parser.add_argument("isochrone", help="Path to isochrone GeoJSON file")
-    parser.add_argument("--states", required=True, nargs="+", help="State FIPS codes")
+    parser.add_argument("--states", required=True, nargs="+", help="State FIPS codes or abbreviations")
     parser.add_argument("--output", help="Output GeoJSON file path")
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
+    parser.add_argument("--predicate", help="Predicate for spatial join. Default is intersects. Other options are contains, within, and crosses.")
     
     args = parser.parse_args()
     
