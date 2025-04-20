@@ -15,6 +15,9 @@
 **/data/
 **/html/
 
+# Test files
+*.json
+
 # Cache files
 code/cache/
 **/cache/
@@ -58,3 +61,5 @@ var/
 *.egg
 .DS_Store
 srr-nrcs/.DS_Store
+**.DS_Store
+.cursor/rules/solution-rule.mdc
