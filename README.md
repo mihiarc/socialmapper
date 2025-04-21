@@ -2,7 +2,7 @@
 
 A Python toolkit for mapping community resources and analyzing demographic data around them.
 
-## ⚠️ ALPHA SOFTWARE ⚠️
+## ⚠️ ALPHA STAGE ⚠️
 This is an alpha release (v0.1.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
 
 ## Overview
