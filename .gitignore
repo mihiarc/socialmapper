@@ -15,9 +15,6 @@
 **/data/
 **/html/
 
-# Test files
-*.json
-
 # Cache files
 code/cache/
 **/cache/
