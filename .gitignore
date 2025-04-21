@@ -26,6 +26,13 @@ code/cache/
 *.h5
 *.pkl
 *.pickle
+*.json
+
+# Allow everything in output directory
+!output/
+!output/**/*
+!output/**/*.geojson
+!output/**/*.json
 
 # Jupyter
 *.ipynb
