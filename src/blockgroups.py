@@ -8,7 +8,6 @@ import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
-from shapely.geometry import shape
 from typing import List, Optional
 
 def get_census_block_groups(

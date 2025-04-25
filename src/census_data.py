@@ -3,11 +3,10 @@
 Module to fetch census data for block groups identified by isochrone analysis.
 """
 import os
-import json
 import pandas as pd
 import geopandas as gpd
 import requests
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 

@@ -2,7 +2,6 @@
 """
 Module to generate maps from census data for block groups that intersect with isochrones.
 """
-import os
 import argparse
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -13,7 +12,7 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch, Rectangle
 from matplotlib.lines import Line2D
 from pathlib import Path
-from typing import Optional, List, Dict, Union
+from typing import Optional, List
 
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
