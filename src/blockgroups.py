@@ -146,7 +146,7 @@ def load_isochrone(isochrone_path: str) -> gpd.GeoDataFrame:
 def find_intersecting_block_groups(
     isochrone_gdf: gpd.GeoDataFrame,
     block_groups_gdf: gpd.GeoDataFrame,
-    predicate: str = "intersects"
+    selection_mode: str = "intersect"
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with the isochrone.
@@ -154,24 +154,42 @@ def find_intersecting_block_groups(
     Args:
         isochrone_gdf: GeoDataFrame containing the isochrone
         block_groups_gdf: GeoDataFrame containing block group boundaries
+        selection_mode: Method to select and process block groups
+            - "clip": Clip block groups to isochrone boundary (original behavior)
+            - "intersect": Keep full geometry of any intersecting block group
+            - "contain": Only include block groups fully contained within isochrone
         
     Returns:
-        GeoDataFrame with intersecting block groups
+        GeoDataFrame with selected block groups
     """
     # Make sure CRS match
     if isochrone_gdf.crs != block_groups_gdf.crs:
         block_groups_gdf = block_groups_gdf.to_crs(isochrone_gdf.crs)
     
-    # Find which block groups intersect with the isochrone
-    intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate="intersects")
+    # Set predicate based on selection mode
+    predicate = "within" if selection_mode == "contain" else "intersects"
     
-    # For partially intersecting block groups, we can calculate the intersection geometry
-    intersected_geometries = []
+    # Find which block groups intersect with or are contained within the isochrone
+    intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate=predicate)
+    
+    # Process geometries based on selection mode
+    processed_geometries = []
     
     for idx, row in intersection.iterrows():
         block_geom = row.geometry
         isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
+        
+        # Determine geometry based on selection mode
+        if selection_mode == "clip":
+            # Original behavior - clip to isochrone boundary
+            final_geom = block_geom.intersection(isochrone_geom)
+        else:
+            # For "intersect" or "contain", keep the original geometry
+            final_geom = block_geom
+        
+        # Calculate intersection percentage
         intersection_geom = block_geom.intersection(isochrone_geom)
+        intersection_pct = intersection_geom.area / block_geom.area * 100
         
         # Get GEOID parts ensuring proper formatting
         state = str(row['STATE']).zfill(2)
@@ -182,21 +200,21 @@ def find_intersecting_block_groups(
         # Create properly formatted 12-digit GEOID
         geoid = state + county + tract + blkgrp
         
-        intersected_geometries.append({
+        processed_geometries.append({
             "GEOID": geoid,
             "STATE": row['STATE'],
             "COUNTY": row['COUNTY'],
             "TRACT": row['TRACT'],
             "BLKGRP": row['BLKGRP'] if 'BLKGRP' in row else geoid[-1],
-            "geometry": intersection_geom,
+            "geometry": final_geom,
             "poi_id": row['poi_id'] if 'poi_id' in row else None,
             "poi_name": row['poi_name'] if 'poi_name' in row else None,
             "travel_time_minutes": row['travel_time_minutes'] if 'travel_time_minutes' in row else None,
-            "intersection_area_pct": intersection_geom.area / block_geom.area * 100
+            "intersection_area_pct": intersection_pct
         })
     
-    # Create new GeoDataFrame with intersected geometries
-    result_gdf = gpd.GeoDataFrame(intersected_geometries, crs=isochrone_gdf.crs)
+    # Create new GeoDataFrame with processed geometries
+    result_gdf = gpd.GeoDataFrame(processed_geometries, crs=isochrone_gdf.crs)
     
     return result_gdf
 
@@ -204,7 +222,8 @@ def isochrone_to_block_groups(
     isochrone_path: str,
     state_fips: List[str],
     output_path: Optional[str] = None,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    selection_mode: str = "intersect"
 ) -> gpd.GeoDataFrame:
     """
     Main function to find census block groups intersecting with an isochrone.
@@ -214,9 +233,13 @@ def isochrone_to_block_groups(
         state_fips: List of state FIPS codes to fetch block groups for
         output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)
+        selection_mode: Method to select and process block groups
+            - "clip": Clip block groups to isochrone boundary (original behavior)
+            - "intersect": Keep full geometry of any intersecting block group
+            - "contain": Only include block groups fully contained within isochrone
         
     Returns:
-        GeoDataFrame with intersecting block groups
+        GeoDataFrame with selected block groups
     """
     # Load the isochrone
     isochrone_gdf = load_isochrone(isochrone_path)
@@ -225,7 +248,7 @@ def isochrone_to_block_groups(
     block_groups_gdf = get_census_block_groups(state_fips, api_key)
     
     # Find intersecting block groups
-    result_gdf = find_intersecting_block_groups(isochrone_gdf, block_groups_gdf)
+    result_gdf = find_intersecting_block_groups(isochrone_gdf, block_groups_gdf, selection_mode)
     
     # Generate default output path if none provided
     if output_path is None:
@@ -251,7 +274,10 @@ if __name__ == "__main__":
     parser.add_argument("--states", required=True, nargs="+", help="State FIPS codes or abbreviations")
     parser.add_argument("--output", help="Output GeoJSON file path")
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
-    parser.add_argument("--predicate", help="Predicate for spatial join. Default is intersects. Other options are contains, within, and crosses.")
+    parser.add_argument("--selection-mode", choices=["clip", "intersect", "contain"], default="intersect",
+                        help="How to handle intersecting block groups: 'clip' clips to isochrone boundary, "
+                             "'intersect' keeps full geometry of intersecting block groups, "
+                             "'contain' (default) only includes fully contained block groups")
     
     args = parser.parse_args()
     
@@ -259,8 +285,9 @@ if __name__ == "__main__":
         isochrone_path=args.isochrone,
         state_fips=args.states,
         output_path=args.output,
-        api_key=args.api_key
+        api_key=args.api_key,
+        selection_mode=args.selection_mode
     )
     
     # Print summary
-    print(f"Found {len(result)} intersecting block groups") 
+    print(f"Found {len(result)} block groups using selection mode '{args.selection_mode}'") 
