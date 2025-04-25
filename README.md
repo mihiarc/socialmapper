@@ -118,12 +118,18 @@ Choose which census variables you want to analyze. Some useful options:
 Execute the end-to-end community mapping process:
 
 ```bash
+python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
+```
+
+If your config file doesn't include a `state` field, you'll need to specify it:
+
+```bash
 python community_mapper.py --config my_config.yaml --state TX --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
 ```
 
 Parameters explained:
 - `--config`: Your POI configuration file
-- `--state`: State(s) to analyze (can list multiple: `TX OK LA`)
+- `--state`: State(s) to analyze (can list multiple: `TX OK LA`). Optional if specified in config file
 - `--travel-time`: Travel time in minutes (how far can people travel from each POI)
 - `--census-variables`: Census data to retrieve (list the variables you want)
 
@@ -144,6 +150,10 @@ Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Map supermarkets with travel times and income data to identify areas with limited food access.
    ```bash
+   # If state is in supermarkets.yaml
+   python community_mapper.py --config supermarkets.yaml --travel-time 20 --census-variables B01003_001E B19013_001E
+   
+   # If state needs to be specified separately
    python community_mapper.py --config supermarkets.yaml --state NY --travel-time 20 --census-variables B01003_001E B19013_001E
    ```
 
@@ -154,8 +164,9 @@ Here are some examples of community mapping projects you could create:
 
 3. **Educational Resource Distribution**: Map schools and libraries with educational attainment data.
    ```bash
-   python community_mapper.py --config education.yaml --state IL --travel-time 15 --census-variables B15003_022E B15003_023E
+   python community_mapper.py --config education.yaml --travel-time 15 --census-variables B15003_022E B15003_023E
    ```
+   Note: This example assumes the `state` field is included in education.yaml.
 
 4. **Park Access Equity**: Map parks with demographic and income data to assess equitable access.
    ```bash
@@ -267,7 +278,7 @@ python community_mapper.py --config poi_config.yaml --state MO KS --travel-time 
 
 Arguments:
 - `--config`: Path to the POI configuration YAML file
-- `--state`: State(s) to analyze (abbreviation or FIPS code)
+- `--state`: State(s) to analyze (abbreviation or FIPS code). Optional if the state is specified in the config file
 - `--travel-time`: Travel time limit in minutes (default: 15)
 - `--census-variables`: Census variables to retrieve (default: population and income)
 - `--api-key`: Census API key (optional if set as environment variable)
@@ -279,11 +290,16 @@ Create a YAML file like this to configure which POIs to search for:
 ```yaml
 # Libraries in Kansas City
 geocode_area: "Kansas City"
-state: "Missouri"
+state: "Missouri"  # Full state name is automatically converted to abbreviation (MO)
 city: "Kansas City"
 type: "amenity"
 name: "library"
 ```
+
+When specifying the `state` in your configuration file:
+- Use the full state name (e.g., "Kansas", "Missouri", "California")
+- The system will automatically convert it to the two-letter abbreviation for Census API calls
+- This allows you to omit the `--state` command line argument
 
 ## Output
 

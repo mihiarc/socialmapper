@@ -36,6 +36,9 @@ from src.census_data import (
 from src.map_generator import (
     generate_maps_for_variables
 )
+from src.util import (
+    state_name_to_abbreviation
+)
 
 def setup_directories() -> Dict[str, str]:
     """
@@ -64,8 +67,8 @@ def parse_arguments():
     
     parser.add_argument('--config', type=str, required=True, 
                         help='Path to POI configuration YAML file')
-    parser.add_argument('--state', type=str, required=True, nargs='+',
-                        help='State FIPS code(s) or abbreviation(s) (e.g., KS or 20)')
+    parser.add_argument('--state', type=str, required=False, nargs='+',
+                        help='State FIPS code(s) or abbreviation(s) (e.g., KS or 20). If not provided, uses state from config file.')
     parser.add_argument('--travel-time', type=int, default=15,
                         help='Travel time limit in minutes (default: 15)')
     parser.add_argument('--census-variables', type=str, nargs='+',
@@ -78,7 +81,7 @@ def parse_arguments():
 
 def run_community_mapper(
     config_path: str,
-    state_fips: List[str],
+    state_fips: List[str] = None,
     travel_time: int = 15,
     census_variables: List[str] = None,
     api_key: Optional[str] = None,
@@ -89,7 +92,7 @@ def run_community_mapper(
     
     Args:
         config_path: Path to POI configuration YAML file
-        state_fips: List of state FIPS codes or abbreviations
+        state_fips: List of state FIPS codes or abbreviations (optional)
         travel_time: Travel time limit in minutes
         census_variables: List of Census API variables to retrieve
         api_key: Census API key (optional if set as environment variable)
@@ -110,6 +113,22 @@ def run_community_mapper(
     print("\n=== Step 1: Querying Points of Interest ===")
     config = load_poi_config(config_path)
     query = build_overpass_query(config)
+    
+    # If state_fips is None, try to get state from config
+    if state_fips is None and 'state' in config:
+        # Convert full state name to abbreviation
+        state_name = config['state']
+        state_abbr = state_name_to_abbreviation(state_name)
+        
+        if state_abbr:
+            state_fips = [state_abbr]
+            print(f"Using state from config file: {state_name} ({state_abbr})")
+        else:
+            # If we can't convert, use the original state name and hope it works
+            state_fips = [state_name]
+            print(f"Using state from config file: {state_name} (unable to convert to abbreviation)")
+    elif state_fips is None:
+        raise ValueError("No state specified. Either provide --state argument or include 'state' in your config file.")
     
     print(f"Querying OpenStreetMap for: {config.get('type', '')} - {config.get('name', '')}")
     raw_results = query_overpass(query)
