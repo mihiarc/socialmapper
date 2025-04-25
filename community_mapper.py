@@ -210,9 +210,18 @@ def run_community_mapper(
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
     
+    # Get visualization variables from the census data result
+    if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
+        visualization_variables = census_data.attrs['variables_for_visualization']
+        print(f"Using variables for visualization from census data: {visualization_variables}")
+    else:
+        # Fallback to filtering out known non-visualization variables
+        visualization_variables = [var for var in census_variables if var != 'NAME']
+        print(f"No visualization variables attribute found, filtering out 'NAME': {visualization_variables}")
+    
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
-    for var in census_variables:
+    for var in visualization_variables:
         # Use the mapped name if available, otherwise use the original code
         mapped_name = active_variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)

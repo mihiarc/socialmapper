@@ -122,9 +122,12 @@ def fetch_census_data_for_states(
         if not api_key:
             raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
     
-    # Ensure 'NAME' is included in variables if not already
-    if 'NAME' not in variables:
-        variables.append('NAME')
+    # Create a copy of variables to avoid modifying the original list
+    api_variables = variables.copy()
+    
+    # Ensure 'NAME' is included in API variables if not already
+    if 'NAME' not in api_variables:
+        api_variables.append('NAME')
     
     # Base URL for Census API
     base_url = f'https://api.census.gov/data/{year}/{dataset}'
@@ -138,7 +141,7 @@ def fetch_census_data_for_states(
         
         # Define the parameters for this state
         params = {
-            'get': ','.join(variables),
+            'get': ','.join(api_variables),
             'for': 'block group:*',
             'in': f'state:{state_code} county:* tract:*',
             'key': api_key
@@ -277,7 +280,8 @@ def get_census_data_for_block_groups(
     variable_mapping: Optional[Dict[str, str]] = None,
     year: int = 2021,
     dataset: str = 'acs/acs5',
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    exclude_from_visualization: List[str] = ['NAME']
 ) -> gpd.GeoDataFrame:
     """
     Main function to fetch census data for block groups identified by isochrone analysis.
@@ -290,9 +294,12 @@ def get_census_data_for_block_groups(
         year: Census year
         dataset: Census dataset
         api_key: Census API key (optional if set as environment variable)
+        exclude_from_visualization: Variables to exclude from visualization (default: ['NAME'])
         
     Returns:
-        GeoDataFrame with block group geometries and census data
+        GeoDataFrame with block group geometries and census data. 
+        Note: The returned data will include all requested variables including those in exclude_from_visualization,
+        but the 'variables_for_visualization' attribute will be added to indicate which ones are meant for maps.
     """
     # Load block groups
     block_groups_gdf = load_block_groups(geojson_path)
@@ -345,55 +352,6 @@ def get_census_data_for_block_groups(
         # Filter to only the block groups we identified in the isochrone
         census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
         
-        # If we got zero matches, try to diagnose the issue
-        if len(census_data) == 0 and len(all_state_census_data) > 0:
-            print("WARNING: Zero matches found. This could be due to GEOID format differences.")
-            
-            # Try a more flexible matching approach
-            matched_data = []
-            
-            # Create lookup dictionaries for more efficient matching
-            census_lookup = {id.lstrip('0'): row for id, row in all_state_census_data.set_index('GEOID').iterrows()}
-            
-            for needed_id in needed_geoids:
-                # Try matching just the digits, ignoring leading zeros
-                stripped_needed_id = needed_id.lstrip('0')
-                if stripped_needed_id in census_lookup:
-                    matched_row = census_lookup[stripped_needed_id].copy()
-                    matched_row['GEOID'] = needed_id  # Use the exact GEOID from our data
-                    matched_data.append(matched_row)
-            
-            if matched_data:
-                census_data = pd.DataFrame(matched_data)
-                print(f"After flexible matching: found {len(census_data)} matches")
-            else:
-                # If still no matches, try direct mapping from components
-                print("Attempting component-based matching...")
-                
-                # Create a lookup using state + county + tract + block group
-                census_component_lookup = {
-                    (row['state'] + row['county'] + row['tract'] + row['block group']): row
-                    for _, row in all_state_census_data.iterrows()
-                }
-                
-                matched_by_component = []
-                for needed_id in needed_geoids:
-                    # GEOID format: STATE(2) + COUNTY(3) + TRACT(6) + BLKGRP(1)
-                    if len(needed_id) >= 12:
-                        components = needed_id[:2] + needed_id[2:5] + needed_id[5:11] + needed_id[11:12]
-                        if components in census_component_lookup:
-                            matched_row = census_component_lookup[components].copy()
-                            matched_row['GEOID'] = needed_id
-                            matched_by_component.append(matched_row)
-                
-                if matched_by_component:
-                    census_data = pd.DataFrame(matched_by_component)
-                    print(f"After component matching: found {len(census_data)} matches")
-                
-                # If we still have no matches, we'll fall back to the placeholder approach below
-        
-        print(f"Filtered from {len(all_state_census_data)} total block groups to {len(census_data)} within the isochrone")
-        
     except Exception as e:
         # If we couldn't fetch data, create a minimal dataframe with GEOID to allow saving the file
         print(f"Error fetching census data: {e}")
@@ -435,6 +393,11 @@ def get_census_data_for_block_groups(
     # Ensure output directory exists
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Add metadata about which variables are for visualization
+    visualization_variables = [var for var in variables if var not in exclude_from_visualization]
+    result_gdf.attrs['variables_for_visualization'] = visualization_variables
+    print(f"Variables for visualization: {visualization_variables}")
     
     # Save to file
     result_gdf.to_file(output_path, driver="GeoJSON")
