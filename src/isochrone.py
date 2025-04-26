@@ -12,6 +12,8 @@ from shapely.geometry import Point
 from typing import Dict, Any, List, Union
 import json
 import pandas as pd
+from tqdm import tqdm
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -155,7 +157,11 @@ def create_isochrones_from_poi_list(
     isochrone_files = []
     isochrone_gdfs = []
     
-    for poi in pois:
+    # Add tqdm progress bar
+    total_pois = len(pois)
+    
+    for poi in tqdm(pois, desc="Generating isochrones", unit="POI"):
+        poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
         try:
             result = create_isochrone_from_poi(
                 poi=poi,
@@ -169,8 +175,10 @@ def create_isochrones_from_poi_list(
             else:
                 isochrone_gdfs.append(result)
                 
-            logger.info(f"Created isochrone for POI: {poi.get('tags', {}).get('name', poi.get('id', 'unknown'))}")
+            # Use tqdm.write instead of logger to avoid messing up the progress bar
+            tqdm.write(f"Created isochrone for POI: {poi_name}")
         except Exception as e:
+            tqdm.write(f"Error creating isochrone for POI {poi_name}: {e}")
             logger.error(f"Error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
     
     if combine_results:
@@ -190,7 +198,10 @@ def create_isochrones_from_poi_list(
                 return combined_gdf
         else:
             # We need to load the individual files and combine them
-            gdfs = [gpd.read_file(file) for file in isochrone_files]
+            gdfs = []
+            for file in tqdm(isochrone_files, desc="Loading isochrone files", unit="file"):
+                gdfs.append(gpd.read_file(file))
+            
             combined_gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
             
             # Save combined result
@@ -229,6 +240,7 @@ def create_isochrones_from_json_file(
     try:
         with open(json_file_path, 'r') as f:
             poi_data = json.load(f)
+        tqdm.write(f"Loaded {len(poi_data.get('pois', []))} POIs from {json_file_path}")
     except Exception as e:
         logger.error(f"Error loading JSON file: {e}")
         raise
@@ -252,12 +264,20 @@ if __name__ == "__main__":
     parser.add_argument("--combine", action="store_true", help="Combine all isochrones into a single file")
     args = parser.parse_args()
     
+    start_time = time.time()
+    
     result = create_isochrones_from_json_file(
         json_file_path=args.json_file,
         travel_time_limit=args.time,
         output_dir=args.output_dir,
         combine_results=args.combine
     )
+    
+    elapsed_time = time.time() - start_time
+    minutes, seconds = divmod(elapsed_time, 60)
+    hours, minutes = divmod(minutes, 60)
+    
+    print(f"Total execution time: {int(hours):02d}:{int(minutes):02d}:{seconds:.2f}")
     
     if isinstance(result, list):
         print(f"Generated {len(result)} isochrone files in {args.output_dir}")
