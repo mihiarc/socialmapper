@@ -124,6 +124,7 @@ def format_results(result):
         A dictionary containing the POIs in JSON format.
 
         Keys:
+            poi_count: The total number of POIs found.
             pois: A list of dictionaries containing the POIs.
                 Keys:
                     id: The ID of the POI.
@@ -133,6 +134,7 @@ def format_results(result):
                     tags: A dictionary containing the tags of the POI.
     """
     data = {
+        "poi_count": 0,  # Initialize with 0, will be updated at the end
         "pois": []
     }
     
@@ -184,6 +186,9 @@ def format_results(result):
             poi_data["lon"] = float(center_lon)
         
         data["pois"].append(poi_data)
+    
+    # Update poi count
+    data["poi_count"] = len(data["pois"])
     
     return data
 
