@@ -114,30 +114,23 @@ def run_community_mapper(
     config = load_poi_config(config_path)
     query = build_overpass_query(config)
     
-    # If state_fips is None, try to get state from config
-    if state_fips is None and 'state' in config:
-        # Convert full state name to abbreviation
-        state_name = config['state']
-        state_abbr = state_name_to_abbreviation(state_name)
-        
-        if state_abbr:
-            state_fips = [state_abbr]
-            print(f"Using state from config file: {state_name} ({state_abbr})")
-        else:
-            # If we can't convert, use the original state name and hope it works
-            state_fips = [state_name]
-            print(f"Using state from config file: {state_name} (unable to convert to abbreviation)")
-    elif state_fips is None:
-        raise ValueError("No state specified. Either provide --state argument or include 'state' in your config file.")
-    
-    print(f"Querying OpenStreetMap for: {config.get('type', '')} - {config.get('name', '')}")
+    print(f"Querying OpenStreetMap for: {config.get('geocode_area', '')} - {config.get('type', '')} - {config.get('name', '')}")
     raw_results = query_overpass(query)
     poi_data = format_results(raw_results)
     
     # Set a name for the output file based on the POI configuration
     poi_type = config.get("type", "poi")
     poi_name = config.get("name", "custom").replace(" ", "_").lower()
-    poi_file = os.path.join(output_dirs["pois"], f"{poi_type}_{poi_name}.json")
+    location = config.get("geocode_area", "").replace(" ", "_").lower()
+    
+    # Create a base filename component for all outputs
+    if location:
+        base_filename = f"{location}_{poi_type}_{poi_name}"
+    else:
+        base_filename = f"{poi_type}_{poi_name}"
+    
+    # Use the base filename for POI data
+    poi_file = os.path.join(output_dirs["pois"], f"{base_filename}.json")
     
     save_json(poi_data, poi_file)
     result_files["poi_data"] = poi_file
@@ -161,7 +154,7 @@ def run_community_mapper(
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
     block_groups_file = os.path.join(
         output_dirs["block_groups"],
-        f"{poi_type}_{poi_name}_{travel_time}min_block_groups.geojson"
+        f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
     block_groups = isochrone_to_block_groups(
@@ -195,7 +188,7 @@ def run_community_mapper(
     
     census_data_file = os.path.join(
         output_dirs["census_data"],
-        f"{poi_type}_{poi_name}_{travel_time}min_census_data.geojson"
+        f"{base_filename}_{travel_time}min_census_data.geojson"
     )
     
     census_data = get_census_data_for_block_groups(
@@ -231,7 +224,7 @@ def run_community_mapper(
         census_data_path=census_data_file,
         variables=mapped_variables,
         output_dir=output_dirs["maps"],
-        basename=f"{poi_type}_{poi_name}_{travel_time}min",
+        basename=f"{base_filename}_{travel_time}min",
         isochrone_path=combined_isochrone_file
     )
     result_files["maps"] = map_files
