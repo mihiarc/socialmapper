@@ -3,7 +3,6 @@
 Module to generate isochrones from Points of Interest (POIs).
 """
 import os
-import logging
 import warnings
 import geopandas as gpd
 import networkx as nx
@@ -14,10 +13,6 @@ import json
 import pandas as pd
 from tqdm import tqdm
 import time
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Suppress FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -30,10 +25,8 @@ try:
     import pyarrow
     USE_ARROW = True
     os.environ["PYOGRIO_USE_ARROW"] = "1"  # Set environment variable for pyogrio
-    logger.info("PyArrow is available and enabled for optimized I/O")
 except ImportError:
     USE_ARROW = False
-    logger.warning("PyArrow not available. Install it for better performance.")
 
 def create_isochrone_from_poi(
     poi: Dict[str, Any],
