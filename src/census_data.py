@@ -88,12 +88,7 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
                     print(f"Warning: Cannot standardize GEOID format: {geoid}")
         else:
             print(f"Warning: Invalid GEOID format: {geoid}")
-    
-    # Print some diagnostics
-    for state, geoids in state_block_groups.items():
-        if geoids:
-            print(f"State {state}: {len(geoids)} block groups, example GEOID: {geoids[0]}")
-    
+
     return state_block_groups
 
 
@@ -217,12 +212,6 @@ def merge_census_data(
     # If GEOIDs might have format inconsistencies, try to standardize them
     # First, check if we need to standardize GEOIDs in our GeoDataFrame
     if 'GEOID' in result_gdf.columns:
-        # Extract diagnostic samples before any transformations
-        sample_gdf_geoids = result_gdf['GEOID'].head(3).tolist()
-        sample_census_geoids = census_df['GEOID'].head(3).tolist()
-        print(f"Sample GEOIDs from GeoDataFrame before standardization: {sample_gdf_geoids}")
-        print(f"Sample GEOIDs from Census data: {sample_census_geoids}")
-        
         # Standardize GEOIDs in the GeoDataFrame if needed
         if result_gdf['GEOID'].str.len().min() != result_gdf['GEOID'].str.len().max():
             print("Standardizing variable-length GEOIDs in GeoDataFrame")
@@ -236,39 +225,9 @@ def merge_census_data(
                     result_gdf['TRACT'].astype(str).str.zfill(6) + 
                     result_gdf['BLKGRP'].astype(str)
                 )
-                print("Reconstructed GEOIDs from component fields")
-    
+
     # Merge the census data with the GeoDataFrame
     result_gdf = result_gdf.merge(census_df, on='GEOID', how='left')
-    
-    # Check for missing matches - use 'NAME' which is always included
-    missing_count = result_gdf['NAME'].isna().sum() if 'NAME' in result_gdf.columns else 0
-    if missing_count > 0:
-        print(f"Warning: {missing_count} out of {len(result_gdf)} block groups have no census data.")
-        
-        # Try a more flexible match if there are missing values
-        if missing_count == len(result_gdf):
-            print("Attempting flexible GEOID matching...")
-            
-            # Create copies with stripped leading zeros for comparison
-            result_gdf['GEOID_stripped'] = result_gdf['GEOID'].str.lstrip('0')
-            census_df['GEOID_stripped'] = census_df['GEOID'].str.lstrip('0')
-            
-            # Try merging on the stripped GEOIDs
-            flexible_result = result_gdf.merge(
-                census_df.drop(columns=['GEOID']),  # Drop to avoid duplicate columns
-                on='GEOID_stripped', 
-                how='left'
-            )
-            
-            # Remove the temporary column and see if we got matches
-            flexible_result = flexible_result.drop(columns=['GEOID_stripped'])
-            flexible_missing = flexible_result['NAME'].isna().sum() if 'NAME' in flexible_result.columns else 0
-            
-            if flexible_missing < missing_count:
-                print(f"Flexible matching found {missing_count - flexible_missing} more matches!")
-                result_gdf = flexible_result
-                missing_count = flexible_missing
     
     return result_gdf
 
@@ -307,14 +266,6 @@ def get_census_data_for_block_groups(
     if len(block_groups_gdf) == 0:
         raise ValueError(f"No block groups found in {geojson_path}")
     
-    # Print the available columns to help with debugging
-    print(f"Columns in block_groups GeoJSON: {block_groups_gdf.columns.tolist()}")
-    
-    # Check if there are any GEOID values for diagnostics
-    if 'GEOID' in block_groups_gdf.columns:
-        sample_geoids = block_groups_gdf['GEOID'].head(3).tolist()
-        print(f"Sample GEOIDs from file: {sample_geoids}")
-    
     # Extract block group IDs by state
     block_groups_by_state = extract_block_group_ids(block_groups_gdf)
     
@@ -335,10 +286,6 @@ def get_census_data_for_block_groups(
             api_key=api_key
         )
         
-        # Print a few example GEOIDs from the census data for comparison
-        sample_census_geoids = all_state_census_data['GEOID'].head(3).tolist()
-        print(f"Sample GEOIDs from census API: {sample_census_geoids}")
-        
         # Extract just the GEOIDs we need from all the block groups
         needed_geoids = []
         for state_ids in block_groups_by_state.values():
@@ -346,8 +293,6 @@ def get_census_data_for_block_groups(
         
         # Print the total count and a few needed GEOIDs for diagnostic purposes
         print(f"Looking for {len(needed_geoids)} specific block groups in the census data")
-        if needed_geoids:
-            print(f"Sample needed GEOIDs: {needed_geoids[:3]}")
         
         # Filter to only the block groups we identified in the isochrone
         census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
@@ -393,11 +338,6 @@ def get_census_data_for_block_groups(
     # Ensure output directory exists
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Add metadata about which variables are for visualization
-    visualization_variables = [var for var in variables if var not in exclude_from_visualization]
-    result_gdf.attrs['variables_for_visualization'] = visualization_variables
-    print(f"Variables for visualization: {visualization_variables}")
     
     # Save to file
     result_gdf.to_file(output_path, driver="GeoJSON")

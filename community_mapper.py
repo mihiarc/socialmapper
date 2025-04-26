@@ -187,8 +187,6 @@ def run_community_mapper(
     )
     result_files["block_groups"] = block_groups_file
     
-    print(f"Found {len(block_groups)} intersecting block groups")
-    
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
     
