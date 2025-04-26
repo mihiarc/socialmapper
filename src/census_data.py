@@ -178,11 +178,6 @@ def fetch_census_data_for_states(
         final_df['block group']
     )
     
-    # Print a sample of the GEOIDs for debugging
-    sample_geoids = final_df['GEOID'].head(3).tolist()
-    print(f"Sample GEOIDs from Census API response: {sample_geoids}")
-    
-    print(f"Successfully retrieved data for {len(final_df)} total block groups")
     return final_df
 
 
