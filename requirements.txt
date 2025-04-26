@@ -18,3 +18,6 @@ contextily>=1.3.0
 
 # File formats
 pyyaml>=6.0
+
+# Progress tracking
+tqdm>=4.67.0
