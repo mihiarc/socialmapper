@@ -37,7 +37,10 @@ from src.map_generator import (
     generate_maps_for_variables
 )
 from src.util import (
-    state_name_to_abbreviation
+    state_name_to_abbreviation,
+    census_code_to_name,
+    normalize_census_variable,
+    CENSUS_VARIABLE_MAPPING
 )
 
 def setup_directories() -> Dict[str, str]:
@@ -67,21 +70,31 @@ def parse_arguments():
     
     parser.add_argument('--config', type=str, required=True, 
                         help='Path to POI configuration YAML file')
-    parser.add_argument('--state', type=str, required=False, nargs='+',
-                        help='State FIPS code(s) or abbreviation(s) (e.g., KS or 20). If not provided, uses state from config file.')
     parser.add_argument('--travel-time', type=int, default=15,
                         help='Travel time limit in minutes (default: 15)')
     parser.add_argument('--census-variables', type=str, nargs='+',
-                        default=['B01003_001E', 'B19013_001E'],
-                        help='Census variables to retrieve (default: population and income)')
+                        default=['total_population', 'median_household_income'],
+                        help='Census variables to retrieve (default: total_population and median_household_income)')
     parser.add_argument('--api-key', type=str,
                         help='Census API key (optional if set as CENSUS_API_KEY environment variable)')
+    parser.add_argument('--list-variables', action='store_true',
+                        help='List available census variables and exit')
     
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    # If --list-variables is specified, print the variables and exit
+    if args.list_variables:
+        print("\nAvailable Census Variables:")
+        print("=" * 50)
+        for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
+            print(f"{name:<25} {code}")
+        print("\nUsage example: --census-variables total_population median_household_income")
+        exit(0)
+    
+    return args
 
 def run_community_mapper(
     config_path: str,
-    state_fips: List[str] = None,
     travel_time: int = 15,
     census_variables: List[str] = None,
     api_key: Optional[str] = None,
@@ -92,7 +105,6 @@ def run_community_mapper(
     
     Args:
         config_path: Path to POI configuration YAML file
-        state_fips: List of state FIPS codes or abbreviations (optional)
         travel_time: Travel time limit in minutes
         census_variables: List of Census API variables to retrieve
         api_key: Census API key (optional if set as environment variable)
@@ -101,9 +113,10 @@ def run_community_mapper(
     Returns:
         Dictionary of output file paths
     """
-    if census_variables is None:
-        census_variables = ['B01003_001E', 'B19013_001E']  # Default: population and median income
-        
+    
+    # Convert any human-readable names to census codes
+    census_codes = [normalize_census_variable(var) for var in census_variables]
+    
     if output_dirs is None:
         output_dirs = setup_directories()
         
@@ -157,6 +170,15 @@ def run_community_mapper(
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
+    # Get state from config and convert to state abbreviation
+    state_fips = None
+    if "state" in config:
+        state_name = config.get("state")
+        state_abbr = state_name_to_abbreviation(state_name)
+        if state_abbr:
+            state_fips = [state_abbr]
+            print(f"Using state from config file: {state_name} ({state_abbr})")
+    
     block_groups = isochrone_to_block_groups(
         isochrone_path=combined_isochrone_file,
         state_fips=state_fips,
@@ -170,21 +192,8 @@ def run_community_mapper(
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
     
-    # Create a more readable mapping for the census variables
-    variable_mapping = {
-        'B01003_001E': 'total_population',
-        'B19013_001E': 'median_household_income',
-        'B25077_001E': 'median_home_value',
-        'B01002_001E': 'median_age',
-        'B02001_002E': 'white_population',
-        'B02001_003E': 'black_population',
-        'B11001_001E': 'households',
-        'B25001_001E': 'housing_units'
-    }
-    
-    # Keep only the mappings for variables we're actually using
-    active_variable_mapping = {var: variable_mapping.get(var, var) 
-                              for var in census_variables if var in variable_mapping}
+    # Create a human-readable mapping for the census variables
+    variable_mapping = {code: census_code_to_name(code) for code in census_codes}
     
     census_data_file = os.path.join(
         output_dirs["census_data"],
@@ -193,9 +202,9 @@ def run_community_mapper(
     
     census_data = get_census_data_for_block_groups(
         geojson_path=block_groups_file,
-        variables=census_variables,
+        variables=census_codes,
         output_path=census_data_file,
-        variable_mapping=active_variable_mapping,
+        variable_mapping=variable_mapping,
         api_key=api_key
     )
     result_files["census_data"] = census_data_file
@@ -209,14 +218,14 @@ def run_community_mapper(
         print(f"Using variables for visualization from census data: {visualization_variables}")
     else:
         # Fallback to filtering out known non-visualization variables
-        visualization_variables = [var for var in census_variables if var != 'NAME']
+        visualization_variables = [var for var in census_codes if var != 'NAME']
         print(f"No visualization variables attribute found, filtering out 'NAME': {visualization_variables}")
     
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
     for var in visualization_variables:
         # Use the mapped name if available, otherwise use the original code
-        mapped_name = active_variable_mapping.get(var, var)
+        mapped_name = variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)
     
     # Generate maps for each census variable using the mapped names
@@ -249,7 +258,6 @@ def main():
     # Run the pipeline
     results = run_community_mapper(
         config_path=args.config,
-        state_fips=args.state,
         travel_time=args.travel_time,
         census_variables=args.census_variables,
         api_key=args.api_key,
