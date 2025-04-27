@@ -10,7 +10,6 @@ import pandas as pd
 import requests
 from typing import List, Optional, Tuple
 from src.util import (
-    get_neighboring_states, 
     state_abbreviation_to_fips
 )
 
@@ -268,7 +267,7 @@ def isochrone_to_block_groups(
     
     Args:
         isochrone_path: Path to isochrone GeoJSON or GeoParquet file
-        state_fips: List of state FIPS codes or abbreviations
+        state_fips: List of state FIPS codes or abbreviations (required)
         output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)
         selection_mode: Method to select and process block groups
@@ -282,6 +281,10 @@ def isochrone_to_block_groups(
     """
     # Load the isochrone
     isochrone_gdf = load_isochrone(isochrone_path)
+    
+    # Validate state_fips
+    if not state_fips:
+        raise ValueError("state_fips parameter is required. Please provide a list of state abbreviations or FIPS codes.")
     
     # Get block groups for requested states
     print(f"Fetching block groups for state(s): {', '.join(state_fips)}")
@@ -314,31 +317,6 @@ def isochrone_to_block_groups(
         
     return result_gdf
 
-def extract_state_from_isochrone(isochrone_path: str) -> List[str]:
-    """
-    Try to extract state information from the isochrone file
-    based on POI names or metadata. Also includes any neighboring states
-    to handle cases where the POI is near a state boundary.
-    
-    Args:
-        isochrone_path: Path to isochrone file
-        
-    Returns:
-        List of state FIPS codes or abbreviations (empty if none found)
-    """
-    # Load the isochrone file
-    isochrone_gdf = load_isochrone(isochrone_path)
-    
-    detected_states = []
-    
-    # Check for explicit state column
-    if 'state' in isochrone_gdf.columns:
-        states = isochrone_gdf['state'].unique().tolist()
-        if states:
-            return states
-    
-    return []
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Find census block groups that intersect with isochrones"
@@ -346,6 +324,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "isochrone_path",
         help="Path to isochrone GeoJSON or GeoParquet file"
+    )
+    parser.add_argument(
+        "--state",
+        nargs="+",
+        required=True,
+        help="State abbreviations or FIPS codes (required, can list multiple)"
     )
     parser.add_argument(
         "--output-path",
@@ -369,12 +353,10 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Get state from isochrone file
-    state_fips = extract_state_from_isochrone(args.isochrone_path)
-    
-    # Run the main function
+    # Run the main function with provided states
     isochrone_to_block_groups(
         isochrone_path=args.isochrone_path,
+        state_fips=args.state,
         output_path=args.output_path,
         api_key=args.api_key,
         selection_mode=args.selection_mode,

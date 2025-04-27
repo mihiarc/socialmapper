@@ -131,7 +131,9 @@ python community_mapper.py --config my_config.yaml --state TX --travel-time 15 -
 
 #### Using Your Own Coordinates
 
-If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file:
+If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file. 
+
+**Important: Your custom coordinates file MUST include state information for each point.** This is required for accurate census block group identification.
 
 ```bash
 python community_mapper.py --custom-coords my_locations.csv --travel-time 15 --census-variables B01003_001E B19013_001E
@@ -139,11 +141,11 @@ python community_mapper.py --custom-coords my_locations.csv --travel-time 15 --c
 
 Supported formats:
 
-1. CSV with header row (should include lat/lon columns):
+1. CSV with header row (must include lat/lon and state columns):
 ```
-id,name,lat,lon,type
-1,Community Center,37.7749,-122.4194,public
-2,Food Bank,37.7833,-122.4167,nonprofit
+id,name,lat,lon,state,type
+1,"Community Center",37.7749,-122.4194,CA,public
+2,"Food Bank",37.7833,-122.4167,CA,nonprofit
 ```
 
 2. JSON list format:
@@ -154,6 +156,7 @@ id,name,lat,lon,type
     "name": "Community Center",
     "lat": 37.7749,
     "lon": -122.4194,
+    "state": "CA",
     "tags": {
       "type": "public"
     }
@@ -163,6 +166,7 @@ id,name,lat,lon,type
     "name": "Food Bank",
     "lat": 37.7833,
     "lon": -122.4167,
+    "state": "CA",
     "tags": {
       "type": "nonprofit"
     }
@@ -170,12 +174,14 @@ id,name,lat,lon,type
 ]
 ```
 
-The script will automatically detect the format based on the file extension and parse the coordinates accordingly.
+The state column/field can contain either:
+- Two-letter state abbreviations (e.g., "CA", "TX", "NY")
+- Full state names (e.g., "California", "Texas", "New York")
 
 Parameters explained:
-- `--config`: Your POI configuration file
+- `--config`: Your POI configuration YAML file
 - `--custom-coords`: Path to your custom coordinates CSV or JSON file
-- `--state`: State(s) to analyze (can list multiple: `TX OK LA`). Optional if specified in config file
+- `--state`: State(s) to analyze when using config file (can list multiple: `TX OK LA`). Not needed with custom coordinates.
 - `--travel-time`: Travel time in minutes (how far can people travel from each POI)
 - `--census-variables`: Census data to retrieve (list the variables you want)
 
