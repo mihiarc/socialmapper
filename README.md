@@ -114,7 +114,7 @@ Choose which census variables you want to analyze. Some useful options:
 | Black Population                 | Population identifying as Black/African American alone | black_population | B02001_003E                                     |
 | Hispanic Population              | Hispanic or Latino population of any race  | hispanic_population      | B03003_003E                                        |
 | Housing Units                    | Total housing units                        | housing_units            | B25001_001E                                        |
-| Education (Bachelor's or higher) | Sum of education categories                | education_bachelors_plus | B15003_022E+B15003_023E+B15003_024E+B15003_025E   |
+| Education (Bachelor's or higher) | Sum of education categories                | education_bachelors_plus | B15003_022E + B15003_023E + B15003_024E + B15003_025E   |
 
 ### 4. Run the Community Mapper
 
