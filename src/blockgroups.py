@@ -125,7 +125,10 @@ def get_census_block_groups(
                 }
                 
                 try:
-                    tqdm.write(f"  Fetching batch starting at index {start_index}...")
+                    # Only log the first batch and then every 5th batch to reduce verbosity
+                    if batch_count == 0 or batch_count % 5 == 0:
+                        tqdm.write(f"  Fetching batch starting at index {start_index}...")
+                    
                     response = requests.get(base_url, params=params, timeout=60)
                     
                     if response.status_code == 200:
@@ -137,7 +140,10 @@ def get_census_block_groups(
                                 
                                 if 'features' in response_json and response_json['features']:
                                     feature_count = len(response_json['features'])
-                                    tqdm.write(f"  Retrieved {feature_count} block groups in this batch")
+                                    
+                                    # Only log the first batch and then every 5th batch
+                                    if batch_count == 0 or batch_count % 5 == 0:
+                                        tqdm.write(f"  Retrieved {feature_count} block groups in this batch")
                                     
                                     # Create GeoDataFrame from features
                                     batch_gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
@@ -257,7 +263,9 @@ def find_intersecting_block_groups(
     processed_geometries = []
     
     tqdm.write(f"Processing {len(intersection)} intersecting block groups...")
-    for idx, row in tqdm(intersection.iterrows(), desc="Processing intersections", unit="block group", total=len(intersection)):
+    
+    # Skip progress bar for nearly instant operations
+    for idx, row in intersection.iterrows():
         block_geom = row.geometry
         isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
         
