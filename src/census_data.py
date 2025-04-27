@@ -42,7 +42,8 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
     state_block_groups = {}
     
     tqdm.write("Extracting block group IDs by state...")
-    for _, row in tqdm(gdf.iterrows(), desc="Processing block groups", unit="block", total=len(gdf)):
+
+    for _, row in gdf.iterrows():
         state = row.get('STATE')
         geoid = row.get('GEOID')
         
@@ -353,7 +354,8 @@ def get_census_data_for_block_groups(
     )
     
     # Convert numeric columns
-    for var in tqdm(variables, desc="Converting numeric columns", unit="column"):
+    tqdm.write("Converting numeric columns...")
+    for var in variables:
         if var != 'NAME' and var in result_gdf.columns:
             result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
     
