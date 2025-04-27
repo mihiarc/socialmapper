@@ -8,52 +8,44 @@ import matplotlib.pyplot as plt
 import contextily as ctx
 import numpy as np
 import pandas as pd
-from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch, FancyBboxPatch
 from matplotlib.lines import Line2D
 from pathlib import Path
 from typing import Optional, List
 from matplotlib_scalebar.scalebar import ScaleBar
-import matplotlib.path as mpath
 import matplotlib.patheffects as pe
 from matplotlib.colors import LinearSegmentedColormap
+import sys
+import os
 
-# Mapping of common names to Census API variable codes
-CENSUS_VARIABLE_MAPPING = {
-    'population': 'B01003_001E',
-    'median_income': 'B19013_001E',
-    'median_age': 'B01002_001E',
-    'households': 'B11001_001E',
-    'housing_units': 'B25001_001E',
-    'median_home_value': 'B25077_001E'
-}
-
-# Variable-specific color schemes
-VARIABLE_COLORMAPS = {
-    'B01003_001E': 'viridis',      # Population - blues/greens
-    'B19013_001E': 'plasma',       # Income - yellows/purples
-    'B25077_001E': 'inferno',      # Home value - oranges/reds
-    'B01002_001E': 'cividis'       # Age - yellows/blues
-}
+# Add the parent directory to sys.path to ensure imports work
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.util import CENSUS_VARIABLE_MAPPING, VARIABLE_COLORMAPS
 
 def get_variable_label(variable: str) -> str:
-    """Convert Census variable codes to readable labels"""
+    """Convert Census Variable Codes To Readable Labels"""
     reverse_mapping = {v: k.replace('_', ' ').title() for k, v in CENSUS_VARIABLE_MAPPING.items()}
-    return reverse_mapping.get(variable, variable)
+    # Get from mapping if available, otherwise convert variable to title case
+    if variable in reverse_mapping:
+        return reverse_mapping[variable]
+    else:
+        # Handle variables not in mapping by replacing underscores and title-casing
+        return variable.replace('_', ' ').title()
 
 def generate_map(
     census_data_path: str,
+    variable: str,
     output_path: Optional[str] = None,
-    variable: str = 'B01003_001E',  # Default to total population
     title: Optional[str] = None,
-    colormap: str = 'RdPu',
+    colormap: str = 'GnBu',
     basemap_provider: str = 'OpenStreetMap.Mapnik',
     figsize: tuple = (12, 12),
     dpi: int = 300,
     output_dir: str = "output/maps",
     isochrone_path: Optional[str] = None,
     isochrone_only: bool = False,  # New parameter to indicate isochrone-only maps
-    poi_df: Optional[gpd.GeoDataFrame] = None
+    poi_df: Optional[gpd.GeoDataFrame] = None,
+    show_isochrone: bool = False
 ) -> str:
     """
     Generate a choropleth map for census data in block groups.
@@ -71,6 +63,7 @@ def generate_map(
         isochrone_path: Optional path to isochrone GeoJSON to overlay on the map
         isochrone_only: If True, generate a map showing only isochrones without census data
         poi_df: Optional GeoDataFrame containing POI data
+        show_isochrone: Whether to display the isochrone boundary on the map
         
     Returns:
         Path to the saved map
@@ -104,11 +97,6 @@ def generate_map(
         variable_mapped = None
         for human_readable, census_code in CENSUS_VARIABLE_MAPPING.items():
             if census_code.lower() == variable.lower():
-                # Try the human readable version (e.g., 'total_population')
-                if human_readable in gdf.columns:
-                    variable_mapped = human_readable
-                    break
-                
                 # Try the title case version (e.g., 'Total Population')
                 title_case = human_readable.replace('_', ' ').title()
                 if title_case in gdf.columns:
@@ -123,11 +111,6 @@ def generate_map(
     
     # Ensure data is numeric
     gdf[variable] = pd.to_numeric(gdf[variable], errors='coerce')
-    
-    # Add diagnostics
-    print(f"Variable: {variable}")
-    print(f"Data min: {gdf[variable].min()}, max: {gdf[variable].max()}")
-    print(f"Data has NaN values: {gdf[variable].isna().any()}")
     
     # Replace any NaN values with the minimum to ensure proper rendering
     if gdf[variable].isna().any():
@@ -150,7 +133,49 @@ def generate_map(
     # Set default title if not provided
     if title is None:
         variable_label = get_variable_label(variable)
-        title = f"{variable_label} by Census Block Group"
+        
+        # Add isochrone information to title if available
+        if isochrone_path:
+            # Extract POI info from isochrone file name
+            isochrone_file = Path(isochrone_path).stem
+            parts = isochrone_file.split('_')
+            location_name = None
+            poi_name = None
+            travel_time = None
+            
+            if len(parts) >= 3:
+                if 'amenity' in isochrone_file:
+                    # Format typically: location_amenity_type_time
+                    location_name = parts[0].title()
+                    poi_type = parts[2].replace('-', ' ').title()
+                    poi_name = f"{poi_type}"
+            
+            # Try to extract travel time from filename
+            if 'min' in isochrone_file:
+                for part in parts:
+                    if 'min' in part:
+                        try:
+                            travel_time = int(part.replace('min', ''))
+                        except ValueError:
+                            pass
+                            
+            # Try to get travel time from isochrone data if the file is loaded
+            if 'isochrone' in locals():
+                for col in isochrone.columns:
+                    if 'time' in col.lower() or 'minute' in col.lower():
+                        if not isochrone[col].empty:
+                            travel_time = isochrone[col].iloc[0]
+                            break
+            
+            # Construct a more descriptive title
+            if travel_time and poi_name and location_name:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel of {location_name} {poi_name}"
+            elif travel_time and poi_name:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel of {poi_name}"
+            elif travel_time:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel Time"
+            else:
+                display_title = f"{variable_label} by Census Block Group"
     
     # Choose appropriate colormap for the variable
     if variable in VARIABLE_COLORMAPS:
@@ -163,17 +188,9 @@ def generate_map(
     fig, ax = plt.subplots(figsize=figsize, facecolor='#f8f8f8')
     fig.tight_layout(pad=3)
     
-    # Add a border to the figure
-    fig.patch.set_linewidth(1)
-    fig.patch.set_edgecolor('#dddddd')
-    
     # Get data range for coloring
     min_val = gdf[variable].min()
     max_val = gdf[variable].max()
-    
-    print(f"Variable: {variable}")
-    print(f"Data min: {min_val}, max: {max_val}")
-    print(f"Using colormap: {colormap}")
     
     # Create bins for labels
     bins = np.linspace(min_val, max_val, 6)
@@ -184,9 +201,6 @@ def generate_map(
         labels = [f'{int(bins[i]):,} - {int(bins[i+1]):,}' for i in range(len(bins)-1)]
     else:
         labels = [f'{bins[i]:.1f} - {bins[i+1]:.1f}' for i in range(len(bins)-1)]
-        
-    # Print debug info
-    print(f"Created {len(labels)} labels for legend")
     
     # Simple direct coloring approach without using GeoPandas plot
     for idx, row in gdf.iterrows():
@@ -211,8 +225,8 @@ def generate_map(
         except Exception as e:
             print(f"Error filling polygon: {e}")
     
-    # Add isochrone boundary if provided
-    if isochrone_path:
+    # Add isochrone boundary if provided and if show_isochrone is True
+    if isochrone_path and show_isochrone:
         try:
             # Determine the file type and read appropriately
             if isochrone_path.lower().endswith('.parquet'):
@@ -230,8 +244,8 @@ def generate_map(
                 linewidth=2.5,       # Thicker line
                 linestyle='-',
                 alpha=0.8,
-                label='15-min Travel Time',
-                path_effects=[pe.Stroke(linewidth=4, foreground='white'), pe.Normal()]  # Add outline
+                label=f"{travel_time}-min Travel Time",
+                path_effects=[pe.Stroke(linewidth=4, foreground='white'), pe.Normal()]
             )
             
             # Add the isochrone to the title if not custom title provided
@@ -258,23 +272,18 @@ def generate_map(
     for component in basemap_provider.split('.')[1:]:
         provider = getattr(provider, component)
         
-    # Use a more muted basemap by default if not explicitly specified
-    if basemap_provider == 'OpenStreetMap.Mapnik':
-        # Use CartoDB Positron as a cleaner alternative
-        provider = ctx.providers.CartoDB.Positron
-        
     ctx.add_basemap(
         ax,
         source=provider,
         crs=gdf.crs.to_string(),
-        alpha=0.7  # Reduce basemap intensity
+        alpha=0.5
     )
     
     # Add margins to the map
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    x_margin = (xlim[1] - xlim[0]) * 0.05  # 5% margin
-    y_margin = (ylim[1] - ylim[0]) * 0.05  # 5% margin
+    x_margin = (xlim[1] - xlim[0]) * 0.05
+    y_margin = (ylim[1] - ylim[0]) * 0.05
     ax.set_xlim(xlim[0] - x_margin, xlim[1] + x_margin)
     ax.set_ylim(ylim[0] - y_margin, ylim[1] + y_margin)
     
@@ -292,46 +301,83 @@ def generate_map(
         )
     
     # Add isochrone to legend if it was displayed
-    if isochrone_path and 'isochrone' in locals():
+    if isochrone_path and show_isochrone and 'isochrone' in locals():
         isochrone_legend = Line2D([0], [0], color='blue', linewidth=2, linestyle='-',
-                              label='Isochrone Boundary')
+                              label=f"{travel_time}-min Isochrone")
         legend_handles.append(isochrone_legend)
     
-    # Add the legend below the map
+    # Add the legend below the map with adjusted size and position
     legend = ax.legend(
         handles=legend_handles,
         loc='lower center',
-        bbox_to_anchor=(0.5, -0.15),  # Push down slightly
-        ncol=min(len(labels), 3),
-        title=get_variable_label(variable),
+        bbox_to_anchor=(0.5, -0.05),
+        ncol=min(len(labels), 5),
+        title=f"{variable_label} by Block Group",
         frameon=True,
-        fontsize=11,
-        title_fontsize=13,
+        fontsize=14,                  
+        title_fontsize=16,
         framealpha=0.9,
         edgecolor='#888888'
     )
     legend.get_frame().set_linewidth(1.0)
     
     # Add title
-    ax.set_title(title, fontsize=18, fontweight='bold', fontfamily='Helvetica Neue', 
+    if title is None:
+        variable_label = get_variable_label(variable)
+        
+        # Add isochrone information to title if available
+        if isochrone_path:
+            # Extract POI info from isochrone file name
+            isochrone_file = Path(isochrone_path).stem
+            parts = isochrone_file.split('_')
+            location_name = None
+            poi_name = None
+            travel_time = None
+            
+            if len(parts) >= 3:
+                if 'amenity' in isochrone_file:
+                    # Format typically: location_amenity_type_time
+                    location_name = parts[0].title()
+                    poi_type = parts[2].replace('-', ' ').title()
+                    poi_name = f"{poi_type}"
+            
+            # Try to extract travel time from filename
+            if 'min' in isochrone_file:
+                for part in parts:
+                    if 'min' in part:
+                        try:
+                            travel_time = int(part.replace('min', ''))
+                        except ValueError:
+                            pass
+                            
+            # Try to get travel time from isochrone data if the file is loaded
+            if 'isochrone' in locals():
+                for col in isochrone.columns:
+                    if 'time' in col.lower() or 'minute' in col.lower():
+                        if not isochrone[col].empty:
+                            travel_time = isochrone[col].iloc[0]
+                            break
+            
+            # Construct a more descriptive title
+            if travel_time and poi_name and location_name:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel of {location_name} {poi_name}"
+            elif travel_time and poi_name:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel of {poi_name}"
+            elif travel_time:
+                display_title = f"{variable_label} Within {travel_time}-Minute Travel Time"
+            else:
+                display_title = f"{variable_label} Within Accessible Area"
+        else:
+            display_title = f"{variable_label} by Census Block Group"
+    else:
+        display_title = f"{variable_label} by Census Block Group"
+        
+    ax.set_title(display_title, fontsize=28, fontweight='bold', fontfamily='Helvetica Neue', 
                pad=20, color='#333333')
     ax.set_axis_off()
     
-    # Add a more elegant border with rounded corners
-    rect = FancyBboxPatch(
-        (xlim[0], ylim[0]),
-        width=xlim[1]-xlim[0],
-        height=ylim[1]-ylim[0],
-        boxstyle="round,pad=0",
-        fill=False,
-        edgecolor='#222222',
-        linewidth=2.5,
-        zorder=1000
-    )
-    ax.add_patch(rect)
-    
     # Add scale bar
-    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right'))
+    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right', rotation='horizontal-only'))
     
     # Add north arrow
     x, y = xlim[1] - x_margin/2, ylim[1] - y_margin/2
@@ -520,7 +566,7 @@ def generate_isochrone_map(
     ax.add_patch(rect)
     
     # Add scale bar
-    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right'))
+    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right', rotation='horizontal-only'))
     
     # Add north arrow
     x, y = xlim[1] - x_margin/2, ylim[1] - y_margin/2
@@ -634,6 +680,9 @@ if __name__ == "__main__":
     parser.add_argument("--dpi", type=int, default=300, help="Output image resolution")
     parser.add_argument("--isochrone", help="Path to isochrone GeoJSON file to overlay on the map")
     parser.add_argument("--isochrone-only", action="store_true", help="Generate map showing only isochrones without census data")
+    parser.add_argument("--show-isochrone", dest='show_isochrone', action='store_true', help="Show isochrone boundary on the map")
+    parser.add_argument("--hide-isochrone", dest='show_isochrone', action='store_false', help="Hide isochrone boundary on the map")
+    parser.set_defaults(show_isochrone=False)
     
     args = parser.parse_args()
     
@@ -660,5 +709,6 @@ if __name__ == "__main__":
         dpi=args.dpi,
         output_dir=args.output_dir,
         isochrone_path=args.isochrone,
-        isochrone_only=args.isochrone_only
+        isochrone_only=args.isochrone_only,
+        show_isochrone=args.show_isochrone
     ) 
