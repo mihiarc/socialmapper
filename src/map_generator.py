@@ -13,6 +13,7 @@ from matplotlib.patches import Patch, Rectangle
 from matplotlib.lines import Line2D
 from pathlib import Path
 from typing import Optional, List
+from matplotlib_scalebar.scalebar import ScaleBar
 
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
@@ -22,6 +23,14 @@ CENSUS_VARIABLE_MAPPING = {
     'households': 'B11001_001E',
     'housing_units': 'B25001_001E',
     'median_home_value': 'B25077_001E'
+}
+
+# Variable-specific color schemes
+VARIABLE_COLORMAPS = {
+    'B01003_001E': 'viridis',      # Population - blues/greens
+    'B19013_001E': 'plasma',       # Income - yellows/purples
+    'B25077_001E': 'inferno',      # Home value - oranges/reds
+    'B01002_001E': 'cividis'       # Age - yellows/blues
 }
 
 def get_variable_label(variable: str) -> str:
@@ -275,6 +284,15 @@ def generate_map(
     )
     ax.add_patch(rect)
     
+    # Add scale bar
+    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right'))
+    
+    # Add north arrow
+    x, y = xlim[1] - x_margin/2, ylim[1] - y_margin/2
+    ax.annotate('N', xy=(x, y), xytext=(x, y-5000),
+               arrowprops=dict(facecolor='black', width=5, headwidth=15),
+               ha='center', va='center', fontsize=12, fontweight='bold')
+    
     # Save the map
     plt.savefig(output_path, bbox_inches='tight', dpi=dpi)
     plt.close(fig)
@@ -429,6 +447,15 @@ def generate_isochrone_map(
     )
     ax.add_patch(rect)
     
+    # Add scale bar
+    ax.add_artist(ScaleBar(1, dimension='si-length', units='m', location='lower right'))
+    
+    # Add north arrow
+    x, y = xlim[1] - x_margin/2, ylim[1] - y_margin/2
+    ax.annotate('N', xy=(x, y), xytext=(x, y-5000),
+               arrowprops=dict(facecolor='black', width=5, headwidth=15),
+               ha='center', va='center', fontsize=12, fontweight='bold')
+    
     # Save the map
     plt.savefig(output_path, bbox_inches='tight', dpi=dpi)
     plt.close(fig)
@@ -507,8 +534,7 @@ def generate_maps_for_variables(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate maps from census data for block groups")
     parser.add_argument("--census-data", help="Path to GeoJSON file with census data for block groups")
-    parser.add_argument("--variable", default="B01003_001E", 
-                      help="Census variable to visualize (can be a Census API code like 'B01003_001E' or a common name like 'population')")
+    parser.add_argument("--variable", help="Census variable to visualize")
     parser.add_argument("--output", help="Output PNG file path")
     parser.add_argument("--output-dir", default="output/maps", help="Directory to save maps (default: output/maps)")
     parser.add_argument("--title", help="Map title")
