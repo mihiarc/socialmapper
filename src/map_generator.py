@@ -175,7 +175,9 @@ def generate_map(
             elif travel_time:
                 display_title = f"{variable_label} Within {travel_time}-Minute Travel Time"
             else:
-                display_title = f"{variable_label} by Census Block Group"
+                display_title = f"{variable_label} Within Accessible Area"
+        else:
+            display_title = f"{variable_label} by Census Block Group"
     
     # Choose appropriate colormap for the variable
     if variable in VARIABLE_COLORMAPS:
@@ -370,7 +372,7 @@ def generate_map(
         else:
             display_title = f"{variable_label} by Census Block Group"
     else:
-        display_title = f"{variable_label} by Census Block Group"
+        display_title = title
         
     ax.set_title(display_title, fontsize=28, fontweight='bold', fontfamily='Helvetica Neue', 
                pad=20, color='#333333')
@@ -636,6 +638,7 @@ def generate_maps_for_variables(
             isochrone_output_path = Path(output_dir) / f"{basename}_isochrone_map.png"
             saved_path = generate_map(
                 census_data_path=census_data_path,  # This won't be used 
+                variable="dummy",  # Add a dummy variable since it's required but not used for isochrone-only maps
                 output_path=str(isochrone_output_path),
                 isochrone_path=isochrone_path,
                 isochrone_only=True,  # Flag to generate isochrone-only map
