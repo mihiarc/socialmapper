@@ -104,17 +104,17 @@ For areas near state borders, include all relevant states to ensure complete cov
 
 Choose which census variables you want to analyze. Some useful options:
 
-| Description | Census Variable | Notes |
-|-------------|----------------|-------|
-| Total Population | B01003_001E | Basic population count |
-| Median Household Income | B19013_001E | In dollars |
-| Median Home Value | B25077_001E | For owner-occupied units |
-| Median Age | B01002_001E | Overall median age |
-| White Population | B02001_002E | Population identifying as white alone |
-| Black Population | B02001_003E | Population identifying as Black/African American alone |
-| Hispanic Population | B03003_003E | Hispanic or Latino population of any race |
-| Housing Units | B25001_001E | Total housing units |
-| Education (Bachelor's or higher) | B15003_022E+B15003_023E+B15003_024E+B15003_025E | Sum of education categories |
+| Description | Notes | Census Variable |
+|-------------|-------|----------------|
+| Total Population | Basic population count | B01003_001E |
+| Median Household Income | In dollars | B19013_001E |
+| Median Home Value | For owner-occupied units | B25077_001E |
+| Median Age | Overall median age | B01002_001E |
+| White Population | Population identifying as white alone | B02001_002E |
+| Black Population | Population identifying as Black/African American alone | B02001_003E |
+| Hispanic Population | Hispanic or Latino population of any race | B03003_003E |
+| Housing Units | Total housing units | B25001_001E |
+| Education (Bachelor's or higher) | Sum of education categories | B15003_022E+B15003_023E+B15003_024E+B15003_025E |
 
 ### 4. Run the Community Mapper
 
