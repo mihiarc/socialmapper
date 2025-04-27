@@ -77,11 +77,17 @@ STATE_FIPS_TO_ABBR = {fips: abbr for abbr, fips in STATE_ABBR_TO_FIPS.items()}
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
     'population': 'B01003_001E',
+    'total_population': 'B01003_001E',
     'median_income': 'B19013_001E',
+    'median_household_income': 'B19013_001E',
     'median_age': 'B01002_001E',
     'households': 'B11001_001E',
     'housing_units': 'B25001_001E',
-    'median_home_value': 'B25077_001E'
+    'median_home_value': 'B25077_001E',
+    'white_population': 'B02001_002E',
+    'black_population': 'B02001_003E',
+    'hispanic_population': 'B03003_003E',
+    'education_bachelors_plus': 'B15003_022E'
 }
 
 # Variable-specific color schemes
@@ -89,7 +95,11 @@ VARIABLE_COLORMAPS = {
     'B01003_001E': 'viridis',      # Population - blues/greens
     'B19013_001E': 'plasma',       # Income - yellows/purples
     'B25077_001E': 'inferno',      # Home value - oranges/reds
-    'B01002_001E': 'cividis'       # Age - yellows/blues
+    'B01002_001E': 'cividis',      # Age - yellows/blues
+    'B02001_002E': 'Blues',        # White population
+    'B02001_003E': 'Purples',      # Black population
+    'B03003_003E': 'Oranges',      # Hispanic population
+    'B15003_022E': 'Greens'        # Education (Bachelor's or higher)
 }
 
 def state_name_to_abbreviation(state_name: str) -> Optional[str]:
