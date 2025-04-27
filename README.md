@@ -115,7 +115,9 @@ Choose which census variables you want to analyze. Some useful options:
 
 ### 4. Run the Community Mapper
 
-Execute the end-to-end community mapping process:
+#### Using OpenStreetMap POIs
+
+Execute the end-to-end community mapping process using POIs from OpenStreetMap:
 
 ```bash
 python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
@@ -127,8 +129,52 @@ If your config file doesn't include a `state` field, you'll need to specify it:
 python community_mapper.py --config my_config.yaml --state TX --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
 ```
 
+#### Using Your Own Coordinates
+
+If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file:
+
+```bash
+python community_mapper.py --custom-coords my_locations.csv --travel-time 15 --census-variables B01003_001E B19013_001E
+```
+
+Supported formats:
+
+1. CSV with header row (should include lat/lon columns):
+```
+id,name,lat,lon,type
+1,Community Center,37.7749,-122.4194,public
+2,Food Bank,37.7833,-122.4167,nonprofit
+```
+
+2. JSON list format:
+```json
+[
+  {
+    "id": "1",
+    "name": "Community Center",
+    "lat": 37.7749,
+    "lon": -122.4194,
+    "tags": {
+      "type": "public"
+    }
+  },
+  {
+    "id": "2",
+    "name": "Food Bank",
+    "lat": 37.7833,
+    "lon": -122.4167,
+    "tags": {
+      "type": "nonprofit"
+    }
+  }
+]
+```
+
+The script will automatically detect the format based on the file extension and parse the coordinates accordingly.
+
 Parameters explained:
 - `--config`: Your POI configuration file
+- `--custom-coords`: Path to your custom coordinates CSV or JSON file
 - `--state`: State(s) to analyze (can list multiple: `TX OK LA`). Optional if specified in config file
 - `--travel-time`: Travel time in minutes (how far can people travel from each POI)
 - `--census-variables`: Census data to retrieve (list the variables you want)
@@ -204,11 +250,13 @@ graph TD
     
     subgraph "Data Sources"
         M[OpenStreetMap]
+        N[Custom Coordinates]
         G
     end
     
     subgraph "Input"
         A
+        N
     end
     
     subgraph "Output Files"
@@ -220,6 +268,7 @@ graph TD
     end
     
     M -.-> B
+    N -.-> C
 ```
 
 ### Module Descriptions
@@ -231,7 +280,7 @@ graph TD
    - Key Functions: `load_poi_config()`, `build_overpass_query()`, `query_overpass()`, `format_results()`
 
 2. **Isochrone Module** (`src/isochrone.py`):
-   - Inputs: POI data
+   - Inputs: POI data (either from Query Module or custom coordinates)
    - Process: Builds road network graphs and calculates areas reachable within specified travel times
    - Outputs: Isochrone polygons (GeoJSON)
    - Key Functions: `create_isochrone_from_poi()`, `create_isochrones_from_poi_list()`
@@ -256,8 +305,8 @@ graph TD
 
 ### Data Flow
 
-1. The user provides a POI configuration and parameters
-2. POIs are retrieved from OpenStreetMap via the Overpass API
+1. The user provides either a POI configuration or custom coordinates
+2. POIs are retrieved from OpenStreetMap via the Overpass API OR custom coordinates are used
 3. Isochrones are generated around each POI using road network analysis
 4. Census block groups that intersect with isochrones are identified
 5. Demographic data is fetched from the Census API for these block groups
@@ -265,7 +314,7 @@ graph TD
 
 ### Dependencies Between Components
 
-- The isochrone module requires POI data with coordinates
+- The isochrone module requires POI data with coordinates (from either source)
 - The block groups module requires isochrone polygons and state information
 - The census data module requires block group geometries with GEOIDs
 - The map generator requires both census data and (optionally) isochrone boundaries
@@ -273,69 +322,17 @@ graph TD
 ## Basic Usage Reference
 
 ```bash
+# Using OpenStreetMap POIs
 python community_mapper.py --config poi_config.yaml --state MO KS --travel-time 15
+
+# Using custom coordinates
+python community_mapper.py --custom-coords my_locations.csv --travel-time 15
 ```
 
 Arguments:
 - `--config`: Path to the POI configuration YAML file
+- `--custom-coords`: Path to custom coordinates CSV or JSON file (alternative to --config)
 - `--state`: State(s) to analyze (abbreviation or FIPS code). Optional if the state is specified in the config file
 - `--travel-time`: Travel time limit in minutes (default: 15)
 - `--census-variables`: Census variables to retrieve (default: population and income)
 - `--api-key`: Census API key (optional if set as environment variable)
-
-### Example POI Configuration
-
-Create a YAML file like this to configure which POIs to search for:
-
-```yaml
-# Libraries in Kansas City
-geocode_area: "Kansas City"
-state: "Missouri"  # Full state name is automatically converted to abbreviation (MO)
-city: "Kansas City"
-type: "amenity"
-name: "library"
-```
-
-When specifying the `state` in your configuration file:
-- Use the full state name (e.g., "Kansas", "Missouri", "California")
-- The system will automatically convert it to the two-letter abbreviation for Census API calls
-- This allows you to omit the `--state` command line argument
-
-## Output
-
-The script creates the following directory structure for outputs:
-
-```
-output/
-├── pois/                 # POI data in JSON format
-├── isochrones/           # Isochrone polygons in GeoJSON format
-├── block_groups/         # Intersecting block groups in GeoJSON format
-├── census_data/          # Block groups with census data in GeoJSON format
-└── maps/                 # Generated maps in PNG format
-```
-
-## Using Individual Components
-
-You can also use the individual modules separately for more customized analysis:
-
-```python
-from src.query import load_poi_config, build_overpass_query, query_overpass
-from src.isochrone import create_isochrone_from_poi
-from src.blockgroups import isochrone_to_block_groups
-from src.census_data import get_census_data_for_block_groups
-from src.map_generator import generate_map
-```
-
-## License
-
-MIT License
-
-## Acknowledgments
-
-This toolkit makes use of several open-source libraries and data sources:
-- [OpenStreetMap](https://www.openstreetmap.org/)
-- [US Census Bureau API](https://www.census.gov/data/developers/data-sets.html)
-- [OSMnx](https://github.com/gboeing/osmnx)
-- [GeoPandas](https://geopandas.org/)
-- [Matplotlib](https://matplotlib.org/)
-- [Contextily](https://contextily.readthedocs.io/)
