@@ -153,8 +153,31 @@ def fetch_census_data_for_states(
     if 'NAME' not in api_variables:
         api_variables.append('NAME')
     
+    # Validate variables
+    invalid_vars = []
+    for var in api_variables:
+        if not isinstance(var, str):
+            invalid_vars.append(f"{var} (type: {type(var)})")
+    
+    if invalid_vars:
+        raise ValueError(f"Invalid variable types detected: {', '.join(invalid_vars)}. All variables must be strings.")
+    
     # Base URL for Census API
     base_url = f'https://api.census.gov/data/{year}/{dataset}'
+    
+    # Verify the API URL with a test request
+    test_url = f"{base_url}/variables.json"
+    try:
+        test_response = requests.get(test_url, params={'key': api_key})
+        if test_response.status_code != 200:
+            tqdm.write(f"ERROR: Cannot access Census API at {test_url} - Status: {test_response.status_code}")
+            tqdm.write(f"Response: {test_response.text[:500]}...")
+            raise ValueError(f"Census API returned status code {test_response.status_code} for URL {test_url}")
+        else:
+            tqdm.write(f"Census API accessible at {base_url}")
+    except requests.exceptions.RequestException as e:
+        tqdm.write(f"ERROR: Cannot connect to Census API: {str(e)}")
+        raise
     
     # Initialize an empty list to store dataframes
     dfs = []
@@ -172,31 +195,50 @@ def fetch_census_data_for_states(
             'key': api_key
         }
         
-        # Make the API request
-        response = requests.get(base_url, params=params)
+        tqdm.write(f"Request URL: {base_url} with params: get={params['get'][:50]}..., for={params['for']}, in={params['in']}")
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            data = response.json()
+        try:
+            # Make the API request
+            response = requests.get(base_url, params=params)
             
-            # Convert to DataFrame
-            df = pd.DataFrame(data[1:], columns=data[0])
-            
-            # Append the dataframe to the list
-            dfs.append(df)
-            
-            tqdm.write(f"  - Retrieved data for {len(df)} block groups")
-            
-        else:
-            tqdm.write(f"Error fetching data for {state_name} ({state_code}): {response.status_code}")
-            tqdm.write(response.text)
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Parse the JSON response
+                data = response.json()
+                
+                # Validate response structure
+                if not data or len(data) < 2:
+                    tqdm.write(f"Warning: Empty or invalid response for {state_name}: {data}")
+                    continue
+                
+                # Convert to DataFrame
+                df = pd.DataFrame(data[1:], columns=data[0])
+                
+                # Append the dataframe to the list
+                dfs.append(df)
+                
+                tqdm.write(f"  - Retrieved data for {len(df)} block groups")
+                
+            else:
+                tqdm.write(f"Error fetching data for {state_name} ({state_code}): Status {response.status_code}")
+                tqdm.write(f"Response: {response.text[:500]}...")
+                # Don't raise exception here, try other states
+        
+        except Exception as e:
+            tqdm.write(f"Exception while fetching data for {state_name}: {str(e)}")
+            # Continue with other states
     
     # Combine all data
     if not dfs:
         raise ValueError("No census data retrieved. Please check your API key and the census variables you're requesting.")
         
     final_df = pd.concat(dfs, ignore_index=True)
+    
+    # Log the column types for debugging
+    tqdm.write(f"Census data columns and types:")
+    for col in final_df.columns:
+        sample_val = str(final_df[col].iloc[0]) if len(final_df) > 0 else "No data"
+        tqdm.write(f"  - {col}: {final_df[col].dtype} (example: {sample_val})")
     
     # Create a GEOID column to match with GeoJSON - ensure proper formatting with leading zeros
     # Census API returns components as:
@@ -307,44 +349,46 @@ def get_census_data_for_block_groups(
     tqdm.write(f"Found block groups in these states: {', '.join(state_names)}")
     
     # Fetch census data for all block groups in the relevant states
-    try:
-        all_state_census_data = fetch_census_data_for_states(
-            state_fips_list,
-            variables,
-            year=year,
-            dataset=dataset,
-            api_key=api_key
-        )
-        
-        # Extract just the GEOIDs we need from all the block groups
-        needed_geoids = []
-        for state_ids in block_groups_by_state.values():
-            needed_geoids.extend(state_ids)
-        
-        # Print the total count and a few needed GEOIDs for diagnostic purposes
-        tqdm.write(f"Looking for {len(needed_geoids)} specific block groups in the census data")
-        
-        # Filter to only the block groups we identified in the isochrone
-        census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
-        tqdm.write(f"Found {len(census_data)} of {len(needed_geoids)} block groups in census data")
-        
-    except Exception as e:
-        # If we couldn't fetch data, create a minimal dataframe with GEOID to allow saving the file
-        tqdm.write(f"Error fetching census data: {e}")
-        tqdm.write("Creating a placeholder dataframe with just GEOID and empty values for the requested variables")
-        
-        # Gather all block group IDs
-        all_ids = []
-        for state_ids in block_groups_by_state.values():
-            all_ids.extend(state_ids)
-            
-        placeholder_data = {'GEOID': all_ids}
-        for var in variables:
-            if var != 'NAME':
-                placeholder_data[var] = [None] * len(all_ids)
-        placeholder_data['NAME'] = [None] * len(all_ids)
-        
-        census_data = pd.DataFrame(placeholder_data)
+    tqdm.write(f"Fetching census data for variables: {', '.join(variables)}")
+    
+    # Print API key status (masked for security)
+    if api_key:
+        masked_key = api_key[:4] + "..." + api_key[-4:] if len(api_key) > 8 else "***"
+        tqdm.write(f"Using provided API key: {masked_key}")
+    else:
+        env_key = os.getenv('CENSUS_API_KEY')
+        if env_key:
+            masked_key = env_key[:4] + "..." + env_key[-4:] if len(env_key) > 8 else "***"
+            tqdm.write(f"Using environment API key: {masked_key}")
+        else:
+            tqdm.write("WARNING: No Census API key provided!")
+
+    # Fetch census data without catching exceptions to see the actual error
+    all_state_census_data = fetch_census_data_for_states(
+        state_fips_list,
+        variables,
+        year=year,
+        dataset=dataset,
+        api_key=api_key
+    )
+    
+    # Extract just the GEOIDs we need from all the block groups
+    needed_geoids = []
+    for state_ids in block_groups_by_state.values():
+        needed_geoids.extend(state_ids)
+    
+    # Print diagnostic info
+    tqdm.write(f"Looking for {len(needed_geoids)} specific block groups in the census data")
+    tqdm.write(f"Census data has {len(all_state_census_data)} records and {all_state_census_data.columns.tolist()} columns")
+    
+    # Filter to only the block groups we identified in the isochrone
+    census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
+    tqdm.write(f"Found {len(census_data)} of {len(needed_geoids)} block groups in census data")
+    
+    # Show a sample of the data
+    if len(census_data) > 0:
+        tqdm.write("Sample of census data:")
+        tqdm.write(str(census_data.iloc[:2]))
     
     # Merge census data with block group geometries
     result_gdf = merge_census_data(
@@ -371,10 +415,30 @@ def get_census_data_for_block_groups(
     output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save to file
+    # Check if NAME column is present and not null
+    if 'NAME' in result_gdf.columns:
+        null_names = result_gdf['NAME'].isnull().sum()
+        if null_names > 0:
+            tqdm.write(f"WARNING: {null_names} null values in NAME column. Converting to strings.")
+            result_gdf['NAME'] = result_gdf['NAME'].fillna("Block Group").astype(str)
+    
+    # Save to file with explicit dtypes to avoid errors
     tqdm.write(f"Saving result with census data to {output_path}...")
-    result_gdf.to_file(output_path, driver="GeoJSON")
-    tqdm.write(f"Saved result with census data to {output_path}")
+    tqdm.write(f"Data types before saving: {result_gdf.dtypes}")
+    
+    try:
+        result_gdf.to_file(output_path, driver="GeoJSON")
+        tqdm.write(f"Saved result with census data to {output_path}")
+    except Exception as e:
+        tqdm.write(f"ERROR saving GeoJSON: {str(e)}")
+        tqdm.write("Trying alternative save method...")
+        # Try an alternative approach - convert to string types first
+        for col in result_gdf.columns:
+            if col != 'geometry':
+                result_gdf[col] = result_gdf[col].astype(str)
+        
+        result_gdf.to_file(output_path, driver="GeoJSON")
+        tqdm.write(f"Successfully saved with string conversion")
     
     return result_gdf
 
