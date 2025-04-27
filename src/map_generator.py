@@ -164,7 +164,12 @@ def generate_map(
     # Add isochrone boundary if provided
     if isochrone_path:
         try:
-            isochrone = gpd.read_file(isochrone_path)
+            # Determine the file type and read appropriately
+            if isochrone_path.lower().endswith('.parquet'):
+                isochrone = gpd.read_parquet(isochrone_path)
+            else:
+                isochrone = gpd.read_file(isochrone_path)
+                
             # Ensure the CRS matches our map
             isochrone = isochrone.to_crs(gdf.crs)
             
@@ -303,7 +308,11 @@ def generate_isochrone_map(
     """
     # Load the isochrone
     try:
-        isochrone = gpd.read_file(isochrone_path)
+        # Determine the file type and read appropriately
+        if isochrone_path.lower().endswith('.parquet'):
+            isochrone = gpd.read_parquet(isochrone_path)
+        else:
+            isochrone = gpd.read_file(isochrone_path)
     except Exception as e:
         raise ValueError(f"Error loading isochrone file: {e}")
         
