@@ -13,6 +13,14 @@ import json
 import pandas as pd
 from tqdm import tqdm
 import time
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Suppress FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -73,8 +81,8 @@ def create_isochrone_from_poi(
         logger.error(f"Error downloading road network: {e}")
         raise
     
-    # Add speeds and travel times
-    G = ox.add_edge_speeds(G)
+    # Add speeds and travel times with fallback values
+    G = ox.add_edge_speeds(G, fallback=50)  # 50 km/h as default fallback speed which is 31 mph
     G = ox.add_edge_travel_times(G)
     G = ox.project_graph(G)
     
@@ -240,6 +248,8 @@ def create_isochrones_from_poi_list(
         except Exception as e:
             tqdm.write(f"Error creating isochrone for POI {poi_name}: {e}")
             logger.error(f"Error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
+            # Continue with next POI instead of failing
+            continue
     
     if combine_results:
         if isochrone_gdfs or not save_individual_files:
