@@ -2,7 +2,7 @@
 
 A Python toolkit for mapping community resources and analyzing demographic data around them.
 
-## ⚠️ ALPHA STAGE ⚠️
+## ⚠️ PRE-RELEASE ⚠️
 This is an alpha release (v0.1.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
 
 ## Overview
@@ -19,14 +19,15 @@ Community Mapper integrates several geospatial analysis tools to help understand
 
 ### Prerequisites
 
-- Python 3.8 or later
+- Python 3.9 or later
 - A Census API key (get one at https://api.census.gov/data/key_signup.html)
+- uv virtual environment and package manager (instructions here https://github.com/astral-sh/uv)
 
 ### Setup using uv
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/community-mapper.git
+   git clone https://github.com/mihiarc/community-mapper.git
    cd community-mapper
    ```
 
@@ -62,24 +63,26 @@ Community Mapper integrates several geospatial analysis tools to help understand
 
 ### 1. Define Your Points of Interest
 
-Create a YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map:
+Edit the included YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map:
 
 ```yaml
-# Example: Schools in Austin, TX
-geocode_area: "Austin"
-state: "Texas"
-city: "Austin"
+# Example: Schools in Durham, NC
+geocode_area: "Durham"
+state: "North Carolina"
+city: "Durham"
 type: "amenity"
 name: "school"
 ```
 
-Common POI types you can use:
+Common OpenStreetMap POI types you can use:
 - Libraries: `type: "amenity"`, `name: "library"`
 - Schools: `type: "amenity"`, `name: "school"`
 - Hospitals: `type: "amenity"`, `name: "hospital"`
 - Parks: `type: "leisure"`, `name: "park"`
 - Supermarkets: `type: "shop"`, `name: "supermarket"`
 - Pharmacies: `type: "amenity"`, `name: "pharmacy"`
+
+Check out the OpenStreetMap Wiki for more on map features: https://wiki.openstreetmap.org/wiki/Map_features
 
 For more specific queries, use tags:
 ```yaml
