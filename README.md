@@ -231,6 +231,7 @@ Here are some examples of community mapping projects you could create:
 - **Census API errors**: Ensure your API key is valid and properly set as an environment variable.
 - **Isochrone generation issues**: For very large areas, try reducing the travel time to avoid timeouts.
 - **Missing block groups**: Ensure you've included all relevant state FIPS codes for your area of interest.
+   For more information about obtaining block group geometries: https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1
 
 ## Technical Documentation
 
@@ -318,12 +319,13 @@ graph TD
 5. Demographic data is fetched from the Census API for these block groups
 6. Maps are generated visualizing the demographic variables
 
-### Dependencies Between Components
+## Census References
 
-- The isochrone module requires POI data with coordinates (from either source)
-- The block groups module requires isochrone polygons and state information
-- The census data module requires block group geometries with GEOIDs
-- The map generator requires both census data and (optionally) isochrone boundaries
+1. https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_restmapservice.html
+
+2. https://developers.arcgis.com/rest/
+
+
 
 ## Basic Usage Reference
 
