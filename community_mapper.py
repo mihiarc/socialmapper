@@ -57,6 +57,7 @@ def parse_custom_coordinates(file_path: str) -> Dict:
     file_extension = os.path.splitext(file_path)[1].lower()
     
     pois = []
+    states_found = set()
     
     if file_extension == '.json':
         with open(file_path, 'r') as f:
@@ -66,26 +67,36 @@ def parse_custom_coordinates(file_path: str) -> Dict:
         if isinstance(data, list):
             # List of POIs
             for item in data:
-                if 'lat' in item and 'lon' in item:
+                # Check for required fields
+                if ('lat' in item and 'lon' in item) or ('latitude' in item and 'longitude' in item):
+                    # Extract lat/lon
+                    lat = float(item.get('lat', item.get('latitude')))
+                    lon = float(item.get('lon', item.get('longitude')))
+                    
+                    # Check for state (required)
+                    if 'state' not in item:
+                        raise ValueError(f"Missing required 'state' field in item {item.get('id', 'unknown')}. Each POI must include a state identifier.")
+                    
+                    state = item['state']
+                    states_found.add(state)
+                    
                     poi = {
                         'id': item.get('id', f"custom_{len(pois)}"),
                         'name': item.get('name', f"Custom POI {len(pois)}"),
-                        'lat': float(item['lat']),
-                        'lon': float(item['lon']),
+                        'lat': lat,
+                        'lon': lon,
+                        'state': state,
                         'tags': item.get('tags', {})
                     }
                     pois.append(poi)
-                elif 'latitude' in item and 'longitude' in item:
-                    poi = {
-                        'id': item.get('id', f"custom_{len(pois)}"),
-                        'name': item.get('name', f"Custom POI {len(pois)}"),
-                        'lat': float(item['latitude']),
-                        'lon': float(item['longitude']),
-                        'tags': item.get('tags', {})
-                    }
-                    pois.append(poi)
+                else:
+                    print(f"Warning: Skipping item missing required coordinates: {item}")
         elif isinstance(data, dict) and 'pois' in data:
             # Already in expected format
+            for poi in data['pois']:
+                if 'state' not in poi:
+                    raise ValueError(f"Missing required 'state' field in POI {poi.get('id', 'unknown')}. Each POI must include a state identifier.")
+                states_found.add(poi['state'])
             pois = data['pois']
     
     elif file_extension == '.csv':
@@ -106,21 +117,31 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                         lon = float(row[lon_key])
                         break
                 
+                # Check for state (required)
+                if 'state' not in row:
+                    raise ValueError(f"Missing required 'state' column in CSV. Each POI must include a state identifier.")
+                
+                state = row['state']
+                states_found.add(state)
+                
                 if lat is not None and lon is not None:
                     poi = {
                         'id': row.get('id', f"custom_{i}"),
                         'name': row.get('name', f"Custom POI {i}"),
                         'lat': lat,
                         'lon': lon,
+                        'state': state,
                         'tags': {}
                     }
                     
                     # Add any additional columns as tags
                     for key, value in row.items():
-                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x']:
+                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state']:
                             poi['tags'][key] = value
                     
                     pois.append(poi)
+                else:
+                    print(f"Warning: Skipping row {i+1} - missing required coordinates")
     
     else:
         raise ValueError(f"Unsupported file format: {file_extension}. Please provide a JSON or CSV file.")
@@ -133,7 +154,8 @@ def parse_custom_coordinates(file_path: str) -> Dict:
         'metadata': {
             'source': 'custom',
             'count': len(pois),
-            'file_path': file_path
+            'file_path': file_path,
+            'states': list(states_found)
         }
     }
 
@@ -223,12 +245,24 @@ def run_community_mapper(
         output_dirs = setup_directories()
         
     result_files = {}
+    state_abbreviations = []
     
     # Determine if we're using custom coordinates or querying POIs
     if custom_coords_path:
         # Skip Step 1: Use custom coordinates
         print("\n=== Using Custom Coordinates (Skipping POI Query) ===")
         poi_data = parse_custom_coordinates(custom_coords_path)
+        
+        # Extract state information from the custom coordinates
+        if 'metadata' in poi_data and 'states' in poi_data['metadata']:
+            for state in poi_data['metadata']['states']:
+                # Process state - could be abbreviation or full name
+                state_abbr = state_name_to_abbreviation(state) or state
+                if state_abbr and state_abbr not in state_abbreviations:
+                    state_abbreviations.append(state_abbr)
+            
+            if state_abbreviations:
+                print(f"Using states from custom coordinates: {', '.join(state_abbreviations)}")
         
         # Set a name for the output file based on the custom coords file
         file_basename = os.path.basename(custom_coords_path)
@@ -270,6 +304,14 @@ def run_community_mapper(
         result_files["poi_data"] = poi_file
         
         print(f"Found {len(poi_data['pois'])} POIs")
+        
+        # Extract state from config if available
+        if "state" in config:
+            state_name = config.get("state")
+            state_abbr = state_name_to_abbreviation(state_name)
+            if state_abbr:
+                state_abbreviations.append(state_abbr)
+                print(f"Using state from config file: {state_name} ({state_abbr})")
     
     # Step 2: Generate isochrones
     print("\n=== Step 2: Generating Isochrones ===")
@@ -291,18 +333,16 @@ def run_community_mapper(
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
-    # Get state from config and convert to state abbreviation
-    state_fips = None
-    if config_path and "state" in (config := load_poi_config(config_path)):
-        state_name = config.get("state")
-        state_abbr = state_name_to_abbreviation(state_name)
-        if state_abbr:
-            state_fips = [state_abbr]
-            print(f"Using state from config file: {state_name} ({state_abbr})")
+    # Make sure we have state information for census lookups
+    if not state_abbreviations:
+        raise ValueError("No state information found. State is required for census block group lookup. "
+                        "Please provide state information in your custom coordinates file or config file.")
+    
+    print(f"Using states for census lookup: {', '.join(state_abbreviations)}")
     
     block_groups = isochrone_to_block_groups(
         isochrone_path=combined_isochrone_file,
-        state_fips=state_fips,
+        state_fips=state_abbreviations,
         output_path=block_groups_file,
         api_key=api_key
     )
