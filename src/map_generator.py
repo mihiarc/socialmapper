@@ -112,11 +112,30 @@ def generate_map(
     # Ensure data is numeric
     gdf[variable] = pd.to_numeric(gdf[variable], errors='coerce')
     
-    # Replace any NaN values with the minimum to ensure proper rendering
+    # Replace extreme negative values (likely invalid data) with NaN
+    # Census data like income and housing values shouldn't have extremely negative values
+    if variable in ['B19013_001E', 'B25077_001E', 'median_income', 'median_household_income', 'median_home_value']:
+        # Replace extreme negative values (common placeholder for missing data) with NaN
+        gdf.loc[gdf[variable] < 0, variable] = np.nan
+    
+    # Replace any NaN values with the minimum positive value to ensure proper rendering
     if gdf[variable].isna().any():
-        min_val = gdf[variable].min()
-        gdf[variable] = gdf[variable].fillna(min_val)
-        print(f"Replaced NaN values with minimum: {min_val}")
+        # For variables that should be positive, find the minimum positive value
+        if variable in ['B19013_001E', 'B25077_001E', 'median_income', 'median_household_income', 'median_home_value']:
+            positive_values = gdf.loc[gdf[variable] > 0, variable]
+            if len(positive_values) > 0:
+                min_positive = positive_values.min()
+                print(f"Replaced NaN values with minimum positive value: {min_positive}")
+                gdf[variable] = gdf[variable].fillna(min_positive)
+            else:
+                # If no positive values, use a sensible default like 0
+                print(f"No positive values found, replacing NaN with 0")
+                gdf[variable] = gdf[variable].fillna(0)
+        else:
+            # For other variables, use the overall minimum
+            min_val = gdf[variable].min()
+            print(f"Replaced NaN values with minimum: {min_val}")
+            gdf[variable] = gdf[variable].fillna(min_val)
     
     # Generate output path if not provided
     if output_path is None:
