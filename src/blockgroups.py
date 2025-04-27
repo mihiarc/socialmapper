@@ -8,11 +8,11 @@ import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
-from typing import List, Optional, Tuple
-from src.util import (
-    state_abbreviation_to_fips
-)
+from typing import List, Optional
 import json
+from tqdm import tqdm
+
+from src.util import state_abbreviation_to_fips
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -64,7 +64,7 @@ def get_census_block_groups(
     cached_gdfs = []
     all_cached = True
     
-    for state in normalized_state_fips:
+    for state in tqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
         cache_file = cache_dir / f"block_groups_{state}.geojson"
         if cache_file.exists():
             try:
@@ -74,9 +74,9 @@ def get_census_block_groups(
                     engine="pyogrio", 
                     use_arrow=USE_ARROW
                 ))
-                print(f"Loaded cached block groups for state {state}")
+                tqdm.write(f"Loaded cached block groups for state {state}")
             except Exception as e:
-                print(f"Error loading cache for state {state}: {e}")
+                tqdm.write(f"Error loading cache for state {state}: {e}")
                 all_cached = False
                 break
         else:
@@ -91,19 +91,18 @@ def get_census_block_groups(
     if api_key is None:
         api_key = os.getenv('CENSUS_API_KEY')
 
-    # API key is not needed and may even cause rejection
-    print("Fetching block groups from Census TIGER API (API key not required)")
+    tqdm.write("Fetching block groups from Census TIGER API")
     
     # Use the Tracts_Blocks MapServer endpoint
     base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
     
     all_block_groups = []
     
-    for state in normalized_state_fips:
-        print(f"Fetching block groups for state {state}...")
+    for state in tqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
+        tqdm.write(f"Fetching block groups for state {state}...")
         state_block_groups = []
         
-        # Use the simple approach that works: fetch data in smaller batches
+        # Use the simple approach that works: for large states, fetch data in smaller batches
         # This avoids timeouts and "Request Rejected" errors that occur with large queries
         batch_size = 1000
         start_index = 0
@@ -112,72 +111,76 @@ def get_census_block_groups(
         # Fields needed for block group identification and analysis
         required_fields = 'STATE,COUNTY,TRACT,BLKGRP,GEOID'
         
-        while more_records:
-            # Simple query that fetches records in batches
-            params = {
-                'where': f"STATE='{state}'",
-                'outFields': required_fields,
-                'returnGeometry': 'true',
-                'resultRecordCount': batch_size,
-                'resultOffset': start_index,
-                'f': 'geojson'
-            }
-            
-            try:
-                print(f"  Fetching batch starting at index {start_index}...")
-                response = requests.get(base_url, params=params, timeout=60)
+        batch_count = 0
+        with tqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
+            while more_records:
+                # Simple query that fetches records in batches
+                params = {
+                    'where': f"STATE='{state}'",
+                    'outFields': required_fields,
+                    'returnGeometry': 'true',
+                    'resultRecordCount': batch_size,
+                    'resultOffset': start_index,
+                    'f': 'geojson'
+                }
                 
-                if response.status_code == 200:
-                    content_type = response.headers.get('Content-Type', '')
+                try:
+                    tqdm.write(f"  Fetching batch starting at index {start_index}...")
+                    response = requests.get(base_url, params=params, timeout=60)
                     
-                    if 'json' in content_type.lower():
-                        try:
-                            response_json = response.json()
-                            
-                            if 'features' in response_json and response_json['features']:
-                                feature_count = len(response_json['features'])
-                                print(f"  Retrieved {feature_count} block groups in this batch")
+                    if response.status_code == 200:
+                        content_type = response.headers.get('Content-Type', '')
+                        
+                        if 'json' in content_type.lower():
+                            try:
+                                response_json = response.json()
                                 
-                                # Create GeoDataFrame from features
-                                batch_gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
-                                
-                                # Verify STATE column is correct
-                                if 'STATE' not in batch_gdf.columns or not all(batch_gdf['STATE'] == state):
-                                    batch_gdf['STATE'] = state
-                                
-                                state_block_groups.append(batch_gdf)
-                                
-                                # Check if we need to fetch more records
-                                more_records = feature_count == batch_size and 'exceededTransferLimit' in response_json.get('properties', {})
-                                
-                                # Update start index for next batch
-                                start_index += feature_count
-                            else:
+                                if 'features' in response_json and response_json['features']:
+                                    feature_count = len(response_json['features'])
+                                    tqdm.write(f"  Retrieved {feature_count} block groups in this batch")
+                                    
+                                    # Create GeoDataFrame from features
+                                    batch_gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
+                                    
+                                    # Verify STATE column is correct
+                                    if 'STATE' not in batch_gdf.columns or not all(batch_gdf['STATE'] == state):
+                                        batch_gdf['STATE'] = state
+                                    
+                                    state_block_groups.append(batch_gdf)
+                                    
+                                    # Check if we need to fetch more records
+                                    more_records = feature_count == batch_size and 'exceededTransferLimit' in response_json.get('properties', {})
+                                    
+                                    # Update start index for next batch
+                                    start_index += feature_count
+                                    batch_count += 1
+                                    batch_pbar.update(1)
+                                else:
+                                    more_records = False
+                                    if 'error' in response_json:
+                                        tqdm.write(f"  API error: {response_json['error']}")
+                            except json.JSONDecodeError as e:
+                                tqdm.write(f"  Error parsing JSON: {e}")
                                 more_records = False
-                                if 'error' in response_json:
-                                    print(f"  API error: {response_json['error']}")
-                        except json.JSONDecodeError as e:
-                            print(f"  Error parsing JSON: {e}")
+                        else:
+                            tqdm.write(f"  Error: Received non-JSON response: {content_type}")
                             more_records = False
                     else:
-                        print(f"  Error: Received non-JSON response: {content_type}")
+                        tqdm.write(f"  Error fetching data: HTTP {response.status_code}")
                         more_records = False
-                else:
-                    print(f"  Error fetching data: HTTP {response.status_code}")
+                except Exception as e:
+                    tqdm.write(f"  Exception during API request: {e}")
                     more_records = False
-            except Exception as e:
-                print(f"  Exception during API request: {e}")
-                more_records = False
         
         # If we got some data, combine it and save to cache
         if state_block_groups:
             state_gdf = pd.concat(state_block_groups, ignore_index=True)
-            print(f"Total block groups retrieved for {state}: {len(state_gdf)}")
+            tqdm.write(f"Total block groups retrieved for {state}: {len(state_gdf)}")
             
             # Save to cache
             cache_file = cache_dir / f"block_groups_{state}.geojson"
             state_gdf.to_file(cache_file, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
-            print(f"Saved block groups for state {state} to cache")
+            tqdm.write(f"Saved block groups for state {state} to cache")
             
             all_block_groups.append(state_gdf)
            
@@ -241,7 +244,7 @@ def find_intersecting_block_groups(
     
     # If filtering reduced the dataset substantially, use the filtered version
     if len(filtered_block_groups) < len(block_groups_gdf) * 0.9:  # If we've filtered out at least 10%
-        print(f"Coordinate indexing reduced block groups from {len(block_groups_gdf)} to {len(filtered_block_groups)}")
+        tqdm.write(f"Coordinate indexing reduced block groups from {len(block_groups_gdf)} to {len(filtered_block_groups)}")
         block_groups_gdf = filtered_block_groups
     
     # Set predicate based on selection mode
@@ -253,7 +256,8 @@ def find_intersecting_block_groups(
     # Process geometries based on selection mode
     processed_geometries = []
     
-    for idx, row in intersection.iterrows():
+    tqdm.write(f"Processing {len(intersection)} intersecting block groups...")
+    for idx, row in tqdm(intersection.iterrows(), desc="Processing intersections", unit="block group", total=len(intersection)):
         block_geom = row.geometry
         isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
         
@@ -322,6 +326,7 @@ def isochrone_to_block_groups(
         GeoDataFrame with selected block groups
     """
     # Load the isochrone
+    tqdm.write("Loading isochrone...")
     isochrone_gdf = load_isochrone(isochrone_path)
     
     # Validate state_fips
@@ -329,10 +334,11 @@ def isochrone_to_block_groups(
         raise ValueError("state_fips parameter is required. Please provide a list of state abbreviations or FIPS codes.")
     
     # Get block groups for requested states
-    print(f"Fetching block groups for state(s): {', '.join(state_fips)}")
+    tqdm.write(f"Fetching block groups for state(s): {', '.join(state_fips)}")
     block_groups_gdf = get_census_block_groups(state_fips, api_key)
     
     # Find intersecting block groups
+    tqdm.write(f"Finding block groups that {selection_mode} with isochrone...")
     result_gdf = find_intersecting_block_groups(
         isochrone_gdf,
         block_groups_gdf,
@@ -345,6 +351,7 @@ def isochrone_to_block_groups(
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             
+        tqdm.write(f"Saving {len(result_gdf)} block groups...")
         if use_parquet and USE_ARROW and not output_path.endswith('.geojson'):
             # Default to parquet if extension isn't explicitly geojson
             if not output_path.endswith('.parquet'):
@@ -355,7 +362,7 @@ def isochrone_to_block_groups(
                 output_path = f"{output_path}.geojson"
             result_gdf.to_file(output_path, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
             
-        print(f"Saved {len(result_gdf)} block groups to {output_path}")
+        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path}")
         
     return result_gdf
 
