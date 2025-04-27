@@ -74,20 +74,23 @@ STATE_ABBR_TO_FIPS = {
 # FIPS code to state abbreviation mapping (inverse of STATE_ABBR_TO_FIPS)
 STATE_FIPS_TO_ABBR = {fips: abbr for abbr, fips in STATE_ABBR_TO_FIPS.items()}
 
-# Census variable code to human-readable name mapping
+# Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
-    'B01003_001E': 'total_population',
-    'B19013_001E': 'median_household_income',
-    'B25077_001E': 'median_home_value',
-    'B01002_001E': 'median_age',
-    'B02001_002E': 'white_population',
-    'B02001_003E': 'black_population',
-    'B11001_001E': 'households',
-    'B25001_001E': 'housing_units'
+    'population': 'B01003_001E',
+    'median_income': 'B19013_001E',
+    'median_age': 'B01002_001E',
+    'households': 'B11001_001E',
+    'housing_units': 'B25001_001E',
+    'median_home_value': 'B25077_001E'
 }
 
-# Inverse mapping for human-readable names to census codes
-CENSUS_NAME_TO_CODE = {name: code for code, name in CENSUS_VARIABLE_MAPPING.items()}
+# Variable-specific color schemes
+VARIABLE_COLORMAPS = {
+    'B01003_001E': 'viridis',      # Population - blues/greens
+    'B19013_001E': 'plasma',       # Income - yellows/purples
+    'B25077_001E': 'inferno',      # Home value - oranges/reds
+    'B01002_001E': 'cividis'       # Age - yellows/blues
+}
 
 def state_name_to_abbreviation(state_name: str) -> Optional[str]:
     """
@@ -225,7 +228,7 @@ def census_name_to_code(name: str) -> str:
     Returns:
         Census variable code or the original name if not found
     """
-    return CENSUS_NAME_TO_CODE.get(name, name)
+    return CENSUS_VARIABLE_MAPPING.get(name, name)
 
 def normalize_census_variable(variable: str) -> str:
     """
