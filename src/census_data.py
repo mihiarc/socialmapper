@@ -8,6 +8,8 @@ import geopandas as gpd
 import requests
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+from tqdm import tqdm
+from src.util import state_fips_to_abbreviation, STATE_NAMES_TO_ABBR
 
 
 def load_block_groups(geojson_path: str) -> gpd.GeoDataFrame:
@@ -39,7 +41,8 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
     """
     state_block_groups = {}
     
-    for _, row in gdf.iterrows():
+    tqdm.write("Extracting block group IDs by state...")
+    for _, row in tqdm(gdf.iterrows(), desc="Processing block groups", unit="block", total=len(gdf)):
         state = row.get('STATE')
         geoid = row.get('GEOID')
         
@@ -85,11 +88,36 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
                     )
                     state_block_groups[state].append(constructed_geoid)
                 else:
-                    print(f"Warning: Cannot standardize GEOID format: {geoid}")
+                    tqdm.write(f"Warning: Cannot standardize GEOID format: {geoid}")
         else:
-            print(f"Warning: Invalid GEOID format: {geoid}")
+            tqdm.write(f"Warning: Invalid GEOID format: {geoid}")
 
     return state_block_groups
+
+
+def get_state_name_from_fips(fips_code: str) -> str:
+    """
+    Get the state name from a FIPS code.
+    
+    Args:
+        fips_code: State FIPS code (e.g., "06")
+        
+    Returns:
+        State name or the FIPS code if not found
+    """
+    # Get state abbreviation from FIPS code
+    state_abbr = state_fips_to_abbreviation(fips_code)
+    
+    if not state_abbr:
+        return fips_code
+    
+    # Reverse lookup in STATE_NAMES_TO_ABBR dictionary
+    for state_name, abbr in STATE_NAMES_TO_ABBR.items():
+        if abbr == state_abbr:
+            return state_name
+    
+    # If no match found, return the abbreviation
+    return state_abbr
 
 
 def fetch_census_data_for_states(
@@ -131,8 +159,9 @@ def fetch_census_data_for_states(
     dfs = []
     
     # Loop over each state
-    for state_code in state_fips_list:
-        print(f"Fetching data for state {state_code}...")
+    for state_code in tqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
+        state_name = get_state_name_from_fips(state_code)
+        tqdm.write(f"Fetching data for {state_name} ({state_code})...")
         
         # Define the parameters for this state
         params = {
@@ -156,11 +185,11 @@ def fetch_census_data_for_states(
             # Append the dataframe to the list
             dfs.append(df)
             
-            print(f"  - Retrieved data for {len(df)} block groups")
+            tqdm.write(f"  - Retrieved data for {len(df)} block groups")
             
         else:
-            print(f"Error fetching data for state {state_code}: {response.status_code}")
-            print(response.text)
+            tqdm.write(f"Error fetching data for {state_name} ({state_code}): {response.status_code}")
+            tqdm.write(response.text)
     
     # Combine all data
     if not dfs:
@@ -209,7 +238,7 @@ def merge_census_data(
     if 'GEOID' in result_gdf.columns:
         # Standardize GEOIDs in the GeoDataFrame if needed
         if result_gdf['GEOID'].str.len().min() != result_gdf['GEOID'].str.len().max():
-            print("Standardizing variable-length GEOIDs in GeoDataFrame")
+            tqdm.write("Standardizing variable-length GEOIDs in GeoDataFrame")
             
             # We need to work with individual components
             # Assume we can construct from STATE, COUNTY, TRACT, BLKGRP columns
@@ -222,6 +251,7 @@ def merge_census_data(
                 )
 
     # Merge the census data with the GeoDataFrame
+    tqdm.write(f"Merging census data ({len(census_df)} records) with block groups ({len(result_gdf)} records)...")
     result_gdf = result_gdf.merge(census_df, on='GEOID', how='left')
     
     return result_gdf
@@ -256,6 +286,7 @@ def get_census_data_for_block_groups(
         but the 'variables_for_visualization' attribute will be added to indicate which ones are meant for maps.
     """
     # Load block groups
+    tqdm.write(f"Loading block groups from {geojson_path}...")
     block_groups_gdf = load_block_groups(geojson_path)
     
     if len(block_groups_gdf) == 0:
@@ -269,7 +300,10 @@ def get_census_data_for_block_groups(
     
     # Get the list of states we need to query
     state_fips_list = list(block_groups_by_state.keys())
-    print(f"Found block groups in these states: {', '.join(state_fips_list)}")
+    
+    # Get state names for better logging
+    state_names = [get_state_name_from_fips(fips) for fips in state_fips_list]
+    tqdm.write(f"Found block groups in these states: {', '.join(state_names)}")
     
     # Fetch census data for all block groups in the relevant states
     try:
@@ -287,15 +321,16 @@ def get_census_data_for_block_groups(
             needed_geoids.extend(state_ids)
         
         # Print the total count and a few needed GEOIDs for diagnostic purposes
-        print(f"Looking for {len(needed_geoids)} specific block groups in the census data")
+        tqdm.write(f"Looking for {len(needed_geoids)} specific block groups in the census data")
         
         # Filter to only the block groups we identified in the isochrone
         census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
+        tqdm.write(f"Found {len(census_data)} of {len(needed_geoids)} block groups in census data")
         
     except Exception as e:
         # If we couldn't fetch data, create a minimal dataframe with GEOID to allow saving the file
-        print(f"Error fetching census data: {e}")
-        print("Creating a placeholder dataframe with just GEOID and empty values for the requested variables")
+        tqdm.write(f"Error fetching census data: {e}")
+        tqdm.write("Creating a placeholder dataframe with just GEOID and empty values for the requested variables")
         
         # Gather all block group IDs
         all_ids = []
@@ -318,7 +353,7 @@ def get_census_data_for_block_groups(
     )
     
     # Convert numeric columns
-    for var in variables:
+    for var in tqdm(variables, desc="Converting numeric columns", unit="column"):
         if var != 'NAME' and var in result_gdf.columns:
             result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
     
@@ -335,8 +370,9 @@ def get_census_data_for_block_groups(
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Save to file
+    tqdm.write(f"Saving result with census data to {output_path}...")
     result_gdf.to_file(output_path, driver="GeoJSON")
-    print(f"Saved result with census data to {output_path}")
+    tqdm.write(f"Saved result with census data to {output_path}")
     
     return result_gdf
 
@@ -367,6 +403,7 @@ def get_variable_metadata(
     
     try:
         # Make the API request
+        tqdm.write(f"Fetching variable metadata for {dataset} {year}...")
         response = requests.get(url, params={'key': api_key})
         
         # Check if the request was successful
@@ -401,4 +438,4 @@ if __name__ == "__main__":
     )
     
     # Print summary
-    print(f"Added census data for {len(result)} block groups") 
+    tqdm.write(f"Added census data for {len(result)} block groups") 
