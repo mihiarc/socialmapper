@@ -12,6 +12,7 @@ from typing import List, Optional, Tuple
 from src.util import (
     state_abbreviation_to_fips
 )
+import json
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -90,57 +91,98 @@ def get_census_block_groups(
     if api_key is None:
         api_key = os.getenv('CENSUS_API_KEY')
 
-    if api_key:
-        print("Using Census API key from environment variable")
-    else:
-        print("No Census API key found in environment variables.")
+    # API key is not needed and may even cause rejection
+    print("Fetching block groups from Census TIGER API (API key not required)")
     
-    # We'll use the Census Bureau's TIGER/Line API to get block group geometries
-    base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/8/query"
+    # Use the Tracts_Blocks MapServer endpoint
+    base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
     
     all_block_groups = []
     
     for state in normalized_state_fips:
         print(f"Fetching block groups for state {state}...")
+        state_block_groups = []
         
-        params = {
-            'where': f"STATE='{state}'",
-            'outFields': '*',
-            'returnGeometry': 'true',
-            'f': 'geojson'
-        }
+        # Use the simple approach that works: fetch data in smaller batches
+        # This avoids timeouts and "Request Rejected" errors that occur with large queries
+        batch_size = 1000
+        start_index = 0
+        more_records = True
         
-        # Add the API key to the request parameters
-        if api_key:
-            params['token'] = api_key
+        # Fields needed for block group identification and analysis
+        required_fields = 'STATE,COUNTY,TRACT,BLKGRP,GEOID'
         
-        try:
-            response = requests.get(base_url, params=params, timeout=60)
+        while more_records:
+            # Simple query that fetches records in batches
+            params = {
+                'where': f"STATE='{state}'",
+                'outFields': required_fields,
+                'returnGeometry': 'true',
+                'resultRecordCount': batch_size,
+                'resultOffset': start_index,
+                'f': 'geojson'
+            }
             
-            if response.status_code == 200:
-                response_json = response.json()
+            try:
+                print(f"  Fetching batch starting at index {start_index}...")
+                response = requests.get(base_url, params=params, timeout=60)
                 
-                # Check if the response has features with geometry
-                if 'features' in response_json and response_json['features']:
-                    gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
-                    gdf['STATE'] = state
+                if response.status_code == 200:
+                    content_type = response.headers.get('Content-Type', '')
                     
-                    # Save to cache
-                    cache_file = cache_dir / f"block_groups_{state}.geojson"
-                    gdf.to_file(cache_file, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
-                    print(f"Saved block groups for state {state} to cache")
-                    
-                    all_block_groups.append(gdf)
+                    if 'json' in content_type.lower():
+                        try:
+                            response_json = response.json()
+                            
+                            if 'features' in response_json and response_json['features']:
+                                feature_count = len(response_json['features'])
+                                print(f"  Retrieved {feature_count} block groups in this batch")
+                                
+                                # Create GeoDataFrame from features
+                                batch_gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
+                                
+                                # Verify STATE column is correct
+                                if 'STATE' not in batch_gdf.columns or not all(batch_gdf['STATE'] == state):
+                                    batch_gdf['STATE'] = state
+                                
+                                state_block_groups.append(batch_gdf)
+                                
+                                # Check if we need to fetch more records
+                                more_records = feature_count == batch_size and 'exceededTransferLimit' in response_json.get('properties', {})
+                                
+                                # Update start index for next batch
+                                start_index += feature_count
+                            else:
+                                more_records = False
+                                if 'error' in response_json:
+                                    print(f"  API error: {response_json['error']}")
+                        except json.JSONDecodeError as e:
+                            print(f"  Error parsing JSON: {e}")
+                            more_records = False
+                    else:
+                        print(f"  Error: Received non-JSON response: {content_type}")
+                        more_records = False
                 else:
-                    print(f"Error: No block group features found for state {state}")
-            else:
-                print(f"Error fetching block groups for state {state}: {response.status_code}")
-                print(response.text)
-        except Exception as e:
-            print(f"Exception fetching block groups for state {state}: {e}")
-    
+                    print(f"  Error fetching data: HTTP {response.status_code}")
+                    more_records = False
+            except Exception as e:
+                print(f"  Exception during API request: {e}")
+                more_records = False
+        
+        # If we got some data, combine it and save to cache
+        if state_block_groups:
+            state_gdf = pd.concat(state_block_groups, ignore_index=True)
+            print(f"Total block groups retrieved for {state}: {len(state_gdf)}")
+            
+            # Save to cache
+            cache_file = cache_dir / f"block_groups_{state}.geojson"
+            state_gdf.to_file(cache_file, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
+            print(f"Saved block groups for state {state} to cache")
+            
+            all_block_groups.append(state_gdf)
+           
     if not all_block_groups:
-        raise ValueError("No block group data could be retrieved.")
+        raise ValueError("No block group data could be retrieved. Please check your network connection or try again later.")
     
     return pd.concat(all_block_groups, ignore_index=True)
 
