@@ -104,17 +104,17 @@ For areas near state borders, include all relevant states to ensure complete cov
 
 Choose which census variables you want to analyze. Some useful options:
 
-| Description | Notes | Census Variable |
-|-------------|-------|----------------|
-| Total Population | Basic population count | B01003_001E |
-| Median Household Income | In dollars | B19013_001E |
-| Median Home Value | For owner-occupied units | B25077_001E |
-| Median Age | Overall median age | B01002_001E |
-| White Population | Population identifying as white alone | B02001_002E |
-| Black Population | Population identifying as Black/African American alone | B02001_003E |
-| Hispanic Population | Hispanic or Latino population of any race | B03003_003E |
-| Housing Units | Total housing units | B25001_001E |
-| Education (Bachelor's or higher) | Sum of education categories | B15003_022E+B15003_023E+B15003_024E+B15003_025E |
+| Description                      | Notes                                      | Community Mapper Name    | Census Variable                                         |
+|-------------------------------   |--------------------------------------------|--------------------------|----------------------------------------------------|
+| Total Population                 | Basic population count                     | total_population         | B01003_001E                                        |
+| Median Household Income          | In dollars                                 | median_income            | B19013_001E                                        |
+| Median Home Value                | For owner-occupied units                   | median_home_value        | B25077_001E                                        |
+| Median Age                       | Overall median age                         | median_age               | B01002_001E                                        |
+| White Population                 | Population identifying as white alone      | white_population         | B02001_002E                                        |
+| Black Population                 | Population identifying as Black/African American alone | black_population | B02001_003E                                     |
+| Hispanic Population              | Hispanic or Latino population of any race  | hispanic_population      | B03003_003E                                        |
+| Housing Units                    | Total housing units                        | housing_units            | B25001_001E                                        |
+| Education (Bachelor's or higher) | Sum of education categories                | education_bachelors_plus | B15003_022E+B15003_023E+B15003_024E+B15003_025E   |
 
 ### 4. Run the Community Mapper
 
@@ -123,7 +123,7 @@ Choose which census variables you want to analyze. Some useful options:
 Execute the end-to-end community mapping process using POIs from OpenStreetMap:
 
 ```bash
-python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
+python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables total_population
 ```
 
 If your config file doesn't include a `state` field, you'll need to specify it:
