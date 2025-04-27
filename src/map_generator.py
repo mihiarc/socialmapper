@@ -9,11 +9,14 @@ import contextily as ctx
 import numpy as np
 import pandas as pd
 from matplotlib.colors import BoundaryNorm
-from matplotlib.patches import Patch, Rectangle
+from matplotlib.patches import Patch, FancyBboxPatch
 from matplotlib.lines import Line2D
 from pathlib import Path
 from typing import Optional, List
 from matplotlib_scalebar.scalebar import ScaleBar
+import matplotlib.path as mpath
+import matplotlib.patheffects as pe
+from matplotlib.colors import LinearSegmentedColormap
 
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
@@ -49,7 +52,8 @@ def generate_map(
     dpi: int = 300,
     output_dir: str = "output/maps",
     isochrone_path: Optional[str] = None,
-    isochrone_only: bool = False  # New parameter to indicate isochrone-only maps
+    isochrone_only: bool = False,  # New parameter to indicate isochrone-only maps
+    poi_df: Optional[gpd.GeoDataFrame] = None
 ) -> str:
     """
     Generate a choropleth map for census data in block groups.
@@ -57,8 +61,7 @@ def generate_map(
     Args:
         census_data_path: Path to the GeoJSON file with census data for block groups
         output_path: Path to save the output map (if not provided, will use output_dir)
-        variable: Census variable to visualize (can be a Census API code like 'B01003_001E' or
-                 a common name like 'population', see CENSUS_VARIABLE_MAPPING)
+        variable: Census variable to visualize
         title: Map title (defaults to a readable version of the variable name)
         colormap: Matplotlib colormap name
         basemap_provider: Contextily basemap provider
@@ -67,6 +70,7 @@ def generate_map(
         output_dir: Directory to save maps (default: output/maps)
         isochrone_path: Optional path to isochrone GeoJSON to overlay on the map
         isochrone_only: If True, generate a map showing only isochrones without census data
+        poi_df: Optional GeoDataFrame containing POI data
         
     Returns:
         Path to the saved map
@@ -80,7 +84,8 @@ def generate_map(
             basemap_provider=basemap_provider,
             figsize=figsize,
             dpi=dpi,
-            output_dir=output_dir
+            output_dir=output_dir,
+            poi_df=poi_df
         )
         
     # Check if variable is a common name and convert to Census API code if needed
@@ -95,11 +100,40 @@ def generate_map(
     
     # Check if variable exists in the data
     if variable not in gdf.columns:
-        available_vars = [col for col in gdf.columns if col not in ['geometry', 'GEOID', 'STATE', 'COUNTY', 'TRACT', 'BLKGRP']]
-        raise ValueError(f"Variable '{variable}' not found in census data. Available variables: {available_vars}")
+        # Try to map from Census API code to human-readable name
+        variable_mapped = None
+        for human_readable, census_code in CENSUS_VARIABLE_MAPPING.items():
+            if census_code.lower() == variable.lower():
+                # Try the human readable version (e.g., 'total_population')
+                if human_readable in gdf.columns:
+                    variable_mapped = human_readable
+                    break
+                
+                # Try the title case version (e.g., 'Total Population')
+                title_case = human_readable.replace('_', ' ').title()
+                if title_case in gdf.columns:
+                    variable_mapped = title_case
+                    break
+                
+        if variable_mapped:
+            variable = variable_mapped
+        else:
+            available_vars = [col for col in gdf.columns if col not in ['geometry', 'GEOID', 'STATE', 'COUNTY', 'TRACT', 'BLKGRP']]
+            raise ValueError(f"Variable '{variable}' not found in census data. Available variables: {available_vars}")
     
     # Ensure data is numeric
     gdf[variable] = pd.to_numeric(gdf[variable], errors='coerce')
+    
+    # Add diagnostics
+    print(f"Variable: {variable}")
+    print(f"Data min: {gdf[variable].min()}, max: {gdf[variable].max()}")
+    print(f"Data has NaN values: {gdf[variable].isna().any()}")
+    
+    # Replace any NaN values with the minimum to ensure proper rendering
+    if gdf[variable].isna().any():
+        min_val = gdf[variable].min()
+        gdf[variable] = gdf[variable].fillna(min_val)
+        print(f"Replaced NaN values with minimum: {min_val}")
     
     # Generate output path if not provided
     if output_path is None:
@@ -118,6 +152,10 @@ def generate_map(
         variable_label = get_variable_label(variable)
         title = f"{variable_label} by Census Block Group"
     
+    # Choose appropriate colormap for the variable
+    if variable in VARIABLE_COLORMAPS:
+        colormap = VARIABLE_COLORMAPS[variable]
+        
     # Reproject to Web Mercator for contextily basemap
     gdf = gdf.to_crs(epsg=3857)
     
@@ -129,46 +167,49 @@ def generate_map(
     fig.patch.set_linewidth(1)
     fig.patch.set_edgecolor('#dddddd')
     
-    # Create bins for the choropleth
+    # Get data range for coloring
     min_val = gdf[variable].min()
     max_val = gdf[variable].max()
     
-    # Round to appropriate precision based on magnitude
-    magnitude = max(abs(min_val), abs(max_val))
-    if magnitude >= 1000:
-        # Round to nearest hundred
-        rounding = -2
-    elif magnitude >= 100:
-        # Round to nearest ten
-        rounding = -1
-    else:
-        # Round to units
-        rounding = 0
+    print(f"Variable: {variable}")
+    print(f"Data min: {min_val}, max: {max_val}")
+    print(f"Using colormap: {colormap}")
     
-    # Create 5 bins
+    # Create bins for labels
     bins = np.linspace(min_val, max_val, 6)
-    bins = np.round(bins, rounding)
     
     # Format labels based on magnitude
+    magnitude = max(abs(min_val), abs(max_val))
     if magnitude >= 1000:
         labels = [f'{int(bins[i]):,} - {int(bins[i+1]):,}' for i in range(len(bins)-1)]
     else:
         labels = [f'{bins[i]:.1f} - {bins[i+1]:.1f}' for i in range(len(bins)-1)]
+        
+    # Print debug info
+    print(f"Created {len(labels)} labels for legend")
     
-    # Create a colormap and normalization
-    norm = BoundaryNorm(bins, plt.get_cmap(colormap).N)
-    
-    # Plot the choropleth
-    gdf.plot(
-        column=variable,
-        cmap=colormap,
-        linewidth=0.5,
-        edgecolor='white',
-        legend=False,
-        alpha=0.7,
-        ax=ax,
-        norm=norm
-    )
+    # Simple direct coloring approach without using GeoPandas plot
+    for idx, row in gdf.iterrows():
+        # Normalize the value between 0 and 1 for colormap
+        value = row[variable]
+        norm_value = (value - min_val) / (max_val - min_val) if max_val > min_val else 0.5
+        # Clip to ensure in valid range
+        norm_value = max(0, min(1, norm_value))
+        
+        # Get color from colormap and use it to fill polygon
+        color = plt.get_cmap(colormap)(norm_value)
+        
+        # Handle MultiPolygon vs Polygon
+        try:
+            if row.geometry.geom_type == 'MultiPolygon':
+                for polygon in row.geometry.geoms:
+                    ax.fill(*polygon.exterior.xy, color=color, alpha=0.8, 
+                         linewidth=0.7, edgecolor='#404040')
+            else:
+                ax.fill(*row.geometry.exterior.xy, color=color, alpha=0.8, 
+                     linewidth=0.7, edgecolor='#404040')
+        except Exception as e:
+            print(f"Error filling polygon: {e}")
     
     # Add isochrone boundary if provided
     if isochrone_path:
@@ -185,11 +226,12 @@ def generate_map(
             # Plot isochrone with a thick, distinctive border
             isochrone.boundary.plot(
                 ax=ax,
-                color='blue',
-                linewidth=2.0,
+                color='#3366CC',     # More vibrant blue
+                linewidth=2.5,       # Thicker line
                 linestyle='-',
-                alpha=0.7,
-                label='Isochrone Boundary'
+                alpha=0.8,
+                label='15-min Travel Time',
+                path_effects=[pe.Stroke(linewidth=4, foreground='white'), pe.Normal()]  # Add outline
             )
             
             # Add the isochrone to the title if not custom title provided
@@ -216,10 +258,16 @@ def generate_map(
     for component in basemap_provider.split('.')[1:]:
         provider = getattr(provider, component)
         
+    # Use a more muted basemap by default if not explicitly specified
+    if basemap_provider == 'OpenStreetMap.Mapnik':
+        # Use CartoDB Positron as a cleaner alternative
+        provider = ctx.providers.CartoDB.Positron
+        
     ctx.add_basemap(
         ax,
         source=provider,
-        crs=gdf.crs.to_string()
+        crs=gdf.crs.to_string(),
+        alpha=0.7  # Reduce basemap intensity
     )
     
     # Add margins to the map
@@ -231,13 +279,17 @@ def generate_map(
     ax.set_ylim(ylim[0] - y_margin, ylim[1] + y_margin)
     
     # Create legend patches
-    legend_handles = [
-        Patch(
-            facecolor=plt.get_cmap(colormap)(norm(bins[i])),
-            edgecolor='white',
-            label=labels[i]
-        ) for i in range(len(labels))
-    ]
+    legend_handles = []
+    for i in range(len(labels)):
+        # Calculate the appropriate norm value based on bin position
+        norm_value = i / (len(labels))
+        legend_handles.append(
+            Patch(
+                facecolor=plt.get_cmap(colormap)(norm_value),
+                edgecolor='white',
+                label=labels[i]
+            )
+        )
     
     # Add isochrone to legend if it was displayed
     if isochrone_path and 'isochrone' in locals():
@@ -249,38 +301,32 @@ def generate_map(
     legend = ax.legend(
         handles=legend_handles,
         loc='lower center',
-        bbox_to_anchor=(0.5, -0.1),
+        bbox_to_anchor=(0.5, -0.15),  # Push down slightly
         ncol=min(len(labels), 3),
         title=get_variable_label(variable),
         frameon=True,
-        fontsize='medium',
-        title_fontsize='large',
+        fontsize=11,
+        title_fontsize=13,
         framealpha=0.9,
-        edgecolor='#cccccc'
+        edgecolor='#888888'
     )
-    legend.get_frame().set_linewidth(0.5)
+    legend.get_frame().set_linewidth(1.0)
     
     # Add title
-    ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
+    ax.set_title(title, fontsize=18, fontweight='bold', fontfamily='Helvetica Neue', 
+               pad=20, color='#333333')
     ax.set_axis_off()
     
-    # Add a rectangular frame around the map area
-    border_width = 2.0
-    border_color = 'black'
-    
-    # Get the current axis limits
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    
-    # Draw rectangle border around the map
-    rect = Rectangle(
+    # Add a more elegant border with rounded corners
+    rect = FancyBboxPatch(
         (xlim[0], ylim[0]),
         width=xlim[1]-xlim[0],
         height=ylim[1]-ylim[0],
+        boxstyle="round,pad=0",
         fill=False,
-        edgecolor=border_color,
-        linewidth=border_width,
-        zorder=1000  # Ensure it's on top
+        edgecolor='#222222',
+        linewidth=2.5,
+        zorder=1000
     )
     ax.add_patch(rect)
     
@@ -292,6 +338,28 @@ def generate_map(
     ax.annotate('N', xy=(x, y), xytext=(x, y-5000),
                arrowprops=dict(facecolor='black', width=5, headwidth=15),
                ha='center', va='center', fontsize=12, fontweight='bold')
+    
+    # Add POI markers on isochrone maps
+    if poi_df is not None:
+        for idx, row in poi_df.iterrows():
+            ax.plot(row.geometry.x, row.geometry.y, 'o', color='red', 
+                    markersize=10, markeredgecolor='black', markeredgewidth=1.5)
+            ax.annotate(row['name'], xy=(row.geometry.x, row.geometry.y), 
+                       xytext=(10, 10), textcoords="offset points",
+                       fontsize=10, fontweight='bold', 
+                       bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
+    
+    # Add attribution text
+    fig.text(0.01, 0.01, 
+            "Data: U.S. Census Bureau ACS 5-Year Estimates & OpenStreetMap",
+            ha='left', va='bottom', fontsize=8, color='#666666')
+    
+    # Create gradient background
+    gradient = np.linspace(0, 1, 100).reshape(-1, 1)
+    gradient_cmap = LinearSegmentedColormap.from_list('', ['#f8f9fa', '#e9ecef'])
+    ax_bg = fig.add_axes([0, 0, 1, 1], zorder=-1)
+    ax_bg.imshow(gradient, cmap=gradient_cmap, interpolation='bicubic', aspect='auto')
+    ax_bg.axis('off')
     
     # Save the map
     plt.savefig(output_path, bbox_inches='tight', dpi=dpi)
@@ -307,7 +375,8 @@ def generate_isochrone_map(
     basemap_provider: str = 'OpenStreetMap.Mapnik',
     figsize: tuple = (12, 12),
     dpi: int = 300,
-    output_dir: str = "output/maps"
+    output_dir: str = "output/maps",
+    poi_df: Optional[gpd.GeoDataFrame] = None
 ) -> str:
     """
     Generate a map showing just isochrones without census data.
@@ -320,6 +389,7 @@ def generate_isochrone_map(
         figsize: Figure size (width, height) in inches
         dpi: Output image resolution
         output_dir: Directory to save maps (default: output/maps)
+        poi_df: Optional GeoDataFrame containing POI data
         
     Returns:
         Path to the saved map
@@ -372,13 +442,15 @@ def generate_isochrone_map(
     fig.patch.set_linewidth(1)
     fig.patch.set_edgecolor('#dddddd')
     
-    # Plot isochrone with a thick, distinctive border and filled area
-    isochrone.plot(
+    # Plot isochrone with a thick, distinctive border
+    isochrone.boundary.plot(
         ax=ax,
-        color='skyblue',
-        alpha=0.4,
-        edgecolor='blue',
-        linewidth=2.0
+        color='#3366CC',     # More vibrant blue
+        linewidth=2.5,       # Thicker line
+        linestyle='-',
+        alpha=0.8,
+        label='15-min Travel Time',
+        path_effects=[pe.Stroke(linewidth=4, foreground='white'), pe.Normal()]  # Add outline
     )
     
     # Add basemap
@@ -386,10 +458,16 @@ def generate_isochrone_map(
     for component in basemap_provider.split('.')[1:]:
         provider = getattr(provider, component)
         
+    # Use a more muted basemap by default if not explicitly specified
+    if basemap_provider == 'OpenStreetMap.Mapnik':
+        # Use CartoDB Positron as a cleaner alternative
+        provider = ctx.providers.CartoDB.Positron
+        
     ctx.add_basemap(
         ax,
         source=provider,
-        crs=isochrone.crs.to_string()
+        crs=isochrone.crs.to_string(),
+        alpha=0.7  # Reduce basemap intensity
     )
     
     # Add margins to the map
@@ -424,26 +502,20 @@ def generate_isochrone_map(
     legend.get_frame().set_linewidth(0.5)
     
     # Add title
-    ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
+    ax.set_title(title, fontsize=18, fontweight='bold', fontfamily='Helvetica Neue', 
+               pad=20, color='#333333')
     ax.set_axis_off()
     
-    # Add a rectangular frame around the map area
-    border_width = 2.0
-    border_color = 'black'
-    
-    # Get the current axis limits
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    
-    # Draw rectangle border around the map
-    rect = Rectangle(
+    # Add a more elegant border with rounded corners
+    rect = FancyBboxPatch(
         (xlim[0], ylim[0]),
         width=xlim[1]-xlim[0],
         height=ylim[1]-ylim[0],
+        boxstyle="round,pad=0",
         fill=False,
-        edgecolor=border_color,
-        linewidth=border_width,
-        zorder=1000  # Ensure it's on top
+        edgecolor='#222222',
+        linewidth=2.5,
+        zorder=1000
     )
     ax.add_patch(rect)
     
@@ -455,6 +527,21 @@ def generate_isochrone_map(
     ax.annotate('N', xy=(x, y), xytext=(x, y-5000),
                arrowprops=dict(facecolor='black', width=5, headwidth=15),
                ha='center', va='center', fontsize=12, fontweight='bold')
+    
+    # Add POI markers on isochrone maps
+    if poi_df is not None:
+        for idx, row in poi_df.iterrows():
+            ax.plot(row.geometry.x, row.geometry.y, 'o', color='red', 
+                    markersize=10, markeredgecolor='black', markeredgewidth=1.5)
+            ax.annotate(row['name'], xy=(row.geometry.x, row.geometry.y), 
+                       xytext=(10, 10), textcoords="offset points",
+                       fontsize=10, fontweight='bold', 
+                       bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
+    
+    # Add attribution text
+    fig.text(0.01, 0.01, 
+            "Data: U.S. Census Bureau ACS 5-Year Estimates & OpenStreetMap",
+            ha='left', va='bottom', fontsize=8, color='#666666')
     
     # Save the map
     plt.savefig(output_path, bbox_inches='tight', dpi=dpi)
@@ -470,6 +557,7 @@ def generate_maps_for_variables(
     basename: Optional[str] = None,
     isochrone_path: Optional[str] = None,
     include_isochrone_only_map: bool = True,  # New parameter to generate isochrone-only map
+    poi_df: Optional[gpd.GeoDataFrame] = None,
     **kwargs
 ) -> List[str]:
     """
@@ -482,6 +570,7 @@ def generate_maps_for_variables(
         basename: Base filename (defaults to input filename)
         isochrone_path: Optional path to isochrone GeoJSON to overlay on the map
         include_isochrone_only_map: If True and isochrone_path is provided, also generate a map showing just isochrones
+        poi_df: Optional GeoDataFrame containing POI data
         **kwargs: Additional arguments to pass to generate_map()
         
     Returns:
@@ -504,6 +593,7 @@ def generate_maps_for_variables(
                 output_path=str(isochrone_output_path),
                 isochrone_path=isochrone_path,
                 isochrone_only=True,  # Flag to generate isochrone-only map
+                poi_df=poi_df,
                 **kwargs
             )
             output_paths.append(saved_path)
@@ -523,6 +613,7 @@ def generate_maps_for_variables(
                 output_dir=output_dir,
                 isochrone_path=isochrone_path,
                 isochrone_only=False,  # Regular census variable map
+                poi_df=poi_df,
                 **kwargs
             )
             output_paths.append(saved_path)
