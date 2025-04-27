@@ -197,22 +197,10 @@ def parse_arguments():
                         help='Census API key (optional if set as CENSUS_API_KEY environment variable)')
     parser.add_argument('--list-variables', action='store_true',
                         help='List available census variables and exit')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Parse arguments and print steps but do not execute (for testing)')
     
     args = parser.parse_args()
-    
-    # If --list-variables is specified, print the variables and exit
-    if args.list_variables:
-        print("\nAvailable Census Variables:")
-        print("=" * 50)
-        for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
-            print(f"{name:<25} {code}")
-        print("\nUsage example: --census-variables total_population median_household_income")
-        exit(0)
-        
-    # Make sure either --config or --custom-coords is provided
-    if not args.config and not args.custom_coords:
-        parser.error("Either --config or --custom-coords must be provided")
-    
     return args
 
 def run_community_mapper(
@@ -408,6 +396,19 @@ def main():
     # Parse command line arguments
     args = parse_arguments()
     
+    # If --list-variables is specified, print the variables and exit
+    if args.list_variables:
+        print("\nAvailable Census Variables:")
+        print("=" * 50)
+        for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
+            print(f"{name:<25} {code}")
+        print("\nUsage example: --census-variables total_population median_household_income")
+        exit(0)
+        
+    # Make sure either --config or --custom-coords is provided
+    if not args.config and not args.custom_coords:
+        raise ValueError("Either --config or --custom-coords must be provided")
+    
     # Setup output directories
     output_dirs = setup_directories()
     
@@ -415,6 +416,28 @@ def main():
     print("=" * 80)
     print("Community Mapper: End-to-end tool for mapping community resources")
     print("=" * 80)
+    
+    # If dry-run, just print what would be done and exit
+    if args.dry_run:
+        print("\n=== DRY RUN MODE - NO ACTIONS WILL BE PERFORMED ===")
+        print(f"Config File: {args.config if args.config else 'Not provided'}")
+        print(f"Custom Coordinates: {args.custom_coords if args.custom_coords else 'Not provided'}")
+        print(f"Travel Time: {args.travel_time} minutes")
+        print(f"Census Variables: {', '.join(args.census_variables)}")
+        print(f"API Key: {'Provided' if args.api_key else 'Not provided (will use environment variable if available)'}")
+        print(f"Output Directories: {', '.join(output_dirs.keys())}")
+        
+        if args.custom_coords:
+            print("\nWould parse custom coordinates from:", args.custom_coords)
+            try:
+                poi_data = parse_custom_coordinates(args.custom_coords)
+                print(f"Found {len(poi_data['pois'])} valid coordinates")
+                print(f"States found: {', '.join(poi_data['metadata']['states'])}")
+            except Exception as e:
+                print(f"Error parsing custom coordinates file: {e}")
+        
+        print("\nDry run completed. Exiting without performing any actions.")
+        return
     
     # Run the pipeline
     results = run_community_mapper(
