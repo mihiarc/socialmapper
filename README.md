@@ -66,12 +66,12 @@ Community Mapper integrates several geospatial analysis tools to help understand
 Edit the included YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map:
 
 ```yaml
-# Example: Schools in Durham, NC
-geocode_area: "Durham"
+# Example:
+geocode_area: "Fuquay-Varina"
 state: "North Carolina"
-city: "Durham"
+city: "Fuquay-Varina"
 type: "amenity"
-name: "school"
+name: "library"
 ```
 
 Common OpenStreetMap POI types you can use:
@@ -129,7 +129,7 @@ python community_mapper.py --config my_config.yaml --travel-time 15 --census-var
 If your config file doesn't include a `state` field, you'll need to specify it:
 
 ```bash
-python community_mapper.py --config my_config.yaml --state TX --travel-time 15 --census-variables B01003_001E B19013_001E B25077_001E
+python community_mapper.py --config my_config.yaml --state NC --travel-time 15 --census-variables total_population
 ```
 
 #### Using Your Own Coordinates
@@ -139,7 +139,7 @@ If you already have latitude/longitude coordinates, you can skip the POI query s
 **Important: Your custom coordinates file MUST include state information for each point.** This is required for accurate census block group identification.
 
 ```bash
-python community_mapper.py --custom-coords my_locations.csv --travel-time 15 --census-variables B01003_001E B19013_001E
+python community_mapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
 ```
 
 Supported formats:
