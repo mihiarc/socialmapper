@@ -260,4 +260,46 @@ def normalize_census_variable(variable: str) -> str:
         return code
     
     # If not recognized, return as is (could be a custom variable)
-    return variable 
+    return variable
+
+# Add north arrow utility function
+def add_north_arrow(ax, position='upper right', scale=0.1):
+    """
+    Add a north arrow to a map.
+    
+    Args:
+        ax: Matplotlib axis to add arrow to
+        position: Position on the plot ('upper right', 'upper left', 'lower right', 'lower left')
+        scale: Size of the arrow relative to the axis
+        
+    Returns:
+        The arrow annotation object
+    """
+    # Get axis limits
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    
+    # Calculate position
+    if position == 'upper right':
+        x = xlim[1] - (xlim[1] - xlim[0]) * 0.05
+        y = ylim[1] - (ylim[1] - ylim[0]) * 0.05
+    elif position == 'upper left':
+        x = xlim[0] + (xlim[1] - xlim[0]) * 0.05
+        y = ylim[1] - (ylim[1] - ylim[0]) * 0.05
+    elif position == 'lower right':
+        x = xlim[1] - (xlim[1] - xlim[0]) * 0.05
+        y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
+    else:  # lower left
+        x = xlim[0] + (xlim[1] - xlim[0]) * 0.05
+        y = ylim[0] + (ylim[1] - ylim[0]) * 0.05
+    
+    # Scale the offset based on the scale parameter
+    arrow_height = (ylim[1] - ylim[0]) * scale
+    
+    # Add the arrow
+    arrow = ax.annotate('N', xy=(x, y), 
+                       xytext=(x, y - arrow_height),
+                       arrowprops=dict(facecolor='black', width=3, headwidth=10),
+                       ha='center', va='center', fontsize=10, fontweight='bold')
+    
+    return arrow 
