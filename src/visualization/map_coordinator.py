@@ -62,10 +62,23 @@ def generate_maps_for_variables(
     # Generate isochrone-only map if requested
     if include_isochrone_only_map and isochrone_path:
         isochrone_map_path = os.path.join(output_dir, f"{basename}_isochrone_map.png")
+        
+        # Handle the case when isochrone_path is a list
+        isochrone_path_for_map = isochrone_path
+        if isinstance(isochrone_path, list):
+            # If we have a list of isochrones, just use the first one
+            isochrone_path_for_map = isochrone_path[0]
+            
+        # Handle the case when poi_df is a list
+        poi_df_for_map = poi_df
+        if isinstance(poi_df, list) and poi_df:
+            # If we have a list of POI dataframes, use the first one for the isochrone map
+            poi_df_for_map = poi_df[0]
+            
         isochrone_result = generate_isochrone_map(
-            isochrone_path=isochrone_path,
+            isochrone_path=isochrone_path_for_map,
             output_path=isochrone_map_path,
-            poi_df=poi_df,
+            poi_df=poi_df_for_map,
             **{k: v for k, v in kwargs.items() if k in ['title', 'basemap_provider', 'figsize', 'dpi']}
         )
         output_paths.append(isochrone_result)
@@ -104,12 +117,25 @@ def generate_maps_for_variables(
         # Standard approach with individual maps per variable
         for variable in normalized_variables:
             output_path = os.path.join(output_dir, f"{basename}_{variable}_map.png")
+            
+            # Handle the case when isochrone_path is a list
+            isochrone_path_for_map = isochrone_path
+            if isinstance(isochrone_path, list) and isochrone_path:
+                # If we have a list of isochrones, just use the first one
+                isochrone_path_for_map = isochrone_path[0]
+                
+            # Handle the case when poi_df is a list
+            poi_df_for_map = poi_df
+            if isinstance(poi_df, list) and poi_df:
+                # If we have a list of POI dataframes, use the first one
+                poi_df_for_map = poi_df[0]
+                
             result = generate_map(
                 census_data_path=census_data_path,
                 variable=variable,
                 output_path=output_path,
-                isochrone_path=isochrone_path,
-                poi_df=poi_df,
+                isochrone_path=isochrone_path_for_map,
+                poi_df=poi_df_for_map,
                 **{k: v for k, v in kwargs.items() if k in [
                     'title', 'colormap', 'basemap_provider', 'figsize', 'dpi', 'show_isochrone'
                 ]}
