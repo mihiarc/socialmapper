@@ -13,8 +13,11 @@ This script ties together all components of the community-mapper project:
 import os
 import argparse
 import json
+import csv
 from pathlib import Path
 from typing import Dict, List, Optional
+import geopandas as gpd
+from shapely.geometry import Point
 
 # Import components from the src modules
 from src.query import (
@@ -33,9 +36,130 @@ from src.blockgroups import (
 from src.census_data import (
     get_census_data_for_block_groups
 )
-from src.map_generator import (
+from src.visualization import (
     generate_maps_for_variables
 )
+from src.util import (
+    state_name_to_abbreviation,
+    census_code_to_name,
+    normalize_census_variable,
+    CENSUS_VARIABLE_MAPPING
+)
+
+def parse_custom_coordinates(file_path: str) -> Dict:
+    """
+    Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
+    
+    Args:
+        file_path: Path to the custom coordinates file
+        
+    Returns:
+        Dictionary containing POI data in the format expected by the isochrone generator
+    """
+    file_extension = os.path.splitext(file_path)[1].lower()
+    
+    pois = []
+    states_found = set()
+    
+    if file_extension == '.json':
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+            
+        # Handle different possible JSON formats
+        if isinstance(data, list):
+            # List of POIs
+            for item in data:
+                # Check for required fields
+                if ('lat' in item and 'lon' in item) or ('latitude' in item and 'longitude' in item):
+                    # Extract lat/lon
+                    lat = float(item.get('lat', item.get('latitude')))
+                    lon = float(item.get('lon', item.get('longitude')))
+                    
+                    # Check for state (required)
+                    if 'state' not in item:
+                        raise ValueError(f"Missing required 'state' field in item {item.get('id', 'unknown')}. Each POI must include a state identifier.")
+                    
+                    state = item['state']
+                    states_found.add(state)
+                    
+                    poi = {
+                        'id': item.get('id', f"custom_{len(pois)}"),
+                        'name': item.get('name', f"Custom POI {len(pois)}"),
+                        'lat': lat,
+                        'lon': lon,
+                        'state': state,
+                        'tags': item.get('tags', {})
+                    }
+                    pois.append(poi)
+                else:
+                    print(f"Warning: Skipping item missing required coordinates: {item}")
+        elif isinstance(data, dict) and 'pois' in data:
+            # Already in expected format
+            for poi in data['pois']:
+                if 'state' not in poi:
+                    raise ValueError(f"Missing required 'state' field in POI {poi.get('id', 'unknown')}. Each POI must include a state identifier.")
+                states_found.add(poi['state'])
+            pois = data['pois']
+    
+    elif file_extension == '.csv':
+        with open(file_path, 'r') as f:
+            reader = csv.DictReader(f)
+            for i, row in enumerate(reader):
+                # Try to find lat/lon in different possible column names
+                lat = None
+                lon = None
+                
+                for lat_key in ['lat', 'latitude', 'y']:
+                    if lat_key in row:
+                        lat = float(row[lat_key])
+                        break
+                
+                for lon_key in ['lon', 'lng', 'longitude', 'x']:
+                    if lon_key in row:
+                        lon = float(row[lon_key])
+                        break
+                
+                # Check for state (required)
+                if 'state' not in row:
+                    raise ValueError(f"Missing required 'state' column in CSV. Each POI must include a state identifier.")
+                
+                state = row['state']
+                states_found.add(state)
+                
+                if lat is not None and lon is not None:
+                    poi = {
+                        'id': row.get('id', f"custom_{i}"),
+                        'name': row.get('name', f"Custom POI {i}"),
+                        'lat': lat,
+                        'lon': lon,
+                        'state': state,
+                        'tags': {}
+                    }
+                    
+                    # Add any additional columns as tags
+                    for key, value in row.items():
+                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state']:
+                            poi['tags'][key] = value
+                    
+                    pois.append(poi)
+                else:
+                    print(f"Warning: Skipping row {i+1} - missing required coordinates")
+    
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}. Please provide a JSON or CSV file.")
+    
+    if not pois:
+        raise ValueError(f"No valid coordinates found in {file_path}. Please check the file format.")
+    
+    return {
+        'pois': pois,
+        'metadata': {
+            'source': 'custom',
+            'count': len(pois),
+            'file_path': file_path,
+            'states': list(states_found)
+        }
+    }
 
 def setup_directories() -> Dict[str, str]:
     """
@@ -62,68 +186,167 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Community Mapper: End-to-end tool for mapping community resources and demographics')
     
-    parser.add_argument('--config', type=str, required=True, 
+    parser.add_argument('--config', type=str, required=False, 
                         help='Path to POI configuration YAML file')
-    parser.add_argument('--state', type=str, required=True, nargs='+',
-                        help='State FIPS code(s) or abbreviation(s) (e.g., KS or 20)')
+    parser.add_argument('--custom-coords', type=str,
+                        help='Path to custom JSON or CSV file with latitude/longitude coordinates (skips POI query)')
     parser.add_argument('--travel-time', type=int, default=15,
                         help='Travel time limit in minutes (default: 15)')
     parser.add_argument('--census-variables', type=str, nargs='+',
-                        default=['B01003_001E', 'B19013_001E'],
-                        help='Census variables to retrieve (default: population and income)')
+                        default=['total_population', 'median_household_income'],
+                        help='Census variables to retrieve (default: total_population and median_household_income)')
     parser.add_argument('--api-key', type=str,
                         help='Census API key (optional if set as CENSUS_API_KEY environment variable)')
+    parser.add_argument('--list-variables', action='store_true',
+                        help='List available census variables and exit')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Parse arguments and print steps but do not execute (for testing)')
     
-    return parser.parse_args()
+    args = parser.parse_args()
+    return args
+
+def convert_poi_to_geodataframe(poi_data_list):
+    """
+    Convert a list of POI dictionaries to a GeoDataFrame.
+    
+    Args:
+        poi_data_list: List of POI dictionaries
+        
+    Returns:
+        GeoDataFrame containing POI data
+    """
+    if not poi_data_list:
+        return None
+    
+    # Extract coordinates and create Point geometries
+    geometries = []
+    names = []
+    ids = []
+    types = []
+    
+    for poi in poi_data_list:
+        if 'lat' in poi and 'lon' in poi:
+            lat = poi['lat']
+            lon = poi['lon']
+        elif 'geometry' in poi and 'coordinates' in poi['geometry']:
+            # GeoJSON format
+            coords = poi['geometry']['coordinates']
+            lon, lat = coords[0], coords[1]
+        else:
+            continue
+            
+        geometries.append(Point(lon, lat))
+        names.append(poi.get('name', poi.get('tags', {}).get('name', poi.get('id', 'Unknown'))))
+        ids.append(poi.get('id', ''))
+        types.append(poi.get('type', poi.get('tags', {}).get('amenity', 'Unknown')))
+    
+    # Create GeoDataFrame
+    gdf = gpd.GeoDataFrame({
+        'name': names,
+        'id': ids,
+        'type': types,
+        'geometry': geometries
+    }, crs="EPSG:4326")  # WGS84 is standard for GPS coordinates
+    
+    return gdf
 
 def run_community_mapper(
-    config_path: str,
-    state_fips: List[str],
+    config_path: Optional[str] = None,
     travel_time: int = 15,
     census_variables: List[str] = None,
     api_key: Optional[str] = None,
-    output_dirs: Optional[Dict[str, str]] = None
+    output_dirs: Optional[Dict[str, str]] = None,
+    custom_coords_path: Optional[str] = None
 ) -> Dict[str, str]:
     """
     Run the complete community mapping pipeline.
     
     Args:
-        config_path: Path to POI configuration YAML file
-        state_fips: List of state FIPS codes or abbreviations
+        config_path: Path to POI configuration YAML file (required if custom_coords_path is None)
         travel_time: Travel time limit in minutes
         census_variables: List of Census API variables to retrieve
         api_key: Census API key (optional if set as environment variable)
         output_dirs: Dictionary of output directories
+        custom_coords_path: Path to custom coordinates file (skips POI query if provided)
         
     Returns:
         Dictionary of output file paths
     """
-    if census_variables is None:
-        census_variables = ['B01003_001E', 'B19013_001E']  # Default: population and median income
-        
+    
+    # Convert any human-readable names to census codes
+    census_codes = [normalize_census_variable(var) for var in census_variables]
+    
     if output_dirs is None:
         output_dirs = setup_directories()
         
     result_files = {}
+    state_abbreviations = []
     
-    # Step 1: Query POIs
-    print("\n=== Step 1: Querying Points of Interest ===")
-    config = load_poi_config(config_path)
-    query = build_overpass_query(config)
-    
-    print(f"Querying OpenStreetMap for: {config.get('type', '')} - {config.get('name', '')}")
-    raw_results = query_overpass(query)
-    poi_data = format_results(raw_results)
-    
-    # Set a name for the output file based on the POI configuration
-    poi_type = config.get("type", "poi")
-    poi_name = config.get("name", "custom").replace(" ", "_").lower()
-    poi_file = os.path.join(output_dirs["pois"], f"{poi_type}_{poi_name}.json")
-    
-    save_json(poi_data, poi_file)
-    result_files["poi_data"] = poi_file
-    
-    print(f"Found {len(poi_data['pois'])} POIs")
+    # Determine if we're using custom coordinates or querying POIs
+    if custom_coords_path:
+        # Skip Step 1: Use custom coordinates
+        print("\n=== Using Custom Coordinates (Skipping POI Query) ===")
+        poi_data = parse_custom_coordinates(custom_coords_path)
+        
+        # Extract state information from the custom coordinates
+        if 'metadata' in poi_data and 'states' in poi_data['metadata']:
+            for state in poi_data['metadata']['states']:
+                # Process state - could be abbreviation or full name
+                state_abbr = state_name_to_abbreviation(state) or state
+                if state_abbr and state_abbr not in state_abbreviations:
+                    state_abbreviations.append(state_abbr)
+            
+            if state_abbreviations:
+                print(f"Using states from custom coordinates: {', '.join(state_abbreviations)}")
+        
+        # Set a name for the output file based on the custom coords file
+        file_basename = os.path.basename(custom_coords_path)
+        base_filename = f"custom_{os.path.splitext(file_basename)[0]}"
+        
+        # Save the parsed coordinates in the expected format
+        poi_file = os.path.join(output_dirs["pois"], f"{base_filename}.json")
+        save_json(poi_data, poi_file)
+        result_files["poi_data"] = poi_file
+        
+        print(f"Using {len(poi_data['pois'])} custom coordinates from {custom_coords_path}")
+        print(f"Saved formatted POI data to {poi_file}")
+        
+    else:
+        # Step 1: Query POIs
+        print("\n=== Step 1: Querying Points of Interest ===")
+        config = load_poi_config(config_path)
+        query = build_overpass_query(config)
+        
+        print(f"Querying OpenStreetMap for: {config.get('geocode_area', '')} - {config.get('type', '')} - {config.get('name', '')}")
+        raw_results = query_overpass(query)
+        poi_data = format_results(raw_results)
+        
+        # Set a name for the output file based on the POI configuration
+        poi_type = config.get("type", "poi")
+        poi_name = config.get("name", "custom").replace(" ", "_").lower()
+        location = config.get("geocode_area", "").replace(" ", "_").lower()
+        
+        # Create a base filename component for all outputs
+        if location:
+            base_filename = f"{location}_{poi_type}_{poi_name}"
+        else:
+            base_filename = f"{poi_type}_{poi_name}"
+        
+        # Use the base filename for POI data
+        poi_file = os.path.join(output_dirs["pois"], f"{base_filename}.json")
+        
+        save_json(poi_data, poi_file)
+        result_files["poi_data"] = poi_file
+        
+        print(f"Found {len(poi_data['pois'])} POIs")
+        
+        # Extract state from config if available
+        if "state" in config:
+            state_name = config.get("state")
+            state_abbr = state_name_to_abbreviation(state_name)
+            if state_abbr:
+                state_abbreviations.append(state_abbr)
+                print(f"Using state from config file: {state_name} ({state_abbr})")
     
     # Step 2: Generate isochrones
     print("\n=== Step 2: Generating Isochrones ===")
@@ -142,48 +365,40 @@ def run_community_mapper(
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
     block_groups_file = os.path.join(
         output_dirs["block_groups"],
-        f"{poi_type}_{poi_name}_{travel_time}min_block_groups.geojson"
+        f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
+    
+    # Make sure we have state information for census lookups
+    if not state_abbreviations:
+        raise ValueError("No state information found. State is required for census block group lookup. "
+                        "Please provide state information in your custom coordinates file or config file.")
+    
+    print(f"Using states for census lookup: {', '.join(state_abbreviations)}")
     
     block_groups = isochrone_to_block_groups(
         isochrone_path=combined_isochrone_file,
-        state_fips=state_fips,
+        state_fips=state_abbreviations,
         output_path=block_groups_file,
         api_key=api_key
     )
     result_files["block_groups"] = block_groups_file
     
-    print(f"Found {len(block_groups)} intersecting block groups")
-    
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
     
-    # Create a more readable mapping for the census variables
-    variable_mapping = {
-        'B01003_001E': 'total_population',
-        'B19013_001E': 'median_household_income',
-        'B25077_001E': 'median_home_value',
-        'B01002_001E': 'median_age',
-        'B02001_002E': 'white_population',
-        'B02001_003E': 'black_population',
-        'B11001_001E': 'households',
-        'B25001_001E': 'housing_units'
-    }
-    
-    # Keep only the mappings for variables we're actually using
-    active_variable_mapping = {var: variable_mapping.get(var, var) 
-                              for var in census_variables if var in variable_mapping}
+    # Create a human-readable mapping for the census variables
+    variable_mapping = {code: census_code_to_name(code) for code in census_codes}
     
     census_data_file = os.path.join(
         output_dirs["census_data"],
-        f"{poi_type}_{poi_name}_{travel_time}min_census_data.geojson"
+        f"{base_filename}_{travel_time}min_census_data.geojson"
     )
     
     census_data = get_census_data_for_block_groups(
         geojson_path=block_groups_file,
-        variables=census_variables,
+        variables=census_codes,
         output_path=census_data_file,
-        variable_mapping=active_variable_mapping,
+        variable_mapping=variable_mapping,
         api_key=api_key
     )
     result_files["census_data"] = census_data_file
@@ -191,20 +406,73 @@ def run_community_mapper(
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
     
+    # Get visualization variables from the census data result
+    if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
+        visualization_variables = census_data.attrs['variables_for_visualization']
+    else:
+        # Fallback to filtering out known non-visualization variables
+        visualization_variables = [var for var in census_codes if var != 'NAME']
+    
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
-    for var in census_variables:
+    for var in visualization_variables:
         # Use the mapped name if available, otherwise use the original code
-        mapped_name = active_variable_mapping.get(var, var)
+        mapped_name = variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)
     
+    # Print what we're mapping in user-friendly language
+    readable_var_names = [name.replace('_', ' ').title() for name in mapped_variables]
+    print(f"Creating maps for: {', '.join(readable_var_names)}")
+    
+    # Check if we're dealing with multiple locations spread across states
+    use_panels = False
+    poi_data_for_map = None
+    
+    if isinstance(census_data_file, list) and len(census_data_file) > 1:
+        # If we have multiple census data files, use panels
+        use_panels = True
+        
+    elif poi_data is not None and len(poi_data['pois']) > 1:
+        # If we have multiple POIs, check if they're in different states
+        states = [poi['state'] for poi in poi_data['pois']]
+        if len(set(states)) > 1:
+            use_panels = True
+            # Convert to list if not already
+            if isinstance(census_data_file, str):
+                census_data_file = [census_data_file]
+            if isinstance(combined_isochrone_file, str):
+                combined_isochrone_file = [combined_isochrone_file]
+    
+    # Prepare POI data for the map generator
+    if poi_data:
+        if use_panels:
+            # When using panels, prepare individual POI dicts
+            poi_data_list = poi_data['pois']
+            # Convert the POI list to a list of GeoDataFrames for panel maps
+            if isinstance(poi_data_list, list):
+                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in poi_data_list]
+            else:
+                poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
+        else:
+            # For single map, convert the entire POI list to one GeoDataFrame
+            poi_data_for_map = convert_poi_to_geodataframe(poi_data['pois'])
+
+    # Fix for isochrone path handling when it's a list
+    isochrone_path_for_map = combined_isochrone_file
+    if isinstance(combined_isochrone_file, list) and not use_panels:
+        # If we have a list of isochrones but aren't using panels,
+        # just use the first isochrone file to avoid the error
+        isochrone_path_for_map = combined_isochrone_file[0]
+
     # Generate maps for each census variable using the mapped names
     map_files = generate_maps_for_variables(
         census_data_path=census_data_file,
         variables=mapped_variables,
         output_dir=output_dirs["maps"],
-        basename=f"{poi_type}_{poi_name}_{travel_time}min",
-        isochrone_path=combined_isochrone_file
+        basename=f"{base_filename}_{travel_time}min",
+        isochrone_path=isochrone_path_for_map,
+        poi_df=poi_data_for_map,
+        use_panels=use_panels
     )
     result_files["maps"] = map_files
     
@@ -217,6 +485,19 @@ def main():
     # Parse command line arguments
     args = parse_arguments()
     
+    # If --list-variables is specified, print the variables and exit
+    if args.list_variables:
+        print("\nAvailable Census Variables:")
+        print("=" * 50)
+        for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
+            print(f"{name:<25} {code}")
+        print("\nUsage example: --census-variables total_population median_household_income")
+        exit(0)
+        
+    # Make sure either --config or --custom-coords is provided
+    if not args.config and not args.custom_coords:
+        raise ValueError("Either --config or --custom-coords must be provided")
+    
     # Setup output directories
     output_dirs = setup_directories()
     
@@ -225,14 +506,36 @@ def main():
     print("Community Mapper: End-to-end tool for mapping community resources")
     print("=" * 80)
     
+    # If dry-run, just print what would be done and exit
+    if args.dry_run:
+        print("\n=== DRY RUN MODE - NO ACTIONS WILL BE PERFORMED ===")
+        print(f"Config File: {args.config if args.config else 'Not provided'}")
+        print(f"Custom Coordinates: {args.custom_coords if args.custom_coords else 'Not provided'}")
+        print(f"Travel Time: {args.travel_time} minutes")
+        print(f"Census Variables: {', '.join(args.census_variables)}")
+        print(f"API Key: {'Provided' if args.api_key else 'Not provided (will use environment variable if available)'}")
+        print(f"Output Directories: {', '.join(output_dirs.keys())}")
+        
+        if args.custom_coords:
+            print("\nWould parse custom coordinates from:", args.custom_coords)
+            try:
+                poi_data = parse_custom_coordinates(args.custom_coords)
+                print(f"Found {len(poi_data['pois'])} valid coordinates")
+                print(f"States found: {', '.join(poi_data['metadata']['states'])}")
+            except Exception as e:
+                print(f"Error parsing custom coordinates file: {e}")
+        
+        print("\nDry run completed. Exiting without performing any actions.")
+        return
+    
     # Run the pipeline
     results = run_community_mapper(
         config_path=args.config,
-        state_fips=args.state,
         travel_time=args.travel_time,
         census_variables=args.census_variables,
         api_key=args.api_key,
-        output_dirs=output_dirs
+        output_dirs=output_dirs,
+        custom_coords_path=args.custom_coords
     )
     
     # Print summary
