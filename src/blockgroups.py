@@ -8,12 +8,28 @@ import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
-from shapely.geometry import shape
 from typing import List, Optional
+import json
+from tqdm import tqdm
+
+from src.util import state_abbreviation_to_fips
+
+# Set PyOGRIO as the default IO engine
+gpd.options.io_engine = "pyogrio"
+
+# Enable PyArrow for GeoPandas operations if available
+try:
+    import pyarrow
+    USE_ARROW = True
+    os.environ["PYOGRIO_USE_ARROW"] = "1"  # Set environment variable for pyogrio
+    print("PyArrow is available and enabled for optimized I/O")
+except ImportError:
+    USE_ARROW = False
+    print("PyArrow not available. Install it for better performance.")
 
 def get_census_block_groups(
     state_fips: List[str],
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
 ) -> gpd.GeoDataFrame:
     """
     Fetch census block group boundaries for specified states.
@@ -25,23 +41,17 @@ def get_census_block_groups(
     Returns:
         GeoDataFrame with block group boundaries
     """
-    # Map of state abbreviations to FIPS codes
-    state_abbr_to_fips = {
-        'AL': '01', 'AK': '02', 'AZ': '04', 'AR': '05', 'CA': '06', 'CO': '08', 'CT': '09',
-        'DE': '10', 'FL': '12', 'GA': '13', 'HI': '15', 'ID': '16', 'IL': '17', 'IN': '18',
-        'IA': '19', 'KS': '20', 'KY': '21', 'LA': '22', 'ME': '23', 'MD': '24', 'MA': '25',
-        'MI': '26', 'MN': '27', 'MS': '28', 'MO': '29', 'MT': '30', 'NE': '31', 'NV': '32',
-        'NH': '33', 'NJ': '34', 'NM': '35', 'NY': '36', 'NC': '37', 'ND': '38', 'OH': '39',
-        'OK': '40', 'OR': '41', 'PA': '42', 'RI': '44', 'SC': '45', 'SD': '46', 'TN': '47',
-        'TX': '48', 'UT': '49', 'VT': '50', 'VA': '51', 'WA': '53', 'WV': '54', 'WI': '55',
-        'WY': '56', 'DC': '11'
-    }
-    
     # Convert any state abbreviations to FIPS codes
     normalized_state_fips = []
     for state in state_fips:
-        if state in state_abbr_to_fips:
-            normalized_state_fips.append(state_abbr_to_fips[state])
+        if len(state) == 2 and state.isalpha():
+            # State abbreviation
+            fips = state_abbreviation_to_fips(state)
+            if fips:
+                normalized_state_fips.append(fips)
+            else:
+                # If not found, keep as is
+                normalized_state_fips.append(state)
         else:
             # Assume it's already a FIPS code
             normalized_state_fips.append(state)
@@ -54,14 +64,19 @@ def get_census_block_groups(
     cached_gdfs = []
     all_cached = True
     
-    for state in normalized_state_fips:
+    for state in tqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
         cache_file = cache_dir / f"block_groups_{state}.geojson"
         if cache_file.exists():
             try:
-                cached_gdfs.append(gpd.read_file(cache_file))
-                print(f"Loaded cached block groups for state {state}")
+                # Use PyOGRIO with PyArrow for faster reading
+                cached_gdfs.append(gpd.read_file(
+                    cache_file, 
+                    engine="pyogrio", 
+                    use_arrow=USE_ARROW
+                ))
+                tqdm.write(f"Loaded cached block groups for state {state}")
             except Exception as e:
-                print(f"Error loading cache for state {state}: {e}")
+                tqdm.write(f"Error loading cache for state {state}: {e}")
                 all_cached = False
                 break
         else:
@@ -73,56 +88,110 @@ def get_census_block_groups(
         return pd.concat(cached_gdfs, ignore_index=True)
     
     # If not all states were cached or there was an error, fetch from Census API
-    api_key = os.getenv('CENSUS_API_KEY')
+    if api_key is None:
+        api_key = os.getenv('CENSUS_API_KEY')
 
-    if api_key:
-        print("Using Census API key from environment variable")
-    else:
-        print("No Census API key found in environment variables.")
+    tqdm.write("Fetching block groups from Census TIGER API")
     
-    # We'll use the Census Bureau's TIGER/Line API to get block group geometries
-    base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/8/query"
+    # Use the Tracts_Blocks MapServer endpoint
+    base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
     
     all_block_groups = []
     
-    for state in normalized_state_fips:
-        print(f"Fetching block groups for state {state}...")
+    for state in tqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
+        tqdm.write(f"Fetching block groups for state {state}...")
+        state_block_groups = []
         
-        params = {
-            'where': f"STATE='{state}'",
-            'outFields': '*',
-            'returnGeometry': 'true',
-            'f': 'geojson'
-        }
+        # Use the simple approach that works: for large states, fetch data in smaller batches
+        # This avoids timeouts and "Request Rejected" errors that occur with large queries
+        batch_size = 1000
+        start_index = 0
+        more_records = True
         
-        # Add the API key to the request parameters
-        if api_key:
-            params['token'] = api_key
+        # Fields needed for block group identification and analysis
+        required_fields = 'STATE,COUNTY,TRACT,BLKGRP,GEOID'
         
-        response = requests.get(base_url, params=params)
+        batch_count = 0
+        with tqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
+            while more_records:
+                # Simple query that fetches records in batches
+                params = {
+                    'where': f"STATE='{state}'",
+                    'outFields': required_fields,
+                    'returnGeometry': 'true',
+                    'resultRecordCount': batch_size,
+                    'resultOffset': start_index,
+                    'f': 'geojson'
+                }
+                
+                try:
+                    # Only log the first batch and then every 5th batch to reduce verbosity
+                    if batch_count == 0 or batch_count % 5 == 0:
+                        tqdm.write(f"  Fetching batch starting at index {start_index}...")
+                    
+                    response = requests.get(base_url, params=params, timeout=60)
+                    
+                    if response.status_code == 200:
+                        content_type = response.headers.get('Content-Type', '')
+                        
+                        if 'json' in content_type.lower():
+                            try:
+                                response_json = response.json()
+                                
+                                if 'features' in response_json and response_json['features']:
+                                    feature_count = len(response_json['features'])
+                                    
+                                    # Only log the first batch and then every 5th batch
+                                    if batch_count == 0 or batch_count % 5 == 0:
+                                        tqdm.write(f"  Retrieved {feature_count} block groups in this batch")
+                                    
+                                    # Create GeoDataFrame from features
+                                    batch_gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
+                                    
+                                    # Verify STATE column is correct
+                                    if 'STATE' not in batch_gdf.columns or not all(batch_gdf['STATE'] == state):
+                                        batch_gdf['STATE'] = state
+                                    
+                                    state_block_groups.append(batch_gdf)
+                                    
+                                    # Check if we need to fetch more records
+                                    more_records = feature_count == batch_size and 'exceededTransferLimit' in response_json.get('properties', {})
+                                    
+                                    # Update start index for next batch
+                                    start_index += feature_count
+                                    batch_count += 1
+                                    batch_pbar.update(1)
+                                else:
+                                    more_records = False
+                                    if 'error' in response_json:
+                                        tqdm.write(f"  API error: {response_json['error']}")
+                            except json.JSONDecodeError as e:
+                                tqdm.write(f"  Error parsing JSON: {e}")
+                                more_records = False
+                        else:
+                            tqdm.write(f"  Error: Received non-JSON response: {content_type}")
+                            more_records = False
+                    else:
+                        tqdm.write(f"  Error fetching data: HTTP {response.status_code}")
+                        more_records = False
+                except Exception as e:
+                    tqdm.write(f"  Exception during API request: {e}")
+                    more_records = False
         
-        if response.status_code == 200:
-            response_json = response.json()
+        # If we got some data, combine it and save to cache
+        if state_block_groups:
+            state_gdf = pd.concat(state_block_groups, ignore_index=True)
+            tqdm.write(f"Total block groups retrieved for {state}: {len(state_gdf)}")
             
-            # Check if the response has features with geometry
-            if 'features' in response_json and response_json['features']:
-                gdf = gpd.GeoDataFrame.from_features(response_json['features'], crs="EPSG:4326")
-                gdf['STATE'] = state
-                
-                # Save to cache
-                cache_file = cache_dir / f"block_groups_{state}.geojson"
-                gdf.to_file(cache_file, driver="GeoJSON")
-                print(f"Saved block groups for state {state} to cache")
-                
-                all_block_groups.append(gdf)
-            else:
-                print(f"Error: No block group features found for state {state}")
-        else:
-            print(f"Error fetching block groups for state {state}: {response.status_code}")
-            print(response.text)
-    
+            # Save to cache
+            cache_file = cache_dir / f"block_groups_{state}.geojson"
+            state_gdf.to_file(cache_file, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
+            tqdm.write(f"Saved block groups for state {state} to cache")
+            
+            all_block_groups.append(state_gdf)
+           
     if not all_block_groups:
-        raise ValueError("No block group data could be retrieved.")
+        raise ValueError("No block group data could be retrieved. Please check your network connection or try again later.")
     
     return pd.concat(all_block_groups, ignore_index=True)
 
@@ -131,13 +200,17 @@ def load_isochrone(isochrone_path: str) -> gpd.GeoDataFrame:
     Load an isochrone file.
     
     Args:
-        isochrone_path: Path to the isochrone GeoJSON file
+        isochrone_path: Path to the isochrone GeoJSON or GeoParquet file
         
     Returns:
         GeoDataFrame containing the isochrone
     """
     try:
-        isochrone_gdf = gpd.read_file(isochrone_path)
+        if isochrone_path.endswith('.parquet'):
+            isochrone_gdf = gpd.read_parquet(isochrone_path)
+        else:
+            isochrone_gdf = gpd.read_file(isochrone_path, engine="pyogrio", use_arrow=USE_ARROW)
+            
         if isochrone_gdf.crs is None:
             isochrone_gdf.set_crs("EPSG:4326", inplace=True)
         return isochrone_gdf
@@ -147,7 +220,7 @@ def load_isochrone(isochrone_path: str) -> gpd.GeoDataFrame:
 def find_intersecting_block_groups(
     isochrone_gdf: gpd.GeoDataFrame,
     block_groups_gdf: gpd.GeoDataFrame,
-    predicate: str = "intersects"
+    selection_mode: str = "intersect"
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with the isochrone.
@@ -155,24 +228,58 @@ def find_intersecting_block_groups(
     Args:
         isochrone_gdf: GeoDataFrame containing the isochrone
         block_groups_gdf: GeoDataFrame containing block group boundaries
+        selection_mode: Method to select and process block groups
+            - "clip": Clip block groups to isochrone boundary (original behavior)
+            - "intersect": Keep full geometry of any intersecting block group
+            - "contain": Only include block groups fully contained within isochrone
         
     Returns:
-        GeoDataFrame with intersecting block groups
+        GeoDataFrame with selected block groups
     """
     # Make sure CRS match
     if isochrone_gdf.crs != block_groups_gdf.crs:
         block_groups_gdf = block_groups_gdf.to_crs(isochrone_gdf.crs)
     
-    # Find which block groups intersect with the isochrone
-    intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate="intersects")
+    # Use coordinate indexing to pre-filter block groups by bounding box
+    # This improves performance by reducing the number of geometries for spatial join
+    bounds = isochrone_gdf.total_bounds
+    filtered_block_groups = block_groups_gdf.cx[
+        bounds[0]:bounds[2], 
+        bounds[1]:bounds[3]
+    ]
     
-    # For partially intersecting block groups, we can calculate the intersection geometry
-    intersected_geometries = []
+    # If filtering reduced the dataset substantially, use the filtered version
+    if len(filtered_block_groups) < len(block_groups_gdf) * 0.9:  # If we've filtered out at least 10%
+        tqdm.write(f"Coordinate indexing reduced block groups from {len(block_groups_gdf)} to {len(filtered_block_groups)}")
+        block_groups_gdf = filtered_block_groups
     
+    # Set predicate based on selection mode
+    predicate = "within" if selection_mode == "contain" else "intersects"
+    
+    # Find which block groups intersect with or are contained within the isochrone
+    intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate=predicate)
+    
+    # Process geometries based on selection mode
+    processed_geometries = []
+    
+    tqdm.write(f"Processing {len(intersection)} intersecting block groups...")
+    
+    # Skip progress bar for nearly instant operations
     for idx, row in intersection.iterrows():
         block_geom = row.geometry
         isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
+        
+        # Determine geometry based on selection mode
+        if selection_mode == "clip":
+            # Original behavior - clip to isochrone boundary
+            final_geom = block_geom.intersection(isochrone_geom)
+        else:
+            # For "intersect" or "contain", keep the original geometry
+            final_geom = block_geom
+        
+        # Calculate intersection percentage
         intersection_geom = block_geom.intersection(isochrone_geom)
+        intersection_pct = intersection_geom.area / block_geom.area * 100
         
         # Get GEOID parts ensuring proper formatting
         state = str(row['STATE']).zfill(2)
@@ -183,21 +290,21 @@ def find_intersecting_block_groups(
         # Create properly formatted 12-digit GEOID
         geoid = state + county + tract + blkgrp
         
-        intersected_geometries.append({
+        processed_geometries.append({
             "GEOID": geoid,
             "STATE": row['STATE'],
             "COUNTY": row['COUNTY'],
             "TRACT": row['TRACT'],
             "BLKGRP": row['BLKGRP'] if 'BLKGRP' in row else geoid[-1],
-            "geometry": intersection_geom,
+            "geometry": final_geom,
             "poi_id": row['poi_id'] if 'poi_id' in row else None,
             "poi_name": row['poi_name'] if 'poi_name' in row else None,
             "travel_time_minutes": row['travel_time_minutes'] if 'travel_time_minutes' in row else None,
-            "intersection_area_pct": intersection_geom.area / block_geom.area * 100
+            "intersection_area_pct": intersection_pct
         })
     
-    # Create new GeoDataFrame with intersected geometries
-    result_gdf = gpd.GeoDataFrame(intersected_geometries, crs=isochrone_gdf.crs)
+    # Create new GeoDataFrame with processed geometries
+    result_gdf = gpd.GeoDataFrame(processed_geometries, crs=isochrone_gdf.crs)
     
     return result_gdf
 
@@ -205,63 +312,110 @@ def isochrone_to_block_groups(
     isochrone_path: str,
     state_fips: List[str],
     output_path: Optional[str] = None,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    selection_mode: str = "intersect",
+    use_parquet: bool = True
 ) -> gpd.GeoDataFrame:
     """
     Main function to find census block groups intersecting with an isochrone.
     
     Args:
-        isochrone_path: Path to isochrone GeoJSON file
-        state_fips: List of state FIPS codes to fetch block groups for
+        isochrone_path: Path to isochrone GeoJSON or GeoParquet file
+        state_fips: List of state FIPS codes or abbreviations (required)
         output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)
+        selection_mode: Method to select and process block groups
+            - "clip": Clip block groups to isochrone boundary (original behavior)
+            - "intersect": Keep full geometry of any intersecting block group
+            - "contain": Only include block groups fully contained within isochrone
+        use_parquet: Whether to use GeoParquet instead of GeoJSON format when saving
         
     Returns:
-        GeoDataFrame with intersecting block groups
+        GeoDataFrame with selected block groups
     """
     # Load the isochrone
+    tqdm.write("Loading isochrone...")
     isochrone_gdf = load_isochrone(isochrone_path)
     
+    # Validate state_fips
+    if not state_fips:
+        raise ValueError("state_fips parameter is required. Please provide a list of state abbreviations or FIPS codes.")
+    
     # Get block groups for requested states
+    tqdm.write(f"Fetching block groups for state(s): {', '.join(state_fips)}")
     block_groups_gdf = get_census_block_groups(state_fips, api_key)
     
     # Find intersecting block groups
-    result_gdf = find_intersecting_block_groups(isochrone_gdf, block_groups_gdf)
+    tqdm.write(f"Finding block groups that {selection_mode} with isochrone...")
+    result_gdf = find_intersecting_block_groups(
+        isochrone_gdf,
+        block_groups_gdf,
+        selection_mode
+    )
     
-    # Generate default output path if none provided
-    if output_path is None:
-        # Extract filename from isochrone path without extension
-        isochrone_name = Path(isochrone_path).stem
-        output_path = Path(f"output/blockgroups/{isochrone_name}_blockgroups.geojson")
-    else:
-        output_path = Path(output_path)
-    
-    # Ensure output directory exists
-    output_dir = output_path.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save to file
-    result_gdf.to_file(output_path, driver="GeoJSON")
-    print(f"Saved result to {output_path}")
-    
+    # Save result if output path is provided
+    if output_path:
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            
+        tqdm.write(f"Saving {len(result_gdf)} block groups...")
+        if use_parquet and USE_ARROW and not output_path.endswith('.geojson'):
+            # Default to parquet if extension isn't explicitly geojson
+            if not output_path.endswith('.parquet'):
+                output_path = f"{output_path}.parquet"
+            result_gdf.to_parquet(output_path)
+        else:
+            if not output_path.endswith('.geojson'):
+                output_path = f"{output_path}.geojson"
+            result_gdf.to_file(output_path, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
+            
+        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path}")
+        
     return result_gdf
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Find census block groups intersecting with an isochrone")
-    parser.add_argument("isochrone", help="Path to isochrone GeoJSON file")
-    parser.add_argument("--states", required=True, nargs="+", help="State FIPS codes or abbreviations")
-    parser.add_argument("--output", help="Output GeoJSON file path")
-    parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
-    parser.add_argument("--predicate", help="Predicate for spatial join. Default is intersects. Other options are contains, within, and crosses.")
+    parser = argparse.ArgumentParser(
+        description="Find census block groups that intersect with isochrones"
+    )
+    parser.add_argument(
+        "isochrone_path",
+        help="Path to isochrone GeoJSON or GeoParquet file"
+    )
+    parser.add_argument(
+        "--state",
+        nargs="+",
+        required=True,
+        help="State abbreviations or FIPS codes (required, can list multiple)"
+    )
+    parser.add_argument(
+        "--output-path",
+        help="Path to save result GeoJSON or GeoParquet"
+    )
+    parser.add_argument(
+        "--api-key",
+        help="Census API key (optional if using cached data or set as environment variable)"
+    )
+    parser.add_argument(
+        "--selection-mode",
+        choices=["clip", "intersect", "contain"],
+        default="intersect",
+        help="Method to select and process block groups"
+    )
+    parser.add_argument(
+        "--no-parquet",
+        action="store_true",
+        help="Do not use GeoParquet format (use GeoJSON instead)"
+    )
     
     args = parser.parse_args()
     
-    result = isochrone_to_block_groups(
-        isochrone_path=args.isochrone,
-        state_fips=args.states,
-        output_path=args.output,
-        api_key=args.api_key
-    )
-    
-    # Print summary
-    print(f"Found {len(result)} intersecting block groups") 
+    # Run the main function with provided states
+    isochrone_to_block_groups(
+        isochrone_path=args.isochrone_path,
+        state_fips=args.state,
+        output_path=args.output_path,
+        api_key=args.api_key,
+        selection_mode=args.selection_mode,
+        use_parquet=not args.no_parquet
+    ) 

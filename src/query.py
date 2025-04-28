@@ -7,6 +7,7 @@ import json
 import sys
 import yaml
 import overpy
+import os
 
 def load_poi_config(file_path):
     """Load POI configuration from YAML file."""
@@ -124,6 +125,7 @@ def format_results(result):
         A dictionary containing the POIs in JSON format.
 
         Keys:
+            poi_count: The total number of POIs found.
             pois: A list of dictionaries containing the POIs.
                 Keys:
                     id: The ID of the POI.
@@ -133,6 +135,7 @@ def format_results(result):
                     tags: A dictionary containing the tags of the POI.
     """
     data = {
+        "poi_count": 0,  # Initialize with 0, will be updated at the end
         "pois": []
     }
     
@@ -185,11 +188,17 @@ def format_results(result):
         
         data["pois"].append(poi_data)
     
+    # Update poi count
+    data["poi_count"] = len(data["pois"])
+    
     return data
 
 def save_json(data, output_file):
     """Save data to a JSON file."""
     try:
+        # Create output directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
         with open(output_file, 'w') as f:
             json.dump(data, f, indent=2)
         print(f"Results saved to {output_file}")
@@ -201,13 +210,41 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Query POIs from OpenStreetMap via Overpass API")
     parser.add_argument("config_file", help="YAML configuration file")
-    parser.add_argument("-o", "--output", help="Output JSON file (default: output/pois/poi_output.json)",
-                        default="output/pois/poi_output.json")
+    parser.add_argument("-o", "--output", help="Output JSON file (default: auto-generated based on query)",
+                        default=None)
     parser.add_argument("-v", "--verbose", action="store_true", help="Print the Overpass query")
     args = parser.parse_args()
     
     # Load configuration
     config = load_poi_config(args.config_file)
+    
+    # Generate descriptive output filename if not specified
+    if args.output is None:
+        # Extract key components for the filename
+        geocode_area = config.get('geocode_area', 'global')
+        poi_type = config.get('type', '')
+        poi_name = config.get('name', '')
+        
+        # Create a sanitized filename (replace spaces with underscores)
+        location_part = geocode_area.replace(' ', '_').lower()
+        type_part = poi_type.lower()
+        name_part = poi_name.replace(' ', '_').lower()
+        
+        # Construct the filename
+        if poi_type and poi_name:
+            filename = f"{location_part}_{type_part}_{name_part}.json"
+        elif 'tags' in config:
+            # Use first tag for naming
+            tag_key = list(config['tags'].keys())[0]
+            tag_value = config['tags'][tag_key]
+            filename = f"{location_part}_{tag_key}_{tag_value}.json"
+        else:
+            # Fallback
+            filename = f"{location_part}_pois.json"
+        
+        output_file = f"output/pois/{filename}"
+    else:
+        output_file = args.output
     
     # Build query
     query = build_overpass_query(config)
@@ -228,7 +265,7 @@ def main():
     print(f"Found {len(data['pois'])} POIs")
     
     # Save results
-    save_json(data, args.output)
+    save_json(data, output_file)
 
 if __name__ == "__main__":
     main() 
