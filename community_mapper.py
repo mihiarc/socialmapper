@@ -16,6 +16,8 @@ import json
 import csv
 from pathlib import Path
 from typing import Dict, List, Optional
+import geopandas as gpd
+from shapely.geometry import Point
 
 # Import components from the src modules
 from src.query import (
@@ -202,6 +204,51 @@ def parse_arguments():
     
     args = parser.parse_args()
     return args
+
+def convert_poi_to_geodataframe(poi_data_list):
+    """
+    Convert a list of POI dictionaries to a GeoDataFrame.
+    
+    Args:
+        poi_data_list: List of POI dictionaries
+        
+    Returns:
+        GeoDataFrame containing POI data
+    """
+    if not poi_data_list:
+        return None
+    
+    # Extract coordinates and create Point geometries
+    geometries = []
+    names = []
+    ids = []
+    types = []
+    
+    for poi in poi_data_list:
+        if 'lat' in poi and 'lon' in poi:
+            lat = poi['lat']
+            lon = poi['lon']
+        elif 'geometry' in poi and 'coordinates' in poi['geometry']:
+            # GeoJSON format
+            coords = poi['geometry']['coordinates']
+            lon, lat = coords[0], coords[1]
+        else:
+            continue
+            
+        geometries.append(Point(lon, lat))
+        names.append(poi.get('name', poi.get('tags', {}).get('name', poi.get('id', 'Unknown'))))
+        ids.append(poi.get('id', ''))
+        types.append(poi.get('type', poi.get('tags', {}).get('amenity', 'Unknown')))
+    
+    # Create GeoDataFrame
+    gdf = gpd.GeoDataFrame({
+        'name': names,
+        'id': ids,
+        'type': types,
+        'geometry': geometries
+    }, crs="EPSG:4326")  # WGS84 is standard for GPS coordinates
+    
+    return gdf
 
 def run_community_mapper(
     config_path: Optional[str] = None,
@@ -400,10 +447,22 @@ def run_community_mapper(
     if poi_data:
         if use_panels:
             # When using panels, prepare individual POI dicts
-            poi_data_for_map = poi_data['pois']
+            poi_data_list = poi_data['pois']
+            # Convert the POI list to a list of GeoDataFrames for panel maps
+            if isinstance(poi_data_list, list):
+                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in poi_data_list]
+            else:
+                poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
         else:
-            # For single map, use the standard POI format
-            poi_data_for_map = poi_data['pois']
+            # For single map, convert the entire POI list to one GeoDataFrame
+            poi_data_for_map = convert_poi_to_geodataframe(poi_data['pois'])
+
+    # Fix for isochrone path handling when it's a list
+    isochrone_path_for_map = combined_isochrone_file
+    if isinstance(combined_isochrone_file, list) and not use_panels:
+        # If we have a list of isochrones but aren't using panels,
+        # just use the first isochrone file to avoid the error
+        isochrone_path_for_map = combined_isochrone_file[0]
 
     # Generate maps for each census variable using the mapped names
     map_files = generate_maps_for_variables(
@@ -411,7 +470,7 @@ def run_community_mapper(
         variables=mapped_variables,
         output_dir=output_dirs["maps"],
         basename=f"{base_filename}_{travel_time}min",
-        isochrone_path=combined_isochrone_file,
+        isochrone_path=isochrone_path_for_map,
         poi_df=poi_data_for_map,
         use_panels=use_panels
     )
