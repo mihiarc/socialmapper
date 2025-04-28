@@ -392,7 +392,7 @@ def generate_paneled_census_map(
         # Create norm and colormap for consistent coloring
         import matplotlib.colors as colors
         norm = colors.BoundaryNorm(bins, 256)
-        cmap = plt.cm.get_cmap(colormap, len(bins) - 1)
+        cmap = plt.colormaps.get(colormap, len(bins) - 1)
         
         # Iterate through census paths, processed dataframes, and axes
         for i, (census_path, census_df, ax) in enumerate(zip(curr_paths, curr_dfs, axes)):

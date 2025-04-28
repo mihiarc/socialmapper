@@ -34,7 +34,7 @@ from src.blockgroups import (
 from src.census_data import (
     get_census_data_for_block_groups
 )
-from src.map_generator import (
+from src.visualization import (
     generate_maps_for_variables
 )
 from src.util import (
@@ -377,13 +377,43 @@ def run_community_mapper(
     readable_var_names = [name.replace('_', ' ').title() for name in mapped_variables]
     print(f"Creating maps for: {', '.join(readable_var_names)}")
     
+    # Check if we're dealing with multiple locations spread across states
+    use_panels = False
+    poi_data_for_map = None
+    
+    if isinstance(census_data_file, list) and len(census_data_file) > 1:
+        # If we have multiple census data files, use panels
+        use_panels = True
+        
+    elif poi_data is not None and len(poi_data['pois']) > 1:
+        # If we have multiple POIs, check if they're in different states
+        states = [poi['state'] for poi in poi_data['pois']]
+        if len(set(states)) > 1:
+            use_panels = True
+            # Convert to list if not already
+            if isinstance(census_data_file, str):
+                census_data_file = [census_data_file]
+            if isinstance(combined_isochrone_file, str):
+                combined_isochrone_file = [combined_isochrone_file]
+    
+    # Prepare POI data for the map generator
+    if poi_data:
+        if use_panels:
+            # When using panels, prepare individual POI dicts
+            poi_data_for_map = poi_data['pois']
+        else:
+            # For single map, use the standard POI format
+            poi_data_for_map = poi_data['pois']
+
     # Generate maps for each census variable using the mapped names
     map_files = generate_maps_for_variables(
         census_data_path=census_data_file,
         variables=mapped_variables,
         output_dir=output_dirs["maps"],
         basename=f"{base_filename}_{travel_time}min",
-        isochrone_path=combined_isochrone_file
+        isochrone_path=combined_isochrone_file,
+        poi_df=poi_data_for_map,
+        use_panels=use_panels
     )
     result_files["maps"] = map_files
     
