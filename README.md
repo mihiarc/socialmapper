@@ -328,7 +328,29 @@ graph TD
 
 2. https://developers.arcgis.com/rest/
 
+## Community Mapper Web App
 
+We now provide a Streamlit web app as a user-friendly interface to the Community Mapper tool. The web app allows you to:
+
+- Query OpenStreetMap for points of interest or use your own coordinates
+- Set travel times and select demographic variables 
+- Visualize results with interactive maps
+- No coding experience required!
+
+### Running the Streamlit App
+
+1. Make sure you've installed dependencies with `uv pip install -r requirements.txt`
+2. Run the app with `streamlit run app.py`
+3. Open your browser to http://localhost:8501 (if it doesn't open automatically)
+
+The app provides an intuitive interface to configure your community mapping project, run the analysis, and visualize the results - all without writing a single line of code. It's perfect for:
+
+- Urban planners analyzing access to public services
+- Community organizations studying resource distribution 
+- Researchers examining demographic patterns around facilities
+- Anyone who wants to understand demographics around points of interest
+
+For more information, see [STREAMLIT_README.md](STREAMLIT_README.md).
 
 ## Basic Usage Reference
 
