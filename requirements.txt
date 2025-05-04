@@ -25,3 +25,6 @@ pyarrow>=12.0.0  # Arrow format support for optimized I/O
 
 # Progress tracking
 tqdm>=4.67.0
+
+# Streamlit
+streamlit>=1.31
