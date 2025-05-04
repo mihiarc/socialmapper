@@ -38,30 +38,6 @@ echo "Creating virtual environment with uv..."
 uv venv
 echo "Virtual environment created."
 
-# Determine the activation script based on OS
-if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # macOS or Linux
-    ACTIVATE_SCRIPT=".venv/bin/activate"
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    # Windows
-    ACTIVATE_SCRIPT=".venv/Scripts/activate"
-else
-    echo "Unsupported OS type: $OSTYPE"
-    echo "Please activate the virtual environment manually."
-    ACTIVATE_SCRIPT=""
-fi
-
-# Activate virtual environment
-if [[ -n "$ACTIVATE_SCRIPT" ]]; then
-    echo "Activating virtual environment..."
-    source "$ACTIVATE_SCRIPT"
-    echo "Virtual environment activated."
-else
-    echo "Could not activate virtual environment automatically."
-    echo "Please activate it manually before continuing."
-    exit 1
-fi
-
 # Install dependencies
 echo "Installing dependencies..."
 uv pip install -r requirements.txt
@@ -86,13 +62,13 @@ else
     echo ".env file already exists."
 fi
 
-# Activate the virtual environment
-source "$ACTIVATE_SCRIPT"
-echo "Virtual environment activated."
-
 echo ""
 echo "===== Setup Complete ====="
 echo "To run the Community Mapper Streamlit app:"
-echo "type 'streamlit run app.py' into your terminal"
+echo "1. Activate the virtual environment:"
+echo "   For Linux/macOS: source .venv/bin/activate"
+echo "   For Windows: .venv\Scripts\activate"
+echo "2. Run the Streamlit app:"
+echo "   streamlit run app.py"
 echo ""
 echo "For more information, see STREAMLIT_README.md" 
