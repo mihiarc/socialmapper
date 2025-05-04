@@ -14,6 +14,7 @@ import os
 import argparse
 import json
 import csv
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 import geopandas as gpd
@@ -39,12 +40,34 @@ from src.census_data import (
 from src.visualization import (
     generate_maps_for_variables
 )
+from src.states import (
+    normalize_state,
+    normalize_state_list,
+    StateFormat
+)
 from src.util import (
-    state_name_to_abbreviation,
     census_code_to_name,
     normalize_census_variable,
     CENSUS_VARIABLE_MAPPING
 )
+
+# Try to import stqdm for progress tracking (fallback to regular tqdm if not available)
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
+
+# Configure basic logging (can be overridden by client code)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+
+# New pydantic model for validated configuration
+try:
+    from src.config_models import RunConfig
+except ImportError:
+    RunConfig = None  # Fallback when model not available
 
 def parse_custom_coordinates(file_path: str) -> Dict:
     """
@@ -102,7 +125,8 @@ def parse_custom_coordinates(file_path: str) -> Dict:
             pois = data['pois']
     
     elif file_extension == '.csv':
-        with open(file_path, 'r') as f:
+        # Use newline="" to ensure correct universal newline handling across platforms
+        with open(file_path, 'r', newline='') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader):
                 # Try to find lat/lon in different possible column names
@@ -251,9 +275,11 @@ def convert_poi_to_geodataframe(poi_data_list):
     return gdf
 
 def run_community_mapper(
+    run_config: Optional[RunConfig] = None,
+    *,
     config_path: Optional[str] = None,
     travel_time: int = 15,
-    census_variables: List[str] = None,
+    census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
     output_dirs: Optional[Dict[str, str]] = None,
     custom_coords_path: Optional[str] = None
@@ -262,6 +288,7 @@ def run_community_mapper(
     Run the complete community mapping pipeline.
     
     Args:
+        run_config: RunConfig object containing configuration parameters
         config_path: Path to POI configuration YAML file (required if custom_coords_path is None)
         travel_time: Travel time limit in minutes
         census_variables: List of Census API variables to retrieve
@@ -272,6 +299,18 @@ def run_community_mapper(
     Returns:
         Dictionary of output file paths
     """
+    
+    # Merge values from RunConfig if provided
+    if run_config is not None and RunConfig is not None:
+        config_path = run_config.config_path or config_path
+        custom_coords_path = run_config.custom_coords_path or custom_coords_path
+        travel_time = run_config.travel_time if travel_time == 15 else travel_time
+        census_variables = census_variables or run_config.census_variables
+        api_key = run_config.api_key or api_key
+        output_dirs = output_dirs or run_config.output_dirs
+
+    if census_variables is None:
+        census_variables = ["total_population"]
     
     # Convert any human-readable names to census codes
     census_codes = [normalize_census_variable(var) for var in census_variables]
@@ -290,11 +329,8 @@ def run_community_mapper(
         
         # Extract state information from the custom coordinates
         if 'metadata' in poi_data and 'states' in poi_data['metadata']:
-            for state in poi_data['metadata']['states']:
-                # Process state - could be abbreviation or full name
-                state_abbr = state_name_to_abbreviation(state) or state
-                if state_abbr and state_abbr not in state_abbreviations:
-                    state_abbreviations.append(state_abbr)
+            # Use normalize_state_list to handle different state formats
+            state_abbreviations = normalize_state_list(poi_data['metadata']['states'], to_format=StateFormat.ABBREVIATION)
             
             if state_abbreviations:
                 print(f"Using states from custom coordinates: {', '.join(state_abbreviations)}")
@@ -307,6 +343,8 @@ def run_community_mapper(
         poi_file = os.path.join(output_dirs["pois"], f"{base_filename}.json")
         save_json(poi_data, poi_file)
         result_files["poi_data"] = poi_file
+        # Alias for backward compatibility (used by Streamlit front-end)
+        result_files["poi_file"] = poi_file
         
         print(f"Using {len(poi_data['pois'])} custom coordinates from {custom_coords_path}")
         print(f"Saved formatted POI data to {poi_file}")
@@ -337,14 +375,17 @@ def run_community_mapper(
         
         save_json(poi_data, poi_file)
         result_files["poi_data"] = poi_file
+        # Alias for backward compatibility (used by Streamlit front-end)
+        result_files["poi_file"] = poi_file
         
         print(f"Found {len(poi_data['pois'])} POIs")
         
         # Extract state from config if available
-        if "state" in config:
-            state_name = config.get("state")
-            state_abbr = state_name_to_abbreviation(state_name)
-            if state_abbr:
+        state_name = config.get("state")
+        if state_name:
+            # Use normalize_state for more robust state handling
+            state_abbr = normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
+            if state_abbr and state_abbr not in state_abbreviations:
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from config file: {state_name} ({state_abbr})")
     
@@ -415,7 +456,7 @@ def run_community_mapper(
     
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
-    for var in visualization_variables:
+    for var in stqdm(visualization_variables, desc="Processing variables"):
         # Use the mapped name if available, otherwise use the original code
         mapped_name = variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)
@@ -450,7 +491,7 @@ def run_community_mapper(
             poi_data_list = poi_data['pois']
             # Convert the POI list to a list of GeoDataFrames for panel maps
             if isinstance(poi_data_list, list):
-                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in poi_data_list]
+                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in stqdm(poi_data_list, desc="Processing POIs")]
             else:
                 poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
         else:
@@ -475,6 +516,8 @@ def run_community_mapper(
         use_panels=use_panels
     )
     result_files["maps"] = map_files
+    # Alias for backward compatibility (used by Streamlit front-end)
+    result_files["map_files"] = map_files
     
     print(f"Generated {len(map_files)} maps")
     

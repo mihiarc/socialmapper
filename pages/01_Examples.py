@@ -5,14 +5,14 @@ import os
 from pathlib import Path
 
 st.set_page_config(
-    page_title="Community Mapper - Examples",
+    page_title="SocialMapper - Examples",
     page_icon="🗺️",
     layout="wide"
 )
 
-st.title("Community Mapper - Examples")
+st.title("SocialMapper - Examples")
 st.markdown("""
-This page provides examples of how to use the Community Mapper tool for different scenarios.
+This page provides examples of how to use the SocialMapper tool for different scenarios.
 You can explore these examples to understand what's possible and then apply similar approaches to your own projects.
 """)
 

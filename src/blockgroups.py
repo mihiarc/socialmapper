@@ -12,7 +12,7 @@ from typing import List, Optional
 import json
 from tqdm import tqdm
 
-from src.util import state_abbreviation_to_fips
+from src.states import normalize_state, StateFormat
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -41,19 +41,15 @@ def get_census_block_groups(
     Returns:
         GeoDataFrame with block group boundaries
     """
-    # Convert any state abbreviations to FIPS codes
+    # Convert any state identifiers to FIPS codes using the centralized state module
     normalized_state_fips = []
     for state in state_fips:
-        if len(state) == 2 and state.isalpha():
-            # State abbreviation
-            fips = state_abbreviation_to_fips(state)
-            if fips:
-                normalized_state_fips.append(fips)
-            else:
-                # If not found, keep as is
-                normalized_state_fips.append(state)
+        # Convert to FIPS code
+        fips = normalize_state(state, to_format=StateFormat.FIPS)
+        if fips:
+            normalized_state_fips.append(fips)
         else:
-            # Assume it's already a FIPS code
+            # If not found, keep as is
             normalized_state_fips.append(state)
     
     # Check for cached block group data

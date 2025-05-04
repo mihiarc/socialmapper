@@ -1,19 +1,49 @@
-# Community Mapper
+# 🏘️ SocialMapper: Explore Your Community Connections. 🏘️
 
-A Python toolkit for mapping community resources and analyzing demographic data around them.
+SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local community center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
+
+But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.
+
+Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.
+
+With plans to expand and explore our connection to the natural world, SocialMapper is a tool for understanding people, places, and the environment around us.
+
+Discover the connections in your community with SocialMapper – where location brings understanding.
+
+## Features
+
+- **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
+- **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
+- **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
+- **Retrieving Demographic Data** - Pull census data for the identified areas
+- **Visualizing Results** - Generate maps showing the demographic variables around the POIs
 
 ## ⚠️ PRE-RELEASE ⚠️
-This is an alpha release (v0.1.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
+This is an alpha release (v0.3.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
 
-## Overview
+## New in v0.3.0-alpha -- **SocialMapper Interactive Dashboard**
 
-Community Mapper integrates several geospatial analysis tools to help understand the demographics of areas around community amenities. It provides an end-to-end pipeline for:
+We now provide a Streamlit web app as a user-friendly interface to the Community Mapper tool. The web app allows you to:
 
-1. **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
-2. **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
-3. **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
-4. **Retrieving Demographic Data** - Pull census data for the identified areas
-5. **Visualizing Results** - Generate maps showing the demographic variables around the POIs
+- Query OpenStreetMap for points of interest or use your own coordinates
+- Set travel times and select demographic variables 
+- Visualize results with interactive maps
+- No coding experience required!
+
+### Running the Streamlit App
+
+1. Make sure you've installed dependencies with `uv pip install -r requirements.txt`
+2. Run the app with `streamlit run app.py`
+3. Open your browser to http://localhost:8501 (if it doesn't open automatically)
+
+The app provides an intuitive interface to configure your community mapping project, run the analysis, and visualize the results - all without writing a single line of code. It's perfect for:
+
+- Urban planners analyzing access to public services
+- Community organizations studying resource distribution 
+- Researchers examining demographic patterns around facilities
+- Anyone who wants to understand demographics around points of interest
+
+For more information, see [STREAMLIT_README.md](STREAMLIT_README.md).
 
 ## Installation
 
@@ -21,49 +51,54 @@ Community Mapper integrates several geospatial analysis tools to help understand
 
 - Python 3.9 or later
 - A Census API key (get one at https://api.census.gov/data/key_signup.html)
-- uv virtual environment and package manager (instructions here https://github.com/astral-sh/uv)
 
-### Setup using uv
+### Easy Setup (Linux/Mac/Windows)
 
-1. Clone this repository:
+We provide a setup script that automates the installation process:
+
+1. Clone this repository into your preferred location:
    ```bash
    git clone https://github.com/mihiarc/community-mapper.git
    cd community-mapper
    ```
 
-2. Create a virtual environment using uv:
+#### For Linux/Mac:
+2. Run the setup script:
    ```bash
-   uv venv
+   chmod +x setup_env.sh
+   ./setup_env.sh
    ```
 
-3. Activate the virtual environment:
-   ```bash
-   # On Unix/Mac
-   source .venv/bin/activate
-   
-   # On Windows
-   .venv\Scripts\activate
-   ```
+#### For Windows:
+Simply double-click the `setup_env.bat` file in the project directory, or run it from Command Prompt:
+```
+setup_env.bat
+```
 
-4. Install dependencies:
-   ```bash
-   uv pip install -r requirements.txt
-   ```
+This will:
+    - Check if Python is installed
+    - Install uv if needed
+    - Create a virtual environment
+    - Install all dependencies
+    - Set up the required directory structure
+    - Create a template .env file for your Census API key
 
-5. Set your Census API key as an environment variable:
-   ```bash
-   # On Unix/Mac
-   export CENSUS_API_KEY="your-census-api-key"
-   
-   # On Windows
-   set CENSUS_API_KEY=your-census-api-key
-   ```
+After the script completes:
+1. Edit the `.env` file in a text editor like notepad, and add your Census API key
+2. Use the Command Prompt to activate the environment:
+    ```
+    .venv\Scripts\activate
+    ```
+3. Run the Streamlit app:
+    ```
+    streamlit run Home.py
+    ```
 
 ## Creating Your Own Community Maps: Step-by-Step Guide
 
 ### 1. Define Your Points of Interest
 
-Edit the included YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map:
+Edit the included YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map. If you already have your locations selected, skip to step 2.
 
 ```yaml
 # Example:
@@ -104,7 +139,7 @@ For areas near state borders, include all relevant states to ensure complete cov
 
 Choose which census variables you want to analyze. Some useful options:
 
-| Description                      | Notes                                      | Community Mapper Name    | Census Variable                                         |
+| Description                      | Notes                                      | SocialMapper Name    | Census Variable                                         |
 |-------------------------------   |--------------------------------------------|--------------------------|----------------------------------------------------|
 | Total Population                 | Basic population count                     | total_population         | B01003_001E                                        |
 | Median Household Income          | In dollars                                 | median_income            | B19013_001E                                        |
@@ -120,7 +155,7 @@ Choose which census variables you want to analyze. Some useful options:
 
 #### Using OpenStreetMap POIs
 
-Execute the end-to-end community mapping process using POIs from OpenStreetMap:
+Execute the mapping process using POIs from OpenStreetMap or your own coordinates:
 
 ```bash
 python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables total_population
@@ -129,7 +164,7 @@ python community_mapper.py --config my_config.yaml --travel-time 15 --census-var
 If your config file doesn't include a `state` field, you'll need to specify it:
 
 ```bash
-python community_mapper.py --config my_config.yaml --state NC --travel-time 15 --census-variables total_population
+python community_mapper.py --config my_config.yaml --state NC --travel-time 15 --census-variables median_age
 ```
 
 #### Using Your Own Coordinates
@@ -142,7 +177,7 @@ If you already have latitude/longitude coordinates, you can skip the POI query s
 python community_mapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
 ```
 
-Supported formats:
+Supported formats for custom POIs:
 
 1. CSV with header row (must include lat/lon and state columns):
 ```
@@ -240,7 +275,7 @@ Here are some examples of community mapping projects you could create:
 
 ### System Architecture
 
-The Community Mapper follows a pipeline architecture where each component builds on the output of the previous one. Here's a diagram showing the data flow:
+The SocialMapper follows a pipeline architecture where each component builds on the output of the previous one. Here's a diagram showing the data flow:
 
 ```mermaid
 graph TD
@@ -313,59 +348,8 @@ graph TD
    - Outputs: Map visualizations (PNG)
    - Key Functions: `generate_map()`, `generate_maps_for_variables()`
 
-### Data Flow
-
-1. The user provides either a POI configuration or custom coordinates
-2. POIs are retrieved from OpenStreetMap via the Overpass API OR custom coordinates are used
-3. Isochrones are generated around each POI using road network analysis
-4. Census block groups that intersect with isochrones are identified
-5. Demographic data is fetched from the Census API for these block groups
-6. Maps are generated visualizing the demographic variables
-
 ## Census References
 
 1. https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_restmapservice.html
 
 2. https://developers.arcgis.com/rest/
-
-## Community Mapper Web App
-
-We now provide a Streamlit web app as a user-friendly interface to the Community Mapper tool. The web app allows you to:
-
-- Query OpenStreetMap for points of interest or use your own coordinates
-- Set travel times and select demographic variables 
-- Visualize results with interactive maps
-- No coding experience required!
-
-### Running the Streamlit App
-
-1. Make sure you've installed dependencies with `uv pip install -r requirements.txt`
-2. Run the app with `streamlit run app.py`
-3. Open your browser to http://localhost:8501 (if it doesn't open automatically)
-
-The app provides an intuitive interface to configure your community mapping project, run the analysis, and visualize the results - all without writing a single line of code. It's perfect for:
-
-- Urban planners analyzing access to public services
-- Community organizations studying resource distribution 
-- Researchers examining demographic patterns around facilities
-- Anyone who wants to understand demographics around points of interest
-
-For more information, see [STREAMLIT_README.md](STREAMLIT_README.md).
-
-## Basic Usage Reference
-
-```bash
-# Using OpenStreetMap POIs
-python community_mapper.py --config poi_config.yaml --state MO KS --travel-time 15
-
-# Using custom coordinates
-python community_mapper.py --custom-coords my_locations.csv --travel-time 15
-```
-
-Arguments:
-- `--config`: Path to the POI configuration YAML file
-- `--custom-coords`: Path to custom coordinates CSV or JSON file (alternative to --config)
-- `--state`: State(s) to analyze (abbreviation or FIPS code). Optional if the state is specified in the config file
-- `--travel-time`: Travel time limit in minutes (default: 15)
-- `--census-variables`: Census variables to retrieve (default: population and income)
-- `--api-key`: Census API key (optional if set as environment variable)

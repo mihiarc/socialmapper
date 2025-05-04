@@ -29,3 +29,9 @@ tqdm>=4.67.0
 # Streamlit
 streamlit>=1.31
 watchdog>=6.0
+
+# Added from the code block
+stqdm>=0.0.5
+
+# Async HTTP client
+httpx>=0.27.0
