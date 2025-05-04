@@ -86,16 +86,13 @@ else
     echo ".env file already exists."
 fi
 
-# Run the test script to verify setup
-echo "Verifying setup..."
-python test_streamlit_app.py
+# Activate the virtual environment
+source "$ACTIVATE_SCRIPT"
+echo "Virtual environment activated."
 
 echo ""
 echo "===== Setup Complete ====="
 echo "To run the Community Mapper Streamlit app:"
-echo "1. Ensure your virtual environment is activated:"
-echo "   source $ACTIVATE_SCRIPT"
-echo "2. Run the Streamlit app:"
-echo "   streamlit run app.py"
+echo "type 'streamlit run app.py' into your terminal"
 echo ""
 echo "For more information, see STREAMLIT_README.md" 
