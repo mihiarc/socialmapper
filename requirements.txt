@@ -28,3 +28,4 @@ tqdm>=4.67.0
 
 # Streamlit
 streamlit>=1.31
+watchdog>=6.0
