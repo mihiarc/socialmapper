@@ -2,20 +2,20 @@ import streamlit as st
 from pathlib import Path
 
 st.set_page_config(
-    page_title="Community Mapper - Documentation",
+    page_title="SocialMapper - Documentation",
     page_icon="🗺️",
     layout="wide"
 )
 
-st.title("Community Mapper - Documentation")
+st.title("SocialMapper - Documentation")
 st.markdown("""
-This page explains how the Community Mapper works and guides you through its features in detail.
+This page explains how the SocialMapper works and guides you through its features in detail.
 """)
 
 # System Architecture
 st.header("System Architecture")
 st.markdown("""
-The Community Mapper follows a pipeline architecture where each component builds on the output of the previous one:
+The SocialMapper follows a pipeline architecture where each component builds on the output of the previous one:
 
 1. **POI Query**: Obtains Points of Interest (POIs) from OpenStreetMap or custom coordinates
 2. **Isochrone Generation**: Creates travel time polygons around each POI
@@ -23,24 +23,6 @@ The Community Mapper follows a pipeline architecture where each component builds
 4. **Census Data Retrieval**: Gets demographic data for those block groups
 5. **Map Visualization**: Generates maps showing the demographic data
 """)
-
-# Display the architecture diagram
-architecture_diagram = """
-graph TD
-    A[POI Configuration/Custom Coordinates] --> B[Query Module]
-    B --> C[POI Data]
-    C --> D[Isochrone Module]
-    D --> E[Isochrone Polygons]
-    E --> F[Block Group Module]
-    F --> G[Block Group Geometries]
-    G --> H[Census Data Module]
-    H --> I[Demographic Data]
-    I --> J[Visualization Module]
-    J --> K[Maps and Reports]
-"""
-
-st.markdown("### Architecture Diagram")
-st.code(architecture_diagram, language="mermaid")
 
 # Components
 st.header("Components")

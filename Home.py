@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 import json
 from dotenv import load_dotenv
+from stqdm import stqdm
 
 # Import the community mapper modules
 from community_mapper import (
@@ -16,24 +17,24 @@ from community_mapper import (
     load_poi_config
 )
 
+# Import state conversion utility
+from src.states import state_name_to_abbreviation
+
 # Load environment variables
 load_dotenv()
 
 # Set page configuration
 st.set_page_config(
-    page_title="Community Mapper",
+    page_title="SocialMapper",
     page_icon="🗺️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # App title and description
-st.title("Community Mapper")
+st.title("SocialMapper")
 st.markdown("""
-This application helps you analyze demographics around community resources using:
-1. Points of Interest (POIs) from OpenStreetMap
-2. Travel time isochrones around those POIs
-3. Census block groups and demographic data
+            Understand community connections with SocialMapper, an open-source Python tool. Map travel time to key places like schools and parks, then see the demographics of who can access them. Reveal service gaps and gain insights for better community planning in both urban and rural areas.
 """)
 
 # Create a directory for pages if it doesn't exist
@@ -73,7 +74,7 @@ available_variables = {
 census_variables = st.sidebar.multiselect(
     "Select census variables to analyze",
     options=list(available_variables.keys()),
-    default=['total_population', 'median_household_income'],
+    default=['total_population'],
     format_func=lambda x: available_variables[x]
 )
 
@@ -92,14 +93,48 @@ if input_method == "OpenStreetMap POI Query":
     col1, col2 = st.columns(2)
     with col1:
         geocode_area = st.text_input("Area (City/Town)", "Fuquay-Varina")
-        state = st.text_input("State", "North Carolina")
+        state = st.selectbox("State", [
+            "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", 
+            "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", 
+            "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", 
+            "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", 
+            "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", 
+            "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", 
+            "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", 
+            "Wisconsin", "Wyoming"
+        ], index=33)  # North Carolina as default (index 33)
     
     with col2:
         poi_type = st.selectbox(
             "POI Type",
-            ["amenity", "leisure", "shop", "building", "healthcare", "office"]
+            ["amenity", "leisure", "shop", "building", "healthcare", "office", "education", "tourism", "natural", "historic", "transportation"]
         )
-        poi_name = st.text_input("POI Name", "library")
+        
+        # Dynamic options based on selected POI type
+        poi_options = {
+            "amenity": ["library", "school", "hospital", "restaurant", "cafe", "bank", "pharmacy", "police", "fire_station", "place_of_worship", "community_centre", "post_office", "university", "college", "kindergarten", "bar", "fast_food", "pub", "ice_cream", "cinema", "theatre", "marketplace", "bus_station", "fuel", "parking", "atm", "toilet", "charging_station", "doctors", "clinic", "veterinary", "courthouse", "shelter", "social_facility", "arts_centre"],
+            "leisure": ["park", "garden", "playground", "sports_centre", "swimming_pool", "fitness_centre", "golf_course", "stadium", "nature_reserve", "track", "pitch", "water_park", "dog_park", "sports_hall", "marina", "beach_resort", "picnic_table", "ice_rink", "miniature_golf", "dance", "bowling_alley", "amusement_arcade", "fishing", "horse_riding", "disc_golf_course", "bird_hide", "sauna", "outdoor_seating"],
+            "shop": ["supermarket", "convenience", "clothing", "bakery", "butcher", "hardware", "department_store", "mall", "bicycle", "books", "electronics", "florist", "furniture", "garden_centre", "gift", "greengrocer", "hairdresser", "jewelry", "mobile_phone", "optician", "pet", "shoe", "sports", "stationery", "toy", "alcohol", "beverages", "car", "car_repair", "travel_agency", "laundry", "dry_cleaning", "beauty", "deli", "tobacco", "tea", "coffee", "charity", "art", "music", "computer", "video_games", "kiosk"],
+            "building": ["apartments", "house", "retail", "commercial", "office", "school", "hospital", "church", "public", "industrial", "warehouse", "residential", "university", "hotel", "dormitory", "bungalow", "detached", "semidetached_house", "terrace", "farm", "civic", "college", "stadium", "train_station", "transportation", "public_building", "kindergarten", "mosque", "synagogue", "temple", "greenhouse", "barn"],
+            "healthcare": ["doctor", "dentist", "hospital", "clinic", "pharmacy", "laboratory", "therapist", "nursing_home", "veterinary", "blood_donation", "alternative", "optometrist", "physiotherapist", "podiatrist", "psychotherapist", "rehabilitation", "speech_therapist", "vaccination_centre", "audiologist", "birthing_center", "counselling", "dialysis", "hospice", "midwife", "nutritionist", "occupational_therapist", "sample_collection", "surgeon"],
+            "office": ["government", "insurance", "lawyer", "estate_agent", "accountant", "financial", "travel_agent", "educational_institution", "ngo", "administrative", "advertising_agency", "architect", "association", "company", "consulting", "coworking", "diplomatic", "employment_agency", "energy_supplier", "foundation", "guide", "it", "newspaper", "political_party", "notary", "quango", "religion", "research", "surveyor", "tax", "tax_advisor", "telecommunication", "water_utility"],
+            "education": ["school", "university", "college", "kindergarten", "preschool", "primary", "secondary", "high_school", "language_school", "music_school", "driving_school", "art_school", "dance_school", "culinary_school", "trade_school", "adult_education", "library", "research_institute", "training", "technical", "vocational", "special_education", "cram_school", "tutoring_center", "preparatory", "boarding_school"],
+            "tourism": ["hotel", "motel", "guest_house", "hostel", "campsite", "caravan_site", "apartment", "attraction", "viewpoint", "museum", "artwork", "gallery", "theme_park", "zoo", "aquarium", "information", "picnic_site", "wilderness_hut", "alpine_hut", "resort", "chalet", "bed_and_breakfast", "trail_riding_station", "cabin", "beach_resort", "hunting_lodge", "water_park"],
+            "natural": ["beach", "bay", "cape", "cliff", "crater", "fell", "forest", "grassland", "heath", "hill", "island", "land", "marsh", "mountain", "mountain_range", "peak", "plain", "ridge", "river", "rock", "scree", "scrub", "spring", "stone", "valley", "water", "wetland", "wood", "volcano", "desert", "dune", "glacier", "tree"],
+            "historic": ["archaeological_site", "battlefield", "castle", "city_gate", "citywalls", "farm", "fort", "manor", "memorial", "monument", "ruins", "ship", "tomb", "wayside_cross", "wayside_shrine", "wreck", "aircraft", "aqueduct", "building", "cannon", "church", "milestone", "monastery", "pillory", "railway_car", "stone", "tank", "lighthouse", "bridge", "boundary_stone"],
+            "transportation": ["bus_station", "train_station", "subway_station", "tram_stop", "ferry_terminal", "airport", "taxi_stand", "bicycle_parking", "car_parking", "car_rental", "charging_station", "fuel", "bicycle_rental", "boat_rental", "motorcycle_parking", "car_sharing", "bicycle_repair_station", "bus_stop", "platform", "railway_halt", "rest_area", "speed_camera", "toll_booth", "bridge", "tunnel"]
+        }
+        
+        # Get default options based on selected type
+        default_options = poi_options.get(poi_type, [])
+        
+        # Allow user to either select from common options or enter custom value
+        poi_selection_method = st.radio("POI Selection Method", ["Common Options", "Custom Value"], horizontal=True)
+        
+        if poi_selection_method == "Common Options" and default_options:
+            poi_name = st.selectbox("POI Name", default_options)
+        else:
+            poi_name = st.text_input("POI Name (Custom)", "library")
     
     # Advanced options in expander
     with st.expander("Advanced Query Options"):
@@ -118,7 +153,7 @@ if input_method == "OpenStreetMap POI Query":
     # Create temporary config file
     config = {
         "geocode_area": geocode_area,
-        "state": state,
+        "state": state_name_to_abbreviation(state),
         "city": geocode_area,
         "type": poi_type,
         "name": poi_name
@@ -127,7 +162,7 @@ if input_method == "OpenStreetMap POI Query":
     if additional_tags:
         config["tags"] = additional_tags
     
-    config_path = "temp_config.yaml"
+    config_path = "output/pois/temp_config.yaml"
     with open(config_path, 'w') as f:
         yaml.dump(config, f)
 
@@ -181,7 +216,7 @@ elif input_method == "Custom Coordinates":
             with col4:
                 coord["state"] = st.text_input(f"State {i+1}", coord["state"], key=f"state_{i}")
             with col5:
-                if st.button("Remove", key=f"remove_{i}"):
+                if st.button("Clear", key=f"clear_{i}"):
                     st.session_state.coordinates.pop(i)
                     st.rerun()
         
@@ -200,7 +235,7 @@ elif input_method == "Custom Coordinates":
                             "name": coord["name"],
                             "lat": float(coord["lat"]),
                             "lon": float(coord["lon"]),
-                            "state": coord["state"],
+                            "state": state_name_to_abbreviation(coord["state"]),
                             "tags": {}
                         })
                 except (ValueError, TypeError) as e:
@@ -215,14 +250,44 @@ elif input_method == "Custom Coordinates":
 
 # Run analysis button
 st.header("Analysis")
-if st.button("Run Community Mapper Analysis"):
-    with st.spinner("Running analysis..."):
+if st.button("Run SocialMapper Analysis"):
+    # Reset the step counter when starting a new analysis
+    st.session_state.current_step = 0
+    
+    # Create a status container to track the entire process
+    with st.status("Running SocialMapper analysis...", expanded=True) as status:
         try:
             # Setup output directories
+            st.write("Setting up output directories...")
             output_dirs = setup_directories()
+            
+            # Display analysis steps
+            steps = ["Setting up", "Processing POIs", "Generating isochrones", 
+                     "Finding block groups", "Retrieving census data", "Creating maps"]
+            
+            # Create a placeholder for the current step
+            step_placeholder = st.empty()
+            
+            # Initialize step counter in session state to persist between rerenders
+            if "current_step" not in st.session_state:
+                st.session_state.current_step = 0
+            
+            # Update the current step
+            def update_step(message=None):
+                if st.session_state.current_step < len(steps):
+                    step_text = steps[st.session_state.current_step]
+                    if message:
+                        step_text += f": {message}"
+                    step_placeholder.write(f"Step {st.session_state.current_step+1}/{len(steps)}: {step_text}")
+                    st.session_state.current_step += 1
+            
+            # Show initial step - Setup
+            update_step("Creating directories and preparing environment")
             
             # Determine which method to use
             if input_method == "OpenStreetMap POI Query":
+                # Show progress for OSM query
+                update_step("Querying OpenStreetMap for Points of Interest")
                 # Run with OSM query
                 results = run_community_mapper(
                     config_path=config_path,
@@ -233,6 +298,8 @@ if st.button("Run Community Mapper Analysis"):
                 )
             else:  # Custom Coordinates
                 if upload_method == "Upload CSV/JSON File" and uploaded_file:
+                    # Show progress for custom file coordinates
+                    update_step("Processing uploaded coordinates")
                     # Run with uploaded file
                     results = run_community_mapper(
                         custom_coords_path=temp_file_path,
@@ -242,82 +309,94 @@ if st.button("Run Community Mapper Analysis"):
                         output_dirs=output_dirs
                     )
                 elif upload_method == "Manual Entry" and os.path.exists("temp_coordinates.json"):
+                    # Show progress for manual coordinates
+                    update_step("Processing manually entered coordinates")
                     # Run with manually entered coordinates
                     results = run_community_mapper(
                         custom_coords_path="temp_coordinates.json",
-                        travel_time=travel_time,
+                        travel_time=travel_time, 
                         census_variables=census_variables,
                         api_key=census_api_key if census_api_key else None,
                         output_dirs=output_dirs
                     )
                 else:
                     st.error("No valid coordinates provided")
+                    status.update(label="Analysis failed", state="error")
                     st.stop()
-                    
-            st.success("Analysis completed successfully!")
             
-            # Display results
-            st.header("Results")
+            # Update remaining steps
+            update_step("Generating isochrones")
+            update_step("Finding census block groups")
+            update_step("Retrieving census data")
+            update_step("Creating maps")
             
-            # POIs tab
-            if os.path.exists(results.get("poi_file", "")):
-                with st.expander("Points of Interest", expanded=True):
-                    with open(results["poi_file"], "r") as f:
-                        poi_data = json.load(f)
-                    
-                    # Convert to DataFrame for display
-                    poi_list = poi_data.get("pois", [])
-                    if poi_list:
-                        poi_df = pd.DataFrame(poi_list)
-                        st.dataframe(poi_df)
-                    else:
-                        st.warning("No POIs found in the results")
+            # Update status to completed
+            status.update(label="Analysis completed successfully!", state="complete")
             
-            # Maps display
-            st.subheader("Demographic Maps")
-            map_files = results.get("map_files", [])
-            
-            if map_files:
-                # Display maps in a grid
-                cols = st.columns(2)
-                for i, map_file in enumerate(map_files):
-                    if os.path.exists(map_file):
-                        cols[i % 2].image(map_file)
-            else:
-                st.warning("No maps were generated")
-                
         except Exception as e:
+            # Update status to error
+            status.update(label=f"Analysis failed: {str(e)}", state="error")
             st.error(f"An error occurred during analysis: {str(e)}")
+
+    # Display results after status block is closed
+    st.header("Results")
+    
+    # POIs tab
+    if "results" in locals() and results.get("poi_data", "") and os.path.exists(results["poi_data"]):
+        with st.expander("Points of Interest", expanded=True):
+            with open(results["poi_data"], "r") as f:
+                poi_data = json.load(f)
+            
+            # Convert to DataFrame for display
+            poi_list = poi_data.get("pois", [])
+            if poi_list:
+                poi_df = pd.DataFrame(poi_list)
+                st.dataframe(poi_df)
+            else:
+                st.warning("No POIs found in the results")
+    
+    # Maps display
+    if "results" in locals() and results.get("map_files"):
+        st.subheader("Demographic Maps")
+        map_files = results.get("map_files", [])
+        
+        if map_files:
+            # Display maps in a grid
+            cols = st.columns(2)
+            for i, map_file in enumerate(map_files):
+                if os.path.exists(map_file):
+                    cols[i % 2].image(map_file)
+        else:
+            st.warning("No maps were generated")
 
 # Display about section and links to other pages
 st.sidebar.markdown("---")
 st.sidebar.header("Navigation")
 st.sidebar.markdown("[Examples](./01_Examples)")
-st.sidebar.markdown("[Documentation](https://github.com/mihiarc/community-mapper)")
+st.sidebar.markdown("[Documentation](https://github.com/mihiarc/socialmapper)")
 
-with st.expander("About Community Mapper"):
+with st.expander("About SocialMapper"):
     st.markdown("""
-    ## Community Mapper
+# 🏘️ SocialMapper: Explore Your Community Connections. 🏘️
+
+SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local community center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
+
+But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.
+
+Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.
+
+With plans to expand and explore our connection to the natural world, SocialMapper is a tool for understanding people, places, and the environment around us.
+
+Discover the connections in your community with SocialMapper – where location brings understanding.
+
+## Features
+
+- **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
+- **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
+- **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
+- **Retrieving Demographic Data** - Pull census data for the identified areas
+- **Visualizing Results** - Generate maps showing the demographic variables around the POIs
+
     
-    A Python toolkit for mapping community resources and analyzing demographic data around them.
-    
-    ### Overview
-    
-    Community Mapper integrates several geospatial analysis tools to help understand the demographics 
-    of areas around community amenities. It provides an end-to-end pipeline for:
-    
-    1. **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
-    2. **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
-    3. **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
-    4. **Retrieving Demographic Data** - Pull census data for the identified areas
-    5. **Visualizing Results** - Generate maps showing the demographic variables around the POIs
-    
-    ### Get Started
-    
-    1. Select your input method (OpenStreetMap or Custom Coordinates)
-    2. Configure your parameters
-    3. Run the analysis
-    4. Explore the results
-    
-    For more information, visit the [GitHub repository](https://github.com/mihiarc/community-mapper).
+    For more information, visit the [GitHub repository](https://github.com/mihiarc/socialmapper).
     """) 
