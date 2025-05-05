@@ -43,7 +43,8 @@ from src.visualization import (
 from src.states import (
     normalize_state,
     normalize_state_list,
-    StateFormat
+    StateFormat,
+    get_neighboring_states
 )
 from src.util import (
     census_code_to_name,
@@ -357,7 +358,7 @@ def run_community_mapper(
         
         print(f"Querying OpenStreetMap for: {config.get('geocode_area', '')} - {config.get('type', '')} - {config.get('name', '')}")
         raw_results = query_overpass(query)
-        poi_data = format_results(raw_results)
+        poi_data = format_results(raw_results, config)
         
         # Set a name for the output file based on the POI configuration
         poi_type = config.get("type", "poi")
@@ -414,11 +415,20 @@ def run_community_mapper(
         raise ValueError("No state information found. State is required for census block group lookup. "
                         "Please provide state information in your custom coordinates file or config file.")
     
-    print(f"Using states for census lookup: {', '.join(state_abbreviations)}")
+    # Add neighboring states to handle POIs near state borders
+    expanded_states = state_abbreviations.copy()
+    for state in state_abbreviations:
+        neighbors = get_neighboring_states(state)
+        for neighbor in neighbors:
+            if neighbor not in expanded_states:
+                expanded_states.append(neighbor)
+                print(f"Adding neighboring state: {neighbor} (border with {state})")
+    
+    print(f"Using states for census lookup: {', '.join(expanded_states)}")
     
     block_groups = isochrone_to_block_groups(
         isochrone_path=combined_isochrone_file,
-        state_fips=state_abbreviations,
+        state_fips=expanded_states,
         output_path=block_groups_file,
         api_key=api_key
     )
@@ -475,14 +485,16 @@ def run_community_mapper(
         
     elif poi_data is not None and len(poi_data['pois']) > 1:
         # If we have multiple POIs, check if they're in different states
-        states = [poi['state'] for poi in poi_data['pois']]
-        if len(set(states)) > 1:
-            use_panels = True
-            # Convert to list if not already
-            if isinstance(census_data_file, str):
-                census_data_file = [census_data_file]
-            if isinstance(combined_isochrone_file, str):
-                combined_isochrone_file = [combined_isochrone_file]
+        # Check if all POIs have a 'state' field
+        if all('state' in poi for poi in poi_data['pois']):
+            states = [poi['state'] for poi in poi_data['pois']]
+            if len(set(states)) > 1:
+                use_panels = True
+                # Convert to list if not already
+                if isinstance(census_data_file, str):
+                    census_data_file = [census_data_file]
+                if isinstance(combined_isochrone_file, str):
+                    combined_isochrone_file = [combined_isochrone_file]
     
     # Prepare POI data for the map generator
     if poi_data:
