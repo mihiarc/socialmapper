@@ -283,7 +283,8 @@ def run_community_mapper(
     census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
     output_dirs: Optional[Dict[str, str]] = None,
-    custom_coords_path: Optional[str] = None
+    custom_coords_path: Optional[str] = None,
+    progress_callback: Optional[callable] = None
 ) -> Dict[str, str]:
     """
     Run the complete community mapping pipeline.
@@ -296,6 +297,7 @@ def run_community_mapper(
         api_key: Census API key (optional if set as environment variable)
         output_dirs: Dictionary of output directories
         custom_coords_path: Path to custom coordinates file (skips POI query if provided)
+        progress_callback: Optional callback function for updating progress (idx, detail)
         
     Returns:
         Dictionary of output file paths
@@ -353,6 +355,9 @@ def run_community_mapper(
     else:
         # Step 1: Query POIs
         print("\n=== Step 1: Querying Points of Interest ===")
+        if progress_callback:
+            progress_callback(1, "Querying Points of Interest")
+            
         config = load_poi_config(config_path)
         query = build_overpass_query(config)
         
@@ -392,6 +397,9 @@ def run_community_mapper(
     
     # Step 2: Generate isochrones
     print("\n=== Step 2: Generating Isochrones ===")
+    if progress_callback:
+        progress_callback(2, "Generating travel time areas")
+        
     combined_isochrone_file = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
@@ -405,6 +413,9 @@ def run_community_mapper(
     
     # Step 3: Find intersecting block groups
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
+    if progress_callback:
+        progress_callback(3, "Finding census block groups")
+        
     block_groups_file = os.path.join(
         output_dirs["block_groups"],
         f"{base_filename}_{travel_time}min_block_groups.geojson"
@@ -436,6 +447,8 @@ def run_community_mapper(
     
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
+    if progress_callback:
+        progress_callback(4, "Retrieving census data")
     
     # Create a human-readable mapping for the census variables
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
@@ -456,6 +469,8 @@ def run_community_mapper(
     
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
+    if progress_callback:
+        progress_callback(5, "Creating maps")
     
     # Get visualization variables from the census data result
     if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:

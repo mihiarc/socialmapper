@@ -6,15 +6,14 @@ import os
 from pathlib import Path
 import yaml
 import json
+import traceback
 from dotenv import load_dotenv
 from stqdm import stqdm
 
 # Import the community mapper modules
 from community_mapper import (
     run_community_mapper,
-    parse_custom_coordinates,
-    setup_directories,
-    load_poi_config
+    setup_directories
 )
 
 # Import state conversion utility
@@ -102,7 +101,7 @@ if input_method == "OpenStreetMap POI Query":
             "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", 
             "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", 
             "Wisconsin", "Wyoming"
-        ], index=33)  # North Carolina as default (index 33)
+        ], index=32)  # North Carolina as default (index 33)
     
     with col2:
         poi_type = st.selectbox(
@@ -135,6 +134,10 @@ if input_method == "OpenStreetMap POI Query":
             poi_name = st.selectbox("POI Name", default_options)
         else:
             poi_name = st.text_input("POI Name (Custom)", "library")
+    
+    # Add a warning for certain POI types
+    if poi_type in ["natural", "historic"]:
+        st.warning(f"Note: Not all {poi_type} features are available in every location. If no results are found, try a different POI type or location.")
     
     # Advanced options in expander
     with st.expander("Advanced Query Options"):
@@ -247,128 +250,158 @@ elif input_method == "Custom Coordinates":
                 st.success(f"Saved {len(valid_coords)} coordinates")
             else:
                 st.error("No valid coordinates to save")
+# -----------------------------------------------------------------------------
+# Helper: safe session‑state getter/setter
+# -----------------------------------------------------------------------------
 
-# Run analysis button
+def _get_state(key, default):
+    if key not in st.session_state:
+        st.session_state[key] = default
+    return st.session_state[key]
+
+# -----------------------------------------------------------------------------
+# UI – ANALYSIS RUNNER
+# -----------------------------------------------------------------------------
+
 st.header("Analysis")
-if st.button("Run SocialMapper Analysis"):
-    # Reset the step counter when starting a new analysis
+
+run_clicked = st.button(
+    "Run SocialMapper Analysis",
+    disabled=_get_state("analysis_running", False),
+)
+
+if run_clicked:
+    # ---------------------------------------------------------------------
+    # Initialise / reset session counters
+    # ---------------------------------------------------------------------
+    st.session_state.analysis_running = True
     st.session_state.current_step = 0
-    
-    # Create a status container to track the entire process
-    with st.status("Running SocialMapper analysis...", expanded=True) as status:
+    results = None  # will be populated later
+    tb_text = None  # to store traceback string if an error occurs
+
+    # Ordered list of high‑level steps
+    steps = [
+        "Setting up",
+        "Processing POIs / coordinates",
+        "Generating isochrones",
+        "Finding census block groups",
+        "Retrieving census data",
+        "Creating maps",
+    ]
+
+    # Convenience for updating a single placeholder each time
+    step_placeholder = st.empty()
+    progress_bar = st.progress(0, text="Initialising…")
+
+    def update_step(idx: int, detail: str) -> None:
+        """Write step text & advance progress bar."""
+        step_placeholder.markdown(
+            f"**Step {idx + 1}/{len(steps)} – {steps[idx]}:** {detail}"
+        )
+        progress_bar.progress((idx + 1) / len(steps))
+
+    # ------------------------------------------------------------------
+    # Long‑running pipeline wrapped in status block
+    # ------------------------------------------------------------------
+    with st.status("Running SocialMapper analysis…", expanded=True) as status:
         try:
-            # Setup output directories
-            st.write("Setting up output directories...")
-            output_dirs = setup_directories()
-            
-            # Display analysis steps
-            steps = ["Setting up", "Processing POIs", "Generating isochrones", 
-                     "Finding block groups", "Retrieving census data", "Creating maps"]
-            
-            # Create a placeholder for the current step
-            step_placeholder = st.empty()
-            
-            # Initialize step counter in session state to persist between rerenders
-            if "current_step" not in st.session_state:
-                st.session_state.current_step = 0
-            
-            # Update the current step
-            def update_step(message=None):
-                if st.session_state.current_step < len(steps):
-                    step_text = steps[st.session_state.current_step]
-                    if message:
-                        step_text += f": {message}"
-                    step_placeholder.write(f"Step {st.session_state.current_step+1}/{len(steps)}: {step_text}")
-                    st.session_state.current_step += 1
-            
-            # Show initial step - Setup
-            update_step("Creating directories and preparing environment")
-            
-            # Determine which method to use
+            # STEP 1 – SETUP -----------------------------------------------------------------
+            update_step(0, "Creating output directories and loading config")
+            output_dirs = setup_directories()  # ← your helper
+
+            # STEP 2 – POI / COORD PROCESSING ------------------------------------------------
             if input_method == "OpenStreetMap POI Query":
-                # Show progress for OSM query
-                update_step("Querying OpenStreetMap for Points of Interest")
-                # Run with OSM query
+                update_step(1, "Querying OpenStreetMap for Points of Interest")
                 results = run_community_mapper(
                     config_path=config_path,
                     travel_time=travel_time,
                     census_variables=census_variables,
-                    api_key=census_api_key if census_api_key else None,
-                    output_dirs=output_dirs
+                    api_key=census_api_key or None,
+                    output_dirs=output_dirs,
+                    progress_callback=update_step
                 )
-            else:  # Custom Coordinates
-                if upload_method == "Upload CSV/JSON File" and uploaded_file:
-                    # Show progress for custom file coordinates
-                    update_step("Processing uploaded coordinates")
-                    # Run with uploaded file
+            else:
+                # Custom coordinate workflows
+                if (
+                    upload_method == "Upload CSV/JSON File"
+                    and uploaded_file is not None
+                ):
+                    update_step(1, "Processing uploaded coordinates")
                     results = run_community_mapper(
                         custom_coords_path=temp_file_path,
                         travel_time=travel_time,
                         census_variables=census_variables,
-                        api_key=census_api_key if census_api_key else None,
-                        output_dirs=output_dirs
+                        api_key=census_api_key or None,
+                        output_dirs=output_dirs,
+                        progress_callback=update_step
                     )
-                elif upload_method == "Manual Entry" and os.path.exists("temp_coordinates.json"):
-                    # Show progress for manual coordinates
-                    update_step("Processing manually entered coordinates")
-                    # Run with manually entered coordinates
+                elif (
+                    upload_method == "Manual Entry"
+                    and Path("temp_coordinates.json").exists()
+                ):
+                    update_step(1, "Processing manually entered coordinates")
                     results = run_community_mapper(
                         custom_coords_path="temp_coordinates.json",
-                        travel_time=travel_time, 
+                        travel_time=travel_time,
                         census_variables=census_variables,
-                        api_key=census_api_key if census_api_key else None,
-                        output_dirs=output_dirs
+                        api_key=census_api_key or None,
+                        output_dirs=output_dirs,
+                        progress_callback=update_step
                     )
                 else:
-                    st.error("No valid coordinates provided")
-                    status.update(label="Analysis failed", state="error")
-                    st.stop()
-            
-            # Update remaining steps
-            update_step("Generating isochrones")
-            update_step("Finding census block groups")
-            update_step("Retrieving census data")
-            update_step("Creating maps")
-            
-            # Update status to completed
-            status.update(label="Analysis completed successfully!", state="complete")
-            
-        except Exception as e:
-            # Update status to error
-            status.update(label=f"Analysis failed: {str(e)}", state="error")
-            st.error(f"An error occurred during analysis: {str(e)}")
+                    raise ValueError("No valid coordinates provided – please upload or enter coordinates first.")
 
-    # Display results after status block is closed
-    st.header("Results")
-    
-    # POIs tab
-    if "results" in locals() and results.get("poi_data", "") and os.path.exists(results["poi_data"]):
-        with st.expander("Points of Interest", expanded=True):
-            with open(results["poi_data"], "r") as f:
-                poi_data = json.load(f)
-            
-            # Convert to DataFrame for display
-            poi_list = poi_data.get("pois", [])
-            if poi_list:
-                poi_df = pd.DataFrame(poi_list)
-                st.dataframe(poi_df)
+            status.update(label="Analysis completed successfully!", state="complete")
+
+        except ValueError as err:
+            status.update(label="Analysis failed", state="error")
+            if "No POIs found in input data" in str(err):
+                st.error("No Points of Interest found with your search criteria. Please try a different search or location.")
             else:
-                st.warning("No POIs found in the results")
-    
-    # Maps display
-    if "results" in locals() and results.get("map_files"):
-        st.subheader("Demographic Maps")
+                st.error(f"An error occurred: {err}")
+            tb_text = traceback.format_exc()
+        except Exception as err:
+            status.update(label="Analysis failed", state="error")
+            st.error(f"An error occurred: {err}")
+            tb_text = traceback.format_exc()
+
+        finally:
+            st.session_state.analysis_running = False
+
+    # ------------------------------------------------------------------
+    # If we captured a traceback, show it *outside* the status container
+    # ------------------------------------------------------------------
+    if tb_text:
+        with st.expander("Show error details"):
+            st.code(tb_text)
+
+    # ------------------------------------------------------------------
+    # Display results (only if pipeline ran and produced output)
+    # ------------------------------------------------------------------
+    if results:
+        st.header("Results")
+
+        # ---- POIs tab ---------------------------------------------------
+        poi_path = results.get("poi_data")
+        if poi_path and Path(poi_path).exists():
+            with st.expander("Points of Interest", expanded=True):
+                poi_json = json.loads(Path(poi_path).read_text())
+                poi_df = pd.DataFrame(poi_json.get("pois", []))
+                if not poi_df.empty:
+                    st.dataframe(poi_df)
+                else:
+                    st.warning("No POIs found in the results.")
+
+        # ---- Maps grid --------------------------------------------------
         map_files = results.get("map_files", [])
-        
         if map_files:
-            # Display maps in a grid
+            st.subheader("Demographic Maps")
             cols = st.columns(2)
             for i, map_file in enumerate(map_files):
-                if os.path.exists(map_file):
-                    cols[i % 2].image(map_file)
+                if Path(map_file).exists():
+                    cols[i % 2].image(map_file, use_column_width=True)
         else:
-            st.warning("No maps were generated")
-
+            st.info("No maps were generated by this run.")
 # Display about section and links to other pages
 st.sidebar.markdown("---")
 st.sidebar.header("Navigation")
