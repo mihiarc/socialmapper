@@ -115,11 +115,12 @@ def query_overpass(query):
         print(f"Query used: {query}")
         sys.exit(1)
 
-def format_results(result):
+def format_results(result, config=None):
     """Format the Overpass API results into a structured dictionary.
     
     Args:
         result: The result from the Overpass API query.
+        config: Optional configuration dictionary that may contain state information.
         
     Returns:
         A dictionary containing the POIs in JSON format.
@@ -133,11 +134,17 @@ def format_results(result):
                     lat: The latitude of the POI.
                     lon: The longitude of the POI.
                     tags: A dictionary containing the tags of the POI.
+                    state: The state of the POI (if available in config).
     """
     data = {
         "poi_count": 0,  # Initialize with 0, will be updated at the end
         "pois": []
     }
+    
+    # Extract state from config if available
+    state = None
+    if config and "state" in config:
+        state = config["state"]
     
     # Process nodes
     for node in result.nodes:
@@ -148,6 +155,11 @@ def format_results(result):
             "lon": float(node.lon),
             "tags": node.tags
         }
+        
+        # Add state if available
+        if state:
+            poi_data["state"] = state
+            
         data["pois"].append(poi_data)
     
     # Process ways - with 'out center' format
@@ -167,6 +179,10 @@ def format_results(result):
             poi_data["lat"] = float(center_lat)
             poi_data["lon"] = float(center_lon)
         
+        # Add state if available
+        if state:
+            poi_data["state"] = state
+            
         data["pois"].append(poi_data)
     
     # Process relations - with 'out center' format
@@ -186,6 +202,10 @@ def format_results(result):
             poi_data["lat"] = float(center_lat)
             poi_data["lon"] = float(center_lon)
         
+        # Add state if available
+        if state:
+            poi_data["state"] = state
+            
         data["pois"].append(poi_data)
     
     # Update poi count
@@ -259,7 +279,7 @@ def main():
     result = query_overpass(query)
     
     # Format results
-    data = format_results(result)
+    data = format_results(result, config)
     
     # Output statistics
     print(f"Found {len(data['pois'])} POIs")

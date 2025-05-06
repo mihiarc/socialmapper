@@ -10,9 +10,16 @@ import pandas as pd
 import requests
 from typing import List, Optional
 import json
+# Import stqdm for Streamlit integration with fallback to tqdm
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
 from tqdm import tqdm
 
-from src.util import state_abbreviation_to_fips
+from src.states import normalize_state, StateFormat
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -41,19 +48,15 @@ def get_census_block_groups(
     Returns:
         GeoDataFrame with block group boundaries
     """
-    # Convert any state abbreviations to FIPS codes
+    # Convert any state identifiers to FIPS codes using the centralized state module
     normalized_state_fips = []
     for state in state_fips:
-        if len(state) == 2 and state.isalpha():
-            # State abbreviation
-            fips = state_abbreviation_to_fips(state)
-            if fips:
-                normalized_state_fips.append(fips)
-            else:
-                # If not found, keep as is
-                normalized_state_fips.append(state)
+        # Convert to FIPS code
+        fips = normalize_state(state, to_format=StateFormat.FIPS)
+        if fips:
+            normalized_state_fips.append(fips)
         else:
-            # Assume it's already a FIPS code
+            # If not found, keep as is
             normalized_state_fips.append(state)
     
     # Check for cached block group data
@@ -64,7 +67,7 @@ def get_census_block_groups(
     cached_gdfs = []
     all_cached = True
     
-    for state in tqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
+    for state in stqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
         cache_file = cache_dir / f"block_groups_{state}.geojson"
         if cache_file.exists():
             try:
@@ -98,7 +101,7 @@ def get_census_block_groups(
     
     all_block_groups = []
     
-    for state in tqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
+    for state in stqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
         tqdm.write(f"Fetching block groups for state {state}...")
         state_block_groups = []
         
@@ -112,7 +115,7 @@ def get_census_block_groups(
         required_fields = 'STATE,COUNTY,TRACT,BLKGRP,GEOID'
         
         batch_count = 0
-        with tqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
+        with stqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
             while more_records:
                 # Simple query that fetches records in batches
                 params = {

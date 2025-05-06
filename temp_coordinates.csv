@@ -1,0 +1,6 @@
+id,name,lat,lon,state,type
+1,"Public Library",35.5835,-78.8002,NC,public
+2,"Community Park",35.5911,-78.7890,NC,recreation
+3,"Elementary School",35.5765,-78.7950,NC,education
+4,"Health Clinic",35.5822,-78.7830,NC,healthcare
+5,"Community Center",35.5850,-78.7925,NC,community 

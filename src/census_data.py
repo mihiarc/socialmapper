@@ -8,10 +8,19 @@ import geopandas as gpd
 import requests
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+# Import stqdm for Streamlit integration with fallback to tqdm
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
 from tqdm import tqdm
+from src.states import (
+    state_fips_to_name,
+    StateFormat
+)
 from src.util import (
-    state_fips_to_abbreviation, 
-    STATE_NAMES_TO_ABBR, 
     normalize_census_variable,
     CENSUS_VARIABLE_MAPPING
 )
@@ -111,19 +120,8 @@ def get_state_name_from_fips(fips_code: str) -> str:
     Returns:
         State name or the FIPS code if not found
     """
-    # Get state abbreviation from FIPS code
-    state_abbr = state_fips_to_abbreviation(fips_code)
-    
-    if not state_abbr:
-        return fips_code
-    
-    # Reverse lookup in STATE_NAMES_TO_ABBR dictionary
-    for state_name, abbr in STATE_NAMES_TO_ABBR.items():
-        if abbr == state_abbr:
-            return state_name
-    
-    # If no match found, return the abbreviation
-    return state_abbr
+    state_name = state_fips_to_name(fips_code)
+    return state_name if state_name else fips_code
 
 
 def fetch_census_data_for_states(
@@ -188,7 +186,7 @@ def fetch_census_data_for_states(
     dfs = []
     
     # Loop over each state
-    for state_code in tqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
+    for state_code in stqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
         state_name = get_state_name_from_fips(state_code)
         
         # Define the parameters for this state

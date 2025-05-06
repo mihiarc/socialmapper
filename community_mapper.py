@@ -14,6 +14,7 @@ import os
 import argparse
 import json
 import csv
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 import geopandas as gpd
@@ -39,12 +40,35 @@ from src.census_data import (
 from src.visualization import (
     generate_maps_for_variables
 )
+from src.states import (
+    normalize_state,
+    normalize_state_list,
+    StateFormat,
+    get_neighboring_states
+)
 from src.util import (
-    state_name_to_abbreviation,
     census_code_to_name,
     normalize_census_variable,
     CENSUS_VARIABLE_MAPPING
 )
+
+# Try to import stqdm for progress tracking (fallback to regular tqdm if not available)
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
+
+# Configure basic logging (can be overridden by client code)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+
+# New pydantic model for validated configuration
+try:
+    from src.config_models import RunConfig
+except ImportError:
+    RunConfig = None  # Fallback when model not available
 
 def parse_custom_coordinates(file_path: str) -> Dict:
     """
@@ -102,7 +126,8 @@ def parse_custom_coordinates(file_path: str) -> Dict:
             pois = data['pois']
     
     elif file_extension == '.csv':
-        with open(file_path, 'r') as f:
+        # Use newline="" to ensure correct universal newline handling across platforms
+        with open(file_path, 'r', newline='') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader):
                 # Try to find lat/lon in different possible column names
@@ -251,27 +276,44 @@ def convert_poi_to_geodataframe(poi_data_list):
     return gdf
 
 def run_community_mapper(
+    run_config: Optional[RunConfig] = None,
+    *,
     config_path: Optional[str] = None,
     travel_time: int = 15,
-    census_variables: List[str] = None,
+    census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
     output_dirs: Optional[Dict[str, str]] = None,
-    custom_coords_path: Optional[str] = None
+    custom_coords_path: Optional[str] = None,
+    progress_callback: Optional[callable] = None
 ) -> Dict[str, str]:
     """
     Run the complete community mapping pipeline.
     
     Args:
+        run_config: RunConfig object containing configuration parameters
         config_path: Path to POI configuration YAML file (required if custom_coords_path is None)
         travel_time: Travel time limit in minutes
         census_variables: List of Census API variables to retrieve
         api_key: Census API key (optional if set as environment variable)
         output_dirs: Dictionary of output directories
         custom_coords_path: Path to custom coordinates file (skips POI query if provided)
+        progress_callback: Optional callback function for updating progress (idx, detail)
         
     Returns:
         Dictionary of output file paths
     """
+    
+    # Merge values from RunConfig if provided
+    if run_config is not None and RunConfig is not None:
+        config_path = run_config.config_path or config_path
+        custom_coords_path = run_config.custom_coords_path or custom_coords_path
+        travel_time = run_config.travel_time if travel_time == 15 else travel_time
+        census_variables = census_variables or run_config.census_variables
+        api_key = run_config.api_key or api_key
+        output_dirs = output_dirs or run_config.output_dirs
+
+    if census_variables is None:
+        census_variables = ["total_population"]
     
     # Convert any human-readable names to census codes
     census_codes = [normalize_census_variable(var) for var in census_variables]
@@ -290,11 +332,8 @@ def run_community_mapper(
         
         # Extract state information from the custom coordinates
         if 'metadata' in poi_data and 'states' in poi_data['metadata']:
-            for state in poi_data['metadata']['states']:
-                # Process state - could be abbreviation or full name
-                state_abbr = state_name_to_abbreviation(state) or state
-                if state_abbr and state_abbr not in state_abbreviations:
-                    state_abbreviations.append(state_abbr)
+            # Use normalize_state_list to handle different state formats
+            state_abbreviations = normalize_state_list(poi_data['metadata']['states'], to_format=StateFormat.ABBREVIATION)
             
             if state_abbreviations:
                 print(f"Using states from custom coordinates: {', '.join(state_abbreviations)}")
@@ -307,6 +346,8 @@ def run_community_mapper(
         poi_file = os.path.join(output_dirs["pois"], f"{base_filename}.json")
         save_json(poi_data, poi_file)
         result_files["poi_data"] = poi_file
+        # Alias for backward compatibility (used by Streamlit front-end)
+        result_files["poi_file"] = poi_file
         
         print(f"Using {len(poi_data['pois'])} custom coordinates from {custom_coords_path}")
         print(f"Saved formatted POI data to {poi_file}")
@@ -314,12 +355,15 @@ def run_community_mapper(
     else:
         # Step 1: Query POIs
         print("\n=== Step 1: Querying Points of Interest ===")
+        if progress_callback:
+            progress_callback(1, "Querying Points of Interest")
+            
         config = load_poi_config(config_path)
         query = build_overpass_query(config)
         
         print(f"Querying OpenStreetMap for: {config.get('geocode_area', '')} - {config.get('type', '')} - {config.get('name', '')}")
         raw_results = query_overpass(query)
-        poi_data = format_results(raw_results)
+        poi_data = format_results(raw_results, config)
         
         # Set a name for the output file based on the POI configuration
         poi_type = config.get("type", "poi")
@@ -337,19 +381,25 @@ def run_community_mapper(
         
         save_json(poi_data, poi_file)
         result_files["poi_data"] = poi_file
+        # Alias for backward compatibility (used by Streamlit front-end)
+        result_files["poi_file"] = poi_file
         
         print(f"Found {len(poi_data['pois'])} POIs")
         
         # Extract state from config if available
-        if "state" in config:
-            state_name = config.get("state")
-            state_abbr = state_name_to_abbreviation(state_name)
-            if state_abbr:
+        state_name = config.get("state")
+        if state_name:
+            # Use normalize_state for more robust state handling
+            state_abbr = normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
+            if state_abbr and state_abbr not in state_abbreviations:
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from config file: {state_name} ({state_abbr})")
     
     # Step 2: Generate isochrones
     print("\n=== Step 2: Generating Isochrones ===")
+    if progress_callback:
+        progress_callback(2, "Generating travel time areas")
+        
     combined_isochrone_file = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
@@ -363,6 +413,9 @@ def run_community_mapper(
     
     # Step 3: Find intersecting block groups
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
+    if progress_callback:
+        progress_callback(3, "Finding census block groups")
+        
     block_groups_file = os.path.join(
         output_dirs["block_groups"],
         f"{base_filename}_{travel_time}min_block_groups.geojson"
@@ -373,11 +426,20 @@ def run_community_mapper(
         raise ValueError("No state information found. State is required for census block group lookup. "
                         "Please provide state information in your custom coordinates file or config file.")
     
-    print(f"Using states for census lookup: {', '.join(state_abbreviations)}")
+    # Add neighboring states to handle POIs near state borders
+    expanded_states = state_abbreviations.copy()
+    for state in state_abbreviations:
+        neighbors = get_neighboring_states(state)
+        for neighbor in neighbors:
+            if neighbor not in expanded_states:
+                expanded_states.append(neighbor)
+                print(f"Adding neighboring state: {neighbor} (border with {state})")
+    
+    print(f"Using states for census lookup: {', '.join(expanded_states)}")
     
     block_groups = isochrone_to_block_groups(
         isochrone_path=combined_isochrone_file,
-        state_fips=state_abbreviations,
+        state_fips=expanded_states,
         output_path=block_groups_file,
         api_key=api_key
     )
@@ -385,6 +447,8 @@ def run_community_mapper(
     
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
+    if progress_callback:
+        progress_callback(4, "Retrieving census data")
     
     # Create a human-readable mapping for the census variables
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
@@ -405,6 +469,8 @@ def run_community_mapper(
     
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
+    if progress_callback:
+        progress_callback(5, "Creating maps")
     
     # Get visualization variables from the census data result
     if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
@@ -415,7 +481,7 @@ def run_community_mapper(
     
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
-    for var in visualization_variables:
+    for var in stqdm(visualization_variables, desc="Processing variables"):
         # Use the mapped name if available, otherwise use the original code
         mapped_name = variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)
@@ -434,14 +500,16 @@ def run_community_mapper(
         
     elif poi_data is not None and len(poi_data['pois']) > 1:
         # If we have multiple POIs, check if they're in different states
-        states = [poi['state'] for poi in poi_data['pois']]
-        if len(set(states)) > 1:
-            use_panels = True
-            # Convert to list if not already
-            if isinstance(census_data_file, str):
-                census_data_file = [census_data_file]
-            if isinstance(combined_isochrone_file, str):
-                combined_isochrone_file = [combined_isochrone_file]
+        # Check if all POIs have a 'state' field
+        if all('state' in poi for poi in poi_data['pois']):
+            states = [poi['state'] for poi in poi_data['pois']]
+            if len(set(states)) > 1:
+                use_panels = True
+                # Convert to list if not already
+                if isinstance(census_data_file, str):
+                    census_data_file = [census_data_file]
+                if isinstance(combined_isochrone_file, str):
+                    combined_isochrone_file = [combined_isochrone_file]
     
     # Prepare POI data for the map generator
     if poi_data:
@@ -450,7 +518,7 @@ def run_community_mapper(
             poi_data_list = poi_data['pois']
             # Convert the POI list to a list of GeoDataFrames for panel maps
             if isinstance(poi_data_list, list):
-                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in poi_data_list]
+                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in stqdm(poi_data_list, desc="Processing POIs")]
             else:
                 poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
         else:
@@ -475,6 +543,8 @@ def run_community_mapper(
         use_panels=use_panels
     )
     result_files["maps"] = map_files
+    # Alias for backward compatibility (used by Streamlit front-end)
+    result_files["map_files"] = map_files
     
     print(f"Generated {len(map_files)} maps")
     
