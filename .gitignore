@@ -16,7 +16,7 @@
 **/html/
 /tests/
 **/tests/
-/output/
+/output/*
 
 # Cache files
 code/cache/
