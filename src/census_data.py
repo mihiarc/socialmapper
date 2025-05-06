@@ -8,6 +8,13 @@ import geopandas as gpd
 import requests
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+# Import stqdm for Streamlit integration with fallback to tqdm
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
 from tqdm import tqdm
 from src.states import (
     state_fips_to_name,
@@ -179,7 +186,7 @@ def fetch_census_data_for_states(
     dfs = []
     
     # Loop over each state
-    for state_code in tqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
+    for state_code in stqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
         state_name = get_state_name_from_fips(state_code)
         
         # Define the parameters for this state
