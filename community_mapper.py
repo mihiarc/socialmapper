@@ -32,7 +32,8 @@ from src.isochrone import (
     create_isochrones_from_poi_list
 )
 from src.blockgroups import (
-    isochrone_to_block_groups
+    isochrone_to_block_groups,
+    isochrone_to_block_groups_by_county
 )
 from src.census_data import (
     get_census_data_for_block_groups
@@ -226,6 +227,8 @@ def parse_arguments():
                         help='List available census variables and exit')
     parser.add_argument('--dry-run', action='store_true',
                         help='Parse arguments and print steps but do not execute (for testing)')
+    parser.add_argument('--use-county-method', action='store_true',
+                        help='Use county-based block group selection (faster for large states)')
     
     args = parser.parse_args()
     return args
@@ -284,24 +287,29 @@ def run_community_mapper(
     api_key: Optional[str] = None,
     output_dirs: Optional[Dict[str, str]] = None,
     custom_coords_path: Optional[str] = None,
-    progress_callback: Optional[callable] = None
+    progress_callback: Optional[callable] = None,
+    use_county_method: bool = False
 ) -> Dict[str, str]:
     """
-    Run the complete community mapping pipeline.
+    Run the full community mapping process.
     
     Args:
-        run_config: RunConfig object containing configuration parameters
-        config_path: Path to POI configuration YAML file (required if custom_coords_path is None)
+        run_config: Optional RunConfig object (takes precedence over other parameters)
+        config_path: Path to configuration YAML file
         travel_time: Travel time limit in minutes
-        census_variables: List of Census API variables to retrieve
-        api_key: Census API key (optional if set as environment variable)
+        census_variables: List of census variables to retrieve
+        api_key: Census API key
         output_dirs: Dictionary of output directories
-        custom_coords_path: Path to custom coordinates file (skips POI query if provided)
-        progress_callback: Optional callback function for updating progress (idx, detail)
+        custom_coords_path: Path to custom coordinates file
+        progress_callback: Callback function for progress updates
+        use_county_method: Whether to use county-based block group selection (faster for large states)
         
     Returns:
         Dictionary of output file paths
     """
+    # Set up output directories
+    if not output_dirs:
+        output_dirs = setup_directories()
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -318,9 +326,6 @@ def run_community_mapper(
     # Convert any human-readable names to census codes
     census_codes = [normalize_census_variable(var) for var in census_variables]
     
-    if output_dirs is None:
-        output_dirs = setup_directories()
-        
     result_files = {}
     state_abbreviations = []
     
@@ -421,29 +426,51 @@ def run_community_mapper(
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
-    # Make sure we have state information for census lookups
-    if not state_abbreviations:
-        raise ValueError("No state information found. State is required for census block group lookup. "
-                        "Please provide state information in your custom coordinates file or config file.")
+    # Check if we should use the county-based method
+    if use_county_method:
+        try:
+            print("Using county-based block group selection...")
+            block_groups = isochrone_to_block_groups_by_county(
+                isochrone_path=combined_isochrone_file,
+                poi_data=poi_data,
+                output_path=block_groups_file,
+                api_key=api_key
+            )
+            result_files["block_groups"] = block_groups_file
+        except ImportError as e:
+            print(f"County-based method failed: {e}")
+            print("Falling back to state-based method...")
+            use_county_method = False
+        except Exception as e:
+            print(f"Error with county-based method: {e}")
+            print("Falling back to state-based method...")
+            use_county_method = False
     
-    # Add neighboring states to handle POIs near state borders
-    expanded_states = state_abbreviations.copy()
-    for state in state_abbreviations:
-        neighbors = get_neighboring_states(state)
-        for neighbor in neighbors:
-            if neighbor not in expanded_states:
-                expanded_states.append(neighbor)
-                print(f"Adding neighboring state: {neighbor} (border with {state})")
-    
-    print(f"Using states for census lookup: {', '.join(expanded_states)}")
-    
-    block_groups = isochrone_to_block_groups(
-        isochrone_path=combined_isochrone_file,
-        state_fips=expanded_states,
-        output_path=block_groups_file,
-        api_key=api_key
-    )
-    result_files["block_groups"] = block_groups_file
+    # If county method is disabled or failed, use the traditional state-based method
+    if not use_county_method:
+        # Make sure we have state information for census lookups
+        if not state_abbreviations:
+            raise ValueError("No state information found. State is required for census block group lookup. "
+                            "Please provide state information in your custom coordinates file or config file.")
+        
+        # Add neighboring states to handle POIs near state borders
+        expanded_states = state_abbreviations.copy()
+        for state in state_abbreviations:
+            neighbors = get_neighboring_states(state)
+            for neighbor in neighbors:
+                if neighbor not in expanded_states:
+                    expanded_states.append(neighbor)
+                    print(f"Adding neighboring state: {neighbor} (border with {state})")
+        
+        print(f"Using states for census lookup: {', '.join(expanded_states)}")
+        
+        block_groups = isochrone_to_block_groups(
+            isochrone_path=combined_isochrone_file,
+            state_fips=expanded_states,
+            output_path=block_groups_file,
+            api_key=api_key
+        )
+        result_files["block_groups"] = block_groups_file
     
     # Step 4: Fetch census data for block groups
     print("\n=== Step 4: Fetching Census Data ===")
@@ -598,24 +625,25 @@ def main():
         print("\nDry run completed. Exiting without performing any actions.")
         return
     
-    # Run the pipeline
-    results = run_community_mapper(
-        config_path=args.config,
-        travel_time=args.travel_time,
-        census_variables=args.census_variables,
-        api_key=args.api_key,
-        output_dirs=output_dirs,
-        custom_coords_path=args.custom_coords
-    )
-    
-    # Print summary
-    print("\n=== Community Mapping Complete ===")
-    print(f"POI Data: {results['poi_data']}")
-    print(f"Isochrone: {results['isochrone']}")
-    print(f"Block Groups: {results['block_groups']}")
-    print(f"Census Data: {results['census_data']}")
-    print(f"Maps: {len(results['maps'])} files generated in {output_dirs['maps']}")
-    print("\nUse these maps to analyze community resources and demographics!")
+    # Run the community mapper with the provided arguments
+    try:
+        output_files = run_community_mapper(
+            config_path=args.config,
+            travel_time=args.travel_time,
+            census_variables=args.census_variables,
+            api_key=args.api_key,
+            custom_coords_path=args.custom_coords,
+            use_county_method=args.use_county_method
+        )
+        
+        print("\n=== Community Mapper Completed Successfully ===")
+        print("Output files:")
+        for key, path in output_files.items():
+            print(f"  - {key}: {path}")
+    except Exception as e:
+        print(f"\n=== Error: {str(e)} ===")
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
