@@ -316,7 +316,7 @@ def create_summary(results):
     df = pd.DataFrame(results)
     
     # Filter out failed tests
-    successful_df = df[df.get("success", True)]
+    successful_df = df[df.get("success", True).fillna(True).astype(bool)]
     
     # Group by case and method, and calculate mean execution time
     summary = successful_df.groupby(["case", "method"])["execution_time"].agg(
