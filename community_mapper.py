@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import geopandas as gpd
 from shapely.geometry import Point
+import time
+import traceback
+import sys
 
 # Import components from the src modules
 from src.query import (
@@ -32,7 +35,8 @@ from src.isochrone import (
     create_isochrones_from_poi_list
 )
 from src.blockgroups import (
-    isochrone_to_block_groups
+    isochrone_to_block_groups,
+    isochrone_to_block_groups_by_county
 )
 from src.census_data import (
     get_census_data_for_block_groups
@@ -287,21 +291,24 @@ def run_community_mapper(
     progress_callback: Optional[callable] = None
 ) -> Dict[str, str]:
     """
-    Run the complete community mapping pipeline.
+    Run the full community mapping process.
     
     Args:
-        run_config: RunConfig object containing configuration parameters
-        config_path: Path to POI configuration YAML file (required if custom_coords_path is None)
+        run_config: Optional RunConfig object (takes precedence over other parameters)
+        config_path: Path to configuration YAML file
         travel_time: Travel time limit in minutes
-        census_variables: List of Census API variables to retrieve
-        api_key: Census API key (optional if set as environment variable)
+        census_variables: List of census variables to retrieve
+        api_key: Census API key
         output_dirs: Dictionary of output directories
-        custom_coords_path: Path to custom coordinates file (skips POI query if provided)
-        progress_callback: Optional callback function for updating progress (idx, detail)
+        custom_coords_path: Path to custom coordinates file
+        progress_callback: Callback function for progress updates
         
     Returns:
         Dictionary of output file paths
     """
+    # Set up output directories
+    if not output_dirs:
+        output_dirs = setup_directories()
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -318,9 +325,6 @@ def run_community_mapper(
     # Convert any human-readable names to census codes
     census_codes = [normalize_census_variable(var) for var in census_variables]
     
-    if output_dirs is None:
-        output_dirs = setup_directories()
-        
     result_files = {}
     state_abbreviations = []
     
@@ -421,25 +425,11 @@ def run_community_mapper(
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
-    # Make sure we have state information for census lookups
-    if not state_abbreviations:
-        raise ValueError("No state information found. State is required for census block group lookup. "
-                        "Please provide state information in your custom coordinates file or config file.")
-    
-    # Add neighboring states to handle POIs near state borders
-    expanded_states = state_abbreviations.copy()
-    for state in state_abbreviations:
-        neighbors = get_neighboring_states(state)
-        for neighbor in neighbors:
-            if neighbor not in expanded_states:
-                expanded_states.append(neighbor)
-                print(f"Adding neighboring state: {neighbor} (border with {state})")
-    
-    print(f"Using states for census lookup: {', '.join(expanded_states)}")
-    
-    block_groups = isochrone_to_block_groups(
+    # Use county-based block group selection
+    print("Using county-based block group selection...")
+    block_groups = isochrone_to_block_groups_by_county(
         isochrone_path=combined_isochrone_file,
-        state_fips=expanded_states,
+        poi_data=poi_data,
         output_path=block_groups_file,
         api_key=api_key
     )
@@ -551,11 +541,10 @@ def run_community_mapper(
     return result_files
 
 def main():
-    """Main entry point for the script."""
-    # Parse command line arguments
+    """Main entry point for the application."""
     args = parse_arguments()
     
-    # If --list-variables is specified, print the variables and exit
+    # If user just wants to list available variables
     if args.list_variables:
         print("\nAvailable Census Variables:")
         print("=" * 50)
@@ -578,44 +567,36 @@ def main():
     
     # If dry-run, just print what would be done and exit
     if args.dry_run:
-        print("\n=== DRY RUN MODE - NO ACTIONS WILL BE PERFORMED ===")
-        print(f"Config File: {args.config if args.config else 'Not provided'}")
-        print(f"Custom Coordinates: {args.custom_coords if args.custom_coords else 'Not provided'}")
-        print(f"Travel Time: {args.travel_time} minutes")
-        print(f"Census Variables: {', '.join(args.census_variables)}")
-        print(f"API Key: {'Provided' if args.api_key else 'Not provided (will use environment variable if available)'}")
-        print(f"Output Directories: {', '.join(output_dirs.keys())}")
-        
-        if args.custom_coords:
-            print("\nWould parse custom coordinates from:", args.custom_coords)
-            try:
-                poi_data = parse_custom_coordinates(args.custom_coords)
-                print(f"Found {len(poi_data['pois'])} valid coordinates")
-                print(f"States found: {', '.join(poi_data['metadata']['states'])}")
-            except Exception as e:
-                print(f"Error parsing custom coordinates file: {e}")
-        
-        print("\nDry run completed. Exiting without performing any actions.")
-        return
+        print("\n=== DRY RUN - SHOWING PLANNED STEPS ===")
+        print(f"Configuration file: {args.config or 'Default config'}")
+        print(f"Travel time limit: {args.travel_time} minutes")
+        print(f"Census variables: {', '.join(args.census_variables)}")
+        print(f"Output directories: {setup_directories()}")
+        print("No operations will be performed.")
+        sys.exit(0)
     
-    # Run the pipeline
-    results = run_community_mapper(
-        config_path=args.config,
-        travel_time=args.travel_time,
-        census_variables=args.census_variables,
-        api_key=args.api_key,
-        output_dirs=output_dirs,
-        custom_coords_path=args.custom_coords
-    )
+    # Execute the full process
+    print("\n=== Starting Community Mapper ===")
+    start_time = time.time()
     
-    # Print summary
-    print("\n=== Community Mapping Complete ===")
-    print(f"POI Data: {results['poi_data']}")
-    print(f"Isochrone: {results['isochrone']}")
-    print(f"Block Groups: {results['block_groups']}")
-    print(f"Census Data: {results['census_data']}")
-    print(f"Maps: {len(results['maps'])} files generated in {output_dirs['maps']}")
-    print("\nUse these maps to analyze community resources and demographics!")
+    try:
+        # Execute the full pipeline
+        run_community_mapper(
+            config_path=args.config,
+            travel_time=args.travel_time,
+            census_variables=args.census_variables,
+            api_key=args.api_key,
+            custom_coords_path=args.custom_coords
+        )
+        
+        end_time = time.time()
+        elapsed = end_time - start_time
+        print(f"\n=== Community Mapper Completed in {elapsed:.1f} seconds ===")
+        
+    except Exception as e:
+        print(f"\n=== Error: {str(e)} ===")
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
