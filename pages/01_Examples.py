@@ -53,14 +53,44 @@ with st.expander("1. Analyzing Library Access", expanded=True):
     st.subheader("Sample Library Data (CSV)")
     df = pd.read_csv(example_csv)
     library_df = df[df['name'].str.contains('Library')]
-    st.dataframe(library_df)
-
-with st.expander("2. Parks and Green Space Equity"):
-    st.markdown("""
-    ### Parks and Green Space Equity
+    st.dataframe(library_df, use_container_width=True)
     
-    Parks provide recreational opportunities, improve public health, and enhance quality of life.
-    Analyzing park access can reveal inequities in access to green space.
+    st.markdown("---")
+
+with st.expander("2. Assessing Healthcare Access", expanded=False):
+    st.markdown("""
+    ### Assessing Access to Healthcare Facilities
+    
+    Access to healthcare is crucial for community well-being. This example focuses on hospitals.
+    
+    #### Example Configuration:
+    - **POI Type**: `amenity`
+    - **POI Name**: `hospital`
+    - **Travel Time**: 20 minutes
+    - **Census Variables**: 
+      - Total Population
+      - Median Age
+      - Hispanic Population 
+      
+    #### Questions this analysis can answer:
+    - What is the demographic profile of areas within a 20-minute travel time of hospitals?
+    - Are there disparities in hospital access based on age or ethnicity?
+    """)
+    
+    # Show example JSON data
+    st.subheader("Sample Hospital Data (JSON)")
+    with open(example_json, 'r') as f:
+        data = json.load(f)
+    health_df = pd.DataFrame(data['pois']) # Assuming 'pois' is the key
+    health_df = health_df[health_df['tags'].apply(lambda x: x.get('amenity') == 'hospital')]
+    st.dataframe(health_df, use_container_width=True)
+    st.markdown("---")
+
+with st.expander("3. Evaluating Green Space Availability", expanded=False):
+    st.markdown("""
+    ### Evaluating Access to Parks and Green Spaces
+    
+    Parks provide recreational opportunities and contribute to public health.
     
     #### Example Configuration:
     - **POI Type**: `leisure`
@@ -68,53 +98,21 @@ with st.expander("2. Parks and Green Space Equity"):
     - **Travel Time**: 10 minutes
     - **Census Variables**: 
       - Total Population
-      - Median Household Income
-      - White Population
-      - Black Population
-      - Hispanic Population
-    
+      - Housing Units
+      
     #### Questions this analysis can answer:
-    - Which demographic groups have the best access to parks?
-    - Are there disparities in park access based on income or race?
-    - Where should new parks be located to improve equity?
+    - How densely populated are the areas with easy access to parks?
+    - Is there a correlation between housing density and park availability?
     """)
     
-    # Show example JSON data
-    st.subheader("Sample Park Data (JSON)")
-    with open(example_json, 'r') as f:
-        data = json.load(f)
-    
-    park_data = [poi for poi in data['pois'] if 'Park' in poi['name']]
-    if park_data:
-        st.json(park_data)
+    # Show example merged data
+    st.subheader("Sample Park Data (CSV)") # This was using df, which is the full example_csv
+    # Assuming we want to filter for parks from the CSV for this example as well
+    park_df = df[df['name'].str.contains('Park', case=False, na=False)] 
+    st.dataframe(park_df, use_container_width=True)
+    st.markdown("---")
 
-with st.expander("3. Healthcare Facility Distribution"):
-    st.markdown("""
-    ### Healthcare Facility Distribution
-    
-    Access to healthcare facilities is critical for community health. Mapping these facilities
-    can identify areas with limited healthcare access.
-    
-    #### Example Configuration:
-    - **POI Type**: `amenity`
-    - **POI Name**: `hospital` or `clinic`
-    - **Travel Time**: 30 minutes
-    - **Census Variables**: 
-      - Total Population
-      - Median Age
-      - Median Household Income
-    
-    #### Questions this analysis can answer:
-    - What percentage of the population lives within 30 minutes of a healthcare facility?
-    - Are healthcare facilities accessible to elderly populations?
-    - Are there income-based disparities in healthcare access?
-    """)
-    
-    # Show example data
-    st.subheader("Sample Healthcare Facility Data")
-    df = pd.read_csv(example_csv)
-    healthcare_df = df[df['name'].str.contains('Clinic') | df['name'].str.contains('Hospital')]
-    st.dataframe(healthcare_df)
+st.sidebar.info("These examples use pre-defined data. Run your own analyses using the 'Home' page.")
 
 # How to use these examples
 st.header("How to Use These Examples")
