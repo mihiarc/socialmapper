@@ -477,10 +477,9 @@ if __name__ == "__main__":
         help="Path to isochrone GeoJSON or GeoParquet file"
     )
     parser.add_argument(
-        "--state",
-        nargs="+",
+        "--poi-file",
         required=True,
-        help="State abbreviations or FIPS codes (required, can list multiple)"
+        help="Path to POI JSON file containing coordinates"
     )
     parser.add_argument(
         "--output-path",
@@ -504,10 +503,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Run the main function with provided states
-    isochrone_to_block_groups(
+    # Load the POI data
+    with open(args.poi_file, 'r') as f:
+        poi_data = json.load(f)
+    
+    # Run the main function with POI data
+    isochrone_to_block_groups_by_county(
         isochrone_path=args.isochrone_path,
-        state_fips=args.state,
+        poi_data=poi_data,
         output_path=args.output_path,
         api_key=args.api_key,
         selection_mode=args.selection_mode,
