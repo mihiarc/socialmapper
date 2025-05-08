@@ -107,7 +107,7 @@ def build_overpass_query(poi_config):
 
 def query_overpass(query):
     """Query the Overpass API with the given query."""
-    api = overpy.Overpass()
+    api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
     try:
         return api.query(query)
     except Exception as e:
