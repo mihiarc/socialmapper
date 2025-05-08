@@ -21,7 +21,13 @@ from .blockgroups import (
     get_census_block_groups,
     load_isochrone,
     find_intersecting_block_groups,
-    isochrone_to_block_groups,
+    isochrone_to_block_groups_by_county,
+)
+
+# Export county utilities
+from .counties import (
+    get_counties_from_pois,
+    get_block_groups_for_counties,
 )
 
 # Export census data functionality
