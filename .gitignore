@@ -36,7 +36,6 @@ code/cache/
 .ipynb_checkpoints/
 
 # OS files
-.DS_Store
 .Thumbs.db
 
 # Python
@@ -63,5 +62,3 @@ var/
 .DS_Store
 srr-nrcs/.DS_Store
 **.DS_Store
-.cursor/rules/solution-rule.mdc
-output/census_data/fuquay-varina_amenity_library_15min_census_data.geojson
