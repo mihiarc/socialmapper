@@ -3,6 +3,22 @@
 Functions for generating individual maps (non-paneled).
 """
 import geopandas as gpd
+import matplotlib
+import sys
+import os
+
+# Set the backend for matplotlib based on environment
+try:
+    # Import our environment detection from progress.py
+    from src.progress import _IN_STREAMLIT
+    
+    if not _IN_STREAMLIT:
+        # We're not in a Streamlit environment, use a non-interactive backend
+        matplotlib.use('Agg')
+except ImportError:
+    # Progress module not available, definitely use a non-interactive backend
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import contextily as ctx
 import numpy as np
@@ -14,8 +30,6 @@ from typing import Optional, List
 from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.patheffects as pe
 from matplotlib.colors import LinearSegmentedColormap
-import sys
-import os
 
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
