@@ -56,13 +56,8 @@ from src.util import (
     CENSUS_VARIABLE_MAPPING
 )
 
-# Try to import stqdm for progress tracking (fallback to regular tqdm if not available)
-try:
-    from stqdm import stqdm
-    has_stqdm = True
-except ImportError:
-    from tqdm import tqdm as stqdm
-    has_stqdm = False
+# Import the progress bar utility
+from src.progress import get_progress_bar
 
 # Configure basic logging (can be overridden by client code)
 logging.basicConfig(level=logging.INFO,
@@ -73,6 +68,9 @@ try:
     from src.config_models import RunConfig
 except ImportError:
     RunConfig = None  # Fallback when model not available
+
+# Export the function so it can be used by imported modules
+__all__ = ['run_community_mapper', 'setup_directories']
 
 def parse_custom_coordinates(file_path: str) -> Dict:
     """
@@ -471,7 +469,7 @@ def run_community_mapper(
     
     # Transform census variable codes to their mapped names for the map generator
     mapped_variables = []
-    for var in stqdm(visualization_variables, desc="Processing variables"):
+    for var in get_progress_bar(visualization_variables, desc="Processing variables"):
         # Use the mapped name if available, otherwise use the original code
         mapped_name = variable_mapping.get(var, var)
         mapped_variables.append(mapped_name)
@@ -508,7 +506,7 @@ def run_community_mapper(
             poi_data_list = poi_data['pois']
             # Convert the POI list to a list of GeoDataFrames for panel maps
             if isinstance(poi_data_list, list):
-                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in stqdm(poi_data_list, desc="Processing POIs")]
+                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in get_progress_bar(poi_data_list, desc="Processing POIs")]
             else:
                 poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
         else:

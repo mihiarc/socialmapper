@@ -12,13 +12,8 @@ from typing import Dict, Any, List, Union, Tuple, Optional
 import json
 import pandas as pd
 from tqdm import tqdm
-# Import stqdm for Streamlit integration
-try:
-    from stqdm import stqdm
-    has_stqdm = True
-except ImportError:
-    from tqdm import tqdm as stqdm
-    has_stqdm = False
+# Import the new progress bar utility
+from src.progress import get_progress_bar
 import time
 import logging
 
@@ -230,8 +225,8 @@ def create_isochrones_from_poi_list(
     isochrone_files = []
     isochrone_gdfs = []
     
-    # Use stqdm for Streamlit integration
-    for poi in stqdm(pois, desc="Generating isochrones", unit="POI"):
+    # Use the new progress bar utility
+    for poi in get_progress_bar(pois, desc="Generating isochrones", unit="POI"):
         poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
         try:
             result = create_isochrone_from_poi(
@@ -312,7 +307,7 @@ def create_isochrones_from_poi_list(
                 except Exception as e:
                     logger.warning(f"Could not determine bounding box for optimization: {e}")
             
-            for file in stqdm(isochrone_files, desc="Loading isochrone files", unit="file"):
+            for file in get_progress_bar(isochrone_files, desc="Loading isochrones", unit="file"):
                 if file.endswith('.parquet'):
                     gdfs.append(gpd.read_parquet(file))
                 else:

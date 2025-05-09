@@ -8,13 +8,8 @@ import geopandas as gpd
 import requests
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-# Import stqdm for Streamlit integration with fallback to tqdm
-try:
-    from stqdm import stqdm
-    has_stqdm = True
-except ImportError:
-    from tqdm import tqdm as stqdm
-    has_stqdm = False
+# Import the new progress bar utility
+from src.progress import get_progress_bar
 from tqdm import tqdm
 from src.states import (
     state_fips_to_name,
@@ -55,7 +50,7 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
     """
     state_block_groups = {}
     
-    tqdm.write("Extracting block group IDs by state...")
+    get_progress_bar().write("Extracting block group IDs by state...")
 
     for _, row in gdf.iterrows():
         state = row.get('STATE')
@@ -103,9 +98,9 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
                     )
                     state_block_groups[state].append(constructed_geoid)
                 else:
-                    tqdm.write(f"Warning: Cannot standardize GEOID format: {geoid}")
+                    get_progress_bar().write(f"Warning: Cannot standardize GEOID format: {geoid}")
         else:
-            tqdm.write(f"Warning: Invalid GEOID format: {geoid}")
+            get_progress_bar().write(f"Warning: Invalid GEOID format: {geoid}")
 
     return state_block_groups
 
@@ -186,7 +181,7 @@ def fetch_census_data_for_states(
     dfs = []
     
     # Loop over each state
-    for state_code in stqdm(state_fips_list, desc="Fetching census data by state", unit="state"):
+    for state_code in get_progress_bar(state_fips_list, desc="Fetching census data by state", unit="state"):
         state_name = get_state_name_from_fips(state_code)
         
         # Define the parameters for this state
@@ -216,13 +211,13 @@ def fetch_census_data_for_states(
                 # Append the dataframe to the list
                 dfs.append(df)
                 
-                tqdm.write(f"  - Retrieved data for {len(df)} block groups")
+                get_progress_bar().write(f"  - Retrieved data for {len(df)} block groups")
                 
             else:
-                tqdm.write(f"Error fetching data for {state_name}: Status {response.status_code}")
+                get_progress_bar().write(f"Error fetching data for {state_name}: Status {response.status_code}")
         
         except Exception as e:
-            tqdm.write(f"Exception while fetching data for {state_name}: {str(e)}")
+            get_progress_bar().write(f"Exception while fetching data for {state_name}: {str(e)}")
     
     # Combine all data
     if not dfs:
@@ -280,7 +275,7 @@ def merge_census_data(
                 )
 
     # Merge the census data with the GeoDataFrame
-    tqdm.write(f"Merging census data ({len(census_df)} records) with block groups ({len(result_gdf)} records)...")
+    get_progress_bar().write(f"Merging census data ({len(census_df)} records) with block groups ({len(result_gdf)} records)...")
     result_gdf = result_gdf.merge(census_df, on='GEOID', how='left')
     
     return result_gdf
@@ -316,7 +311,7 @@ def get_census_data_for_block_groups(
         but the 'variables_for_visualization' attribute will be added to indicate which ones are meant for maps.
     """
     # Load block groups
-    tqdm.write(f"Loading block groups from {geojson_path}...")
+    get_progress_bar().write(f"Loading block groups from {geojson_path}...")
     block_groups_gdf = load_block_groups(geojson_path)
     
     if len(block_groups_gdf) == 0:
@@ -333,29 +328,29 @@ def get_census_data_for_block_groups(
     
     # Get state names for better logging
     state_names = [get_state_name_from_fips(fips) for fips in state_fips_list]
-    tqdm.write(f"Found block groups in these states: {', '.join(state_names)}")
+    get_progress_bar().write(f"Found block groups in these states: {', '.join(state_names)}")
     
     # Log variable normalization for better UX
-    tqdm.write(f"Input variables: {', '.join(variables)}")
+    get_progress_bar().write(f"Input variables: {', '.join(variables)}")
     normalized_variables = [normalize_census_variable(var) for var in variables]
     for var, norm_var in zip(variables, normalized_variables):
         if var != norm_var:
-            tqdm.write(f"  - Will convert '{var}' to Census API code '{norm_var}'")
+            get_progress_bar().write(f"  - Will convert '{var}' to Census API code '{norm_var}'")
     
     # Fetch census data for all block groups in the relevant states
-    tqdm.write(f"Fetching census data for variables: {', '.join(normalized_variables)}")
+    get_progress_bar().write(f"Fetching census data for variables: {', '.join(normalized_variables)}")
     
     # Print API key status (masked for security)
     if api_key:
         masked_key = api_key[:4] + "..." + api_key[-4:] if len(api_key) > 8 else "***"
-        tqdm.write(f"Using provided API key: {masked_key}")
+        get_progress_bar().write(f"Using provided API key: {masked_key}")
     else:
         env_key = os.getenv('CENSUS_API_KEY')
         if env_key:
             masked_key = env_key[:4] + "..." + env_key[-4:] if len(env_key) > 8 else "***"
-            tqdm.write(f"Using environment API key: {masked_key}")
+            get_progress_bar().write(f"Using environment API key: {masked_key}")
         else:
-            tqdm.write("WARNING: No Census API key provided!")
+            get_progress_bar().write("WARNING: No Census API key provided!")
 
     # Fetch census data
     all_state_census_data = fetch_census_data_for_states(
@@ -373,7 +368,7 @@ def get_census_data_for_block_groups(
     
     # Filter to only the block groups we identified in the isochrone
     census_data = all_state_census_data[all_state_census_data['GEOID'].isin(needed_geoids)]
-    tqdm.write(f"Found {len(census_data)} of {len(needed_geoids)} block groups in census data")
+    get_progress_bar().write(f"Found {len(census_data)} of {len(needed_geoids)} block groups in census data")
     
     # Merge census data with block group geometries
     result_gdf = merge_census_data(
@@ -383,7 +378,7 @@ def get_census_data_for_block_groups(
     )
     
     # Convert numeric columns
-    tqdm.write("Converting numeric columns...")
+    get_progress_bar().write("Converting numeric columns...")
     for var in variables:
         if var != 'NAME' and var in result_gdf.columns:
             result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
@@ -407,11 +402,11 @@ def get_census_data_for_block_groups(
             result_gdf['NAME'] = result_gdf['NAME'].fillna("Block Group").astype(str)
     
     # Save to file
-    tqdm.write(f"Saving result with census data to {output_path}...")
+    get_progress_bar().write(f"Saving result with census data to {output_path}...")
     
     try:
         result_gdf.to_file(output_path, driver="GeoJSON")
-        tqdm.write(f"Saved result with census data to {output_path}")
+        get_progress_bar().write(f"Saved result with census data to {output_path}")
     except Exception as e:
         # Try an alternative approach - convert to string types first
         for col in result_gdf.columns:
@@ -449,7 +444,7 @@ def get_variable_metadata(
     
     try:
         # Make the API request
-        tqdm.write(f"Fetching variable metadata for {dataset} {year}...")
+        get_progress_bar().write(f"Fetching variable metadata for {dataset} {year}...")
         response = requests.get(url, params={'key': api_key})
         
         # Check if the request was successful
@@ -489,4 +484,4 @@ if __name__ == "__main__":
     )
     
     # Print summary
-    tqdm.write(f"Added census data for {len(result)} block groups") 
+    get_progress_bar().write(f"Added census data for {len(result)} block groups") 

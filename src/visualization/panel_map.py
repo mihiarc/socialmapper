@@ -6,6 +6,20 @@ import os
 import math
 import warnings
 import geopandas as gpd
+import matplotlib
+
+# Set the backend for matplotlib based on environment
+try:
+    # Import our environment detection from progress.py
+    from src.progress import _IN_STREAMLIT
+    
+    if not _IN_STREAMLIT:
+        # We're not in a Streamlit environment, use a non-interactive backend
+        matplotlib.use('Agg')
+except ImportError:
+    # Progress module not available, definitely use a non-interactive backend
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import contextily as cx
 import numpy as np
