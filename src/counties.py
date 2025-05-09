@@ -15,13 +15,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 from tqdm import tqdm
-
-try:
-    from stqdm import stqdm
-    has_stqdm = True
-except ImportError:
-    from tqdm import tqdm as stqdm
-    has_stqdm = False
+from src.progress import get_progress_bar
 
 # Import state utilities
 from src.states import normalize_state, StateFormat
@@ -346,7 +340,7 @@ def get_block_groups_for_counties(
     """
     all_block_groups = []
     
-    for state_fips, county_fips in stqdm(counties, desc="Fetching block groups by county", unit="county"):
+    for state_fips, county_fips in get_progress_bar(counties, desc="Fetching block groups by county", unit="county"):
         try:
             county_block_groups = get_block_groups_for_county(state_fips, county_fips, api_key)
             all_block_groups.append(county_block_groups)
@@ -382,7 +376,7 @@ def get_counties_from_pois(
     
     counties_set = set()
     
-    for poi in stqdm(pois, desc="Determining counties for POIs", unit="POI"):
+    for poi in get_progress_bar(pois, desc="Determining counties for POIs", unit="POI"):
         lat = poi.get('lat')
         lon = poi.get('lon')
         
