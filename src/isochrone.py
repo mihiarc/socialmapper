@@ -12,6 +12,13 @@ from typing import Dict, Any, List, Union, Tuple, Optional
 import json
 import pandas as pd
 from tqdm import tqdm
+# Import stqdm for Streamlit integration
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
 import time
 import logging
 
@@ -218,15 +225,13 @@ def create_isochrones_from_poi_list(
     """
     pois = poi_data.get('pois', [])
     if not pois:
-        raise ValueError("No POIs found in input data")
+        raise ValueError("No POIs found in input data. Please try different search parameters or a different location. POIs like 'natural=forest' may not exist in all areas.")
     
     isochrone_files = []
     isochrone_gdfs = []
     
-    # Add tqdm progress bar
-    total_pois = len(pois)
-    
-    for poi in tqdm(pois, desc="Generating isochrones", unit="POI"):
+    # Use stqdm for Streamlit integration
+    for poi in stqdm(pois, desc="Generating isochrones", unit="POI"):
         poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
         try:
             result = create_isochrone_from_poi(
@@ -307,7 +312,7 @@ def create_isochrones_from_poi_list(
                 except Exception as e:
                     logger.warning(f"Could not determine bounding box for optimization: {e}")
             
-            for file in tqdm(isochrone_files, desc="Loading isochrone files", unit="file"):
+            for file in stqdm(isochrone_files, desc="Loading isochrone files", unit="file"):
                 if file.endswith('.parquet'):
                     gdfs.append(gpd.read_parquet(file))
                 else:
