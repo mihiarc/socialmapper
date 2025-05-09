@@ -62,3 +62,10 @@ var/
 .DS_Store
 srr-nrcs/.DS_Store
 **.DS_Store
+
+# Virtual environments
+.venv/
+venv/
+
+# pytest cache
+.pytest_cache/
