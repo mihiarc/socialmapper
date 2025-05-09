@@ -9,14 +9,16 @@ from typing import List, Dict, Optional, Union, Tuple
 import geopandas as gpd
 import matplotlib
 
-# Set the backend for matplotlib in non-Streamlit environments
+# Set the backend for matplotlib based on environment
 try:
-    from streamlit.runtime.scriptrunner import get_script_run_ctx
-    if get_script_run_ctx() is None:
-        # We're not in a Streamlit environment, so use a non-interactive backend
+    # Import our environment detection from progress.py
+    from src.progress import _IN_STREAMLIT
+    
+    if not _IN_STREAMLIT:
+        # We're not in a Streamlit environment, use a non-interactive backend
         matplotlib.use('Agg')
 except ImportError:
-    # Streamlit is not installed, so definitely use a non-interactive backend
+    # Progress module not available, definitely use a non-interactive backend
     matplotlib.use('Agg')
 
 # Add the parent directory to sys.path to ensure imports work
