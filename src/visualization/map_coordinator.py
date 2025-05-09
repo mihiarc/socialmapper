@@ -7,6 +7,17 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Tuple
 import geopandas as gpd
+import matplotlib
+
+# Set the backend for matplotlib in non-Streamlit environments
+try:
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+    if get_script_run_ctx() is None:
+        # We're not in a Streamlit environment, so use a non-interactive backend
+        matplotlib.use('Agg')
+except ImportError:
+    # Streamlit is not installed, so definitely use a non-interactive backend
+    matplotlib.use('Agg')
 
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))

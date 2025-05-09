@@ -6,6 +6,18 @@ import os
 import math
 import warnings
 import geopandas as gpd
+import matplotlib
+
+# Set the backend for matplotlib in non-Streamlit environments
+try:
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+    if get_script_run_ctx() is None:
+        # We're not in a Streamlit environment, so use a non-interactive backend
+        matplotlib.use('Agg')
+except ImportError:
+    # Streamlit is not installed, so definitely use a non-interactive backend
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import contextily as cx
 import numpy as np
