@@ -12,6 +12,9 @@ osmnx>=1.2.2
 shapely>=2.0.0
 networkx>=2.8.0
 
+# Census data retrieval
+cenpy>=1.0.0  # Census API Python wrapper for county operations
+
 # Visualization
 matplotlib>=3.6.0
 contextily>=1.3.0
@@ -25,3 +28,13 @@ pyarrow>=12.0.0  # Arrow format support for optimized I/O
 
 # Progress tracking
 tqdm>=4.67.0
+
+# Streamlit
+streamlit>=1.31
+watchdog>=6.0
+
+# Added from the code block
+stqdm>=0.0.5
+
+# Async HTTP client
+httpx>=0.27.0

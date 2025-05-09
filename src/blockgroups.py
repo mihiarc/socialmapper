@@ -8,11 +8,18 @@ import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
-from typing import List, Optional
+from typing import List, Optional, Dict
 import json
+# Import stqdm for Streamlit integration with fallback to tqdm
+try:
+    from stqdm import stqdm
+    has_stqdm = True
+except ImportError:
+    from tqdm import tqdm as stqdm
+    has_stqdm = False
 from tqdm import tqdm
 
-from src.util import state_abbreviation_to_fips
+from src.states import normalize_state, StateFormat
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -26,6 +33,16 @@ try:
 except ImportError:
     USE_ARROW = False
     print("PyArrow not available. Install it for better performance.")
+
+# Import county utilities if available
+try:
+    from src.counties import (
+        get_counties_from_pois,
+        get_block_groups_for_counties
+    )
+    HAS_COUNTY_UTILS = True
+except ImportError:
+    HAS_COUNTY_UTILS = False
 
 def get_census_block_groups(
     state_fips: List[str],
@@ -41,19 +58,15 @@ def get_census_block_groups(
     Returns:
         GeoDataFrame with block group boundaries
     """
-    # Convert any state abbreviations to FIPS codes
+    # Convert any state identifiers to FIPS codes using the centralized state module
     normalized_state_fips = []
     for state in state_fips:
-        if len(state) == 2 and state.isalpha():
-            # State abbreviation
-            fips = state_abbreviation_to_fips(state)
-            if fips:
-                normalized_state_fips.append(fips)
-            else:
-                # If not found, keep as is
-                normalized_state_fips.append(state)
+        # Convert to FIPS code
+        fips = normalize_state(state, to_format=StateFormat.FIPS)
+        if fips:
+            normalized_state_fips.append(fips)
         else:
-            # Assume it's already a FIPS code
+            # If not found, keep as is
             normalized_state_fips.append(state)
     
     # Check for cached block group data
@@ -64,7 +77,7 @@ def get_census_block_groups(
     cached_gdfs = []
     all_cached = True
     
-    for state in tqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
+    for state in stqdm(normalized_state_fips, desc="Checking cached block groups", unit="state"):
         cache_file = cache_dir / f"block_groups_{state}.geojson"
         if cache_file.exists():
             try:
@@ -98,7 +111,7 @@ def get_census_block_groups(
     
     all_block_groups = []
     
-    for state in tqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
+    for state in stqdm(normalized_state_fips, desc="Fetching block groups by state", unit="state"):
         tqdm.write(f"Fetching block groups for state {state}...")
         state_block_groups = []
         
@@ -112,7 +125,7 @@ def get_census_block_groups(
         required_fields = 'STATE,COUNTY,TRACT,BLKGRP,GEOID'
         
         batch_count = 0
-        with tqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
+        with stqdm(desc=f"Fetching batches for state {state}", unit="batch") as batch_pbar:
             while more_records:
                 # Simple query that fetches records in batches
                 params = {
@@ -374,6 +387,87 @@ def isochrone_to_block_groups(
         
     return result_gdf
 
+def isochrone_to_block_groups_by_county(
+    isochrone_path: str,
+    poi_data: Dict,
+    output_path: Optional[str] = None,
+    api_key: Optional[str] = None,
+    selection_mode: str = "intersect",
+    use_parquet: bool = True
+) -> gpd.GeoDataFrame:
+    """
+    Find census block groups that intersect with an isochrone using county-based optimization.
+    
+    This function uses counties containing the POIs rather than entire states, which can be
+    significantly faster, especially when dealing with large states or metropolitan areas
+    that span multiple states.
+    
+    Args:
+        isochrone_path: Path to isochrone GeoJSON or GeoParquet file
+        poi_data: Dictionary with POI data including coordinates
+        output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
+        api_key: Census API key (optional if using cached data)
+        selection_mode: Method to select and process block groups
+            - "clip": Clip block groups to isochrone boundary
+            - "intersect": Keep full geometry of any intersecting block group
+            - "contain": Only include block groups fully contained within isochrone
+        use_parquet: Whether to use GeoParquet instead of GeoJSON format when saving
+        
+    Returns:
+        GeoDataFrame with selected block groups
+    """
+    if not HAS_COUNTY_UTILS:
+        raise ImportError("County utilities are not available. Make sure src/counties.py is present.")
+    
+    # Load the isochrone
+    tqdm.write("Loading isochrone...")
+    isochrone_gdf = load_isochrone(isochrone_path)
+    
+    # Get counties containing the POIs and their neighbors
+    tqdm.write("Determining counties for POIs...")
+    counties = get_counties_from_pois(poi_data, include_neighbors=True, api_key=api_key)
+    
+    if not counties:
+        raise ValueError(
+            "Could not determine counties for the POIs. Falling back to state-based method "
+            "may be necessary. Check that POIs have valid coordinates."
+        )
+    
+    tqdm.write(f"Found {len(counties)} relevant counties")
+    
+    # Get block groups for all relevant counties
+    tqdm.write(f"Fetching block groups for {len(counties)} counties...")
+    block_groups_gdf = get_block_groups_for_counties(counties, api_key)
+    
+    # Find intersecting block groups
+    tqdm.write(f"Finding block groups that {selection_mode} with isochrone...")
+    result_gdf = find_intersecting_block_groups(
+        isochrone_gdf,
+        block_groups_gdf,
+        selection_mode
+    )
+    
+    # Save result if output path is provided
+    if output_path:
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            
+        tqdm.write(f"Saving {len(result_gdf)} block groups...")
+        if use_parquet and USE_ARROW and not output_path.endswith('.geojson'):
+            # Default to parquet if extension isn't explicitly geojson
+            if not output_path.endswith('.parquet'):
+                output_path = f"{output_path}.parquet"
+            result_gdf.to_parquet(output_path)
+        else:
+            if not output_path.endswith('.geojson'):
+                output_path = f"{output_path}.geojson"
+            result_gdf.to_file(output_path, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
+            
+        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path}")
+        
+    return result_gdf
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Find census block groups that intersect with isochrones"
@@ -383,10 +477,9 @@ if __name__ == "__main__":
         help="Path to isochrone GeoJSON or GeoParquet file"
     )
     parser.add_argument(
-        "--state",
-        nargs="+",
+        "--poi-file",
         required=True,
-        help="State abbreviations or FIPS codes (required, can list multiple)"
+        help="Path to POI JSON file containing coordinates"
     )
     parser.add_argument(
         "--output-path",
@@ -410,10 +503,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Run the main function with provided states
-    isochrone_to_block_groups(
+    # Load the POI data
+    with open(args.poi_file, 'r') as f:
+        poi_data = json.load(f)
+    
+    # Run the main function with POI data
+    isochrone_to_block_groups_by_county(
         isochrone_path=args.isochrone_path,
-        state_fips=args.state,
+        poi_data=poi_data,
         output_path=args.output_path,
         api_key=args.api_key,
         selection_mode=args.selection_mode,
