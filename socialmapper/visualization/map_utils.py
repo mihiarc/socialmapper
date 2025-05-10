@@ -7,7 +7,7 @@ import os
 
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.util import CENSUS_VARIABLE_MAPPING
+from socialmapper.util import CENSUS_VARIABLE_MAPPING
 
 def get_variable_label(variable: str) -> str:
     """

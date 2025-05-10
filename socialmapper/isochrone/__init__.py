@@ -13,7 +13,7 @@ import json
 import pandas as pd
 from tqdm import tqdm
 # Import the new progress bar utility
-from src.progress import get_progress_bar
+from socialmapper.progress import get_progress_bar
 import time
 import logging
 

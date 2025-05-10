@@ -1,17 +1,11 @@
-#!/usr/bin/env python3
 """
-SocialMapper: End-to-end script for mapping community resources and demographics
+Core functionality for SocialMapper.
 
-This script ties together all components of the socialmapper project:
-1. Query OpenStreetMap for Points of Interest (POIs)
-2. Generate isochrones (travel time polygons) around those POIs
-3. Find census block groups that intersect with the isochrones
-4. Get demographic data for those block groups
-5. Generate maps visualizing the demographic data
+This module contains the main functions for running the socialmapper pipeline
+and handling configuration.
 """
 
 import os
-import argparse
 import json
 import csv
 import logging
@@ -19,58 +13,15 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import geopandas as gpd
 from shapely.geometry import Point
-import time
-import traceback
-import sys
 
-# Import components from the src modules
-from src.query import (
-    build_overpass_query,
-    query_overpass,
-    format_results,
-    create_poi_config
-)
-from src.isochrone import (
-    create_isochrones_from_poi_list
-)
-from src.blockgroups import (
-    isochrone_to_block_groups_by_county
-)
-from src.census_data import (
-    get_census_data_for_block_groups
-)
-from src.visualization import (
-    generate_maps_for_variables
-)
-from src.states import (
-    normalize_state,
-    normalize_state_list,
-    StateFormat
-)
-from src.util import (
-    census_code_to_name,
-    normalize_census_variable,
-    CENSUS_VARIABLE_MAPPING
-)
+# Configure basic logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Import the progress bar utility
-from src.progress import get_progress_bar
-
-# Import the new export module
-from src.export import export_census_data_to_csv
-
-# Configure basic logging (can be overridden by client code)
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
-
-# New pydantic model for validated configuration
+# Check if RunConfig is available
 try:
-    from src.config_models import RunConfig
+    from .config_models import RunConfig
 except ImportError:
     RunConfig = None  # Fallback when model not available
-
-# Export the function so it can be used by imported modules
-__all__ = ['run_socialmapper', 'setup_directories']
 
 def parse_custom_coordinates(file_path: str) -> Dict:
     """
@@ -186,57 +137,13 @@ def setup_directories() -> Dict[str, str]:
         "block_groups": "output/block_groups",
         "census_data": "output/census_data",
         "maps": "output/maps",
-        "csv": "output/csv"  # Add new CSV output directory
+        "csv": "output/csv"  # CSV output directory
     }
     
     for directory in dirs.values():
         os.makedirs(directory, exist_ok=True)
     
     return dirs
-
-def parse_arguments():
-    """
-    Parse command line arguments.
-    
-    Returns:
-        Parsed arguments
-    """
-    parser = argparse.ArgumentParser(
-        description="SocialMapper: End-to-end tool for mapping community resources and demographics"
-    )
-    
-    # Input source group
-    input_group = parser.add_mutually_exclusive_group(required=True)
-    input_group.add_argument("--custom-coords", help="Path to custom coordinates file (CSV or JSON)")
-    input_group.add_argument("--poi", action="store_true", help="Use direct POI parameters")
-    
-    # POI parameters (used when --poi is specified)
-    poi_group = parser.add_argument_group("POI Parameters (used with --poi)")
-    poi_group.add_argument("--geocode-area", help="Area to search within (city/town name)")
-    poi_group.add_argument("--city", help="City to search within (defaults to geocode-area if not specified)")
-    poi_group.add_argument("--poi-type", help="Type of POI (e.g., 'amenity', 'leisure')")
-    poi_group.add_argument("--poi-name", help="Name of POI (e.g., 'library', 'park')")
-    
-    # General parameters
-    parser.add_argument("--travel-time", type=int, default=15, help="Travel time in minutes")
-    parser.add_argument("--census-variables", nargs="+", default=["total_population"], 
-                       help="Census variables to retrieve (e.g. total_population median_household_income)")
-    parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
-    parser.add_argument("--list-variables", action="store_true", help="List available census variables and exit")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be done without actually doing it")
-    parser.add_argument("--export", action="store_true", default=True, 
-                       help="Export census data to CSV format (default: enabled)")
-    parser.add_argument("--no-export", action="store_false", dest="export", 
-                       help="Disable exporting census data to CSV format")
-    
-    args = parser.parse_args()
-    
-    # Validate POI arguments if --poi is specified
-    if args.poi:
-        if not all([args.geocode_area, args.poi_type, args.poi_name]):
-            parser.error("When using --poi, you must specify --geocode-area, --poi-type, and --poi-name")
-    
-    return args
 
 def convert_poi_to_geodataframe(poi_data_list):
     """
@@ -298,7 +205,7 @@ def run_socialmapper(
     output_dirs: Optional[Dict[str, str]] = None,
     custom_coords_path: Optional[str] = None,
     progress_callback: Optional[callable] = None,
-    export: bool = True  # Add parameter to control CSV export
+    export: bool = True  # Control CSV export
 ) -> Dict[str, str]:
     """
     Run the full community mapping process.
@@ -322,6 +229,17 @@ def run_socialmapper(
     Returns:
         Dictionary of output file paths
     """
+    # Import components here to avoid circular imports
+    from .query import build_overpass_query, query_overpass, format_results, create_poi_config
+    from .isochrone import create_isochrones_from_poi_list
+    from .blockgroups import isochrone_to_block_groups_by_county
+    from .census_data import get_census_data_for_block_groups
+    from .visualization import generate_maps_for_variables
+    from .states import normalize_state, normalize_state_list, StateFormat
+    from .util import census_code_to_name, normalize_census_variable
+    from .export import export_census_data_to_csv
+    from .progress import get_progress_bar
+
     # Set up output directories
     if not output_dirs:
         output_dirs = setup_directories()
@@ -573,82 +491,4 @@ def run_socialmapper(
     
     print(f"Generated {len(map_files)} maps")
     
-    return result_files
-
-def main():
-    """Main entry point for the application."""
-    args = parse_arguments()
-    
-    # If user just wants to list available variables
-    if args.list_variables:
-        print("\nAvailable Census Variables:")
-        print("=" * 50)
-        for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
-            print(f"{name:<25} {code}")
-        print("\nUsage example: --census-variables total_population median_household_income")
-        exit(0)
-        
-    # Setup output directories
-    output_dirs = setup_directories()
-    
-    # Print banner
-    print("=" * 80)
-    print("SocialMapper: End-to-end tool for mapping community resources")
-    print("=" * 80)
-    
-    # If dry-run, just print what would be done and exit
-    if args.dry_run:
-        print("\n=== DRY RUN - SHOWING PLANNED STEPS ===")
-        if args.poi:
-            print(f"POI Query: {args.geocode_area} - {args.poi_type} - {args.poi_name}")
-        else:
-            print(f"Custom coordinates: {args.custom_coords}")
-        print(f"Travel time limit: {args.travel_time} minutes")
-        print(f"Census variables: {', '.join(args.census_variables)}")
-        print(f"Output directories: {setup_directories()}")
-        print("No operations will be performed.")
-        sys.exit(0)
-    
-    # Execute the full process
-    print("\n=== Starting SocialMapper ===")
-    start_time = time.time()
-    
-    try:
-        # Execute the full pipeline
-        if args.poi:
-            # Normalize state to abbreviation
-            state_abbr = normalize_state(args.state, to_format=StateFormat.ABBREVIATION) if args.state else None
-            
-            # Use direct POI parameters from streamlit input
-            run_socialmapper(
-                geocode_area=args.geocode_area,
-                state=state_abbr,
-                city=args.city or args.geocode_area,  # Default to geocode_area if city not provided
-                poi_type=args.poi_type,
-                poi_name=args.poi_name,
-                travel_time=args.travel_time,
-                census_variables=args.census_variables,
-                api_key=args.api_key,
-                export=args.export
-            )
-        else:
-            # Use custom coordinates
-            run_socialmapper(
-                travel_time=args.travel_time,
-                census_variables=args.census_variables,
-                api_key=args.api_key,
-                custom_coords_path=args.custom_coords,
-                export=args.export
-            )
-        
-        end_time = time.time()
-        elapsed = end_time - start_time
-        print(f"\n=== SocialMapper Completed in {elapsed:.1f} seconds ===")
-        
-    except Exception as e:
-        print(f"\n=== Error: {str(e)} ===")
-        traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main() 
+    return result_files 

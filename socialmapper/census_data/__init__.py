@@ -9,13 +9,17 @@ import requests
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 # Import the new progress bar utility
-from src.progress import get_progress_bar
+from socialmapper.progress import get_progress_bar
 from tqdm import tqdm
-from src.states import (
-    state_fips_to_name,
-    StateFormat
+from socialmapper.states import (
+    normalize_state,
+    normalize_state_list,
+    StateFormat,
+    is_fips_code,
+    state_fips_to_name
 )
-from src.util import (
+from socialmapper.util import (
+    census_code_to_name,
     normalize_census_variable,
     CENSUS_VARIABLE_MAPPING
 )

@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Union
 from pathlib import Path
 
 # Import census variable mapping to get friendly names
-from src.util import CENSUS_VARIABLE_MAPPING
+from socialmapper.util import CENSUS_VARIABLE_MAPPING
 
 def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
     """
