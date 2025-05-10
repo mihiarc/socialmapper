@@ -175,6 +175,9 @@ elif input_method == "Custom Coordinates":
         )
         
         if uploaded_file:
+            # Make sure the output directory exists before saving
+            os.makedirs("output/pois", exist_ok=True)
+            
             # Save uploaded file temporarily
             file_extension = os.path.splitext(uploaded_file.name)[1].lower()
             custom_file_path = f"output/pois/custom_coordinates{file_extension}"
@@ -231,10 +234,13 @@ elif input_method == "Custom Coordinates":
                             "lon": float(coord["lon"]),
                             "tags": {}
                         }
+                        valid_coords.append(new_coord)
                 except (ValueError, TypeError) as e:
                     st.error(f"Error with coordinate {coord['name']}: {str(e)}")
                     
             if valid_coords:
+                # Make sure the output directory exists
+                os.makedirs("output/pois", exist_ok=True)
                 with open("output/pois/custom_coordinates.json", "w") as f:
                     json.dump({"pois": valid_coords}, f)
                 st.success(f"Saved {len(valid_coords)} coordinates")
@@ -309,8 +315,10 @@ if run_clicked:
         try:
             # STEP 1 – SETUP -----------------------------------------------------------------
             update_step(0, "Creating output directories and loading config")
-            output_dirs = setup_directories()  # ← your helper
-
+            
+            # Ensure all output directories exist before anything else
+            output_dirs = setup_directories()
+            
             # STEP 2 – POI / COORD PROCESSING ------------------------------------------------
             if input_method == "OpenStreetMap POI Query":
                 update_step(1, "Querying OpenStreetMap for Points of Interest")
