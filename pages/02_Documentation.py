@@ -130,6 +130,37 @@ with st.expander("Visualization Module"):
     Maps are saved as PNG files and can be viewed in the app or downloaded for use in reports.
     """)
 
+with st.expander("Data Export Module"):
+    st.markdown("""
+    ### Data Export Module
+    
+    This module exports census data to CSV format for further analysis:
+    
+    - Exports all selected census variables for each block group
+    - Includes geographic identifiers (block group ID, county FIPS, state FIPS)
+    - Calculates and includes travel distances between POIs and block group centroids
+    
+    #### CSV File Structure:
+    
+    | Column | Description |
+    |--------|-------------|
+    | census_block_group | Census Block Group GEOID (12-digit identifier) |
+    | county_fips | County FIPS code (5-digit identifier) |
+    | state_fips | State FIPS code (2-digit identifier) |
+    | pct | Percentage of block group area that falls within the isochrone travel time area (0-100%) |
+    | [census variables] | Values for each selected census variable |
+    | travel_distance_km | Distance in kilometers from block group centroid to nearest POI |
+    
+    #### Technical Details:
+    
+    - Distance calculation uses Albers Equal Area projection (EPSG:5070) for accurate measurements across the US
+    - For areas with multiple POIs, the distance to the nearest POI is used
+    - The percentage (pct) value indicates how much of each block group falls within the travel time area
+    - CSV files are saved in the `output/csv/` directory with the same base filename as other outputs
+    
+    This feature enables deeper analysis in statistical software, spreadsheets, or other tools.
+    """)
+
 # Using the API
 st.header("Advanced: Using the API")
 st.markdown("""
@@ -143,7 +174,8 @@ results = run_community_mapper(
     config_path="my_config.yaml",
     travel_time=15,
     census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY"
+    api_key="YOUR_CENSUS_API_KEY",
+    export=True  # Export to CSV (default is True)
 )
 
 # Example with custom coordinates
@@ -151,7 +183,8 @@ results = run_community_mapper(
     custom_coords_path="my_coordinates.csv",
     travel_time=15,
     census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY"
+    api_key="YOUR_CENSUS_API_KEY",
+    export=True  # Export to CSV (default is True)
 )
 ```
 
@@ -166,7 +199,8 @@ The `run_community_mapper` function returns a dictionary with paths to the gener
     "map_files": [
         "output/maps/map_total_population_YYYY-MM-DD_HHMMSS.png",
         "output/maps/map_median_household_income_YYYY-MM-DD_HHMMSS.png"
-    ]
+    ],
+    "csv_data": "output/csv/census_data_YYYY-MM-DD_HHMMSS.csv"
 }
 ```
 """)

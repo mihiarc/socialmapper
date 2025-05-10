@@ -59,6 +59,9 @@ from src.util import (
 # Import the progress bar utility
 from src.progress import get_progress_bar
 
+# Import the new export module
+from src.export import export_census_data_to_csv
+
 # Configure basic logging (can be overridden by client code)
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
@@ -201,36 +204,42 @@ def setup_directories() -> Dict[str, str]:
         "isochrones": "output/isochrones",
         "block_groups": "output/block_groups",
         "census_data": "output/census_data",
-        "maps": "output/maps"
+        "maps": "output/maps",
+        "csv": "output/csv"  # Add new CSV output directory
     }
     
-    for path in dirs.values():
-        Path(path).mkdir(parents=True, exist_ok=True)
-        
+    for directory in dirs.values():
+        os.makedirs(directory, exist_ok=True)
+    
     return dirs
 
 def parse_arguments():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='Community Mapper: End-to-end tool for mapping community resources and demographics')
+    """
+    Parse command line arguments.
     
-    parser.add_argument('--config', type=str, required=False, 
-                        help='Path to POI configuration YAML file')
-    parser.add_argument('--custom-coords', type=str,
-                        help='Path to custom JSON or CSV file with latitude/longitude coordinates (skips POI query)')
-    parser.add_argument('--travel-time', type=int, default=15,
-                        help='Travel time limit in minutes (default: 15)')
-    parser.add_argument('--census-variables', type=str, nargs='+',
-                        default=['total_population', 'median_household_income'],
-                        help='Census variables to retrieve (default: total_population and median_household_income)')
-    parser.add_argument('--api-key', type=str,
-                        help='Census API key (optional if set as CENSUS_API_KEY environment variable)')
-    parser.add_argument('--list-variables', action='store_true',
-                        help='List available census variables and exit')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Parse arguments and print steps but do not execute (for testing)')
+    Returns:
+        Parsed arguments
+    """
+    parser = argparse.ArgumentParser(
+        description="Community Mapper: End-to-end tool for mapping community resources and demographics"
+    )
     
-    args = parser.parse_args()
-    return args
+    parser.add_argument("--config", help="Path to configuration YAML file")
+    parser.add_argument("--state", help="State to focus on (abbreviation or FIPS)")
+    parser.add_argument("--city", help="City to search within (useful when 'state' is not enough)")
+    parser.add_argument("--travel-time", type=int, default=15, help="Travel time in minutes")
+    parser.add_argument("--census-variables", nargs="+", default=["total_population"], 
+                       help="Census variables to retrieve (e.g. total_population median_household_income)")
+    parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
+    parser.add_argument("--custom-coords", help="Path to custom coordinates file (CSV or JSON)")
+    parser.add_argument("--list-variables", action="store_true", help="List available census variables and exit")
+    parser.add_argument("--dry-run", action="store_true", help="Print what would be done without actually doing it")
+    parser.add_argument("--export", action="store_true", default=True, 
+                       help="Export census data to CSV format (default: enabled)")
+    parser.add_argument("--no-export", action="store_false", dest="export", 
+                       help="Disable exporting census data to CSV format")
+    
+    return parser.parse_args()
 
 def convert_poi_to_geodataframe(poi_data_list):
     """
@@ -286,7 +295,8 @@ def run_community_mapper(
     api_key: Optional[str] = None,
     output_dirs: Optional[Dict[str, str]] = None,
     custom_coords_path: Optional[str] = None,
-    progress_callback: Optional[callable] = None
+    progress_callback: Optional[callable] = None,
+    export: bool = True  # Add parameter to control CSV export
 ) -> Dict[str, str]:
     """
     Run the full community mapping process.
@@ -300,6 +310,7 @@ def run_community_mapper(
         output_dirs: Dictionary of output directories
         custom_coords_path: Path to custom coordinates file
         progress_callback: Callback function for progress updates
+        export: Boolean to control export of census data to CSV
         
     Returns:
         Dictionary of output file paths
@@ -455,6 +466,26 @@ def run_community_mapper(
     )
     result_files["census_data"] = census_data_file
     
+    # New step: Export census data to CSV
+    if export:
+        print("\n=== Step 4b: Exporting Census Data to CSV ===")
+        if progress_callback:
+            progress_callback(4, "Retrieving census data and exporting to CSV")
+        
+        csv_file = os.path.join(
+            output_dirs["csv"],
+            f"{base_filename}_{travel_time}min_census_data.csv"
+        )
+        
+        csv_output = export_census_data_to_csv(
+            census_data=census_data,
+            poi_data=poi_data,
+            output_path=csv_file,
+            base_filename=f"{base_filename}_{travel_time}min"
+        )
+        result_files["csv_data"] = csv_output
+        print(f"Exported census data to CSV: {csv_output}")
+    
     # Step 5: Generate maps
     print("\n=== Step 5: Generating Maps ===")
     if progress_callback:
@@ -584,7 +615,8 @@ def main():
             travel_time=args.travel_time,
             census_variables=args.census_variables,
             api_key=args.api_key,
-            custom_coords_path=args.custom_coords
+            custom_coords_path=args.custom_coords,
+            export=args.export
         )
         
         end_time = time.time()
