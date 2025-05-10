@@ -15,7 +15,8 @@ from socialmapper.states import (
     normalize_state,
     normalize_state_list,
     StateFormat,
-    is_fips_code
+    is_fips_code,
+    state_fips_to_name
 )
 from socialmapper.util import (
     census_code_to_name,
