@@ -114,6 +114,11 @@ def export_census_data_to_csv(
     csv_data['poi_name'] = poi_name
     csv_data['travel_time_minutes'] = travel_time_minutes
     
+    # Add average travel speed from isochrone calculation - standard value from the isochrone module
+    # The default speed in the isochrone module is 50 km/h (31 mph) 
+    csv_data['avg_travel_speed_kmh'] = 50  # Default from isochrone.py
+    csv_data['avg_travel_speed_mph'] = 31  # Default from isochrone.py
+    
     # Add intersection area percentage
     if 'pct' in df.columns:
         csv_data['area_within_travel_time_pct'] = df['pct']
@@ -179,8 +184,8 @@ def export_census_data_to_csv(
     # Reorder columns in the preferred order, explicitly exclude 'state' and 'county'
     preferred_order = [
         'census_block_group', 'state_fips', 'county_fips', 'tract', 'block_group',
-        'poi_id', 'poi_name', 'travel_time_minutes', 'travel_distance_km', 'travel_distance_miles',
-        'area_within_travel_time_pct'
+        'poi_id', 'poi_name', 'travel_time_minutes', 'avg_travel_speed_kmh', 'avg_travel_speed_mph',
+        'travel_distance_km', 'travel_distance_miles', 'area_within_travel_time_pct'
     ]
     
     # Add remaining columns, but specifically exclude 'state' and 'county'

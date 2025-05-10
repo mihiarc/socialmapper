@@ -153,6 +153,8 @@ with st.expander("Data Export Module"):
     | poi_id | ID of the point of interest |
     | poi_name | Name of the point of interest |
     | travel_time_minutes | Travel time limit in minutes |
+    | avg_travel_speed_kmh | Average travel speed used in isochrone calculations (kilometers per hour) |
+    | avg_travel_speed_mph | Average travel speed used in isochrone calculations (miles per hour) |
     | travel_distance_km | Distance in kilometers from block group centroid to nearest POI |
     | travel_distance_miles | Distance in miles from block group centroid to nearest POI |
     | area_within_travel_time_pct | Percentage of block group area within the travel time area |
