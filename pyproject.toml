@@ -53,7 +53,7 @@ dependencies = [
 
 [project.optional-dependencies]
 streamlit = [
-    "streamlit>=1.31",
+    "streamlit>=1.31; python_version >= '3.9' and python_version != '3.9.7'",
     "watchdog>=6.0",
     "stqdm>=0.0.5, <0.0.6; python_version >= '3.9' and python_version < '4.0'",
 ]
