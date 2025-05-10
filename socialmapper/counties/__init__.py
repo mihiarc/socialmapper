@@ -395,4 +395,28 @@ def get_counties_from_pois(
                 neighbors = get_neighboring_counties(state_fips, county_fips)
                 counties_set.update(neighbors)
     
-    return list(counties_set) 
+    return list(counties_set)
+
+
+def get_block_group_urls(state_fips: str, year: int = 2022) -> Dict[str, str]:
+    """
+    Get the download URLs for block group shapefiles from the Census Bureau.
+    
+    Args:
+        state_fips: State FIPS code
+        year: Year for the TIGER/Line shapefiles
+        
+    Returns:
+        Dictionary mapping state FIPS to download URLs
+    """
+    # Standardize the state FIPS
+    state_fips = str(state_fips).zfill(2)
+    
+    # Base URL for Census Bureau TIGER/Line shapefiles
+    base_url = f"https://www2.census.gov/geo/tiger/TIGER{year}/BG"
+    
+    # The URL pattern for block group shapefiles
+    url = f"{base_url}/tl_{year}_{state_fips}_bg.zip"
+    
+    # Return a dictionary mapping state FIPS to the URL
+    return {state_fips: url} 

@@ -2,14 +2,10 @@
 """Command-line interface for SocialMapper."""
 
 import argparse
-import json
 import logging
-import os
 import sys
 import time
 import traceback
-from pathlib import Path
-from typing import Dict, List, Optional
 
 from . import __version__
 from .core import run_socialmapper, setup_directories

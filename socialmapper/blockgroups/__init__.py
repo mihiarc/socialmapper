@@ -34,15 +34,18 @@ except ImportError:
     USE_ARROW = False
     print("PyArrow not available. Install it for better performance.")
 
-# Import county utilities if available
-try:
-    from src.counties import (
-        get_counties_from_pois,
-        get_block_groups_for_counties
-    )
-    HAS_COUNTY_UTILS = True
-except ImportError:
-    HAS_COUNTY_UTILS = False
+# Remove duplicate imports - we now use socialmapper.counties directly
+# try:
+#     from src.counties import (
+#         get_counties_from_pois,
+#         get_block_groups_for_counties
+#     )
+#     HAS_COUNTY_UTILS = True
+# except ImportError:
+#     HAS_COUNTY_UTILS = False
+
+# Set flag indicating that county utilities are available
+HAS_COUNTY_UTILS = True
 
 def get_census_block_groups(
     state_fips: List[str],

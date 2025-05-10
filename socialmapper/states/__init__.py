@@ -145,6 +145,27 @@ STATE_NEIGHBORS = {
     'DC': ['MD', 'VA']
 }
 
+def is_fips_code(code: Union[str, int]) -> bool:
+    """
+    Check if a string or number is a valid state FIPS code.
+    
+    Args:
+        code: Potential FIPS code to check
+        
+    Returns:
+        True if it is a valid state FIPS code, False otherwise
+    """
+    if isinstance(code, int):
+        code = str(code).zfill(2)
+    elif isinstance(code, str):
+        # Ensure we have a 2-digit string
+        code = code.zfill(2)
+    else:
+        return False
+    
+    # Check if it's in our FIPS mapping
+    return code in STATE_FIPS_TO_ABBR
+
 def detect_state_format(state: str) -> Optional[StateFormat]:
     """
     Detect the format of a state identifier.

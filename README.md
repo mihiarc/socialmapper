@@ -1,6 +1,4 @@
-# 🏘️ SocialMapper: Explore Community Connections.
-
-> **Package Update**: SocialMapper is now available as a proper Python package! See [PACKAGE_README.md](PACKAGE_README.md) for installation and usage instructions using the new package structure.
+# 🏘️ SocialMapper: Explore Community Connections
 
 SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
 
@@ -30,31 +28,6 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 ## ⚠️ PRE-RELEASE ⚠️
 This is an alpha release (v0.3.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
 
-## New in v0.3.0-alpha -- **SocialMapper Interactive Dashboard**
-
-We now provide a Streamlit web app as a user-friendly interface to the SocialMapper tool. The web app allows you to:
-
-- Query OpenStreetMap for points of interest or use your own coordinates
-- Set travel times and select demographic variables 
-- Visualize results with interactive maps (in development)
-- Export data to CSV for further analysis in other tools
-- No coding experience required!
-
-### Running the Streamlit App
-
-1. Make sure you've installed dependencies with `uv pip install -r requirements.txt`
-2. Run the app with `streamlit run Home.py`
-3. Open your browser to http://localhost:8501 (if it doesn't open automatically)
-
-The app provides an intuitive interface to configure your community mapping project, run the analysis, and visualize the results - all without writing a single line of code. It's perfect for:
-
-- Urban planners analyzing access to public services
-- Community organizations studying resource distribution 
-- Researchers examining demographic patterns around facilities
-- Anyone who wants to understand demographics around points of interest
-
-For more information, see [STREAMLIT_README.md](STREAMLIT_README.md).
-
 ## Installation
 
 ### Prerequisites
@@ -62,47 +35,149 @@ For more information, see [STREAMLIT_README.md](STREAMLIT_README.md).
 - Python 3.9 or later
 - A Census API key (get one at https://api.census.gov/data/key_signup.html)
 
-### Easy Setup (Linux/Mac/Windows)
+### Option 1: Installation with uv (Recommended)
 
-We provide a setup script that automates the installation process:
+The fastest and recommended way to install SocialMapper is using the provided installation scripts with uv:
 
-1. Clone this repository into your preferred location:
-   ```bash
-   git clone https://github.com/mihiarc/socialmapper.git
-   cd socialmapper
-   ```
+#### On Unix/macOS:
 
-#### For Linux/Mac:
-2. Run the setup script:
-   ```bash
-   chmod +x setup_env.sh
-   ./setup_env.sh
-   ```
+```bash
+# Clone this repository
+git clone https://github.com/mihiarc/socialmapper.git
+cd socialmapper
 
-#### For Windows:
-Simply double-click the `setup_env.bat` file in the project directory, or run it from Command Prompt:
-```
-setup_env.bat
+# Make the script executable
+chmod +x install_with_uv.sh
+
+# Run the installation script
+./install_with_uv.sh
 ```
 
-This will:
-    - Check if Python is installed
-    - Install uv if needed
-    - Create a virtual environment
-    - Install all dependencies
-    - Set up the required directory structure
-    - Create a template .env file for your Census API key
+#### On Windows:
+
+```cmd
+# Clone this repository
+git clone https://github.com/mihiarc/socialmapper.git
+cd socialmapper
+
+# Run the installation script
+install_with_uv.bat
+```
+
+The installation script will:
+- Check if Python is installed
+- Install uv if needed
+- Create a virtual environment
+- Install all dependencies
+- Set up the required directory structure
+- Create a template .env file for your Census API key
 
 After the script completes:
 1. Edit the `.env` file in a text editor like notepad, and add your Census API key
-2. Use the Command Prompt to activate the environment:
+2. Activate the environment:
     ```
+    # On Linux/macOS:
+    source .venv/bin/activate
+    
+    # On Windows:
     .venv\Scripts\activate
     ```
-3. Run the Streamlit app:
-    ```
-    streamlit run Home.py
-    ```
+
+### Option 2: Manual Installation
+
+You can also install SocialMapper manually:
+
+```bash
+# Create a virtual environment
+python -m venv .venv
+
+# Activate the environment (Linux/macOS)
+source .venv/bin/activate
+
+# Or activate on Windows
+# .venv\Scripts\activate
+
+# Install with uv
+uv pip install -e .
+```
+
+To install with Streamlit support:
+
+```bash
+uv pip install -e ".[streamlit]"
+```
+
+To install with development dependencies:
+
+```bash
+uv pip install -e ".[dev,streamlit]"
+```
+
+## Using SocialMapper
+
+### Using the Streamlit App
+
+The easiest way to use SocialMapper is through the Streamlit web app, which provides a user-friendly interface:
+
+```bash
+# Run the Streamlit app
+python -m socialmapper.streamlit_app
+```
+
+The app will open in your web browser at http://localhost:8501 (if it doesn't open automatically).
+
+The Streamlit app allows you to:
+- Query OpenStreetMap for points of interest or use your own coordinates
+- Set travel times and select demographic variables 
+- Visualize results with interactive maps
+- Export data to CSV for further analysis in other tools
+- No coding experience required!
+
+It's perfect for:
+- Urban planners analyzing access to public services
+- Community organizations studying resource distribution 
+- Researchers examining demographic patterns around facilities
+- Anyone who wants to understand demographics around points of interest
+
+### Using the Command-line Interface
+
+SocialMapper can also be used directly from the command line:
+
+```bash
+# Show help
+socialmapper --help
+
+# Run with OpenStreetMap POI query
+socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+
+# Run with custom coordinates
+socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census-variables total_population median_household_income
+```
+
+### Using the Python API
+
+You can import SocialMapper in your own Python code:
+
+```python
+from socialmapper import run_socialmapper, setup_directories
+
+# Run with POI query
+results = run_socialmapper(
+    geocode_area="Chicago",
+    state="IL",
+    poi_type="amenity",
+    poi_name="library",
+    travel_time=15,
+    census_variables=["total_population", "median_household_income"]
+)
+
+# Run with custom coordinates
+results = run_socialmapper(
+    custom_coords_path="path/to/coordinates.csv",
+    travel_time=20,
+    census_variables=["total_population", "median_household_income"]
+)
+```
 
 ## Creating Your Own Community Maps: Step-by-Step Guide
 
@@ -115,7 +190,7 @@ You can specify points of interest either through the interactive Streamlit dash
 The easiest way to create maps is to use the Streamlit dashboard:
 
 ```bash
-streamlit run Home.py
+python -m socialmapper.streamlit_app
 ```
 
 This provides an interactive interface where you can:
@@ -129,7 +204,7 @@ This provides an interactive interface where you can:
 You can run the tool directly with POI parameters:
 
 ```bash
-python socialmapper.py --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+socialmapper --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
 ```
 
 ### POI Types and Names Reference
@@ -176,101 +251,19 @@ Choose which census variables you want to analyze. Some useful options:
 
 ### 4. Run the SocialMapper
 
-#### Using the Streamlit Dashboard
+After specifying your POIs and census variables, SocialMapper will:
+- Generate isochrones showing travel time areas
+- Identify census block groups within these areas
+- Retrieve demographic data for these block groups
+- Create maps visualizing the demographics
+- Export data to CSV for further analysis
 
-The simplest way to run the SocialMapper is through the Streamlit dashboard:
-
-```bash
-streamlit run Home.py
-```
-
-#### Using Direct POI Parameters
-
-Run directly with POI parameters:
-
-```bash
-python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population
-```
-
-By default, census data is exported to CSV format. To disable this feature, use:
-
-```bash
-python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --no-export
-```
-
-#### Using Your Own Coordinates
-
-If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file. 
-
-```bash
-python socialmapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
-```
-
-Supported formats for custom POIs:
-
-1. CSV with header row:
-```
-id,name,lat,lon,state,type
-1,"Community Center",37.7749,-122.4194,public
-2,"Food Bank",37.7833,-122.4167,nonprofit
-```
-
-2. JSON list format:
-```json
-[
-  {
-    "id": "1",
-    "name": "Community Center",
-    "lat": 37.7749,
-    "lon": -122.4194,
-    "state": "CA",
-    "tags": {
-      "type": "public"
-    }
-  },
-  {
-    "id": "2",
-    "name": "Food Bank",
-    "lat": 37.7833,
-    "lon": -122.4167,
-    "state": "CA",
-    "tags": {
-      "type": "nonprofit"
-    }
-  }
-]
-```
-
-Parameters explained:
-- `--poi`: Use direct POI parameters mode
-- `--geocode-area`: Area/city to search within
-- `--poi-type`: Type of POI from OpenStreetMap (e.g., "amenity", "leisure")
-- `--poi-name`: Name of POI from OpenStreetMap (e.g., "library", "park")
-- `--custom-coords`: Path to your custom coordinates CSV or JSON file
-- `--travel-time`: Travel time in minutes (how far can people travel from each POI)
-- `--census-variables`: Census data to retrieve (list the variables you want)
-- `--export`: Export census data to CSV (default: enabled)
-- `--no-export`: Disable exporting census data to CSV format
-
-### 5. Analyze the Results
-
-After running the script, you'll find several outputs in the `output/` directory:
+The results will be found in the `output/` directory:
 - GeoJSON files with isochrones in `output/isochrones/`
 - GeoJSON files with block groups in `output/block_groups/`
 - GeoJSON files with census data in `output/census_data/`
 - PNG map visualizations in `output/maps/`
 - CSV files with census data and travel distances in `output/csv/`
-
-The maps show each demographic variable for the areas within your specified travel time of the POIs.
-
-The CSV files include:
-- Census block group identifiers
-- County and state FIPS codes
-- Percentage of each block group area within the travel time area
-- All selected census variables
-- Travel distance (in kilometers) from each block group's centroid to the nearest POI
-
-These CSV exports are ideal for further analysis in tools like Excel, R, or other statistical software.
 
 ### Example Projects
 
@@ -278,23 +271,51 @@ Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Map supermarkets with travel times and income data to identify areas with limited food access.
    ```bash
-   python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
+   socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
    ```
 
 2. **Healthcare Access**: Map hospitals and clinics with population and age demographics.
    ```bash
-   python socialmapper.py --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
+   socialmapper --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
    ```
 
 3. **Educational Resource Distribution**: Map schools and libraries with educational attainment data.
    ```bash
-   python socialmapper.py --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
+   socialmapper --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
    ```
 
 4. **Park Access Equity**: Map parks with demographic and income data to assess equitable access.
    ```bash
-   python socialmapper.py --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
+   socialmapper --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
    ```
+
+## Development
+
+For development, install with the development dependencies:
+
+```bash
+uv pip install -e ".[dev,streamlit]"
+```
+
+### Code Style
+
+This project uses:
+- Black for code formatting
+- isort for import sorting
+- Ruff for linting
+
+Format your code with:
+
+```bash
+# Format with black
+black socialmapper
+
+# Sort imports
+isort socialmapper
+
+# Lint with ruff
+ruff check socialmapper
+```
 
 ### Troubleshooting
 
