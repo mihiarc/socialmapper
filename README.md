@@ -1,5 +1,7 @@
 # 🏘️ SocialMapper: Explore Community Connections.
 
+> **Package Update**: SocialMapper is now available as a proper Python package! See [PACKAGE_README.md](PACKAGE_README.md) for installation and usage instructions using the new package structure.
+
 SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
 
 But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.

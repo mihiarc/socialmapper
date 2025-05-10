@@ -44,7 +44,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
+.env
 build/
 develop-eggs/
 dist/
@@ -56,17 +56,29 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.DS_Store
-srr-nrcs/.DS_Store
-**.DS_Store
+MANIFEST
 
-# Virtual environments
+# Virtual Environment
 .venv/
 venv/
+ENV/
+env/
 
-# pytest cache
-.pytest_cache/
-.env
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+.ipynb_checkpoints/
+output/
+cache/
