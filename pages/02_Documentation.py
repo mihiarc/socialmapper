@@ -130,6 +130,47 @@ with st.expander("Visualization Module"):
     Maps are saved as PNG files and can be viewed in the app or downloaded for use in reports.
     """)
 
+with st.expander("Data Export Module"):
+    st.markdown("""
+    ### Data Export Module
+    
+    This module exports census data to CSV format for further analysis:
+    
+    - Exports all selected census variables for each block group
+    - Includes geographic identifiers (block group ID, county FIPS, state FIPS)
+    - Calculates and includes travel distances in both kilometers and miles
+    - Uses human-readable but standardized names (lowercase with underscores)
+    
+    #### CSV File Structure:
+    
+    | Column | Description |
+    |--------|-------------|
+    | census_block_group | Census Block Group GEOID (12-digit identifier) |
+    | state_fips | State FIPS code (2-digit identifier) |
+    | county_fips | County FIPS code (5-digit identifier) |
+    | tract | Census tract component of the GEOID |
+    | block_group | Block group component of the GEOID |
+    | poi_id | ID of the point of interest |
+    | poi_name | Name of the point of interest |
+    | travel_time_minutes | Travel time limit in minutes |
+    | avg_travel_speed_kmh | Average travel speed used in isochrone calculations (kilometers per hour) |
+    | avg_travel_speed_mph | Average travel speed used in isochrone calculations (miles per hour) |
+    | travel_distance_km | Distance in kilometers from block group centroid to nearest POI |
+    | travel_distance_miles | Distance in miles from block group centroid to nearest POI |
+    | area_within_travel_time_pct | Percentage of block group area within the travel time area |
+    | [census variables] | Values for each selected census variable using standardized names |
+    
+    #### Technical Details:
+    
+    - Distance calculation uses Albers Equal Area projection (EPSG:5070) for accurate measurements across the US
+    - For areas with multiple POIs, the distance to the nearest POI is used
+    - Census variables use lowercase names with underscores (e.g., "total_population" instead of "B01003_001E")
+    - Columns are organized in a logical order with identifiers first, followed by travel metrics and census data
+    - CSV files are saved in the `output/csv/` directory with the same base filename as other outputs
+    
+    This feature enables deeper analysis in statistical software, spreadsheets, or other tools.
+    """)
+
 # Using the API
 st.header("Advanced: Using the API")
 st.markdown("""
@@ -143,7 +184,8 @@ results = run_community_mapper(
     config_path="my_config.yaml",
     travel_time=15,
     census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY"
+    api_key="YOUR_CENSUS_API_KEY",
+    export=True  # Export to CSV (default is True)
 )
 
 # Example with custom coordinates
@@ -151,7 +193,8 @@ results = run_community_mapper(
     custom_coords_path="my_coordinates.csv",
     travel_time=15,
     census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY"
+    api_key="YOUR_CENSUS_API_KEY",
+    export=True  # Export to CSV (default is True)
 )
 ```
 
@@ -166,7 +209,8 @@ The `run_community_mapper` function returns a dictionary with paths to the gener
     "map_files": [
         "output/maps/map_total_population_YYYY-MM-DD_HHMMSS.png",
         "output/maps/map_median_household_income_YYYY-MM-DD_HHMMSS.png"
-    ]
+    ],
+    "csv_data": "output/csv/census_data_YYYY-MM-DD_HHMMSS.csv"
 }
 ```
 """)

@@ -23,6 +23,7 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
 - **Retrieving Demographic Data** - Pull census data for the identified areas
 - **Visualizing Results** - Generate maps showing the demographic variables around the POIs
+- **Data Export** - Export census data with travel distances to CSV for further analysis
 
 ## ⚠️ PRE-RELEASE ⚠️
 This is an alpha release (v0.3.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
@@ -34,6 +35,7 @@ We now provide a Streamlit web app as a user-friendly interface to the Community
 - Query OpenStreetMap for points of interest or use your own coordinates
 - Set travel times and select demographic variables 
 - Visualize results with interactive maps
+- Export data to CSV for further analysis in other tools
 - No coding experience required!
 
 ### Running the Streamlit App
@@ -173,6 +175,12 @@ If your config file doesn't include a `state` field, you'll need to specify it:
 python community_mapper.py --config my_config.yaml --state NC --travel-time 15 --census-variables median_age
 ```
 
+By default, census data is exported to CSV format. To disable this feature, use:
+
+```bash
+python community_mapper.py --config my_config.yaml --no-export
+```
+
 #### Using Your Own Coordinates
 
 If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file. 
@@ -228,6 +236,8 @@ Parameters explained:
 - `--state`: State(s) to analyze when using config file (can list multiple: `TX OK LA`). Not needed with custom coordinates.
 - `--travel-time`: Travel time in minutes (how far can people travel from each POI)
 - `--census-variables`: Census data to retrieve (list the variables you want)
+- `--export`: Export census data to CSV (default: enabled)
+- `--no-export`: Disable exporting census data to CSV format
 
 ### 5. Analyze the Results
 
@@ -237,8 +247,18 @@ After running the script, you'll find several outputs in the `output/` directory
 - GeoJSON files with block groups in `output/block_groups/`
 - GeoJSON files with census data in `output/census_data/`
 - PNG map visualizations in `output/maps/`
+- CSV files with census data and travel distances in `output/csv/`
 
 The maps show each demographic variable for the areas within your specified travel time of the POIs.
+
+The CSV files include:
+- Census block group identifiers
+- County and state FIPS codes
+- Percentage of each block group area within the travel time area
+- All selected census variables
+- Travel distance (in kilometers) from each block group's centroid to the nearest POI
+
+These CSV exports are ideal for further analysis in tools like Excel, R, or other statistical software.
 
 ### Example Projects
 
