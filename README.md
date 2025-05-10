@@ -41,7 +41,7 @@ We now provide a Streamlit web app as a user-friendly interface to the Community
 ### Running the Streamlit App
 
 1. Make sure you've installed dependencies with `uv pip install -r requirements.txt`
-2. Run the app with `streamlit run app.py`
+2. Run the app with `streamlit run Home.py`
 3. Open your browser to http://localhost:8501 (if it doesn't open automatically)
 
 The app provides an intuitive interface to configure your community mapping project, run the analysis, and visualize the results - all without writing a single line of code. It's perfect for:
@@ -106,42 +106,55 @@ After the script completes:
 
 ### 1. Define Your Points of Interest
 
-Edit the included YAML configuration file (e.g., `my_config.yaml`) to define what community resources you want to map. If you already have your locations selected, skip to step 2.
+You can specify points of interest either through the interactive Streamlit dashboard or with direct command-line parameters.
 
-```yaml
-# Example:
-geocode_area: "Fuquay-Varina"
-state: "North Carolina"
-city: "Fuquay-Varina"
-type: "amenity"
-name: "library"
+#### Option A: Using the Streamlit Dashboard (Recommended)
+
+The easiest way to create maps is to use the Streamlit dashboard:
+
+```bash
+streamlit run Home.py
 ```
 
-Common OpenStreetMap POI types you can use:
-- Libraries: `type: "amenity"`, `name: "library"`
-- Schools: `type: "amenity"`, `name: "school"`
-- Hospitals: `type: "amenity"`, `name: "hospital"`
-- Parks: `type: "leisure"`, `name: "park"`
-- Supermarkets: `type: "shop"`, `name: "supermarket"`
-- Pharmacies: `type: "amenity"`, `name: "pharmacy"`
+This provides an interactive interface where you can:
+- Select POI types and names from dropdown menus
+- Choose your location and state
+- Set travel time and census variables
+- View results in a user-friendly format
+
+#### Option B: Command Line with Direct Parameters
+
+You can run the tool directly with POI parameters:
+
+```bash
+python community_mapper.py --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+```
+
+### POI Types and Names Reference
+
+Regardless of which method you use, you'll need to specify POI types and names. Common OpenStreetMap POI combinations:
+
+- Libraries: `poi-type: "amenity"`, `poi-name: "library"`
+- Schools: `poi-type: "amenity"`, `poi-name: "school"`
+- Hospitals: `poi-type: "amenity"`, `poi-name: "hospital"`
+- Parks: `poi-type: "leisure"`, `poi-name: "park"`
+- Supermarkets: `poi-type: "shop"`, `poi-name: "supermarket"`
+- Pharmacies: `poi-type: "amenity"`, `poi-name: "pharmacy"`
 
 Check out the OpenStreetMap Wiki for more on map features: https://wiki.openstreetmap.org/wiki/Map_features
 
-For more specific queries, use tags:
+For more specific queries, you can add additional tags (through the Streamlit interface or in a YAML format with command-line):
 ```yaml
-geocode_area: "Chicago"
-state: "Illinois"
-city: "Chicago"
-tags:
-  amenity: "community_centre"
-  operator: "Chicago Park District"
+# Example tags (can be specified in the Streamlit interface):
+operator: Chicago Park District
+opening_hours: 24/7
 ```
 
 ### 2. Choose Your Target States
 
-Identify which states your analysis should cover. You'll need to provide state FIPS codes or abbreviations (e.g., "TX" or "48" for Texas).
+If you're using direct POI parameters, you should provide the state where your analysis should occur. This ensures accurate census data selection.
 
-For areas near state borders, include all relevant states to ensure complete coverage (e.g., "MO", "KS" for Kansas City).
+For areas near state borders or POIs spread across multiple states, you don't need to do anything special - the tool will automatically identify the appropriate census data.
 
 ### 3. Select Demographics to Analyze
 
@@ -161,31 +174,31 @@ Choose which census variables you want to analyze. Some useful options:
 
 ### 4. Run the Community Mapper
 
-#### Using OpenStreetMap POIs
+#### Using the Streamlit Dashboard
 
-Execute the mapping process using POIs from OpenStreetMap or your own coordinates:
+The simplest way to run the Community Mapper is through the Streamlit dashboard:
 
 ```bash
-python community_mapper.py --config my_config.yaml --travel-time 15 --census-variables total_population
+streamlit run Home.py
 ```
 
-If your config file doesn't include a `state` field, you'll need to specify it:
+#### Using Direct POI Parameters
+
+Run directly with POI parameters:
 
 ```bash
-python community_mapper.py --config my_config.yaml --state NC --travel-time 15 --census-variables median_age
+python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population
 ```
 
 By default, census data is exported to CSV format. To disable this feature, use:
 
 ```bash
-python community_mapper.py --config my_config.yaml --no-export
+python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --no-export
 ```
 
 #### Using Your Own Coordinates
 
 If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file. 
-
-**Important: Your custom coordinates file MUST include state information for each point.** This is required for accurate census block group identification.
 
 ```bash
 python community_mapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
@@ -193,11 +206,11 @@ python community_mapper.py --custom-coords examples/custom_coordinates.csv --tra
 
 Supported formats for custom POIs:
 
-1. CSV with header row (must include lat/lon and state columns):
+1. CSV with header row:
 ```
 id,name,lat,lon,state,type
-1,"Community Center",37.7749,-122.4194,CA,public
-2,"Food Bank",37.7833,-122.4167,CA,nonprofit
+1,"Community Center",37.7749,-122.4194,public
+2,"Food Bank",37.7833,-122.4167,nonprofit
 ```
 
 2. JSON list format:
@@ -226,14 +239,12 @@ id,name,lat,lon,state,type
 ]
 ```
 
-The state column/field can contain either:
-- Two-letter state abbreviations (e.g., "CA", "TX", "NY")
-- Full state names (e.g., "California", "Texas", "New York")
-
 Parameters explained:
-- `--config`: Your POI configuration YAML file
+- `--poi`: Use direct POI parameters mode
+- `--geocode-area`: Area/city to search within
+- `--poi-type`: Type of POI from OpenStreetMap (e.g., "amenity", "leisure")
+- `--poi-name`: Name of POI from OpenStreetMap (e.g., "library", "park")
 - `--custom-coords`: Path to your custom coordinates CSV or JSON file
-- `--state`: State(s) to analyze when using config file (can list multiple: `TX OK LA`). Not needed with custom coordinates.
 - `--travel-time`: Travel time in minutes (how far can people travel from each POI)
 - `--census-variables`: Census data to retrieve (list the variables you want)
 - `--export`: Export census data to CSV (default: enabled)
@@ -242,7 +253,6 @@ Parameters explained:
 ### 5. Analyze the Results
 
 After running the script, you'll find several outputs in the `output/` directory:
-- JSON files with the POI data in `output/pois/`
 - GeoJSON files with isochrones in `output/isochrones/`
 - GeoJSON files with block groups in `output/block_groups/`
 - GeoJSON files with census data in `output/census_data/`
@@ -266,27 +276,22 @@ Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Map supermarkets with travel times and income data to identify areas with limited food access.
    ```bash
-   # If state is in supermarkets.yaml
-   python community_mapper.py --config supermarkets.yaml --travel-time 20 --census-variables B01003_001E B19013_001E
-   
-   # If state needs to be specified separately
-   python community_mapper.py --config supermarkets.yaml --state NY --travel-time 20 --census-variables B01003_001E B19013_001E
+   python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
    ```
 
 2. **Healthcare Access**: Map hospitals and clinics with population and age demographics.
    ```bash
-   python community_mapper.py --config healthcare.yaml --state CA --travel-time 30 --census-variables B01003_001E B01002_001E
+   python community_mapper.py --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
    ```
 
 3. **Educational Resource Distribution**: Map schools and libraries with educational attainment data.
    ```bash
-   python community_mapper.py --config education.yaml --travel-time 15 --census-variables B15003_022E B15003_023E
+   python community_mapper.py --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
    ```
-   Note: This example assumes the `state` field is included in education.yaml.
 
 4. **Park Access Equity**: Map parks with demographic and income data to assess equitable access.
    ```bash
-   python community_mapper.py --config parks.yaml --state FL --travel-time 10 --census-variables B01003_001E B19013_001E B02001_002E B02001_003E
+   python community_mapper.py --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
    ```
 
 ### Troubleshooting
@@ -294,5 +299,4 @@ Here are some examples of community mapping projects you could create:
 - **No POIs found**: Check your POI configuration. Try making the query more general or verify that the location name is correct.
 - **Census API errors**: Ensure your API key is valid and properly set as an environment variable.
 - **Isochrone generation issues**: For very large areas, try reducing the travel time to avoid timeouts.
-- **Missing block groups**: Ensure you've included all relevant state FIPS codes for your area of interest.
-   For more information about obtaining block group geometries: https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1
+- **Missing block groups**: The tool should automatically identify the appropriate states based on the POI locations.

@@ -160,22 +160,6 @@ if input_method == "OpenStreetMap POI Query":
             st.error(f"Error parsing tags: {str(e)}")
             additional_tags = {}
 
-    # Create temporary config file
-    config = {
-        "geocode_area": geocode_area,
-        "state": state_name_to_abbreviation(state),
-        "city": geocode_area,
-        "type": poi_type,
-        "name": poi_name
-    }
-    
-    if additional_tags:
-        config["tags"] = additional_tags
-    
-    config_path = "output/custom_config.yaml"
-    with open(config_path, 'w') as f:
-        yaml.dump(config, f)
-
 elif input_method == "Custom Coordinates":
     st.header("Custom Coordinates Input")
     
@@ -239,15 +223,14 @@ elif input_method == "Custom Coordinates":
             valid_coords = []
             for coord in st.session_state.coordinates:
                 try:
-                    if coord["name"] and coord["lat"] and coord["lon"] and coord["state"]:
-                        valid_coords.append({
+                    if coord["name"] and coord["lat"] and coord["lon"]:
+                        new_coord = {
                             "id": f"manual_{len(valid_coords)}",
                             "name": coord["name"],
                             "lat": float(coord["lat"]),
                             "lon": float(coord["lon"]),
-                            "state": state_name_to_abbreviation(coord["state"]),
                             "tags": {}
-                        })
+                        }
                 except (ValueError, TypeError) as e:
                     st.error(f"Error with coordinate {coord['name']}: {str(e)}")
                     
@@ -331,8 +314,23 @@ if run_clicked:
             # STEP 2 – POI / COORD PROCESSING ------------------------------------------------
             if input_method == "OpenStreetMap POI Query":
                 update_step(1, "Querying OpenStreetMap for Points of Interest")
+                
+                # Parse any additional tags if provided
+                additional_tags_dict = None
+                if 'tags_input' in locals() and tags_input.strip() and not tags_input.startswith('#'):
+                    try:
+                        additional_tags_dict = yaml.safe_load(tags_input)
+                    except Exception as e:
+                        st.error(f"Error parsing tags: {str(e)}")
+                
+                # Pass POI parameters directly
                 results = run_community_mapper(
-                    config_path=config_path,
+                    geocode_area=geocode_area,
+                    state=state_name_to_abbreviation(state),
+                    city=geocode_area,  # Use geocode_area as city if not specified separately
+                    poi_type=poi_type,
+                    poi_name=poi_name,
+                    additional_tags=additional_tags_dict,
                     travel_time=travel_time,
                     census_variables=census_variables,
                     api_key=census_api_key or None,
@@ -404,18 +402,29 @@ if run_clicked:
         st.header("Results")
 
         # ---- POIs tab ---------------------------------------------------
-        poi_path = results.get("poi_data")
-        if poi_path and Path(poi_path).exists():
+        poi_data = results.get("poi_data")
+        if poi_data:
             with st.expander("Points of Interest", expanded=True):
-                poi_json = json.loads(Path(poi_path).read_text())
-                poi_df = pd.DataFrame(poi_json.get("pois", []))
-                if not poi_df.empty:
-                    st.dataframe(poi_df)
+                if isinstance(poi_data, dict) and 'pois' in poi_data:
+                    poi_df = pd.DataFrame(poi_data.get("pois", []))
+                    if not poi_df.empty:
+                        st.dataframe(poi_df)
+                    else:
+                        st.warning("No POIs found in the results.")
+                elif isinstance(poi_data, str) and os.path.exists(poi_data):
+                    # For backward compatibility, if poi_data is a file path
+                    with open(poi_data, 'r') as f:
+                        poi_json = json.load(f)
+                    poi_df = pd.DataFrame(poi_json.get("pois", []))
+                    if not poi_df.empty:
+                        st.dataframe(poi_df)
+                    else:
+                        st.warning("No POIs found in the results.")
                 else:
-                    st.warning("No POIs found in the results.")
+                    st.warning("POI data not found in the expected format.")
 
         # ---- Maps grid --------------------------------------------------
-        map_files = results.get("map_files", [])
+        map_files = results.get("maps", [])
         if map_files:
             st.subheader("Demographic Maps")
             cols = st.columns(2)
