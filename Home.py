@@ -10,9 +10,9 @@ import traceback
 from dotenv import load_dotenv
 from stqdm import stqdm
 
-# Import the community mapper modules
-from community_mapper import (
-    run_community_mapper,
+# Import the socialmapper modules
+from socialmapper import (
+    run_socialmapper,
     setup_directories
 )
 
@@ -25,7 +25,7 @@ load_dotenv()
 # Set page configuration
 st.set_page_config(
     page_title="SocialMapper",
-    page_icon="🗺️",
+    page_icon="🧑‍🤝‍🧑",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -332,7 +332,7 @@ if run_clicked:
                         st.error(f"Error parsing tags: {str(e)}")
                 
                 # Pass POI parameters directly
-                results = run_community_mapper(
+                results = run_socialmapper(
                     geocode_area=geocode_area,
                     state=state_name_to_abbreviation(state),
                     city=geocode_area,  # Use geocode_area as city if not specified separately
@@ -353,7 +353,7 @@ if run_clicked:
                     and uploaded_file is not None
                 ):
                     update_step(1, "Processing uploaded coordinates")
-                    results = run_community_mapper(
+                    results = run_socialmapper(
                         custom_coords_path=custom_file_path,
                         travel_time=travel_time,
                         census_variables=census_variables,
@@ -367,7 +367,7 @@ if run_clicked:
                     and Path("output/pois/custom_coordinates.json").exists()
                 ):
                     update_step(1, "Processing manually entered coordinates")
-                    results = run_community_mapper(
+                    results = run_socialmapper(
                         custom_coords_path="output/pois/custom_coordinates.json",
                         travel_time=travel_time,
                         census_variables=census_variables,

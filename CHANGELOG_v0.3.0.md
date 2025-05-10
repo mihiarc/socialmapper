@@ -1,7 +1,7 @@
-# Changelog: Streamlit Integration and Major Enhancements
+# Version 0.3.0-alpha
 
 ## Streamlit App Integration
-- **Added Streamlit Web App**: Introduced a new Streamlit-based web application (`Home.py`) for Community Mapper, providing an interactive and user-friendly interface for community mapping workflows.
+- **Added Streamlit Web App**: Introduced a new Streamlit-based web application (`Home.py`) for SocialMapper, providing an interactive and user-friendly interface for community mapping workflows.
 - **Enhanced User Experience**: The Streamlit app allows users to configure, run, and visualize community mapping analyses directly from the browser, streamlining the workflow for both technical and non-technical users.
 
 ## New Progress Tracking Functionality
@@ -15,4 +15,4 @@
 
 ---
 
-These enhancements mark a major step forward in the usability, performance, and flexibility of the Community Mapper project. The addition of the Streamlit app, improved progress tracking, and the shift to county-based block group selection collectively provide a more robust and user-friendly experience for all users. 
+These enhancements mark a major step forward in the usability, performance, and flexibility of the SocialMapper project. The addition of the Streamlit app, improved progress tracking, and the shift to county-based block group selection collectively provide a more robust and user-friendly experience for all users. 

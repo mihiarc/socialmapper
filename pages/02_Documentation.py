@@ -94,7 +94,7 @@ with st.expander("Census Data Module"):
     
     #### Supported Census Variables:
     
-    | Description | Community Mapper Name | Census Variable |
+    | Description | SocialMapper Name | Census Variable Code |
     |-------------|----------------------|-----------------|
     | Total Population | total_population | B01003_001E |
     | Median Household Income | median_household_income | B19013_001E |
@@ -171,50 +171,6 @@ with st.expander("Data Export Module"):
     This feature enables deeper analysis in statistical software, spreadsheets, or other tools.
     """)
 
-# Using the API
-st.header("Advanced: Using the API")
-st.markdown("""
-For advanced users or programmatic access, you can use the Community Mapper as a Python library:
-
-```python
-from community_mapper import run_community_mapper
-
-# Example with OpenStreetMap query
-results = run_community_mapper(
-    config_path="my_config.yaml",
-    travel_time=15,
-    census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY",
-    export=True  # Export to CSV (default is True)
-)
-
-# Example with custom coordinates
-results = run_community_mapper(
-    custom_coords_path="my_coordinates.csv",
-    travel_time=15,
-    census_variables=["total_population", "median_household_income"],
-    api_key="YOUR_CENSUS_API_KEY",
-    export=True  # Export to CSV (default is True)
-)
-```
-
-The `run_community_mapper` function returns a dictionary with paths to the generated files:
-
-```python
-{
-    "poi_file": "output/pois/pois_YYYY-MM-DD_HHMMSS.json",
-    "isochrone_file": "output/isochrones/isochrones_YYYY-MM-DD_HHMMSS.geojson",
-    "block_group_file": "output/block_groups/block_groups_YYYY-MM-DD_HHMMSS.geojson",
-    "census_data_file": "output/census_data/census_data_YYYY-MM-DD_HHMMSS.geojson",
-    "map_files": [
-        "output/maps/map_total_population_YYYY-MM-DD_HHMMSS.png",
-        "output/maps/map_median_household_income_YYYY-MM-DD_HHMMSS.png"
-    ],
-    "csv_data": "output/csv/census_data_YYYY-MM-DD_HHMMSS.csv"
-}
-```
-""")
-
 # Troubleshooting
 st.header("Troubleshooting")
 st.markdown("""
@@ -256,7 +212,7 @@ st.markdown("""
 
 If you encounter issues not covered in this documentation, please:
 
-1. Check the [GitHub repository](https://github.com/mihiarc/community-mapper) for known issues
+1. Check the [GitHub repository](https://github.com/mihiarc/socialmapper) for known issues
 2. Review the troubleshooting section above
 3. File a GitHub issue with details about your problem
 """)

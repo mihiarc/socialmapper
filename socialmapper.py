@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Community Mapper: End-to-end script for mapping community resources and demographics
+SocialMapper: End-to-end script for mapping community resources and demographics
 
-This script ties together all components of the community-mapper project:
+This script ties together all components of the socialmapper project:
 1. Query OpenStreetMap for Points of Interest (POIs)
 2. Generate isochrones (travel time polygons) around those POIs
 3. Find census block groups that intersect with the isochrones
@@ -70,7 +70,7 @@ except ImportError:
     RunConfig = None  # Fallback when model not available
 
 # Export the function so it can be used by imported modules
-__all__ = ['run_community_mapper', 'setup_directories']
+__all__ = ['run_socialmapper', 'setup_directories']
 
 def parse_custom_coordinates(file_path: str) -> Dict:
     """
@@ -202,7 +202,7 @@ def parse_arguments():
         Parsed arguments
     """
     parser = argparse.ArgumentParser(
-        description="Community Mapper: End-to-end tool for mapping community resources and demographics"
+        description="SocialMapper: End-to-end tool for mapping community resources and demographics"
     )
     
     # Input source group
@@ -283,7 +283,7 @@ def convert_poi_to_geodataframe(poi_data_list):
     
     return gdf
 
-def run_community_mapper(
+def run_socialmapper(
     run_config: Optional[RunConfig] = None,
     *,
     geocode_area: Optional[str] = None,
@@ -593,7 +593,7 @@ def main():
     
     # Print banner
     print("=" * 80)
-    print("Community Mapper: End-to-end tool for mapping community resources")
+    print("SocialMapper: End-to-end tool for mapping community resources")
     print("=" * 80)
     
     # If dry-run, just print what would be done and exit
@@ -610,7 +610,7 @@ def main():
         sys.exit(0)
     
     # Execute the full process
-    print("\n=== Starting Community Mapper ===")
+    print("\n=== Starting SocialMapper ===")
     start_time = time.time()
     
     try:
@@ -619,8 +619,8 @@ def main():
             # Normalize state to abbreviation
             state_abbr = normalize_state(args.state, to_format=StateFormat.ABBREVIATION) if args.state else None
             
-            # Use direct POI parameters
-            run_community_mapper(
+            # Use direct POI parameters from streamlit input
+            run_socialmapper(
                 geocode_area=args.geocode_area,
                 state=state_abbr,
                 city=args.city or args.geocode_area,  # Default to geocode_area if city not provided
@@ -633,7 +633,7 @@ def main():
             )
         else:
             # Use custom coordinates
-            run_community_mapper(
+            run_socialmapper(
                 travel_time=args.travel_time,
                 census_variables=args.census_variables,
                 api_key=args.api_key,
@@ -643,7 +643,7 @@ def main():
         
         end_time = time.time()
         elapsed = end_time - start_time
-        print(f"\n=== Community Mapper Completed in {elapsed:.1f} seconds ===")
+        print(f"\n=== SocialMapper Completed in {elapsed:.1f} seconds ===")
         
     except Exception as e:
         print(f"\n=== Error: {str(e)} ===")

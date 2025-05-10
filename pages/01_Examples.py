@@ -128,7 +128,7 @@ st.markdown("""
    - For OpenStreetMap queries, use the example configurations above
    - For custom coordinates, upload one of the example files
 3. Adjust the travel time and census variables as needed
-4. Click "Run Community Mapper Analysis"
+4. Click "Run SocialMapper Analysis"
 """)
 
 # Download example files

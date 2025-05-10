@@ -1,6 +1,6 @@
 # Technical Documentation: SocialMapper
 
-This document provides a detailed technical overview of the SocialMapper (Community Mapper) project, including its system architecture, module descriptions, and references for census data sources. Use this as a reference for development, extension, or integration.
+This document provides a detailed technical overview of the SocialMapper project, including its system architecture, module descriptions, and references for census data sources. Use this as a reference for development, extension, or integration.
 
 ## System Architecture
 

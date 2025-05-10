@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Utility functions for the community mapper project.
+Utility functions for the socialmapper project.
 """
 
 # Mapping of common names to Census API variable codes

@@ -1,6 +1,6 @@
-# Community Mapper Examples
+# SocialMapper Examples
 
-This directory contains example files that demonstrate how to use the Community Mapper.
+This directory contains example files that demonstrate how to use the SocialMapper.
 
 ## Custom Coordinates Files
 
@@ -54,12 +54,8 @@ To use these custom coordinates files:
 
 ```bash
 # Using CSV format
-python community_mapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables B01003_001E B19013_001E
+python socialmapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
 
 # Using JSON format
-python community_mapper.py --custom-coords examples/custom_coordinates.json --travel-time 15 --census-variables B01003_001E B19013_001E
+python socialmapper.py --custom-coords examples/custom_coordinates.json --travel-time 15 --census-variables total_population median_income
 ```
-
-## Why State Information is Required
-
-The state information is critical for accurate census block group identification. The Community Mapper needs to know which state's census data to query for each location. Without this information, it would be impossible to accurately retrieve the correct census block groups and demographic data. 

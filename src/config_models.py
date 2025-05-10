@@ -2,10 +2,9 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 
 class RunConfig(BaseModel):
-    """Validated configuration for running the community-mapper pipeline."""
+    """Validated configuration for running the socialmapper pipeline."""
 
     # Mutually-exclusive input methods
-    config_path: Optional[str] = Field(None, description="Path to the YAML OSM-POI config file")
     custom_coords_path: Optional[str] = Field(None, description="Path to a CSV/JSON file with custom coordinates")
 
     # Core parameters
@@ -19,7 +18,7 @@ class RunConfig(BaseModel):
     @validator("custom_coords_path", always=True)
     def at_least_one_input(cls, v, values):
         if not v and not values.get("config_path"):
-            raise ValueError("Either config_path or custom_coords_path must be provided")
+            raise ValueError("custom_coords_path must be provided")
         return v
 
     class Config:
