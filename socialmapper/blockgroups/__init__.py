@@ -11,10 +11,15 @@ import requests
 from typing import List, Optional, Dict
 import json
 # Import the new progress bar utility
-from src.progress import get_progress_bar
+from socialmapper.progress import get_progress_bar
 from tqdm import tqdm
 
-from src.states import normalize_state, StateFormat
+from socialmapper.states import normalize_state, StateFormat
+from socialmapper.counties import (
+    get_counties_from_pois,
+    get_block_groups_for_counties,
+    get_block_group_urls
+)
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -29,15 +34,18 @@ except ImportError:
     USE_ARROW = False
     print("PyArrow not available. Install it for better performance.")
 
-# Import county utilities if available
-try:
-    from src.counties import (
-        get_counties_from_pois,
-        get_block_groups_for_counties
-    )
-    HAS_COUNTY_UTILS = True
-except ImportError:
-    HAS_COUNTY_UTILS = False
+# Remove duplicate imports - we now use socialmapper.counties directly
+# try:
+#     from src.counties import (
+#         get_counties_from_pois,
+#         get_block_groups_for_counties
+#     )
+#     HAS_COUNTY_UTILS = True
+# except ImportError:
+#     HAS_COUNTY_UTILS = False
+
+# Set flag indicating that county utilities are available
+HAS_COUNTY_UTILS = True
 
 def get_census_block_groups(
     state_fips: List[str],

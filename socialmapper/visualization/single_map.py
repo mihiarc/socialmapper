@@ -10,7 +10,7 @@ import os
 # Set the backend for matplotlib based on environment
 try:
     # Import our environment detection from progress.py
-    from src.progress import _IN_STREAMLIT
+    from socialmapper.progress import _IN_STREAMLIT
     
     if not _IN_STREAMLIT:
         # We're not in a Streamlit environment, use a non-interactive backend
@@ -33,7 +33,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.util import CENSUS_VARIABLE_MAPPING, VARIABLE_COLORMAPS
+from socialmapper.util import CENSUS_VARIABLE_MAPPING, VARIABLE_COLORMAPS
 from .map_utils import get_variable_label
 
 def generate_map(

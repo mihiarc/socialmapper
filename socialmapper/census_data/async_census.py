@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 import httpx
 import pandas as pd
 
-from src.util import normalize_census_variable, state_fips_to_abbreviation, STATE_NAMES_TO_ABBR
+from socialmapper.util import normalize_census_variable, state_fips_to_abbreviation, STATE_NAMES_TO_ABBR
 
 BASE_URL_TEMPLATE = "https://api.census.gov/data/{year}/{dataset}"
 

@@ -11,7 +11,7 @@ import matplotlib
 # Set the backend for matplotlib based on environment
 try:
     # Import our environment detection from progress.py
-    from src.progress import _IN_STREAMLIT
+    from socialmapper.progress import _IN_STREAMLIT
     
     if not _IN_STREAMLIT:
         # We're not in a Streamlit environment, use a non-interactive backend
@@ -26,8 +26,8 @@ import numpy as np
 import pandas as pd
 from matplotlib_scalebar.scalebar import ScaleBar
 from matplotlib.patches import Patch
-from src.util import CENSUS_VARIABLE_MAPPING, add_north_arrow
-from src.visualization.map_utils import get_variable_label, calculate_optimal_bins, apply_quantile_classification, choose_appropriate_colormap
+from socialmapper.util import CENSUS_VARIABLE_MAPPING, add_north_arrow
+from socialmapper.visualization.map_utils import get_variable_label, calculate_optimal_bins, apply_quantile_classification, choose_appropriate_colormap
 
 def generate_paneled_isochrone_map(
     isochrone_paths,

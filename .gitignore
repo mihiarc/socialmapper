@@ -44,7 +44,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
+.env
 build/
 develop-eggs/
 dist/
@@ -56,17 +56,55 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.DS_Store
-srr-nrcs/.DS_Store
-**.DS_Store
+MANIFEST
 
-# Virtual environments
+# Virtual Environment
 .venv/
 venv/
+ENV/
+env/
 
-# pytest cache
-.pytest_cache/
-.env
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+.ipynb_checkpoints/
+output/
+cache/
+test_testpypi/test_env/pyvenv.cfg
+test_testpypi/test_env/bin/activate
+test_testpypi/test_env/bin/activate.csh
+test_testpypi/test_env/bin/activate.fish
+test_testpypi/test_env/bin/Activate.ps1
+test_testpypi/test_env/bin/dotenv
+test_testpypi/test_env/bin/f2py
+test_testpypi/test_env/bin/fonttools
+test_testpypi/test_env/bin/httpx
+test_testpypi/test_env/bin/mercantile
+test_testpypi/test_env/bin/normalizer
+test_testpypi/test_env/bin/numpy-config
+test_testpypi/test_env/bin/pip
+test_testpypi/test_env/bin/pip3
+test_testpypi/test_env/bin/pip3.12
+test_testpypi/test_env/bin/pyftmerge
+test_testpypi/test_env/bin/pyftsubset
+test_testpypi/test_env/bin/pyproj
+test_testpypi/test_env/bin/python
+test_testpypi/test_env/bin/python3
+test_testpypi/test_env/bin/python3.12
+test_testpypi/test_env/bin/rio
+test_testpypi/test_env/bin/socialmapper
+test_testpypi/test_env/bin/tqdm
+test_testpypi/test_env/bin/ttx
+test_testpypi/test_env/share/man/man1/ttx.1
