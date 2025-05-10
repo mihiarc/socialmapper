@@ -1,7 +1,0 @@
-# POI Configuration Example
-
-geocode_area: "Fuquay-Varina"
-state: "North Carolina"
-city: "Fuquay-Varina"
-type: "amenity"
-name: "library"

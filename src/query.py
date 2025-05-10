@@ -9,6 +9,40 @@ import yaml
 import overpy
 import os
 
+def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):
+    """
+    Create a POI configuration dictionary directly from parameters.
+    
+    Args:
+        geocode_area: The area to search within (city/town name)
+        state: The state name or abbreviation 
+        city: The city name (optional, defaults to geocode_area)
+        poi_type: The type of POI (e.g., 'amenity', 'leisure')
+        poi_name: The name of the POI (e.g., 'library', 'park')
+        additional_tags: Dictionary of additional tags to filter by (optional)
+        
+    Returns:
+        Dictionary containing POI configuration
+    """
+    config = {
+        "geocode_area": geocode_area,
+        "state": state,
+        "type": poi_type,
+        "name": poi_name
+    }
+    
+    # Add city if different from geocode_area
+    if city and city != geocode_area:
+        config["city"] = city
+    else:
+        config["city"] = geocode_area
+        
+    # Add additional tags if provided
+    if additional_tags:
+        config["tags"] = additional_tags
+        
+    return config
+
 def load_poi_config(file_path):
     """Load POI configuration from YAML file."""
     try:
