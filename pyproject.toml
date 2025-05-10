@@ -7,7 +7,7 @@ name = "socialmapper"
 version = "0.3.0-alpha"
 description = "An open-source Python toolkit that helps understand community connections through mapping demographics and access to points of interest"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.9.7 || >3.9.7"
 license = {file = "LICENSE"}
 authors = [
     {name = "mihiarc", email = "mihiarc@example.com"}
@@ -53,7 +53,7 @@ dependencies = [
 
 [project.optional-dependencies]
 streamlit = [
-    "streamlit>=1.31; python_version >= '3.9' and python_version != '3.9.7'",
+    "streamlit>=1.31",
     "watchdog>=6.0",
     "stqdm>=0.0.5, <0.0.6; python_version >= '3.9' and python_version < '4.0'",
 ]
