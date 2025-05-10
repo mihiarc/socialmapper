@@ -68,6 +68,7 @@ venv/
 ENV/
 env/
 
+<<<<<<< HEAD
 # IDE
 .idea/
 .vscode/
@@ -82,6 +83,11 @@ Thumbs.db
 .ipynb_checkpoints/
 output/
 cache/
+=======
+# pytest cache
+.pytest_cache/
+.env
+>>>>>>> 7591ed1 (Update .gitignore to exclude additional virtual environment files and configurations for test environments)
 test_testpypi/test_env/pyvenv.cfg
 test_testpypi/test_env/bin/activate
 test_testpypi/test_env/bin/activate.csh
