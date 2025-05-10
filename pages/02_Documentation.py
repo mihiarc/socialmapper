@@ -138,24 +138,32 @@ with st.expander("Data Export Module"):
     
     - Exports all selected census variables for each block group
     - Includes geographic identifiers (block group ID, county FIPS, state FIPS)
-    - Calculates and includes travel distances between POIs and block group centroids
+    - Calculates and includes travel distances in both kilometers and miles
+    - Uses human-readable but standardized names (lowercase with underscores)
     
     #### CSV File Structure:
     
     | Column | Description |
     |--------|-------------|
     | census_block_group | Census Block Group GEOID (12-digit identifier) |
-    | county_fips | County FIPS code (5-digit identifier) |
     | state_fips | State FIPS code (2-digit identifier) |
-    | pct | Percentage of block group area that falls within the isochrone travel time area (0-100%) |
-    | [census variables] | Values for each selected census variable |
+    | county_fips | County FIPS code (5-digit identifier) |
+    | tract | Census tract component of the GEOID |
+    | block_group | Block group component of the GEOID |
+    | poi_id | ID of the point of interest |
+    | poi_name | Name of the point of interest |
+    | travel_time_minutes | Travel time limit in minutes |
     | travel_distance_km | Distance in kilometers from block group centroid to nearest POI |
+    | travel_distance_miles | Distance in miles from block group centroid to nearest POI |
+    | area_within_travel_time_pct | Percentage of block group area within the travel time area |
+    | [census variables] | Values for each selected census variable using standardized names |
     
     #### Technical Details:
     
     - Distance calculation uses Albers Equal Area projection (EPSG:5070) for accurate measurements across the US
     - For areas with multiple POIs, the distance to the nearest POI is used
-    - The percentage (pct) value indicates how much of each block group falls within the travel time area
+    - Census variables use lowercase names with underscores (e.g., "total_population" instead of "B01003_001E")
+    - Columns are organized in a logical order with identifiers first, followed by travel metrics and census data
     - CSV files are saved in the `output/csv/` directory with the same base filename as other outputs
     
     This feature enables deeper analysis in statistical software, spreadsheets, or other tools.
