@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Utility functions for mapping functions in the Community Mapper application.
+Utility functions for mapping functions in the SocialMapper application.
 """
 import sys
 import os

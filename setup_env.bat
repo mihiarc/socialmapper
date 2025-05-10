@@ -1,8 +1,8 @@
 @echo off
-:: setup_env.bat - Windows setup script for Community Mapper
+:: setup_env.bat - Windows setup script for SocialMapper
 
-echo ===== Community Mapper Environment Setup =====
-echo This script will set up the environment for Community Mapper.
+echo ===== SocialMapper Environment Setup =====
+echo This script will set up the environment for SocialMapper.
 
 :: Check if Python is installed
 where python >nul 2>nul
@@ -60,7 +60,7 @@ if not exist .env (
 
 echo.
 echo ===== Setup Complete =====
-echo To run the Community Mapper Streamlit app:
+echo To run the SocialMapper Streamlit app:
 echo 1. Make sure the virtual environment is activated:
 echo    .venv\Scripts\activate
 echo 2. Run the Streamlit app:

@@ -30,11 +30,11 @@ This is an alpha release (v0.3.0-alpha). Major features are still missing and th
 
 ## New in v0.3.0-alpha -- **SocialMapper Interactive Dashboard**
 
-We now provide a Streamlit web app as a user-friendly interface to the Community Mapper tool. The web app allows you to:
+We now provide a Streamlit web app as a user-friendly interface to the SocialMapper tool. The web app allows you to:
 
 - Query OpenStreetMap for points of interest or use your own coordinates
 - Set travel times and select demographic variables 
-- Visualize results with interactive maps
+- Visualize results with interactive maps (in development)
 - Export data to CSV for further analysis in other tools
 - No coding experience required!
 
@@ -66,8 +66,8 @@ We provide a setup script that automates the installation process:
 
 1. Clone this repository into your preferred location:
    ```bash
-   git clone https://github.com/mihiarc/community-mapper.git
-   cd community-mapper
+   git clone https://github.com/mihiarc/socialmapper.git
+   cd socialmapper
    ```
 
 #### For Linux/Mac:
@@ -127,7 +127,7 @@ This provides an interactive interface where you can:
 You can run the tool directly with POI parameters:
 
 ```bash
-python community_mapper.py --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+python socialmapper.py --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
 ```
 
 ### POI Types and Names Reference
@@ -172,11 +172,11 @@ Choose which census variables you want to analyze. Some useful options:
 | Housing Units                    | Total housing units                        | housing_units            | B25001_001E                                        |
 | Education (Bachelor's or higher) | Sum of education categories                | education_bachelors_plus | B15003_022E + B15003_023E + B15003_024E + B15003_025E   |
 
-### 4. Run the Community Mapper
+### 4. Run the SocialMapper
 
 #### Using the Streamlit Dashboard
 
-The simplest way to run the Community Mapper is through the Streamlit dashboard:
+The simplest way to run the SocialMapper is through the Streamlit dashboard:
 
 ```bash
 streamlit run Home.py
@@ -187,13 +187,13 @@ streamlit run Home.py
 Run directly with POI parameters:
 
 ```bash
-python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population
+python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population
 ```
 
 By default, census data is exported to CSV format. To disable this feature, use:
 
 ```bash
-python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --no-export
+python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --no-export
 ```
 
 #### Using Your Own Coordinates
@@ -201,7 +201,7 @@ python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --p
 If you already have latitude/longitude coordinates, you can skip the POI query step by providing your own CSV or JSON file. 
 
 ```bash
-python community_mapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
+python socialmapper.py --custom-coords examples/custom_coordinates.csv --travel-time 15 --census-variables total_population
 ```
 
 Supported formats for custom POIs:
@@ -276,22 +276,22 @@ Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Map supermarkets with travel times and income data to identify areas with limited food access.
    ```bash
-   python community_mapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
+   python socialmapper.py --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
    ```
 
 2. **Healthcare Access**: Map hospitals and clinics with population and age demographics.
    ```bash
-   python community_mapper.py --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
+   python socialmapper.py --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
    ```
 
 3. **Educational Resource Distribution**: Map schools and libraries with educational attainment data.
    ```bash
-   python community_mapper.py --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
+   python socialmapper.py --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
    ```
 
 4. **Park Access Equity**: Map parks with demographic and income data to assess equitable access.
    ```bash
-   python community_mapper.py --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
+   python socialmapper.py --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
    ```
 
 ### Troubleshooting

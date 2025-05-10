@@ -1,5 +1,5 @@
 """
-Visualization package for Community Mapper.
+Visualization package for SocialMapper.
 
 This package contains modules for generating visualizations of community resources and demographics.
 """

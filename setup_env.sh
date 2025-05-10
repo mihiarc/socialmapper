@@ -1,11 +1,17 @@
 #!/bin/bash
-# setup_env.sh - Environment setup script for Community Mapper
+# setup_env.sh - Environment setup script for SocialMapper
 
 # Stop on error
 set -e
 
-echo "===== Community Mapper Environment Setup ====="
-echo "This script will set up the environment for Community Mapper."
+# Check if Python 3.9+ is installed
+if ! command -v python3 &> /dev/null; then
+    echo "Python 3 is not installed. Please install Python 3.9 or later."
+    exit 1
+fi
+
+echo "===== SocialMapper Environment Setup ====="
+echo "This script will set up the environment for SocialMapper."
 
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then
@@ -64,7 +70,7 @@ fi
 
 echo ""
 echo "===== Setup Complete ====="
-echo "To run the Community Mapper Streamlit app:"
+echo "To run the SocialMapper Streamlit app:"
 echo "1. Activate the virtual environment:"
 echo "   For Linux/macOS: source .venv/bin/activate"
 echo "   For Windows: .venv\Scripts\activate"
