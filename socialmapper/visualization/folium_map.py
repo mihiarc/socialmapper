@@ -165,7 +165,7 @@ def generate_folium_map(
     # Create the map
     m = folium.Map(
         location=center,
-        zoom_start=11,
+        zoom_start=10,
         tiles=base_map,
         width=width,
         height=height
@@ -250,7 +250,7 @@ def generate_folium_map(
             iso_colors = ['#00CC0088', '#33CC3388', '#66CC6688', '#99CC9988', '#CCCCCC88']
             
             # Create isochrone feature group so it can be toggled as a whole
-            isochrone_group = folium.FeatureGroup(name="Travel Time Isochrones", show=True)
+            isochrone_group = folium.FeatureGroup(name="Travel Time Isochrones", show=False)
             
             # Add each isochrone to the map with dynamic styling
             for i, (_, row) in enumerate(isochrone.iterrows()):
@@ -281,7 +281,7 @@ def generate_folium_map(
             poi_df = poi_df.to_crs("EPSG:4326")
             
         # Create a feature group for POIs
-        poi_group = folium.FeatureGroup(name="Points of Interest", show=True)
+        poi_group = folium.FeatureGroup(name="Points of Interest", show=False)
             
         # Create a marker cluster for POIs
         marker_cluster = MarkerCluster(name="Points of Interest").add_to(poi_group)
@@ -377,7 +377,7 @@ def generate_folium_isochrone_map(
     # Create the map
     m = folium.Map(
         location=center,
-        zoom_start=12,
+        zoom_start=10,
         tiles=base_map,
         width=width,
         height=height
@@ -444,7 +444,7 @@ def generate_folium_isochrone_map(
             poi_df = poi_df.to_crs("EPSG:4326")
         
         # Create a feature group for POIs
-        poi_group = folium.FeatureGroup(name="Points of Interest", show=True)
+        poi_group = folium.FeatureGroup(name="Points of Interest", show=False)
         
         # Add each POI to the map
         for idx, row in poi_df.iterrows():
