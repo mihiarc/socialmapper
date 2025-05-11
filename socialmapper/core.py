@@ -17,6 +17,13 @@ from shapely.geometry import Point
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+# Check if PyArrow is available
+try:
+    import pyarrow
+    USE_ARROW = True
+except ImportError:
+    USE_ARROW = False
+
 # Check if RunConfig is available
 try:
     from .config_models import RunConfig
@@ -240,7 +247,7 @@ def run_socialmapper(
     from .census_data import get_census_data_for_block_groups
     from .visualization import generate_maps_for_variables
     from .states import normalize_state, normalize_state_list, StateFormat
-    from .util import census_code_to_name, normalize_census_variable
+    from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
     from .export import export_census_data_to_csv
     from .progress import get_progress_bar
 
@@ -344,7 +351,7 @@ def run_socialmapper(
     if progress_callback:
         progress_callback(2, "Generating travel time areas")
         
-    combined_isochrone_file = create_isochrones_from_poi_list(
+    combined_isochrone_gdf = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
         output_dir=output_dirs["isochrones"],
@@ -352,9 +359,24 @@ def run_socialmapper(
         combine_results=True  # Always combine for internal use
     )
     
+    # Store the combined isochrone GeoDataFrame for in-memory processing
+    isochrone_file_path = None
+    
+    # Only save to file if explicitly requested
     if export_geojson:
-        result_files["isochrone"] = combined_isochrone_file
-        print(f"Isochrones generated and saved to {combined_isochrone_file}")
+        # If function returned a file path, use it
+        if isinstance(combined_isochrone_gdf, str):
+            isochrone_file_path = combined_isochrone_gdf
+        # Otherwise, save the GeoDataFrame to file
+        else:
+            isochrone_file_path = os.path.join(
+                output_dirs["isochrones"],
+                f'{base_filename}_{travel_time}min_isochrones.geojson'
+            )
+            combined_isochrone_gdf.to_file(isochrone_file_path, driver='GeoJSON', use_arrow=True)
+        
+        result_files["isochrone"] = isochrone_file_path
+        print(f"Isochrones generated and saved to {isochrone_file_path}")
     else:
         print("Isochrones generated (not saved as files)")
     
@@ -370,8 +392,8 @@ def run_socialmapper(
     
     # Use county-based block group selection
     print("Using county-based block group selection...")
-    block_groups = isochrone_to_block_groups_by_county(
-        isochrone_path=combined_isochrone_file,
+    block_groups_gdf = isochrone_to_block_groups_by_county(
+        isochrone_path=combined_isochrone_gdf,  # Pass the GeoDataFrame directly
         poi_data=poi_data,
         output_path=block_groups_file if export_geojson else None,  # Only save if exporting GeoJSON
         api_key=api_key
@@ -388,13 +410,17 @@ def run_socialmapper(
     # Create a human-readable mapping for the census variables
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
     
+    # Display human-readable names for requested census variables
+    readable_names = get_readable_census_variables(census_codes)
+    print(f"Requesting census data for: {', '.join(readable_names)}")
+    
     census_data_file = os.path.join(
         output_dirs["census_data"],
         f"{base_filename}_{travel_time}min_census_data.geojson"
     )
     
-    census_data = get_census_data_for_block_groups(
-        geojson_path=block_groups_file if os.path.exists(block_groups_file) else block_groups,
+    census_data_gdf = get_census_data_for_block_groups(
+        geojson_path=block_groups_gdf,  # Pass the GeoDataFrame directly
         variables=census_codes,
         output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
         variable_mapping=variable_mapping,
@@ -416,7 +442,7 @@ def run_socialmapper(
         )
         
         csv_output = export_census_data_to_csv(
-            census_data=census_data,
+            census_data=census_data_gdf,
             poi_data=poi_data,
             output_path=csv_file,
             base_filename=f"{base_filename}_{travel_time}min"
@@ -431,8 +457,8 @@ def run_socialmapper(
             progress_callback(5, "Creating maps")
         
         # Get visualization variables from the census data result
-        if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
-            visualization_variables = census_data.attrs['variables_for_visualization']
+        if hasattr(census_data_gdf, 'attrs') and 'variables_for_visualization' in census_data_gdf.attrs:
+            visualization_variables = census_data_gdf.attrs['variables_for_visualization']
         else:
             # Fallback to filtering out known non-visualization variables
             visualization_variables = [var for var in census_codes if var != 'NAME']
@@ -465,8 +491,8 @@ def run_socialmapper(
                 # Convert to list if not already
                 if isinstance(census_data_file, str):
                     census_data_file = [census_data_file]
-                if isinstance(combined_isochrone_file, str):
-                    combined_isochrone_file = [combined_isochrone_file]
+                if isinstance(isochrone_file_path, str):
+                    isochrone_file_path = [isochrone_file_path]
         
         # Prepare POI data for the map generator
         if poi_data:
@@ -483,19 +509,19 @@ def run_socialmapper(
                 poi_data_for_map = convert_poi_to_geodataframe(poi_data.get('pois', []))
 
         # Fix for isochrone path handling when it's a list
-        isochrone_path_for_map = combined_isochrone_file
-        if isinstance(combined_isochrone_file, list) and not use_panels:
+        isochrone_path_for_map = isochrone_file_path
+        if isinstance(isochrone_file_path, list) and not use_panels:
             # If we have a list of isochrones but aren't using panels,
             # just use the first isochrone file to avoid the error
-            isochrone_path_for_map = combined_isochrone_file[0]
+            isochrone_path_for_map = isochrone_file_path[0]
 
         # Generate maps for each census variable using the mapped names
         map_files = generate_maps_for_variables(
-            census_data_path=census_data_file if export_geojson else census_data,
+            census_data_path=census_data_file if export_geojson else census_data_gdf,
             variables=mapped_variables,
             output_dir=output_dirs["maps"],
             basename=f"{base_filename}_{travel_time}min",
-            isochrone_path=isochrone_path_for_map,
+            isochrone_path=isochrone_path_for_map if export_geojson else combined_isochrone_gdf,
             poi_df=poi_data_for_map,
             use_panels=use_panels
         )
