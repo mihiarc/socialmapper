@@ -12,11 +12,13 @@ from typing import Dict, Any, List, Union, Tuple, Optional
 import json
 import pandas as pd
 from tqdm import tqdm
-# Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
 import time
 import logging
-from rtree import index  # For spatial indexing of cached graphs
+from rtree import index
+import multiprocessing
+from functools import partial
+import concurrent.futures
 
 # Setup logging
 logging.basicConfig(
@@ -357,6 +359,51 @@ def get_bounding_box(pois: List[Dict[str, Any]], buffer_km: float = 5.0) -> Tupl
     
     return (min_x, min_y, max_x, max_y)
 
+def process_poi_for_parallel(
+    poi: Dict[str, Any],
+    index: int,
+    travel_time_limit: int,
+    output_dir: str,
+    save_individual_files: bool,
+    simplify_tolerance: Optional[float],
+    use_parquet: bool,
+    total: int
+) -> Union[str, gpd.GeoDataFrame]:
+    """
+    Process a single POI for parallel execution.
+    
+    Args:
+        poi: POI dictionary
+        index: Index of this POI in the batch (for logging)
+        travel_time_limit: Travel time limit in minutes
+        output_dir: Directory to save isochrone files
+        save_individual_files: Whether to save individual isochrone files
+        simplify_tolerance: Tolerance for geometry simplification
+        use_parquet: Whether to use GeoParquet
+        total: Total number of POIs in the batch
+        
+    Returns:
+        File path or GeoDataFrame depending on save_individual_files
+    """
+    poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
+    
+    try:
+        result = create_isochrone_from_poi(
+            poi=poi,
+            travel_time_limit=travel_time_limit,
+            output_dir=output_dir,
+            save_file=save_individual_files,
+            simplify_tolerance=simplify_tolerance,
+            use_parquet=use_parquet
+        )
+        
+        # Log progress but avoid using tqdm.write which is not thread-safe
+        logger.info(f"[{index+1}/{total}] Created isochrone for POI: {poi_name}")
+        return result
+    except Exception as e:
+        logger.error(f"Error creating isochrone for POI {poi_name}: {e}")
+        return None
+
 def create_isochrones_from_poi_list(
     poi_data: Dict[str, List[Dict[str, Any]]],
     travel_time_limit: int,
@@ -364,7 +411,8 @@ def create_isochrones_from_poi_list(
     save_individual_files: bool = True,
     combine_results: bool = False,
     simplify_tolerance: Optional[float] = None,
-    use_parquet: bool = True
+    use_parquet: bool = True,
+    n_jobs: int = 1  # Number of parallel jobs to run
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
     Create isochrones from a list of POIs.
@@ -378,6 +426,10 @@ def create_isochrones_from_poi_list(
         combine_results (bool): Whether to combine all isochrones into a single file
         simplify_tolerance (float, optional): Tolerance for geometry simplification
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
+        n_jobs (int): Number of parallel jobs to run
+            n_jobs=1: Sequential processing (no parallelism)
+            n_jobs=-1: Use all available CPU cores
+            n_jobs>1: Use specified number of CPU cores
         
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]:
@@ -389,57 +441,113 @@ def create_isochrones_from_poi_list(
     if not pois:
         raise ValueError("No POIs found in input data. Please try different search parameters or a different location. POIs like 'natural=forest' may not exist in all areas.")
     
+    # Use all available CPU cores if n_jobs is -1
+    if n_jobs == -1:
+        n_jobs = multiprocessing.cpu_count()
+    
+    # Log parallel processing configuration
+    if n_jobs > 1:
+        logger.info(f"Processing {len(pois)} POIs using {n_jobs} parallel workers")
+    
     isochrone_files = []
     isochrone_gdfs = []
     
-    # Use the new progress bar utility
-    for poi in get_progress_bar(pois, desc="Generating isochrones", unit="POI"):
-        poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
-        try:
-            result = create_isochrone_from_poi(
-                poi=poi,
-                travel_time_limit=travel_time_limit,
-                output_dir=output_dir,
-                save_file=save_individual_files,
-                simplify_tolerance=simplify_tolerance,
-                use_parquet=use_parquet
-            )
-            
-            if save_individual_files:
-                isochrone_files.append(result)
-            else:
-                isochrone_gdfs.append(result)
+    # Process POIs either sequentially or in parallel
+    if n_jobs <= 1:
+        # Sequential processing with progress bar
+        for poi in get_progress_bar(pois, desc="Generating isochrones", unit="POI"):
+            poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
+            try:
+                result = create_isochrone_from_poi(
+                    poi=poi,
+                    travel_time_limit=travel_time_limit,
+                    output_dir=output_dir,
+                    save_file=save_individual_files,
+                    simplify_tolerance=simplify_tolerance,
+                    use_parquet=use_parquet
+                )
                 
-            # Use tqdm.write instead of logger to avoid messing up the progress bar
-            tqdm.write(f"Created isochrone for POI: {poi_name}")
-        except Exception as e:
-            tqdm.write(f"Error creating isochrone for POI {poi_name}: {e}")
-            logger.error(f"Error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
-            # Continue with next POI instead of failing
-            continue
+                if save_individual_files:
+                    isochrone_files.append(result)
+                else:
+                    isochrone_gdfs.append(result)
+                    
+                # Use tqdm.write instead of logger to avoid messing up the progress bar
+                tqdm.write(f"Created isochrone for POI: {poi_name}")
+            except Exception as e:
+                tqdm.write(f"Error creating isochrone for POI {poi_name}: {e}")
+                logger.error(f"Error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
+                # Continue with next POI instead of failing
+                continue
+    else:
+        # Parallel processing using ThreadPoolExecutor
+        # We use threads instead of processes because the network I/O is the bottleneck,
+        # and this allows us to share the graph cache between threads
+        process_func = partial(
+            process_poi_for_parallel,
+            travel_time_limit=travel_time_limit,
+            output_dir=output_dir,
+            save_individual_files=save_individual_files,
+            simplify_tolerance=simplify_tolerance,
+            use_parquet=use_parquet,
+            total=len(pois)
+        )
+        
+        # Create a progress bar that will be updated by the main thread
+        pbar = tqdm(total=len(pois), desc="Generating isochrones", unit="POI")
+        
+        # Process POIs in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=n_jobs) as executor:
+            # Submit all tasks and get future objects
+            future_to_index = {
+                executor.submit(process_func, poi, i): i 
+                for i, poi in enumerate(pois)
+            }
+            
+            # Process results as they complete
+            for future in concurrent.futures.as_completed(future_to_index):
+                i = future_to_index[future]
+                pbar.update(1)  # Update progress bar
+                
+                try:
+                    result = future.result()
+                    if result is not None:
+                        if save_individual_files:
+                            isochrone_files.append(result)
+                        else:
+                            isochrone_gdfs.append(result)
+                except Exception as e:
+                    logger.error(f"Exception in worker thread: {e}")
+        
+        pbar.close()
     
+    # Combine results if requested (same logic as before)
     if combine_results:
         if isochrone_gdfs or not save_individual_files:
             # If we have GeoDataFrames (or didn't save individual files), combine them
-            combined_gdf = gpd.GeoDataFrame(pd.concat(isochrone_gdfs, ignore_index=True))
-            
-            if save_individual_files:
-                # Save combined result
-                if use_parquet and USE_ARROW:
-                    combined_file = os.path.join(
-                        output_dir,
-                        f'combined_isochrones_{travel_time_limit}min.parquet'
-                    )
-                    combined_gdf.to_parquet(combined_file)
+            if isochrone_gdfs:
+                combined_gdf = gpd.GeoDataFrame(pd.concat(isochrone_gdfs, ignore_index=True))
+                
+                if save_individual_files:
+                    # Save combined result
+                    if use_parquet and USE_ARROW:
+                        combined_file = os.path.join(
+                            output_dir,
+                            f'combined_isochrones_{travel_time_limit}min.parquet'
+                        )
+                        combined_gdf.to_parquet(combined_file)
+                    else:
+                        combined_file = os.path.join(
+                            output_dir,
+                            f'combined_isochrones_{travel_time_limit}min.geojson'
+                        )
+                        combined_gdf.to_file(combined_file, driver='GeoJSON', use_arrow=USE_ARROW)
+                    return combined_file
                 else:
-                    combined_file = os.path.join(
-                        output_dir,
-                        f'combined_isochrones_{travel_time_limit}min.geojson'
-                    )
-                    combined_gdf.to_file(combined_file, driver='GeoJSON', use_arrow=USE_ARROW)
-                return combined_file
+                    return combined_gdf
             else:
-                return combined_gdf
+                logger.warning("No isochrones were successfully generated")
+                return [] if save_individual_files else gpd.GeoDataFrame()
         else:
             # We need to load the individual files and combine them
             gdfs = []
@@ -518,7 +626,8 @@ def create_isochrones_from_json_file(
     save_individual_files: bool = True,
     combine_results: bool = False,
     simplify_tolerance: Optional[float] = None,
-    use_parquet: bool = True
+    use_parquet: bool = True,
+    n_jobs: int = 1  # Number of parallel jobs to run
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
     Create isochrones from a JSON file containing POIs.
@@ -531,6 +640,10 @@ def create_isochrones_from_json_file(
         combine_results (bool): Whether to combine all isochrones into a single file
         simplify_tolerance (float, optional): Tolerance for geometry simplification
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
+        n_jobs (int): Number of parallel jobs to run
+            n_jobs=1: Sequential processing (no parallelism)
+            n_jobs=-1: Use all available CPU cores
+            n_jobs>1: Use specified number of CPU cores
         
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]: See create_isochrones_from_poi_list
@@ -550,7 +663,8 @@ def create_isochrones_from_json_file(
         save_individual_files=save_individual_files,
         combine_results=combine_results,
         simplify_tolerance=simplify_tolerance,
-        use_parquet=use_parquet
+        use_parquet=use_parquet,
+        n_jobs=n_jobs
     )
 
 if __name__ == "__main__":
@@ -564,6 +678,8 @@ if __name__ == "__main__":
     parser.add_argument("--combine", action="store_true", help="Combine all isochrones into a single file")
     parser.add_argument("--simplify", type=float, help="Tolerance for geometry simplification")
     parser.add_argument("--no-parquet", action="store_true", help="Do not use GeoParquet format")
+    parser.add_argument("--jobs", "-j", type=int, default=1, 
+                      help="Number of parallel jobs to run (default=1, -1=all cores)")
     args = parser.parse_args()
     
     start_time = time.time()
@@ -574,7 +690,8 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         combine_results=args.combine,
         simplify_tolerance=args.simplify,
-        use_parquet=not args.no_parquet
+        use_parquet=not args.no_parquet,
+        n_jobs=args.jobs
     )
     
     elapsed_time = time.time() - start_time

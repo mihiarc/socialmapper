@@ -38,15 +38,54 @@ python examples/isochrone_cache_demo.py
 python examples/isochrone_cache_demo.py --location "Chicago, IL" --poi-type "amenity=cafe" --limit 50 --travel-time 15
 ```
 
+## 2. Parallel Processing
+
+### Problem
+Even with the caching mechanism, processing thousands of POIs sequentially is time-consuming, especially when multiple CPU cores are available.
+
+### Solution
+We implemented parallel processing using Python's `concurrent.futures` module:
+- Uses a thread pool to process multiple POIs simultaneously
+- Maintains the benefits of the caching mechanism across threads
+- Automatically scales to the available CPU cores
+- Provides a progress bar to track overall completion
+
+### Implementation Details
+- Uses `ThreadPoolExecutor` rather than `ProcessPoolExecutor` since:
+  - The bottleneck is network I/O, not CPU computation
+  - Thread-based parallelism allows sharing the graph cache
+- Added a simple `n_jobs` parameter to control the number of parallel workers:
+  - `n_jobs=1`: Sequential processing (default, no parallelism)
+  - `n_jobs=-1`: Use all available CPU cores
+  - `n_jobs=N`: Use a specific number of workers
+
+### Expected Benefits
+- Near-linear speedup for POIs that are geographically distributed
+- Reduced processing time for large POI datasets
+- Better utilization of available system resources
+
+### Testing
+You can test the parallel processing using:
+- `tests/test_parallel_processing.py` - Benchmarks different numbers of workers
+
+### Example Usage
+
+```python
+# Process POIs using all available CPU cores
+python -m socialmapper.isochrone poi_data.json --jobs -1
+
+# Process POIs using 4 worker threads
+python -m socialmapper.isochrone poi_data.json --jobs 4
+```
+
 ## Future Optimizations
 
 The following optimizations are planned for future implementation:
 
-1. **Parallel Processing**: Use multiprocessing to handle multiple POIs simultaneously
-2. **Batch Processing**: Process groups of POIs using a single larger network
-3. **Graph Simplification**: Simplify road networks to reduce computation time
-4. **Alpha Shapes**: Replace convex hulls with alpha shapes for more precise isochrones
-5. **Optimized Graph Radius**: Calculate more conservative graph radii based on the road network
+1. **Batch Processing**: Process groups of POIs using a single larger network
+2. **Graph Simplification**: Simplify road networks to reduce computation time
+3. **Alpha Shapes**: Replace convex hulls with alpha shapes for more precise isochrones
+4. **Optimized Graph Radius**: Calculate more conservative graph radii based on the road network
 
 ## Performance Metrics
 
@@ -77,6 +116,44 @@ The results show that:
 2. With caching, subsequent POIs in the same area process ~90% faster
 3. For large datasets with thousands of POIs, the improvement would be substantial
 4. The most significant gain comes from avoiding repeated network downloads
+
+### Parallel Processing Results
+We ran parallel processing benchmarks with 20 POIs in San Francisco using different numbers of worker threads:
+
+| Configuration         | Total Time (s) | Time per POI (s) | Speedup | Improvement |
+|-----------------------|----------------|------------------|---------|-------------|
+| Sequential (1 worker) | 119.73         | 5.99             | 1.00    | Baseline    |
+| 2 workers             | 122.26         | 6.11             | 0.98    | -2.07%      |
+| 4 workers             | 175.74         | 8.79             | 0.68    | -31.87%     |
+| 8 workers             | 232.70         | 11.63            | 0.51    | -48.55%     |
+
+**Observations:**
+1. Parallel processing did not improve performance for this workload
+2. Adding more workers actually decreased performance
+3. The best configuration was sequential processing (1 worker)
+
+**Analysis:**
+1. The performance degradation with more workers is likely due to:
+   - Network contention - multiple simultaneous downloads competing for bandwidth
+   - OpenStreetMap API rate limits - the service may throttle multiple concurrent requests
+   - Thread overhead - the cost of thread management exceeds the benefits
+2. The isochrone generation process is I/O-bound, not CPU-bound
+3. The network graph downloading is the primary bottleneck
+
+**Important Note on Internet Bandwidth:**
+The parallel processing performance is heavily influenced by available internet bandwidth. Our tests were conducted with a standard consumer internet connection, where multiple workers competed for limited bandwidth, resulting in slower overall performance. With significantly higher bandwidth or in environments with:
+- Enterprise-grade internet connections
+- Proximity to OpenStreetMap servers
+- No API rate limiting
+- Distributed architecture
+
+Parallel processing might show substantial improvements not seen in our tests. If you have access to high-bandwidth connections, you may want to run your own benchmarks to determine the optimal number of workers for your specific environment.
+
+**Recommendations:**
+1. For isochrone generation, use single-threaded processing with graph caching on standard internet connections
+2. Consider batching POIs by geographic proximity to maximize cache usage
+3. For very large datasets, explore dividing POIs into geographic regions and processing each region sequentially
+4. If available bandwidth is high, experiment with 2-4 workers to find the optimal configuration for your environment
 
 ## Contributing
 
