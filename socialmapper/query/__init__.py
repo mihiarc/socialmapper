@@ -8,6 +8,13 @@ import sys
 import yaml
 import overpy
 import os
+import logging
+from typing import Dict, Any, Optional
+
+from ..util import rate_limited, with_retry, RateLimitedClient
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):
     """
@@ -50,7 +57,7 @@ def load_poi_config(file_path):
             config = yaml.safe_load(f)
         return config
     except Exception as e:
-        print(f"Error loading configuration: {e}")
+        logger.error(f"Error loading configuration: {e}")
         sys.exit(1)
 
 def build_overpass_query(poi_config):
@@ -118,7 +125,7 @@ def build_overpass_query(poi_config):
         query += f"nwr{tag_filter}({bbox_str});\n"
     else:
         # Default global search with a limit
-        print("Warning: No area name or bbox specified. Using global search.")
+        logger.warning("No area name or bbox specified. Using global search.")
         
         # Build tag filters
         tag_filter = ""
@@ -139,15 +146,22 @@ def build_overpass_query(poi_config):
     
     return query
 
+@with_retry(max_retries=3, base_delay=2.0, service="openstreetmap")
 def query_overpass(query):
-    """Query the Overpass API with the given query."""
+    """
+    Query the Overpass API with the given query.
+    
+    Uses rate limiting and retry logic to handle transient errors
+    and respect API usage limits.
+    """
     api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
     try:
+        logger.info("Sending query to Overpass API...")
         return api.query(query)
     except Exception as e:
-        print(f"Error querying Overpass API: {e}")
-        print(f"Query used: {query}")
-        sys.exit(1)
+        logger.error(f"Error querying Overpass API: {e}")
+        logger.debug(f"Query used: {query}")
+        raise
 
 def format_results(result, config=None):
     """Format the Overpass API results into a structured dictionary.
@@ -255,10 +269,46 @@ def save_json(data, output_file):
         
         with open(output_file, 'w') as f:
             json.dump(data, f, indent=2)
-        print(f"Results saved to {output_file}")
+        logger.info(f"Results saved to {output_file}")
     except Exception as e:
-        print(f"Error saving JSON file: {e}")
+        logger.error(f"Error saving JSON file: {e}")
         sys.exit(1)
+
+def query_pois(config: Dict[str, Any], output_file: Optional[str] = None, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Query POIs from OpenStreetMap with the given configuration.
+    
+    Args:
+        config: POI configuration dictionary
+        output_file: Optional output file path to save results
+        verbose: Whether to output detailed information
+        
+    Returns:
+        Dictionary with POI results
+    """
+    # Build query
+    query = build_overpass_query(config)
+    
+    # Print query if verbose mode is enabled
+    if verbose:
+        logger.info("Overpass Query:")
+        logger.info(query)
+    
+    # Execute query with rate limiting and retry
+    logger.info("Querying Overpass API...")
+    result = query_overpass(query)
+    
+    # Format results
+    data = format_results(result, config)
+    
+    # Output statistics
+    logger.info(f"Found {len(data['pois'])} POIs")
+    
+    # Save results if output file is specified
+    if output_file:
+        save_json(data, output_file)
+    
+    return data
 
 def main():
     # Parse command line arguments
@@ -300,26 +350,8 @@ def main():
     else:
         output_file = args.output
     
-    # Build query
-    query = build_overpass_query(config)
-    
-    # Print query if verbose mode is enabled
-    if args.verbose:
-        print("Overpass Query:")
-        print(query)
-    
-    # Execute query
-    print("Querying Overpass API...")
-    result = query_overpass(query)
-    
-    # Format results
-    data = format_results(result, config)
-    
-    # Output statistics
-    print(f"Found {len(data['pois'])} POIs")
-    
-    # Save results
-    save_json(data, output_file)
+    # Query POIs
+    query_pois(config, output_file, args.verbose)
 
 if __name__ == "__main__":
     main() 

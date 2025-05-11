@@ -130,27 +130,18 @@ def parse_custom_coordinates(file_path: str) -> Dict:
         }
     }
 
-def setup_directories() -> Dict[str, str]:
+def setup_directory(output_dir: str = "output") -> str:
     """
-    Create directories for output files.
+    Create a single output directory.
     
+    Args:
+        output_dir: Path to the output directory
+        
     Returns:
-        Dictionary of directory paths
+        The output directory path
     """
-    dirs = {
-        "output": "output",
-        "pois": "output/pois",
-        "isochrones": "output/isochrones",
-        "block_groups": "output/block_groups",
-        "census_data": "output/census_data",
-        "maps": "output/maps",
-        "csv": "output/csv"  # CSV output directory
-    }
-    
-    for directory in dirs.values():
-        os.makedirs(directory, exist_ok=True)
-    
-    return dirs
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
 
 def convert_poi_to_geodataframe(poi_data_list):
     """
@@ -209,7 +200,7 @@ def run_socialmapper(
     travel_time: int = 15,
     census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
-    output_dirs: Optional[Dict[str, str]] = None,
+    output_dir: str = "output",
     custom_coords_path: Optional[str] = None,
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
@@ -230,7 +221,7 @@ def run_socialmapper(
         travel_time: Travel time limit in minutes
         census_variables: List of census variables to retrieve
         api_key: Census API key
-        output_dirs: Dictionary of output directories
+        output_dir: Output directory for all files
         custom_coords_path: Path to custom coordinates file
         progress_callback: Callback function for progress updates
         export_csv: Boolean to control export of census data to CSV
@@ -251,9 +242,8 @@ def run_socialmapper(
     from .export import export_census_data_to_csv
     from .progress import get_progress_bar
 
-    # Set up output directories
-    if not output_dirs:
-        output_dirs = setup_directories()
+    # Set up output directory
+    setup_directory(output_dir)
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -261,7 +251,9 @@ def run_socialmapper(
         travel_time = run_config.travel_time if travel_time == 15 else travel_time
         census_variables = census_variables or run_config.census_variables
         api_key = run_config.api_key or api_key
-        output_dirs = output_dirs or run_config.output_dirs
+        # Use output_dir from run_config if available
+        if hasattr(run_config, 'output_dir') and run_config.output_dir:
+            output_dir = run_config.output_dir
 
     if census_variables is None:
         census_variables = ["total_population"]
@@ -354,9 +346,10 @@ def run_socialmapper(
     combined_isochrone_gdf = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
-        output_dir=output_dirs["isochrones"],
-        save_individual_files=export_geojson,  # Only save individual files if exporting GeoJSON
-        combine_results=True  # Always combine for internal use
+        output_dir=output_dir,
+        save_individual_files=False,  # Never save individual files, only use combined results
+        combine_results=True,  # Always combine for internal use
+        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
     )
     
     # Store the combined isochrone GeoDataFrame for in-memory processing
@@ -370,7 +363,7 @@ def run_socialmapper(
         # Otherwise, save the GeoDataFrame to file
         else:
             isochrone_file_path = os.path.join(
-                output_dirs["isochrones"],
+                output_dir,
                 f'{base_filename}_{travel_time}min_isochrones.geojson'
             )
             combined_isochrone_gdf.to_file(isochrone_file_path, driver='GeoJSON', use_arrow=True)
@@ -386,7 +379,7 @@ def run_socialmapper(
         progress_callback(3, "Finding census block groups")
         
     block_groups_file = os.path.join(
-        output_dirs["block_groups"],
+        output_dir,
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
@@ -396,7 +389,8 @@ def run_socialmapper(
         isochrone_path=combined_isochrone_gdf,  # Pass the GeoDataFrame directly
         poi_data=poi_data,
         output_path=block_groups_file if export_geojson else None,  # Only save if exporting GeoJSON
-        api_key=api_key
+        api_key=api_key,
+        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
     )
     
     if export_geojson:
@@ -415,7 +409,7 @@ def run_socialmapper(
     print(f"Requesting census data for: {', '.join(readable_names)}")
     
     census_data_file = os.path.join(
-        output_dirs["census_data"],
+        output_dir,
         f"{base_filename}_{travel_time}min_census_data.geojson"
     )
     
@@ -424,7 +418,8 @@ def run_socialmapper(
         variables=census_codes,
         output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
         variable_mapping=variable_mapping,
-        api_key=api_key
+        api_key=api_key,
+        export_geojson=export_geojson  # Explicitly pass the export_geojson parameter
     )
     
     if export_geojson:
@@ -437,7 +432,7 @@ def run_socialmapper(
             progress_callback(4, "Exporting census data to CSV")
         
         csv_file = os.path.join(
-            output_dirs["csv"],
+            output_dir,
             f"{base_filename}_{travel_time}min_census_data.csv"
         )
         
@@ -519,7 +514,7 @@ def run_socialmapper(
         map_files = generate_maps_for_variables(
             census_data_path=census_data_file if export_geojson else census_data_gdf,
             variables=mapped_variables,
-            output_dir=output_dirs["maps"],
+            output_dir=output_dir,
             basename=f"{base_filename}_{travel_time}min",
             isochrone_path=isochrone_path_for_map if export_geojson else combined_isochrone_gdf,
             poi_df=poi_data_for_map,

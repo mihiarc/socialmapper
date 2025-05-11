@@ -73,7 +73,7 @@ def generate_map(
         Path to the saved map
     """
     # Check if we're making an isochrone-only map
-    if isochrone_only and isochrone_path:
+    if isochrone_only and isochrone_path is not None:
         return generate_isochrone_map(
             isochrone_path=isochrone_path,
             output_path=output_path,
@@ -165,29 +165,42 @@ def generate_map(
         variable_label = get_variable_label(variable)
         
         # Add isochrone information to title if available
-        if isochrone_path:
+        if isochrone_path is not None:
             # Extract POI info from isochrone file name
-            isochrone_file = Path(isochrone_path).stem
-            parts = isochrone_file.split('_')
-            location_name = None
-            poi_name = None
-            travel_time = None
-            
-            if len(parts) >= 3:
-                if 'amenity' in isochrone_file:
-                    # Format typically: location_amenity_type_time
-                    location_name = parts[0].title()
-                    poi_type = parts[2].replace('-', ' ').title()
-                    poi_name = f"{poi_type}"
-            
-            # Try to extract travel time from filename
-            if 'min' in isochrone_file:
-                for part in parts:
-                    if 'min' in part:
-                        try:
-                            travel_time = int(part.replace('min', ''))
-                        except ValueError:
-                            pass
+            if isinstance(isochrone_path, str):
+                isochrone_file = Path(isochrone_path).stem
+                parts = isochrone_file.split('_')
+                location_name = None
+                poi_name = None
+                travel_time = None
+                
+                if len(parts) >= 3:
+                    if 'amenity' in isochrone_file:
+                        # Format typically: location_amenity_type_time
+                        location_name = parts[0].title()
+                        poi_type = parts[2].replace('-', ' ').title()
+                        poi_name = f"{poi_type}"
+                
+                # Try to extract travel time from filename
+                if 'min' in isochrone_file:
+                    for part in parts:
+                        if 'min' in part:
+                            try:
+                                travel_time = int(part.replace('min', ''))
+                            except ValueError:
+                                pass
+            else:
+                # For GeoDataFrame, try to get travel time from data
+                travel_time = None
+                if 'travel_time_minutes' in isochrone_path.columns:
+                    if not isochrone_path['travel_time_minutes'].empty:
+                        travel_time = isochrone_path['travel_time_minutes'].iloc[0]
+                
+                # Try to get POI info
+                location_name = None
+                poi_name = None
+                if 'poi_name' in isochrone_path.columns and not isochrone_path['poi_name'].empty:
+                    poi_name = isochrone_path['poi_name'].iloc[0]
                             
             # Try to get travel time from isochrone data if the file is loaded
             if 'isochrone' in locals():
@@ -258,13 +271,17 @@ def generate_map(
             print(f"Error filling polygon: {e}")
     
     # Add isochrone boundary if provided and if show_isochrone is True
-    if isochrone_path and show_isochrone:
+    if isochrone_path is not None and show_isochrone:
         try:
             # Determine the file type and read appropriately
-            if isochrone_path.lower().endswith('.parquet'):
-                isochrone = gpd.read_parquet(isochrone_path)
+            if isinstance(isochrone_path, str):
+                if isochrone_path.lower().endswith('.parquet'):
+                    isochrone = gpd.read_parquet(isochrone_path)
+                else:
+                    isochrone = gpd.read_file(isochrone_path)
             else:
-                isochrone = gpd.read_file(isochrone_path)
+                # isochrone_path is already a GeoDataFrame
+                isochrone = isochrone_path
                 
             # Ensure the CRS matches our map
             isochrone = isochrone.to_crs(gdf.crs)
@@ -333,7 +350,7 @@ def generate_map(
         )
     
     # Add isochrone to legend if it was displayed
-    if isochrone_path and show_isochrone and 'isochrone' in locals():
+    if isochrone_path is not None and show_isochrone and 'isochrone' in locals():
         isochrone_legend = Line2D([0], [0], color='blue', linewidth=2, linestyle='-',
                               label=f"{travel_time}-min Isochrone")
         legend_handles.append(isochrone_legend)
@@ -358,29 +375,42 @@ def generate_map(
         variable_label = get_variable_label(variable)
         
         # Add isochrone information to title if available
-        if isochrone_path:
+        if isochrone_path is not None:
             # Extract POI info from isochrone file name
-            isochrone_file = Path(isochrone_path).stem
-            parts = isochrone_file.split('_')
-            location_name = None
-            poi_name = None
-            travel_time = None
-            
-            if len(parts) >= 3:
-                if 'amenity' in isochrone_file:
-                    # Format typically: location_amenity_type_time
-                    location_name = parts[0].title()
-                    poi_type = parts[2].replace('-', ' ').title()
-                    poi_name = f"{poi_type}"
-            
-            # Try to extract travel time from filename
-            if 'min' in isochrone_file:
-                for part in parts:
-                    if 'min' in part:
-                        try:
-                            travel_time = int(part.replace('min', ''))
-                        except ValueError:
-                            pass
+            if isinstance(isochrone_path, str):
+                isochrone_file = Path(isochrone_path).stem
+                parts = isochrone_file.split('_')
+                location_name = None
+                poi_name = None
+                travel_time = None
+                
+                if len(parts) >= 3:
+                    if 'amenity' in isochrone_file:
+                        # Format typically: location_amenity_type_time
+                        location_name = parts[0].title()
+                        poi_type = parts[2].replace('-', ' ').title()
+                        poi_name = f"{poi_type}"
+                
+                # Try to extract travel time from filename
+                if 'min' in isochrone_file:
+                    for part in parts:
+                        if 'min' in part:
+                            try:
+                                travel_time = int(part.replace('min', ''))
+                            except ValueError:
+                                pass
+            else:
+                # For GeoDataFrame, try to get travel time from data
+                travel_time = None
+                if 'travel_time_minutes' in isochrone_path.columns:
+                    if not isochrone_path['travel_time_minutes'].empty:
+                        travel_time = isochrone_path['travel_time_minutes'].iloc[0]
+                
+                # Try to get POI info
+                location_name = None
+                poi_name = None
+                if 'poi_name' in isochrone_path.columns and not isochrone_path['poi_name'].empty:
+                    poi_name = isochrone_path['poi_name'].iloc[0]
                             
             # Try to get travel time from isochrone data if the file is loaded
             if 'isochrone' in locals():
@@ -478,10 +508,14 @@ def generate_isochrone_map(
     else:
         try:
             # Determine the file type and read appropriately
-            if isochrone_path.lower().endswith('.parquet'):
-                isochrone = gpd.read_parquet(isochrone_path)
+            if isinstance(isochrone_path, str):
+                if isochrone_path.lower().endswith('.parquet'):
+                    isochrone = gpd.read_parquet(isochrone_path)
+                else:
+                    isochrone = gpd.read_file(isochrone_path)
             else:
-                isochrone = gpd.read_file(isochrone_path)
+                # Must be a GeoDataFrame
+                isochrone = isochrone_path
         except Exception as e:
             raise ValueError(f"Error loading isochrone file: {e}")
         
