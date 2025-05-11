@@ -73,7 +73,7 @@ def generate_maps_for_variables(
     output_paths = []
     
     # Generate isochrone-only map if requested
-    if include_isochrone_only_map and isochrone_path:
+    if include_isochrone_only_map and isochrone_path is not None:
         isochrone_map_path = os.path.join(output_dir, f"{basename}_isochrone_map.png")
         
         # Handle the case when isochrone_path is a list
