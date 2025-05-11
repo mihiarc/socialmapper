@@ -10,7 +10,7 @@ import json
 import csv
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import geopandas as gpd
 from shapely.geometry import Point
 
@@ -214,8 +214,9 @@ def run_socialmapper(
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
     export_geojson: bool = False,
-    export_maps: bool = False
-) -> Dict[str, str]:
+    export_maps: bool = False,
+    use_interactive_maps: bool = True
+) -> Dict[str, Any]:
     """
     Run the full community mapping process.
     
@@ -236,9 +237,10 @@ def run_socialmapper(
         export_csv: Boolean to control export of census data to CSV
         export_geojson: Boolean to control export of data to GeoJSON
         export_maps: Boolean to control generation of maps
+        use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
         
     Returns:
-        Dictionary of output file paths
+        Dictionary of output file paths and metadata
     """
     # Import components here to avoid circular imports
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
@@ -514,6 +516,19 @@ def run_socialmapper(
             # If we have a list of isochrones but aren't using panels,
             # just use the first isochrone file to avoid the error
             isochrone_path_for_map = isochrone_file_path[0]
+        
+        # Check if we're in Streamlit and should use interactive maps
+        from .progress import _IN_STREAMLIT
+        streamlit_folium_available = False
+        if _IN_STREAMLIT and use_interactive_maps:
+            try:
+                import folium
+                from streamlit_folium import folium_static
+                streamlit_folium_available = True
+                print("Using interactive Folium maps for Streamlit")
+            except ImportError:
+                streamlit_folium_available = False
+                print("Warning: streamlit-folium package not available, falling back to static maps")
 
         # Generate maps for each census variable using the mapped names
         map_files = generate_maps_for_variables(
@@ -523,11 +538,18 @@ def run_socialmapper(
             basename=f"{base_filename}_{travel_time}min",
             isochrone_path=isochrone_path_for_map if export_geojson else combined_isochrone_gdf,
             poi_df=poi_data_for_map,
-            use_panels=use_panels
+            use_panels=use_panels,
+            use_folium=streamlit_folium_available and use_interactive_maps
         )
         result_files["maps"] = map_files
         
-        print(f"Generated {len(map_files)} maps")
+        # Flag to indicate if folium maps are available and being displayed
+        result_files["folium_maps_available"] = streamlit_folium_available and use_interactive_maps
+        
+        if streamlit_folium_available and use_interactive_maps:
+            print("Interactive maps displayed in Streamlit")
+        else:
+            print(f"Generated {len(map_files)} static maps")
     else:
         print("\n=== Skipping Map Generation (use --export-maps to enable) ===")
     
