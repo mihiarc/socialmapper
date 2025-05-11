@@ -18,9 +18,9 @@ except PackageNotFoundError:
         __version__ = "0.3.0-alpha"  # fallback
 
 # Import main functionality
-from .core import run_socialmapper, setup_directories
+from .core import run_socialmapper, setup_directory
 
 __all__ = [
     "run_socialmapper",
-    "setup_directories",
+    "setup_directory",
 ] 

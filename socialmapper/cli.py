@@ -6,9 +6,10 @@ import logging
 import sys
 import time
 import traceback
+import os
 
 from . import __version__
-from .core import run_socialmapper, setup_directories
+from .core import run_socialmapper, setup_directory
 from .util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .states import normalize_state, StateFormat
 
@@ -80,6 +81,11 @@ def parse_arguments():
         help="Generate map visualizations (default: disabled)"
     )
     parser.add_argument(
+        "--output-dir",
+        default="output",
+        help="Custom output directory for all generated files (default: 'output')"
+    )
+    parser.add_argument(
         "--version", 
         action="version", 
         version=f"SocialMapper {__version__}",
@@ -108,8 +114,8 @@ def main():
         print("\nUsage example: --census-variables total_population median_household_income")
         sys.exit(0)
         
-    # Setup output directories
-    output_dirs = setup_directories()
+    # Create the output directory
+    os.makedirs(args.output_dir, exist_ok=True)
     
     # Print banner
     print("=" * 80)
@@ -125,7 +131,7 @@ def main():
             print(f"Custom coordinates: {args.custom_coords}")
         print(f"Travel time limit: {args.travel_time} minutes")
         print(f"Census variables: {', '.join(args.census_variables)}")
-        print(f"Output directories: {output_dirs}")
+        print(f"Output directory: {args.output_dir}")
         print("\nOutput types to be generated:")
         print(f"  - CSV: {'Yes' if args.export_csv else 'No'}")
         print(f"  - GeoJSON: {'Yes' if args.export_geojson else 'No'}")
@@ -153,6 +159,7 @@ def main():
                 travel_time=args.travel_time,
                 census_variables=args.census_variables,
                 api_key=args.api_key,
+                output_dir=args.output_dir,
                 export_csv=args.export_csv,
                 export_geojson=args.export_geojson,
                 export_maps=args.export_maps
@@ -164,6 +171,7 @@ def main():
                 census_variables=args.census_variables,
                 api_key=args.api_key,
                 custom_coords_path=args.custom_coords,
+                output_dir=args.output_dir,
                 export_csv=args.export_csv,
                 export_geojson=args.export_geojson,
                 export_maps=args.export_maps
