@@ -28,13 +28,13 @@ from .single_map import generate_map, generate_isochrone_map
 from .panel_map import generate_paneled_isochrone_map, generate_paneled_census_map
 
 def generate_maps_for_variables(
-    census_data_path: str,
+    census_data_path: Union[str, gpd.GeoDataFrame, List[str], List[gpd.GeoDataFrame]],
     variables: List[str],
     output_dir: str = "output/maps",
     basename: Optional[str] = None,
-    isochrone_path: Optional[str] = None,
+    isochrone_path: Optional[Union[str, gpd.GeoDataFrame, List[str], List[gpd.GeoDataFrame]]] = None,
     include_isochrone_only_map: bool = True,
-    poi_df: Optional[gpd.GeoDataFrame] = None,
+    poi_df: Optional[Union[gpd.GeoDataFrame, List[gpd.GeoDataFrame]]] = None,
     use_panels: bool = False,
     **kwargs
 ) -> List[str]:
@@ -42,11 +42,11 @@ def generate_maps_for_variables(
     Generate multiple maps for different census variables from the same data.
     
     Args:
-        census_data_path: Path to the GeoJSON file with census data for block groups
+        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for block groups
         variables: List of Census API variables to visualize
         output_dir: Directory to save maps (default: output/maps)
         basename: Base filename to use for output files (default: derived from input file)
-        isochrone_path: Optional path to isochrone GeoJSON to overlay on the maps
+        isochrone_path: Optional path to isochrone GeoJSON or GeoDataFrame to overlay on the maps
         include_isochrone_only_map: Whether to generate an isochrone-only map
         poi_df: Optional GeoDataFrame containing POI data
         use_panels: Whether to generate paneled maps (requires list inputs)

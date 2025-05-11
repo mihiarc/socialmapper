@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import geopandas as gpd
 import requests
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
@@ -21,25 +21,33 @@ from socialmapper.states import (
 from socialmapper.util import (
     census_code_to_name,
     normalize_census_variable,
-    CENSUS_VARIABLE_MAPPING
+    CENSUS_VARIABLE_MAPPING,
+    get_readable_census_variables
 )
 
 
-def load_block_groups(geojson_path: str) -> gpd.GeoDataFrame:
+def load_block_groups(geojson_path: Union[str, gpd.GeoDataFrame]) -> gpd.GeoDataFrame:
     """
-    Load block groups from a GeoJSON file produced by the blockgroups module.
+    Load block groups from a GeoJSON file or directly from a GeoDataFrame.
     
     Args:
-        geojson_path: Path to the GeoJSON file with block groups
+        geojson_path: Path to the GeoJSON file with block groups or a GeoDataFrame object
         
     Returns:
         GeoDataFrame containing block groups
     """
     try:
-        gdf = gpd.read_file(geojson_path)
-        return gdf
+        if isinstance(geojson_path, gpd.GeoDataFrame):
+            return geojson_path
+        else:
+            gdf = gpd.read_file(geojson_path)
+            return gdf
     except Exception as e:
-        raise ValueError(f"Error loading block groups file: {e}")
+        # Prevent including the full DataFrame in the error message
+        error_msg = str(e)
+        if len(error_msg) > 500:
+            error_msg = f"{error_msg[:200]}... (truncated error message)"
+        raise ValueError(f"Error loading block groups file: {error_msg}")
 
 
 def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
@@ -286,20 +294,21 @@ def merge_census_data(
 
 
 def get_census_data_for_block_groups(
-    geojson_path: str,
+    geojson_path: Union[str, gpd.GeoDataFrame],
     variables: List[str],
     output_path: Optional[str] = None,
     variable_mapping: Optional[Dict[str, str]] = None,
     year: int = 2021,
     dataset: str = 'acs/acs5',
     api_key: Optional[str] = None,
+    export_geojson: bool = False,
     exclude_from_visualization: List[str] = ['NAME']
 ) -> gpd.GeoDataFrame:
     """
     Main function to fetch census data for block groups identified by isochrone analysis.
     
     Args:
-        geojson_path: Path to GeoJSON file with block groups
+        geojson_path: Path to GeoJSON file with block groups or a GeoDataFrame object
         variables: List of Census API variable codes or human-readable names (e.g., 'total_population', 'B01003_001E')
                   Human-readable names will be automatically converted to Census API codes
         output_path: Path to save the result (defaults to output/census_data/[filename]_census.geojson)
@@ -307,6 +316,7 @@ def get_census_data_for_block_groups(
         year: Census year
         dataset: Census dataset
         api_key: Census API key (optional if set as environment variable)
+        export_geojson: Whether to export the result to a GeoJSON file
         exclude_from_visualization: Variables to exclude from visualization (default: ['NAME'])
         
     Returns:
@@ -314,18 +324,22 @@ def get_census_data_for_block_groups(
         Note: The returned data will include all requested variables including those in exclude_from_visualization,
         but the 'variables_for_visualization' attribute will be added to indicate which ones are meant for maps.
     """
-    # Load block groups
-    get_progress_bar().write(f"Loading block groups from {geojson_path}...")
+    # Load block groups - this can now handle both string paths and GeoDataFrames
+    if isinstance(geojson_path, gpd.GeoDataFrame):
+        get_progress_bar().write("Using provided GeoDataFrame for block groups...")
+    else:
+        get_progress_bar().write(f"Loading block groups from {geojson_path}...")
+    
     block_groups_gdf = load_block_groups(geojson_path)
     
     if len(block_groups_gdf) == 0:
-        raise ValueError(f"No block groups found in {geojson_path}")
+        raise ValueError("No block groups found in input data")
     
     # Extract block group IDs by state
     block_groups_by_state = extract_block_group_ids(block_groups_gdf)
     
     if not block_groups_by_state:
-        raise ValueError(f"Could not extract valid block group IDs from {geojson_path}")
+        raise ValueError("Could not extract valid block group IDs from block groups data")
     
     # Get the list of states we need to query
     state_fips_list = list(block_groups_by_state.keys())
@@ -341,8 +355,11 @@ def get_census_data_for_block_groups(
         if var != norm_var:
             get_progress_bar().write(f"  - Will convert '{var}' to Census API code '{norm_var}'")
     
+    # Display readable names for census variables using the utility function
+    readable_vars = get_readable_census_variables(normalized_variables)
+    
     # Fetch census data for all block groups in the relevant states
-    get_progress_bar().write(f"Fetching census data for variables: {', '.join(normalized_variables)}")
+    get_progress_bar().write(f"Fetching census data for: {', '.join(readable_vars)}")
     
     # Print API key status (masked for security)
     if api_key:
@@ -355,7 +372,7 @@ def get_census_data_for_block_groups(
             get_progress_bar().write(f"Using environment API key: {masked_key}")
         else:
             get_progress_bar().write("WARNING: No Census API key provided!")
-
+    
     # Fetch census data
     all_state_census_data = fetch_census_data_for_states(
         state_fips_list,
@@ -387,37 +404,43 @@ def get_census_data_for_block_groups(
         if var != 'NAME' and var in result_gdf.columns:
             result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
     
-    # Generate default output path if none provided
-    if output_path is None:
-        # Extract filename from input path without extension
-        input_name = Path(geojson_path).stem
-        output_path = Path(f"output/census_data/{input_name}_census.geojson")
-    else:
-        output_path = Path(output_path)
-    
-    # Ensure output directory exists
-    output_dir = output_path.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
     # Check if NAME column is present and not null
     if 'NAME' in result_gdf.columns:
         null_names = result_gdf['NAME'].isnull().sum()
         if null_names > 0:
             result_gdf['NAME'] = result_gdf['NAME'].fillna("Block Group").astype(str)
     
-    # Save to file
-    get_progress_bar().write(f"Saving result with census data to {output_path}...")
-    
-    try:
-        result_gdf.to_file(output_path, driver="GeoJSON")
-        get_progress_bar().write(f"Saved result with census data to {output_path}")
-    except Exception as e:
-        # Try an alternative approach - convert to string types first
-        for col in result_gdf.columns:
-            if col != 'geometry':
-                result_gdf[col] = result_gdf[col].astype(str)
+    # Only save to file if export_geojson is True and output_path is provided or can be derived
+    if export_geojson:
+        # Generate default output path if none provided
+        if output_path is None:
+            # Extract filename from input path without extension if it's a string
+            if isinstance(geojson_path, str):
+                input_name = Path(geojson_path).stem
+                output_path = Path(f"output/census_data/{input_name}_census.geojson")
+            else:
+                # Default name for GeoDataFrame input
+                output_path = Path(f"output/census_data/block_groups_census.geojson")
+        else:
+            output_path = Path(output_path)
         
-        result_gdf.to_file(output_path, driver="GeoJSON")
+        # Ensure output directory exists
+        output_dir = output_path.parent
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save to file
+        get_progress_bar().write(f"Saving result with census data to {output_path}...")
+        
+        try:
+            result_gdf.to_file(output_path, driver="GeoJSON")
+            get_progress_bar().write(f"Saved result with census data to {output_path}")
+        except Exception as e:
+            # Try an alternative approach - convert to string types first
+            for col in result_gdf.columns:
+                if col != 'geometry':
+                    result_gdf[col] = result_gdf[col].astype(str)
+            
+            result_gdf.to_file(output_path, driver="GeoJSON")
     
     return result_gdf
 

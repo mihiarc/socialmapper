@@ -77,10 +77,23 @@ def run_app():
     )
 
     # Export options 
-    export = st.sidebar.checkbox(
+    st.sidebar.subheader("Output Options")
+    export_csv = st.sidebar.checkbox(
         "Export data to CSV",
         value=True,
         help="Export census data to CSV format with block group identifiers and travel distances"
+    )
+    
+    export_geojson = st.sidebar.checkbox(
+        "Export data to GeoJSON",
+        value=False,
+        help="Export data to GeoJSON format (for GIS software)"
+    )
+    
+    export_maps = st.sidebar.checkbox(
+        "Generate maps",
+        value=False,
+        help="Generate map visualizations for each census variable"
     )
 
     # API key input
@@ -345,7 +358,9 @@ def run_app():
                         api_key=census_api_key or None,
                         output_dirs=output_dirs,
                         progress_callback=update_step,
-                        export=export
+                        export_csv=export_csv,
+                        export_geojson=export_geojson,
+                        export_maps=export_maps
                     )
                 else:
                     # Custom coordinate workflows
@@ -362,7 +377,9 @@ def run_app():
                             api_key=census_api_key or None,
                             output_dirs=output_dirs,
                             progress_callback=update_step,
-                            export=export
+                            export_csv=export_csv,
+                            export_geojson=export_geojson,
+                            export_maps=export_maps
                         )
                     elif (
                         upload_method == "Manual Entry"
@@ -376,7 +393,9 @@ def run_app():
                             api_key=census_api_key or None,
                             output_dirs=output_dirs,
                             progress_callback=update_step,
-                            export=export
+                            export_csv=export_csv,
+                            export_geojson=export_geojson,
+                            export_maps=export_maps
                         )
                     else:
                         raise ValueError("No valid coordinates provided – please upload or enter coordinates first.")
