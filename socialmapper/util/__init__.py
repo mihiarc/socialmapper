@@ -155,4 +155,35 @@ def get_readable_census_variables(variables: List[str]) -> List[str]:
     Returns:
         List of human-readable strings with codes
     """
-    return [get_readable_census_variable(var) for var in variables] 
+    return [get_readable_census_variable(var) for var in variables]
+
+# Import utilities to expose at the module level
+from .rate_limiter import (
+    rate_limiter,
+    rate_limited,
+    with_retry,
+    RateLimitedClient,
+    AsyncRateLimitedClient
+)
+
+# Export these symbols at the package level
+__all__ = [
+    # Census variable utilities
+    'CENSUS_VARIABLE_MAPPING',
+    'VARIABLE_COLORMAPS',
+    'census_code_to_name',
+    'census_name_to_code',
+    'normalize_census_variable',
+    'get_readable_census_variable',
+    'get_readable_census_variables',
+    
+    # Map utilities
+    'add_north_arrow',
+    
+    # Rate limiter utilities
+    'rate_limiter',
+    'rate_limited',
+    'with_retry',
+    'RateLimitedClient',
+    'AsyncRateLimitedClient',
+] 
