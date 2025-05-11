@@ -24,7 +24,7 @@ import alphashape
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class GraphCache:
             del self.cache[oldest_id]
             del self.access_times[oldest_id]
             self.idx.delete(oldest_id, bounds)
-            logger.info(f"Cache full - removed graph {oldest_id}")
+            logger.debug(f"Cache full - removed graph {oldest_id}")
         
         graph_id = self.graph_id_counter
         self.graph_id_counter += 1
@@ -87,7 +87,7 @@ class GraphCache:
         self.idx.insert(graph_id, bounds)
         self.access_times[graph_id] = time.time()
         
-        logger.info(f"Added graph {graph_id} to cache with bounds {bounds}")
+        logger.debug(f"Added graph {graph_id} to cache with bounds {bounds}")
         return graph_id
     
     def get_graph_for_point(self, lat, lon, dist_meters):
@@ -125,10 +125,10 @@ class GraphCache:
                 
                 # Update access time for LRU
                 self.access_times[graph_id] = time.time()
-                logger.info(f"Cache hit - using graph {graph_id} for point ({lat}, {lon})")
+                logger.debug(f"Cache hit - using graph {graph_id} for point ({lat}, {lon})")
                 return self.cache[graph_id][0]
         
-        logger.info(f"Cache miss - no suitable graph found for point ({lat}, {lon})")
+        logger.debug(f"Cache miss - no suitable graph found for point ({lat}, {lon})")
         return None
     
     def clear(self):
@@ -177,10 +177,7 @@ def get_network_graph(latitude, longitude, dist_meters):
         
         # Record time spent downloading
         download_time = time.time() - start_time
-        logger.info(f"Downloaded new network graph in {download_time:.2f} seconds")
-        
-        # Log the graph size 
-        logger.info(f"Graph size: {len(G.nodes)} nodes, {len(G.edges)} edges")
+        logger.info(f"Downloaded network graph in {download_time:.2f}s ({len(G.nodes)} nodes, {len(G.edges)} edges)")
         
         # Add speeds and travel times
         G = ox.add_edge_speeds(G, fallback=50)
@@ -317,11 +314,7 @@ def create_isochrone_from_poi(
                 adjusted_alpha = min(adjusted_alpha, 0.05)
             
             # Calculate the alpha shape (concave hull)
-            alpha_start = time.time()
             alpha_shape = alphashape.alphashape(point_coords, alpha=adjusted_alpha)
-            alpha_time = time.time() - alpha_start
-            
-            logger.debug(f"Generated alpha shape (α={adjusted_alpha}) in {alpha_time:.3f}s")
             
             # Check if the result is a valid non-empty polygon
             is_valid_shape = (alpha_shape and
@@ -331,33 +324,35 @@ def create_isochrone_from_poi(
             
             if is_valid_shape:
                 isochrone = alpha_shape
-                logger.debug(f"Using alpha shape with {len(point_coords)} points")
+                logger.debug(f"Using alpha shape with {len(point_coords)} points (α={adjusted_alpha})")
             else:
                 # Try with an even smaller alpha value if the initial one failed
                 if adjusted_alpha >= 0.05 and alpha_shape.is_empty:
-                    logger.warning(f"Alpha shape with α={adjusted_alpha} produced empty result, trying with α=0.01")
+                    logger.debug(f"Alpha shape with α={adjusted_alpha} produced empty result, trying with α=0.01")
                     alpha_shape = alphashape.alphashape(point_coords, alpha=0.01)
                     
                     if alpha_shape and alpha_shape.is_valid and not alpha_shape.is_empty:
                         isochrone = alpha_shape
-                        logger.debug(f"Using alpha shape with α=0.01 and {len(point_coords)} points")
+                        logger.debug(f"Alpha shape successful with α=0.01")
                     else:
                         # Fallback to convex hull if alpha shape generation fails
-                        logger.warning(f"Alpha shape generation failed or produced empty result, falling back to convex hull")
+                        logger.debug(f"Alpha shape generation failed: {e}")
+                        logger.info("Falling back to convex hull")
                         isochrone = nodes_gdf.unary_union.convex_hull
                 else:
                     # Fallback to convex hull
-                    logger.warning(f"Alpha shape generation with α={adjusted_alpha} produced {alpha_shape.geom_type}, falling back to convex hull")
+                    logger.debug(f"Too few points ({len(node_points)}) for alpha shape, using convex hull")
                     isochrone = nodes_gdf.unary_union.convex_hull
         except Exception as e:
             # Fallback to convex hull if alpha shape generation fails
-            logger.warning(f"Alpha shape generation failed: {e}, falling back to convex hull")
+            logger.debug(f"Alpha shape generation failed: {e}")
+            logger.info("Falling back to convex hull")
             isochrone = nodes_gdf.unary_union.convex_hull
     else:
         # Use convex hull if alpha shape is not requested or we have too few points
         isochrone = nodes_gdf.unary_union.convex_hull
         if use_alpha_shape and len(node_points) <= 10:
-            logger.warning(f"Too few points ({len(node_points)}) for alpha shape, using convex hull")
+            logger.debug(f"Too few points ({len(node_points)}) for alpha shape, using convex hull")
     
     # Create GeoDataFrame with the isochrone
     isochrone_gdf = gpd.GeoDataFrame(
@@ -470,7 +465,7 @@ def process_poi_for_parallel(
         )
         
         # Log progress but avoid using tqdm.write which is not thread-safe
-        logger.info(f"[{index+1}/{total}] Created isochrone for POI: {poi_name}")
+        logger.debug(f"[{index+1}/{total}] Created isochrone for POI: {poi_name}")
         return result
     except Exception as e:
         logger.error(f"Error creating isochrone for POI {poi_name}: {e}")
@@ -556,8 +551,8 @@ def create_isochrones_from_poi_list(
                 # Use tqdm.write instead of logger to avoid messing up the progress bar
                 tqdm.write(f"Created isochrone for POI: {poi_name}")
             except Exception as e:
-                tqdm.write(f"Error creating isochrone for POI {poi_name}: {e}")
-                logger.error(f"Error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
+                tqdm.write(f"Error creating isochrone for POI {poi_name}")
+                logger.error(f"Error processing POI {poi.get('id', 'unknown')}: {e}")
                 # Continue with next POI instead of failing
                 continue
     else:
@@ -598,7 +593,7 @@ def create_isochrones_from_poi_list(
                         else:
                             isochrone_gdfs.append(result)
                 except Exception as e:
-                    logger.error(f"Exception in worker thread: {e}")
+                    logger.error(f"Error in worker thread: {e}")
         
         pbar.close()
     
@@ -627,7 +622,7 @@ def create_isochrones_from_poi_list(
                 else:
                     return combined_gdf
             else:
-                logger.warning("No isochrones were successfully generated")
+                logger.info("No isochrones were successfully generated")
                 return [] if save_individual_files else gpd.GeoDataFrame()
         else:
             # We need to load the individual files and combine them
@@ -659,9 +654,9 @@ def create_isochrones_from_poi_list(
                             pass
                     
                     bbox = tuple(total_bounds)
-                    logger.info(f"Using bounding box for optimized reads: {bbox}")
+                    logger.debug(f"Using bounding box for optimized reads: {bbox}")
                 except Exception as e:
-                    logger.warning(f"Could not determine bounding box for optimization: {e}")
+                    logger.debug(f"Could not determine bounding box for optimization: {e}")
             
             for file in get_progress_bar(isochrone_files, desc="Loading isochrones", unit="file"):
                 if file.endswith('.parquet'):
@@ -739,7 +734,7 @@ def create_isochrones_from_json_file(
     try:
         with open(json_file_path, 'r') as f:
             poi_data = json.load(f)
-        tqdm.write(f"Loaded {len(poi_data.get('pois', []))} POIs from {json_file_path}")
+        logger.info(f"Loaded {len(poi_data.get('pois', []))} POIs from {json_file_path}")
     except Exception as e:
         logger.error(f"Error loading JSON file: {e}")
         raise
@@ -774,7 +769,13 @@ if __name__ == "__main__":
                       help="Use convex hull instead of alpha shapes (concave hull)")
     parser.add_argument("--alpha", type=float, default=0.05,
                       help="Alpha value for alpha shape generation (default=0.05)")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                      help="Enable verbose debug logging")
     args = parser.parse_args()
+    
+    # Set more verbose logging if requested
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
     
     start_time = time.time()
     
