@@ -112,22 +112,24 @@ def run_app():
         with col2:
             poi_type = st.selectbox(
                 "POI Type",
-                ["amenity", "leisure", "shop", "building", "healthcare", "office", "education", "tourism", "natural", "historic", "transportation"]
+                ["amenity", "shop", "highway", "leisure", "education", "transportation"]
             )
             
             # Dynamic options based on selected POI type
             poi_options = {
+                
                 "amenity": ["library", "school", "hospital", "restaurant", "cafe", "bank", "pharmacy", "police", "fire_station", "place_of_worship", "community_centre", "post_office", "university", "college", "kindergarten", "bar", "fast_food", "pub", "ice_cream", "cinema", "theatre", "marketplace", "bus_station", "fuel", "parking", "atm", "toilet", "charging_station", "doctors", "clinic", "veterinary", "courthouse", "shelter", "social_facility", "arts_centre"],
+
                 "leisure": ["park", "garden", "playground", "sports_centre", "swimming_pool", "fitness_centre", "golf_course", "stadium", "nature_reserve", "track", "pitch", "water_park", "dog_park", "sports_hall", "marina", "beach_resort", "picnic_table", "ice_rink", "miniature_golf", "dance", "bowling_alley", "amusement_arcade", "fishing", "horse_riding", "disc_golf_course", "bird_hide", "sauna", "outdoor_seating"],
+
                 "shop": ["supermarket", "convenience", "clothing", "bakery", "butcher", "hardware", "department_store", "mall", "bicycle", "books", "electronics", "florist", "furniture", "garden_centre", "gift", "greengrocer", "hairdresser", "jewelry", "mobile_phone", "optician", "pet", "shoe", "sports", "stationery", "toy", "alcohol", "beverages", "car", "car_repair", "travel_agency", "laundry", "dry_cleaning", "beauty", "deli", "tobacco", "tea", "coffee", "charity", "art", "music", "computer", "video_games", "kiosk"],
-                "building": ["apartments", "house", "retail", "commercial", "office", "school", "hospital", "church", "public", "industrial", "warehouse", "residential", "university", "hotel", "dormitory", "bungalow", "detached", "semidetached_house", "terrace", "farm", "civic", "college", "stadium", "train_station", "transportation", "public_building", "kindergarten", "mosque", "synagogue", "temple", "greenhouse", "barn"],
-                "healthcare": ["doctor", "dentist", "hospital", "clinic", "pharmacy", "laboratory", "therapist", "nursing_home", "veterinary", "blood_donation", "alternative", "optometrist", "physiotherapist", "podiatrist", "psychotherapist", "rehabilitation", "speech_therapist", "vaccination_centre", "audiologist", "birthing_center", "counselling", "dialysis", "hospice", "midwife", "nutritionist", "occupational_therapist", "sample_collection", "surgeon"],
-                "office": ["government", "insurance", "lawyer", "estate_agent", "accountant", "financial", "travel_agent", "educational_institution", "ngo", "administrative", "advertising_agency", "architect", "association", "company", "consulting", "coworking", "diplomatic", "employment_agency", "energy_supplier", "foundation", "guide", "it", "newspaper", "political_party", "notary", "quango", "religion", "research", "surveyor", "tax", "tax_advisor", "telecommunication", "water_utility"],
+                "healthcare": ["hospital"],
+
+                "highway": ["path"],
+
                 "education": ["school", "university", "college", "kindergarten", "preschool", "primary", "secondary", "high_school", "language_school", "music_school", "driving_school", "art_school", "dance_school", "culinary_school", "trade_school", "adult_education", "library", "research_institute", "training", "technical", "vocational", "special_education", "cram_school", "tutoring_center", "preparatory", "boarding_school"],
-                "tourism": ["hotel", "motel", "guest_house", "hostel", "campsite", "caravan_site", "apartment", "attraction", "viewpoint", "museum", "artwork", "gallery", "theme_park", "zoo", "aquarium", "information", "picnic_site", "wilderness_hut", "alpine_hut", "resort", "chalet", "bed_and_breakfast", "trail_riding_station", "cabin", "beach_resort", "hunting_lodge", "water_park"],
-                "natural": ["beach", "bay", "cape", "cliff", "crater", "fell", "forest", "grassland", "heath", "hill", "island", "land", "marsh", "mountain", "mountain_range", "peak", "plain", "ridge", "river", "rock", "scree", "scrub", "spring", "stone", "valley", "water", "wetland", "wood", "volcano", "desert", "dune", "glacier", "tree"],
-                "historic": ["archaeological_site", "battlefield", "castle", "city_gate", "citywalls", "farm", "fort", "manor", "memorial", "monument", "ruins", "ship", "tomb", "wayside_cross", "wayside_shrine", "wreck", "aircraft", "aqueduct", "building", "cannon", "church", "milestone", "monastery", "pillory", "railway_car", "stone", "tank", "lighthouse", "bridge", "boundary_stone"],
-                "transportation": ["bus_station", "train_station", "subway_station", "tram_stop", "ferry_terminal", "airport", "taxi_stand", "bicycle_parking", "car_parking", "car_rental", "charging_station", "fuel", "bicycle_rental", "boat_rental", "motorcycle_parking", "car_sharing", "bicycle_repair_station", "bus_stop", "platform", "railway_halt", "rest_area", "speed_camera", "toll_booth", "bridge", "tunnel"]
+                
+                "transportation": ["bus_station", "train_station", "subway_station"]
             }
             
             # Get default options based on selected type
