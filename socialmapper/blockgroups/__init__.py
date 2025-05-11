@@ -8,7 +8,7 @@ import geopandas as gpd
 from pathlib import Path
 import pandas as pd
 import requests
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 import json
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
@@ -211,21 +211,28 @@ def get_census_block_groups(
     
     return pd.concat(all_block_groups, ignore_index=True)
 
-def load_isochrone(isochrone_path: str) -> gpd.GeoDataFrame:
+def load_isochrone(isochrone_path: Union[str, gpd.GeoDataFrame]) -> gpd.GeoDataFrame:
     """
-    Load an isochrone file.
+    Load an isochrone file or use directly provided GeoDataFrame.
     
     Args:
-        isochrone_path: Path to the isochrone GeoJSON or GeoParquet file
+        isochrone_path: Path to the isochrone GeoJSON/GeoParquet file OR a GeoDataFrame
         
     Returns:
         GeoDataFrame containing the isochrone
     """
     try:
-        if isochrone_path.endswith('.parquet'):
-            isochrone_gdf = gpd.read_parquet(isochrone_path)
+        # If already a GeoDataFrame, return it directly
+        if isinstance(isochrone_path, gpd.GeoDataFrame):
+            isochrone_gdf = isochrone_path
+        elif isinstance(isochrone_path, str):
+            # Load from file path
+            if isochrone_path.endswith('.parquet'):
+                isochrone_gdf = gpd.read_parquet(isochrone_path)
+            else:
+                isochrone_gdf = gpd.read_file(isochrone_path, engine="pyogrio", use_arrow=USE_ARROW)
         else:
-            isochrone_gdf = gpd.read_file(isochrone_path, engine="pyogrio", use_arrow=USE_ARROW)
+            raise ValueError(f"Unsupported isochrone input type: {type(isochrone_path)}. Expected string path or GeoDataFrame.")
             
         if isochrone_gdf.crs is None:
             isochrone_gdf.set_crs("EPSG:4326", inplace=True)
@@ -325,7 +332,7 @@ def find_intersecting_block_groups(
     return result_gdf
 
 def isochrone_to_block_groups(
-    isochrone_path: str,
+    isochrone_path: Union[str, gpd.GeoDataFrame],
     state_fips: List[str],
     output_path: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -336,7 +343,7 @@ def isochrone_to_block_groups(
     Main function to find census block groups intersecting with an isochrone.
     
     Args:
-        isochrone_path: Path to isochrone GeoJSON or GeoParquet file
+        isochrone_path: Path to isochrone GeoJSON/GeoParquet file OR a GeoDataFrame
         state_fips: List of state FIPS codes or abbreviations (required)
         output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)
@@ -391,7 +398,7 @@ def isochrone_to_block_groups(
     return result_gdf
 
 def isochrone_to_block_groups_by_county(
-    isochrone_path: str,
+    isochrone_path: Union[str, gpd.GeoDataFrame],
     poi_data: Dict,
     output_path: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -406,7 +413,7 @@ def isochrone_to_block_groups_by_county(
     that span multiple states.
     
     Args:
-        isochrone_path: Path to isochrone GeoJSON or GeoParquet file
+        isochrone_path: Path to isochrone GeoJSON/GeoParquet file OR a GeoDataFrame
         poi_data: Dictionary with POI data including coordinates
         output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
         api_key: Census API key (optional if using cached data)

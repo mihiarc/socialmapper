@@ -6,6 +6,7 @@ import geopandas as gpd
 import matplotlib
 import sys
 import os
+from typing import Optional, Union, List
 
 # Set the backend for matplotlib based on environment
 try:
@@ -26,18 +27,17 @@ import pandas as pd
 from matplotlib.patches import Patch, FancyBboxPatch
 from matplotlib.lines import Line2D
 from pathlib import Path
-from typing import Optional, List
+from socialmapper.util import CENSUS_VARIABLE_MAPPING, VARIABLE_COLORMAPS
+from .map_utils import get_variable_label
 from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.patheffects as pe
 from matplotlib.colors import LinearSegmentedColormap
 
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from socialmapper.util import CENSUS_VARIABLE_MAPPING, VARIABLE_COLORMAPS
-from .map_utils import get_variable_label
 
 def generate_map(
-    census_data_path: str,
+    census_data_path: Union[str, gpd.GeoDataFrame],
     variable: str,
     output_path: Optional[str] = None,
     title: Optional[str] = None,
@@ -46,7 +46,7 @@ def generate_map(
     figsize: tuple = (12, 12),
     dpi: int = 300,
     output_dir: str = "output/maps",
-    isochrone_path: Optional[str] = None,
+    isochrone_path: Optional[Union[str, gpd.GeoDataFrame]] = None,
     isochrone_only: bool = False,  # Parameter to indicate isochrone-only maps
     poi_df: Optional[gpd.GeoDataFrame] = None,
     show_isochrone: bool = False
@@ -55,7 +55,7 @@ def generate_map(
     Generate a choropleth map for census data in block groups.
     
     Args:
-        census_data_path: Path to the GeoJSON file with census data for block groups
+        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for block groups
         output_path: Path to save the output map (if not provided, will use output_dir)
         variable: Census variable to visualize
         title: Map title (defaults to a readable version of the variable name)
@@ -64,7 +64,7 @@ def generate_map(
         figsize: Figure size (width, height) in inches
         dpi: Output image resolution
         output_dir: Directory to save maps (default: output/maps)
-        isochrone_path: Optional path to isochrone GeoJSON to overlay on the map
+        isochrone_path: Optional path to isochrone GeoJSON/GeoDataFrame to overlay on the map
         isochrone_only: If True, generate a map showing only isochrones without census data
         poi_df: Optional GeoDataFrame containing POI data
         show_isochrone: Whether to display the isochrone boundary on the map
@@ -90,10 +90,13 @@ def generate_map(
         variable = CENSUS_VARIABLE_MAPPING[variable.lower()]
     
     # Load the census data
-    try:
-        gdf = gpd.read_file(census_data_path)
-    except Exception as e:
-        raise ValueError(f"Error loading census data file: {e}")
+    if isinstance(census_data_path, gpd.GeoDataFrame):
+        gdf = census_data_path
+    else:
+        try:
+            gdf = gpd.read_file(census_data_path)
+        except Exception as e:
+            raise ValueError(f"Error loading census data file: {e}")
     
     # Check if variable exists in the data
     if variable not in gdf.columns:
@@ -146,7 +149,11 @@ def generate_map(
         # Ensure output directory exists
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         
-        input_name = Path(census_data_path).stem
+        # Create a filename based on the variable
+        if isinstance(census_data_path, str):
+            input_name = Path(census_data_path).stem
+        else:
+            input_name = "census_data"
         output_path = Path(f"{output_dir}/{input_name}_{variable}_map.png")
     else:
         output_path = Path(output_path)
@@ -440,7 +447,7 @@ def generate_map(
     return str(output_path)
 
 def generate_isochrone_map(
-    isochrone_path: str,
+    isochrone_path: Union[str, gpd.GeoDataFrame],
     output_path: Optional[str] = None,
     title: Optional[str] = None,
     basemap_provider: str = 'OpenStreetMap.Mapnik',
@@ -453,7 +460,7 @@ def generate_isochrone_map(
     Generate a map showing just isochrones without census data.
     
     Args:
-        isochrone_path: Path to isochrone GeoJSON file
+        isochrone_path: Path to isochrone GeoJSON file or GeoDataFrame
         output_path: Path to save the output map (if not provided, will use output_dir)
         title: Map title (defaults to "Travel Time Isochrones")
         basemap_provider: Contextily basemap provider
@@ -466,21 +473,28 @@ def generate_isochrone_map(
         Path to the saved map
     """
     # Load the isochrone
-    try:
-        # Determine the file type and read appropriately
-        if isochrone_path.lower().endswith('.parquet'):
-            isochrone = gpd.read_parquet(isochrone_path)
-        else:
-            isochrone = gpd.read_file(isochrone_path)
-    except Exception as e:
-        raise ValueError(f"Error loading isochrone file: {e}")
+    if isinstance(isochrone_path, gpd.GeoDataFrame):
+        isochrone = isochrone_path
+    else:
+        try:
+            # Determine the file type and read appropriately
+            if isochrone_path.lower().endswith('.parquet'):
+                isochrone = gpd.read_parquet(isochrone_path)
+            else:
+                isochrone = gpd.read_file(isochrone_path)
+        except Exception as e:
+            raise ValueError(f"Error loading isochrone file: {e}")
         
     # Generate output path if not provided
     if output_path is None:
         # Ensure output directory exists
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         
-        input_name = Path(isochrone_path).stem
+        # Create a filename
+        if isinstance(isochrone_path, str):
+            input_name = Path(isochrone_path).stem
+        else:
+            input_name = "isochrone"
         output_path = Path(f"{output_dir}/{input_name}_isochrone_map.png")
     else:
         output_path = Path(output_path)
