@@ -3,6 +3,8 @@
 Utility functions for the socialmapper project.
 """
 
+from typing import List
+
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
     'population': 'B01003_001E',
@@ -118,3 +120,39 @@ def add_north_arrow(ax, position='upper right', scale=0.1):
                        ha='center', va='center', fontsize=10, fontweight='bold')
     
     return arrow 
+
+def get_readable_census_variable(variable: str) -> str:
+    """
+    Get a human-readable representation of a census variable (with code).
+    
+    Args:
+        variable: Census variable code (e.g., "B01003_001E")
+        
+    Returns:
+        Human-readable string like "Total Population (B01003_001E)" or just the code if not found
+    """
+    # If already in readable format, return as is
+    if not (variable.startswith('B') and '_' in variable and variable.endswith('E')):
+        return variable
+    
+    # Look for a human-readable name
+    for name, code in CENSUS_VARIABLE_MAPPING.items():
+        if code == variable:
+            # Format name for display (convert snake_case to Title Case)
+            readable_name = name.replace('_', ' ').title()
+            return f"{readable_name} ({variable})"
+    
+    # If no human-readable name found, return the code
+    return variable
+
+def get_readable_census_variables(variables: List[str]) -> List[str]:
+    """
+    Get human-readable representations for a list of census variables.
+    
+    Args:
+        variables: List of census variable codes
+        
+    Returns:
+        List of human-readable strings with codes
+    """
+    return [get_readable_census_variable(var) for var in variables] 

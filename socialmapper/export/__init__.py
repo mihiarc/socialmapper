@@ -156,8 +156,17 @@ def export_census_data_to_csv(
                 csv_data[column_name] = df[col]
     
     # Calculate travel distances
-    # Calculate centroids of block groups
-    df['centroid'] = df.geometry.centroid
+    # Reproject to Albers Equal Area (EPSG:5070) for accurate centroid calculations
+    df_projected = df.copy()
+    if df_projected.crs is None:
+        # If no CRS is set, assume WGS84
+        df_projected.set_crs("EPSG:4326", inplace=True)
+    
+    # Reproject to a suitable projection for North America
+    df_projected = df_projected.to_crs("EPSG:5070")
+    
+    # Calculate centroids of block groups in the projected CRS
+    df['centroid'] = df_projected.geometry.centroid
     
     # Convert POIs to GeoDataFrame
     poi_points = []
