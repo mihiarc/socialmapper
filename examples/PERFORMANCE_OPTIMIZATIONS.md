@@ -135,6 +135,9 @@ It's also worth noting that in our test environment, the OSMnx graphs were alrea
 **Recommendation:**
 The graph simplification option should be kept enabled by default since it provides a meaningful performance improvement with no measurable loss in accuracy.
 
+**Update (May 2025):**
+The graph simplification feature has been removed as it was found to be redundant. Analysis of logs showed that OSMnx returns already simplified graphs by default (evidenced by "Graph is already simplified, skipping simplification" messages), so the simplification step wasn't providing any actual performance benefit. Removing this unnecessary code has simplified the codebase without affecting performance.
+
 ## 4. Alpha Shapes for Improved Isochrones
 
 ### Problem
@@ -184,11 +187,11 @@ You can test the alpha shape implementation using:
 ### Example Usage
 
 ```python
-# Use alpha shapes (default)
+# Use alpha shapes (default, alpha=0.05)
 python -m socialmapper.isochrone poi_data.json
 
 # Use alpha shapes with custom alpha value
-python -m socialmapper.isochrone poi_data.json --alpha 0.1
+python -m socialmapper.isochrone poi_data.json --alpha 0.01
 
 # Disable alpha shapes and use convex hull instead
 python -m socialmapper.isochrone poi_data.json --no-alpha-shape
@@ -209,12 +212,12 @@ These results show that:
 3. The shapes are dramatically different, with alpha shapes precisely following the road network
 
 We tested various alpha values and found that:
-- Values between 0.05-0.5 produce similar results for typical road networks
-- Lower values (0.01-0.05) create more detailed shapes for dense networks
+- Values between 0.01-0.05 produce the most accurate results for typical road networks
+- Lower values (0.01) create more detailed shapes and are useful as a fallback
 - Values above 0.5 often produce empty geometries for real-world networks
 
 **Recommendation:**
-The alpha shape implementation should remain enabled by default with alpha=0.5. Users with specific needs can adjust the alpha parameter: lower values for more detailed shapes, or disable alpha shapes entirely for simpler processing.
+The alpha shape implementation should remain enabled by default with alpha=0.05, with an automatic retry using alpha=0.01 when the initial attempt produces empty results. Users with specific needs can adjust the alpha parameter or disable alpha shapes entirely for simpler processing.
 
 ## Future Optimizations
 

@@ -142,7 +142,7 @@ class GraphCache:
 # Initialize global graph cache
 graph_cache = GraphCache(max_cache_size=10)
 
-def get_network_graph(latitude, longitude, dist_meters, simplify=True):
+def get_network_graph(latitude, longitude, dist_meters):
     """
     Get a road network graph, using cache if available.
     
@@ -150,7 +150,6 @@ def get_network_graph(latitude, longitude, dist_meters, simplify=True):
         latitude: Latitude of the center point
         longitude: Longitude of the center point
         dist_meters: Required distance in meters from point
-        simplify: Whether to simplify the graph topology (reduces complexity, may slightly affect accuracy)
         
     Returns:
         NetworkX graph
@@ -180,35 +179,8 @@ def get_network_graph(latitude, longitude, dist_meters, simplify=True):
         download_time = time.time() - start_time
         logger.info(f"Downloaded new network graph in {download_time:.2f} seconds")
         
-        # Log the original graph size 
-        num_nodes_original = len(G.nodes)
-        num_edges_original = len(G.edges)
-        logger.info(f"Original graph size: {num_nodes_original} nodes, {num_edges_original} edges")
-        
-        # Simplify the graph if requested
-        if simplify:
-            try:
-                simplify_start = time.time()
-                # Check if the graph is already simplified
-                is_simplified = G.graph.get('simplified', False)
-                
-                if not is_simplified:
-                    G = ox.simplify_graph(G)
-                    simplify_time = time.time() - simplify_start
-                    
-                    # Log the simplified graph size and time
-                    num_nodes_simplified = len(G.nodes)
-                    num_edges_simplified = len(G.edges)
-                    node_reduction = (1 - num_nodes_simplified / num_nodes_original) * 100 if num_nodes_original > 0 else 0
-                    edge_reduction = (1 - num_edges_simplified / num_edges_original) * 100 if num_edges_original > 0 else 0
-                    
-                    logger.info(f"Simplified graph in {simplify_time:.2f} seconds")
-                    logger.info(f"Simplified graph size: {num_nodes_simplified} nodes ({node_reduction:.1f}% reduction), "
-                                f"{num_edges_simplified} edges ({edge_reduction:.1f}% reduction)")
-                else:
-                    logger.info("Graph is already simplified, skipping simplification")
-            except Exception as e:
-                logger.warning(f"Graph simplification failed: {e}. Continuing with original graph.")
+        # Log the graph size 
+        logger.info(f"Graph size: {len(G.nodes)} nodes, {len(G.edges)} edges")
         
         # Add speeds and travel times
         G = ox.add_edge_speeds(G, fallback=50)
@@ -251,9 +223,8 @@ def create_isochrone_from_poi(
     save_file: bool = True,
     simplify_tolerance: Optional[float] = None,
     use_parquet: bool = True,
-    simplify_graph: bool = True,
     use_alpha_shape: bool = True,
-    alpha: float = 0.5
+    alpha: float = 0.05
 ) -> Union[str, gpd.GeoDataFrame]:
     """
     Create an isochrone from a POI.
@@ -267,14 +238,13 @@ def create_isochrone_from_poi(
         simplify_tolerance (float, optional): Tolerance for geometry simplification
             If provided, geometries will be simplified to improve performance
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
-        simplify_graph (bool): Whether to simplify the road network graph 
-            (reduces computation time but may slightly affect accuracy)
         use_alpha_shape (bool): Whether to use alpha shapes (concave hull) instead of convex hull
             for more accurate isochrones that better follow the road network shape
         alpha (float): Alpha value for alpha shape generation
-            Default is 0.5 which works well for most road networks
-            Lower values (0.001-0.1) create more detailed shapes
-            Higher values may result in empty shapes (test showed empty for α>0.5)
+            Default is 0.05 which works well for most road networks
+            When alpha=0.05 produces empty shapes, automatically retries with alpha=0.01
+            Lower values (0.001-0.01) create more detailed shapes
+            Higher values may result in empty shapes (tests showed empty for α>0.5)
         
     Returns:
         Union[str, gpd.GeoDataFrame]: File path if save_file=True, or GeoDataFrame if save_file=False
@@ -295,7 +265,7 @@ def create_isochrone_from_poi(
     
     try:
         # Use cached graph if available, otherwise download new one
-        G = get_network_graph(latitude, longitude, dist_meters, simplify=simplify_graph)
+        G = get_network_graph(latitude, longitude, dist_meters)
     except Exception as e:
         logger.error(f"Error getting road network: {e}")
         raise
@@ -364,7 +334,7 @@ def create_isochrone_from_poi(
                 logger.debug(f"Using alpha shape with {len(point_coords)} points")
             else:
                 # Try with an even smaller alpha value if the initial one failed
-                if adjusted_alpha > 0.01 and alpha_shape.is_empty:
+                if adjusted_alpha >= 0.05 and alpha_shape.is_empty:
                     logger.warning(f"Alpha shape with α={adjusted_alpha} produced empty result, trying with α=0.01")
                     alpha_shape = alphashape.alphashape(point_coords, alpha=0.01)
                     
@@ -515,9 +485,8 @@ def create_isochrones_from_poi_list(
     simplify_tolerance: Optional[float] = None,
     use_parquet: bool = True,
     n_jobs: int = 1,  # Number of parallel jobs to run
-    simplify_graph: bool = True,  # Whether to simplify the graph topology
     use_alpha_shape: bool = True,  # Whether to use alpha shapes
-    alpha: float = 0.5  # Alpha value for alpha shape generation
+    alpha: float = 0.05  # Alpha value for alpha shape generation
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
     Create isochrones from a list of POIs.
@@ -535,10 +504,11 @@ def create_isochrones_from_poi_list(
             n_jobs=1: Sequential processing (no parallelism)
             n_jobs=-1: Use all available CPU cores
             n_jobs>1: Use specified number of CPU cores
-        simplify_graph (bool): Whether to simplify the road network graph topology
-            (reduces computation time but may slightly affect accuracy)
         use_alpha_shape (bool): Whether to use alpha shapes (concave hull) instead of convex hull
-        alpha (float): Alpha value for alpha shape generation (higher = smoother shapes)
+        alpha (float): Alpha value for alpha shape generation
+            Default is 0.05 which works well for most road networks
+            When alpha=0.05 produces empty shapes, automatically retries with alpha=0.01
+            Lower values (0.001-0.01) create more detailed shapes
         
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]:
@@ -574,7 +544,6 @@ def create_isochrones_from_poi_list(
                     save_file=save_individual_files,
                     simplify_tolerance=simplify_tolerance,
                     use_parquet=use_parquet,
-                    simplify_graph=simplify_graph,
                     use_alpha_shape=use_alpha_shape,
                     alpha=alpha
                 )
@@ -740,9 +709,8 @@ def create_isochrones_from_json_file(
     simplify_tolerance: Optional[float] = None,
     use_parquet: bool = True,
     n_jobs: int = 1,  # Number of parallel jobs to run
-    simplify_graph: bool = True,  # Whether to simplify the graph topology
     use_alpha_shape: bool = True,  # Whether to use alpha shapes
-    alpha: float = 0.5  # Alpha value for alpha shape generation
+    alpha: float = 0.05  # Alpha value for alpha shape generation
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
     Create isochrones from a JSON file containing POIs.
@@ -759,10 +727,11 @@ def create_isochrones_from_json_file(
             n_jobs=1: Sequential processing (no parallelism)
             n_jobs=-1: Use all available CPU cores
             n_jobs>1: Use specified number of CPU cores
-        simplify_graph (bool): Whether to simplify the road network graph topology
-            (reduces computation time but may slightly affect accuracy)
         use_alpha_shape (bool): Whether to use alpha shapes (concave hull) instead of convex hull
-        alpha (float): Alpha value for alpha shape generation (higher = smoother shapes)
+        alpha (float): Alpha value for alpha shape generation
+            Default is 0.05 which works well for most road networks
+            When alpha=0.05 produces empty shapes, automatically retries with alpha=0.01
+            Lower values (0.001-0.01) create more detailed shapes
         
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]: See create_isochrones_from_poi_list
@@ -784,7 +753,6 @@ def create_isochrones_from_json_file(
         simplify_tolerance=simplify_tolerance,
         use_parquet=use_parquet,
         n_jobs=n_jobs,
-        simplify_graph=simplify_graph,
         use_alpha_shape=use_alpha_shape,
         alpha=alpha
     )
@@ -802,12 +770,10 @@ if __name__ == "__main__":
     parser.add_argument("--no-parquet", action="store_true", help="Do not use GeoParquet format")
     parser.add_argument("--jobs", "-j", type=int, default=1, 
                       help="Number of parallel jobs to run (default=1, -1=all cores)")
-    parser.add_argument("--no-simplify-graph", action="store_true", 
-                      help="Disable graph topology simplification")
     parser.add_argument("--no-alpha-shape", action="store_true",
                       help="Use convex hull instead of alpha shapes (concave hull)")
-    parser.add_argument("--alpha", type=float, default=0.5,
-                      help="Alpha value for alpha shape generation (default=0.5)")
+    parser.add_argument("--alpha", type=float, default=0.05,
+                      help="Alpha value for alpha shape generation (default=0.05)")
     args = parser.parse_args()
     
     start_time = time.time()
@@ -820,7 +786,6 @@ if __name__ == "__main__":
         simplify_tolerance=args.simplify,
         use_parquet=not args.no_parquet,
         n_jobs=args.jobs,
-        simplify_graph=not args.no_simplify_graph,
         use_alpha_shape=not args.no_alpha_shape,
         alpha=args.alpha
     )
