@@ -16,6 +16,7 @@ from tqdm import tqdm
 from socialmapper.progress import get_progress_bar
 import time
 import logging
+from rtree import index  # For spatial indexing of cached graphs
 
 # Setup logging
 logging.basicConfig(
@@ -37,6 +38,177 @@ try:
     os.environ["PYOGRIO_USE_ARROW"] = "1"  # Set environment variable for pyogrio
 except ImportError:
     USE_ARROW = False
+
+# Global graph cache
+class GraphCache:
+    """
+    Cache for network graphs to avoid redundant downloads.
+    Uses R-tree spatial indexing to efficiently find graphs that cover a given point.
+    """
+    def __init__(self, max_cache_size=10):
+        """
+        Initialize the graph cache.
+        
+        Args:
+            max_cache_size: Maximum number of graphs to keep in cache
+        """
+        self.cache = {}  # Maps graph_id to (graph, bounds)
+        self.idx = index.Index()  # R-tree for spatial indexing
+        self.graph_id_counter = 0
+        self.max_cache_size = max_cache_size
+        self.access_times = {}  # For LRU cache eviction
+        
+    def add_graph(self, graph, bounds):
+        """
+        Add a graph to the cache.
+        
+        Args:
+            graph: NetworkX graph
+            bounds: (min_x, min_y, max_x, max_y) bounds of the graph
+        
+        Returns:
+            graph_id: ID of the cached graph
+        """
+        # If cache is full, remove least recently used graph
+        if len(self.cache) >= self.max_cache_size:
+            oldest_id = min(self.access_times, key=self.access_times.get)
+            del self.cache[oldest_id]
+            del self.access_times[oldest_id]
+            self.idx.delete(oldest_id, bounds)
+            logger.info(f"Cache full - removed graph {oldest_id}")
+        
+        graph_id = self.graph_id_counter
+        self.graph_id_counter += 1
+        
+        self.cache[graph_id] = (graph, bounds)
+        self.idx.insert(graph_id, bounds)
+        self.access_times[graph_id] = time.time()
+        
+        logger.info(f"Added graph {graph_id} to cache with bounds {bounds}")
+        return graph_id
+    
+    def get_graph_for_point(self, lat, lon, dist_meters):
+        """
+        Find a cached graph that covers the given point.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            dist_meters: Required distance in meters from point
+            
+        Returns:
+            graph or None if no suitable graph found
+        """
+        # Approximate conversion from meters to degrees (rough estimate)
+        buffer_deg = dist_meters / 111000.0  # ~111km per degree at equator
+        
+        # Define search bounds
+        search_bounds = (
+            lon - buffer_deg, 
+            lat - buffer_deg, 
+            lon + buffer_deg, 
+            lat + buffer_deg
+        )
+        
+        # Check if any cached graph fully contains the search bounds
+        for graph_id in self.idx.intersection(search_bounds):
+            _, graph_bounds = self.cache[graph_id]
+            
+            # Check if the graph bounds fully contain the search bounds
+            if (graph_bounds[0] <= search_bounds[0] and
+                graph_bounds[1] <= search_bounds[1] and
+                graph_bounds[2] >= search_bounds[2] and
+                graph_bounds[3] >= search_bounds[3]):
+                
+                # Update access time for LRU
+                self.access_times[graph_id] = time.time()
+                logger.info(f"Cache hit - using graph {graph_id} for point ({lat}, {lon})")
+                return self.cache[graph_id][0]
+        
+        logger.info(f"Cache miss - no suitable graph found for point ({lat}, {lon})")
+        return None
+    
+    def clear(self):
+        """Clear the cache completely"""
+        self.cache = {}
+        self.idx = index.Index()
+        self.graph_id_counter = 0
+        self.access_times = {}
+        logger.info("Graph cache cleared")
+
+# Initialize global graph cache
+graph_cache = GraphCache(max_cache_size=10)
+
+def get_network_graph(latitude, longitude, dist_meters):
+    """
+    Get a road network graph, using cache if available.
+    
+    Args:
+        latitude: Latitude of the center point
+        longitude: Longitude of the center point
+        dist_meters: Required distance in meters from point
+        
+    Returns:
+        NetworkX graph
+    """
+    # Try to get a cached graph first
+    G = graph_cache.get_graph_for_point(latitude, longitude, dist_meters)
+    
+    if G is not None:
+        return G
+    
+    # No suitable graph in cache, download a new one
+    # Download with extra buffer to make it more reusable
+    buffer_factor = 1.5  # 50% larger area to improve cache reuse
+    download_dist = dist_meters * buffer_factor
+    
+    # Record start time for performance measurement
+    start_time = time.time()
+    
+    try:
+        G = ox.graph_from_point(
+            (latitude, longitude),
+            network_type='drive',
+            dist=download_dist
+        )
+        
+        # Record time spent downloading
+        download_time = time.time() - start_time
+        logger.info(f"Downloaded new network graph in {download_time:.2f} seconds")
+        
+        # Add speeds and travel times
+        G = ox.add_edge_speeds(G, fallback=50)
+        G = ox.add_edge_travel_times(G)
+        G = ox.project_graph(G)
+        
+        # Calculate the bounds of the graph
+        nodes = pd.DataFrame(
+            {data['x']: data['y'] for _, data in G.nodes(data=True)}.items(),
+            columns=['x', 'y']
+        )
+        
+        if not nodes.empty:
+            min_x, min_y = nodes['x'].min(), nodes['y'].min()
+            max_x, max_y = nodes['x'].max(), nodes['y'].max()
+            
+            # Convert to lon/lat
+            graph_crs = G.graph['crs']
+            bounds_gdf = gpd.GeoDataFrame(
+                geometry=[Point(min_x, min_y), Point(max_x, max_y)],
+                crs=graph_crs
+            ).to_crs('EPSG:4326')
+            
+            min_lon, min_lat = bounds_gdf.iloc[0].geometry.x, bounds_gdf.iloc[0].geometry.y
+            max_lon, max_lat = bounds_gdf.iloc[1].geometry.x, bounds_gdf.iloc[1].geometry.y
+            
+            # Add to cache
+            bounds = (min_lon, min_lat, max_lon, max_lat)
+            graph_cache.add_graph(G, bounds)
+        
+        return G
+    except Exception as e:
+        logger.error(f"Error downloading road network: {e}")
+        raise
 
 def create_isochrone_from_poi(
     poi: Dict[str, Any],
@@ -72,21 +244,16 @@ def create_isochrone_from_poi(
     # Get POI name (or use ID if no name is available)
     poi_name = poi.get('tags', {}).get('name', f"poi_{poi.get('id', 'unknown')}")
     
-    # Download and prepare road network
-    try:
-        G = ox.graph_from_point(
-            (latitude, longitude),
-            network_type='drive',
-            dist=travel_time_limit * 1000  # Convert minutes to meters for initial area
-        )
-    except Exception as e:
-        logger.error(f"Error downloading road network: {e}")
-        raise
+    # Download and prepare road network using the caching mechanism
+    # Convert travel time to approximate distance (assuming ~50 km/h average speed)
+    dist_meters = travel_time_limit * 60 * (50/3.6)  # minutes * seconds * meters per second
     
-    # Add speeds and travel times with fallback values
-    G = ox.add_edge_speeds(G, fallback=50)  # 50 km/h as default fallback speed which is 31 mph
-    G = ox.add_edge_travel_times(G)
-    G = ox.project_graph(G)
+    try:
+        # Use cached graph if available, otherwise download new one
+        G = get_network_graph(latitude, longitude, dist_meters)
+    except Exception as e:
+        logger.error(f"Error getting road network: {e}")
+        raise
     
     # Create point from coordinates
     poi_point = Point(longitude, latitude)

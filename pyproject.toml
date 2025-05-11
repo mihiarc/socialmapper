@@ -50,6 +50,7 @@ dependencies = [
     "streamlit>=1.31",
     "watchdog>=6.0",
     "stqdm>=0.0.5, <0.0.6; python_version >= '3.11' and python_version < '4.0'",
+    "rtree",
 ]
 
 [project.optional-dependencies]
