@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from socialmapper.util import CENSUS_VARIABLE_MAPPING
 from .single_map import generate_map, generate_isochrone_map
 from .panel_map import generate_paneled_isochrone_map, generate_paneled_census_map
+from .folium_map import generate_folium_map_for_streamlit, generate_folium_panel_map, generate_folium_isochrone_map
 
 def generate_maps_for_variables(
     census_data_path: Union[str, gpd.GeoDataFrame, List[str], List[gpd.GeoDataFrame]],
@@ -36,6 +37,7 @@ def generate_maps_for_variables(
     include_isochrone_only_map: bool = True,
     poi_df: Optional[Union[gpd.GeoDataFrame, List[gpd.GeoDataFrame]]] = None,
     use_panels: bool = False,
+    use_folium: bool = False,
     **kwargs
 ) -> List[str]:
     """
@@ -50,11 +52,121 @@ def generate_maps_for_variables(
         include_isochrone_only_map: Whether to generate an isochrone-only map
         poi_df: Optional GeoDataFrame containing POI data
         use_panels: Whether to generate paneled maps (requires list inputs)
+        use_folium: Whether to generate interactive Folium maps (for Streamlit) instead of static maps
         **kwargs: Additional keyword arguments to pass to the map generation functions
         
     Returns:
-        List of paths to the saved maps
+        List of paths to the saved maps (only for static maps, not for Folium maps in Streamlit)
     """
+    # If we're using folium in Streamlit, we'll just generate interactive maps
+    # and won't return output paths as the maps are displayed directly
+    if use_folium and _IN_STREAMLIT:
+        if use_panels:
+            # Ensure inputs are lists for paneled maps
+            if not isinstance(census_data_path, list):
+                census_data_path = [census_data_path]
+            
+            if isochrone_path is not None and not isinstance(isochrone_path, list):
+                isochrone_path = [isochrone_path] * len(census_data_path)
+            
+            if poi_df is not None and not isinstance(poi_df, list):
+                poi_df = [poi_df] * len(census_data_path)
+                
+            # Generate separate folium panel map for each variable
+            for variable in variables:
+                # Use human-readable titles for each location
+                if isinstance(census_data_path[0], str):
+                    titles = [Path(path).stem.replace('_blockgroups', '').replace('_', ' ').title() 
+                             for path in census_data_path]
+                else:
+                    titles = [f"Location {i+1}" for i in range(len(census_data_path))]
+                
+                generate_folium_panel_map(
+                    census_data_paths=census_data_path,
+                    variable=variable,
+                    isochrone_paths=isochrone_path,
+                    poi_dfs=poi_df,
+                    titles=titles,
+                    **{k: v for k, v in kwargs.items() if k in [
+                        'colormap', 'height', 'width', 'show_legend', 'base_map'
+                    ]}
+                )
+        else:
+            # Generate isochrone-only map if requested
+            if include_isochrone_only_map and isochrone_path is not None:
+                # For isochrone-only map, we'll only use the first isochrone path if it's a list
+                isochrone_path_for_map = isochrone_path
+                if isinstance(isochrone_path, list) and isochrone_path:
+                    isochrone_path_for_map = isochrone_path[0]
+                
+                # Use the first POI dataframe if it's a list
+                poi_df_for_map = poi_df
+                if isinstance(poi_df, list) and poi_df:
+                    poi_df_for_map = poi_df[0]
+                
+                # Get a title for the isochrone map
+                isochrone_title = kwargs.get('title')
+                if isochrone_title is None:
+                    if isinstance(isochrone_path_for_map, str):
+                        isochrone_title = f"Travel Time from {Path(isochrone_path_for_map).stem.replace('_isochrones', '').replace('_', ' ').title()}"
+                    else:
+                        isochrone_title = "Travel Time Accessibility"
+                
+                # Create an isochrone-only map
+                generate_folium_map_for_streamlit(
+                    census_data_path=None,  # Not used for isochrone-only maps
+                    variable=None,  # Not used for isochrone-only maps
+                    isochrone_path=isochrone_path_for_map,
+                    poi_df=poi_df_for_map,
+                    title=isochrone_title,
+                    isochrone_only=True,
+                    **{k: v for k, v in kwargs.items() if k in [
+                        'height', 'width', 'base_map'
+                    ]}
+                )
+            
+            # Generate maps for each variable
+            for variable in variables:
+                # For single maps, we'll only use the first items if inputs are lists
+                census_data_for_map = census_data_path
+                if isinstance(census_data_path, list) and census_data_path:
+                    census_data_for_map = census_data_path[0]
+                
+                isochrone_path_for_map = isochrone_path
+                if isinstance(isochrone_path, list) and isochrone_path:
+                    isochrone_path_for_map = isochrone_path[0]
+                
+                poi_df_for_map = poi_df
+                if isinstance(poi_df, list) and poi_df:
+                    poi_df_for_map = poi_df[0]
+                
+                # Generate variable-specific title
+                variable_title = kwargs.get('title')
+                if variable_title is None:
+                    from .map_utils import get_variable_label
+                    variable_label = get_variable_label(variable)
+                    if isinstance(census_data_for_map, str):
+                        location_name = Path(census_data_for_map).stem.replace('_blockgroups', '').replace('_', ' ').title()
+                        variable_title = f"{variable_label} in {location_name}"
+                    else:
+                        variable_title = f"{variable_label} by Block Group"
+                
+                # Generate interactive folium map for this variable
+                generate_folium_map_for_streamlit(
+                    census_data_path=census_data_for_map,
+                    variable=variable,
+                    isochrone_path=isochrone_path_for_map,
+                    poi_df=poi_df_for_map,
+                    title=variable_title,
+                    **{k: v for k, v in kwargs.items() if k in [
+                        'colormap', 'height', 'width', 'show_legend', 'base_map'
+                    ]}
+                )
+        
+        # Return an empty list since we're displaying maps directly
+        return []
+    
+    # For static maps or when not in Streamlit, proceed with the original implementation
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
@@ -73,7 +185,7 @@ def generate_maps_for_variables(
     output_paths = []
     
     # Generate isochrone-only map if requested
-    if include_isochrone_only_map and isochrone_path:
+    if include_isochrone_only_map and isochrone_path is not None:
         isochrone_map_path = os.path.join(output_dir, f"{basename}_isochrone_map.png")
         
         # Handle the case when isochrone_path is a list
