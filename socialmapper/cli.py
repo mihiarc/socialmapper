@@ -53,17 +53,31 @@ def parse_arguments():
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
     parser.add_argument("--list-variables", action="store_true", help="List available census variables and exit")
     parser.add_argument("--dry-run", action="store_true", help="Print what would be done without actually doing it")
+    
+    # Output type controls - only CSV enabled by default
     parser.add_argument(
-        "--export", 
+        "--export-csv", 
         action="store_true", 
         default=True, 
         help="Export census data to CSV format (default: enabled)"
     )
     parser.add_argument(
-        "--no-export", 
+        "--no-export-csv", 
         action="store_false", 
-        dest="export", 
+        dest="export_csv", 
         help="Disable exporting census data to CSV format"
+    )
+    parser.add_argument(
+        "--export-geojson", 
+        action="store_true", 
+        default=False, 
+        help="Export data to GeoJSON format (default: disabled)"
+    )
+    parser.add_argument(
+        "--export-maps", 
+        action="store_true", 
+        default=False, 
+        help="Generate map visualizations (default: disabled)"
     )
     parser.add_argument(
         "--version", 
@@ -74,7 +88,7 @@ def parse_arguments():
     
     args = parser.parse_args()
     
-    # Validate POI arguments if --poi is specified
+    # Validate POI arguments if --poi is specified for querying OSM
     if args.poi:
         if not all([args.geocode_area, args.poi_type, args.poi_name]):
             parser.error("When using --poi, you must specify --geocode-area, --poi-type, and --poi-name")
@@ -112,7 +126,11 @@ def main():
         print(f"Travel time limit: {args.travel_time} minutes")
         print(f"Census variables: {', '.join(args.census_variables)}")
         print(f"Output directories: {output_dirs}")
-        print("No operations will be performed.")
+        print("\nOutput types to be generated:")
+        print(f"  - CSV: {'Yes' if args.export_csv else 'No'}")
+        print(f"  - GeoJSON: {'Yes' if args.export_geojson else 'No'}")
+        print(f"  - Maps: {'Yes' if args.export_maps else 'No'}")
+        print("\nNo operations will be performed.")
         sys.exit(0)
     
     # Execute the full process
@@ -135,7 +153,9 @@ def main():
                 travel_time=args.travel_time,
                 census_variables=args.census_variables,
                 api_key=args.api_key,
-                export=args.export
+                export_csv=args.export_csv,
+                export_geojson=args.export_geojson,
+                export_maps=args.export_maps
             )
         else:
             # Use custom coordinates
@@ -144,7 +164,9 @@ def main():
                 census_variables=args.census_variables,
                 api_key=args.api_key,
                 custom_coords_path=args.custom_coords,
-                export=args.export
+                export_csv=args.export_csv,
+                export_geojson=args.export_geojson,
+                export_maps=args.export_maps
             )
         
         end_time = time.time()

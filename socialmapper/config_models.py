@@ -12,6 +12,11 @@ class RunConfig(BaseModel):
     census_variables: List[str] = Field(default_factory=lambda: ["total_population"], description="List of census variables (either friendly names or raw codes)")
     api_key: Optional[str] = Field(None, description="Census API key")
 
+    # Output control parameters
+    export_csv: bool = Field(True, description="Export census data to CSV format")
+    export_geojson: bool = Field(False, description="Export data to GeoJSON format")
+    export_maps: bool = Field(False, description="Generate map visualizations")
+
     # Advanced – allows caller to inject pre-created output dirs
     output_dirs: Optional[dict] = None
 
