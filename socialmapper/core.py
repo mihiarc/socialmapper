@@ -205,7 +205,9 @@ def run_socialmapper(
     output_dirs: Optional[Dict[str, str]] = None,
     custom_coords_path: Optional[str] = None,
     progress_callback: Optional[callable] = None,
-    export: bool = True  # Control CSV export
+    export_csv: bool = True,
+    export_geojson: bool = False,
+    export_maps: bool = False
 ) -> Dict[str, str]:
     """
     Run the full community mapping process.
@@ -224,7 +226,9 @@ def run_socialmapper(
         output_dirs: Dictionary of output directories
         custom_coords_path: Path to custom coordinates file
         progress_callback: Callback function for progress updates
-        export: Boolean to control export of census data to CSV
+        export_csv: Boolean to control export of census data to CSV
+        export_geojson: Boolean to control export of data to GeoJSON
+        export_maps: Boolean to control generation of maps
         
     Returns:
         Dictionary of output file paths
@@ -335,7 +339,7 @@ def run_socialmapper(
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from parameters: {state_name} ({state_abbr})")
     
-    # Step 2: Generate isochrones
+    # Step 2: Generate isochrones (always needed for analysis regardless of output type)
     print("\n=== Step 2: Generating Isochrones ===")
     if progress_callback:
         progress_callback(2, "Generating travel time areas")
@@ -344,14 +348,17 @@ def run_socialmapper(
         poi_data=poi_data,
         travel_time_limit=travel_time,
         output_dir=output_dirs["isochrones"],
-        save_individual_files=True,
-        combine_results=True
+        save_individual_files=export_geojson,  # Only save individual files if exporting GeoJSON
+        combine_results=True  # Always combine for internal use
     )
-    result_files["isochrone"] = combined_isochrone_file
     
-    print(f"Isochrones generated and saved to {combined_isochrone_file}")
+    if export_geojson:
+        result_files["isochrone"] = combined_isochrone_file
+        print(f"Isochrones generated and saved to {combined_isochrone_file}")
+    else:
+        print("Isochrones generated (not saved as files)")
     
-    # Step 3: Find intersecting block groups
+    # Step 3: Find intersecting block groups (always needed regardless of output type)
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
     if progress_callback:
         progress_callback(3, "Finding census block groups")
@@ -366,12 +373,14 @@ def run_socialmapper(
     block_groups = isochrone_to_block_groups_by_county(
         isochrone_path=combined_isochrone_file,
         poi_data=poi_data,
-        output_path=block_groups_file,
+        output_path=block_groups_file if export_geojson else None,  # Only save if exporting GeoJSON
         api_key=api_key
     )
-    result_files["block_groups"] = block_groups_file
     
-    # Step 4: Fetch census data for block groups
+    if export_geojson:
+        result_files["block_groups"] = block_groups_file
+    
+    # Step 4: Fetch census data for block groups (always needed regardless of output type)
     print("\n=== Step 4: Fetching Census Data ===")
     if progress_callback:
         progress_callback(4, "Retrieving census data")
@@ -385,19 +394,21 @@ def run_socialmapper(
     )
     
     census_data = get_census_data_for_block_groups(
-        geojson_path=block_groups_file,
+        geojson_path=block_groups_file if os.path.exists(block_groups_file) else block_groups,
         variables=census_codes,
-        output_path=census_data_file,
+        output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
         variable_mapping=variable_mapping,
         api_key=api_key
     )
-    result_files["census_data"] = census_data_file
     
-    # New step: Export census data to CSV
-    if export:
+    if export_geojson:
+        result_files["census_data"] = census_data_file
+    
+    # Step 4b: Export census data to CSV (optional)
+    if export_csv:
         print("\n=== Step 4b: Exporting Census Data to CSV ===")
         if progress_callback:
-            progress_callback(4, "Retrieving census data and exporting to CSV")
+            progress_callback(4, "Exporting census data to CSV")
         
         csv_file = os.path.join(
             output_dirs["csv"],
@@ -413,82 +424,85 @@ def run_socialmapper(
         result_files["csv_data"] = csv_output
         print(f"Exported census data to CSV: {csv_output}")
     
-    # Step 5: Generate maps
-    print("\n=== Step 5: Generating Maps ===")
-    if progress_callback:
-        progress_callback(5, "Creating maps")
-    
-    # Get visualization variables from the census data result
-    if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
-        visualization_variables = census_data.attrs['variables_for_visualization']
-    else:
-        # Fallback to filtering out known non-visualization variables
-        visualization_variables = [var for var in census_codes if var != 'NAME']
-    
-    # Transform census variable codes to their mapped names for the map generator
-    mapped_variables = []
-    for var in get_progress_bar(visualization_variables, desc="Processing variables"):
-        # Use the mapped name if available, otherwise use the original code
-        mapped_name = variable_mapping.get(var, var)
-        mapped_variables.append(mapped_name)
-    
-    # Print what we're mapping in user-friendly language
-    readable_var_names = [name.replace('_', ' ').title() for name in mapped_variables]
-    print(f"Creating maps for: {', '.join(readable_var_names)}")
-    
-    # Check if we're dealing with multiple locations spread across states
-    use_panels = False
-    poi_data_for_map = None
-    
-    if isinstance(census_data_file, list) and len(census_data_file) > 1:
-        # If we have multiple census data files, use panels
-        use_panels = True
+    # Step 5: Generate maps (optional)
+    if export_maps:
+        print("\n=== Step 5: Generating Maps ===")
+        if progress_callback:
+            progress_callback(5, "Creating maps")
         
-    elif poi_data is not None and 'pois' in poi_data and len(poi_data['pois']) > 1:
-        # If we have multiple POIs, check if they're in different states
-        # Check if any POIs have a 'state' field
-        states = [poi.get('state') for poi in poi_data['pois'] if 'state' in poi]
-        if len(states) > 1 and len(set(states)) > 1:
-            use_panels = True
-            # Convert to list if not already
-            if isinstance(census_data_file, str):
-                census_data_file = [census_data_file]
-            if isinstance(combined_isochrone_file, str):
-                combined_isochrone_file = [combined_isochrone_file]
-    
-    # Prepare POI data for the map generator
-    if poi_data:
-        if use_panels and 'pois' in poi_data:
-            # When using panels, prepare individual POI dicts
-            poi_data_list = poi_data['pois']
-            # Convert the POI list to a list of GeoDataFrames for panel maps
-            if isinstance(poi_data_list, list):
-                poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in get_progress_bar(poi_data_list, desc="Processing POIs")]
-            else:
-                poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
+        # Get visualization variables from the census data result
+        if hasattr(census_data, 'attrs') and 'variables_for_visualization' in census_data.attrs:
+            visualization_variables = census_data.attrs['variables_for_visualization']
         else:
-            # For single map, convert the entire POI list to one GeoDataFrame
-            poi_data_for_map = convert_poi_to_geodataframe(poi_data.get('pois', []))
+            # Fallback to filtering out known non-visualization variables
+            visualization_variables = [var for var in census_codes if var != 'NAME']
+        
+        # Transform census variable codes to their mapped names for the map generator
+        mapped_variables = []
+        for var in get_progress_bar(visualization_variables, desc="Processing variables"):
+            # Use the mapped name if available, otherwise use the original code
+            mapped_name = variable_mapping.get(var, var)
+            mapped_variables.append(mapped_name)
+        
+        # Print what we're mapping in user-friendly language
+        readable_var_names = [name.replace('_', ' ').title() for name in mapped_variables]
+        print(f"Creating maps for: {', '.join(readable_var_names)}")
+        
+        # Check if we're dealing with multiple locations spread across states
+        use_panels = False
+        poi_data_for_map = None
+        
+        if isinstance(census_data_file, list) and len(census_data_file) > 1:
+            # If we have multiple census data files, use panels
+            use_panels = True
+            
+        elif poi_data is not None and 'pois' in poi_data and len(poi_data['pois']) > 1:
+            # If we have multiple POIs, check if they're in different states
+            # Check if any POIs have a 'state' field
+            states = [poi.get('state') for poi in poi_data['pois'] if 'state' in poi]
+            if len(states) > 1 and len(set(states)) > 1:
+                use_panels = True
+                # Convert to list if not already
+                if isinstance(census_data_file, str):
+                    census_data_file = [census_data_file]
+                if isinstance(combined_isochrone_file, str):
+                    combined_isochrone_file = [combined_isochrone_file]
+        
+        # Prepare POI data for the map generator
+        if poi_data:
+            if use_panels and 'pois' in poi_data:
+                # When using panels, prepare individual POI dicts
+                poi_data_list = poi_data['pois']
+                # Convert the POI list to a list of GeoDataFrames for panel maps
+                if isinstance(poi_data_list, list):
+                    poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in get_progress_bar(poi_data_list, desc="Processing POIs")]
+                else:
+                    poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
+            else:
+                # For single map, convert the entire POI list to one GeoDataFrame
+                poi_data_for_map = convert_poi_to_geodataframe(poi_data.get('pois', []))
 
-    # Fix for isochrone path handling when it's a list
-    isochrone_path_for_map = combined_isochrone_file
-    if isinstance(combined_isochrone_file, list) and not use_panels:
-        # If we have a list of isochrones but aren't using panels,
-        # just use the first isochrone file to avoid the error
-        isochrone_path_for_map = combined_isochrone_file[0]
+        # Fix for isochrone path handling when it's a list
+        isochrone_path_for_map = combined_isochrone_file
+        if isinstance(combined_isochrone_file, list) and not use_panels:
+            # If we have a list of isochrones but aren't using panels,
+            # just use the first isochrone file to avoid the error
+            isochrone_path_for_map = combined_isochrone_file[0]
 
-    # Generate maps for each census variable using the mapped names
-    map_files = generate_maps_for_variables(
-        census_data_path=census_data_file,
-        variables=mapped_variables,
-        output_dir=output_dirs["maps"],
-        basename=f"{base_filename}_{travel_time}min",
-        isochrone_path=isochrone_path_for_map,
-        poi_df=poi_data_for_map,
-        use_panels=use_panels
-    )
-    result_files["maps"] = map_files
-    
-    print(f"Generated {len(map_files)} maps")
+        # Generate maps for each census variable using the mapped names
+        map_files = generate_maps_for_variables(
+            census_data_path=census_data_file if export_geojson else census_data,
+            variables=mapped_variables,
+            output_dir=output_dirs["maps"],
+            basename=f"{base_filename}_{travel_time}min",
+            isochrone_path=isochrone_path_for_map,
+            poi_df=poi_data_for_map,
+            use_panels=use_panels
+        )
+        result_files["maps"] = map_files
+        
+        print(f"Generated {len(map_files)} maps")
+    else:
+        print("\n=== Skipping Map Generation (use --export-maps to enable) ===")
     
     return result_files 
