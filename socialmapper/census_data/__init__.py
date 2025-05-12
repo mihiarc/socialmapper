@@ -7,6 +7,7 @@ import pandas as pd
 import geopandas as gpd
 import requests
 import asyncio
+import logging
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 # Import the new progress bar utility
@@ -20,6 +21,11 @@ from socialmapper.util import (
     CENSUS_VARIABLE_MAPPING,
     get_readable_census_variables
 )
+# Configure logging to suppress INFO level messages from HTTP requests
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("asyncio").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
 # Import the async implementation
 from socialmapper.census_data.async_census import fetch_census_data_for_states_async
 # Add the import for the caching system
