@@ -26,6 +26,7 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 - **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
 - **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
+- **Calculating Travel Distance** - Measure the travel distance along roads from the point of interest to the block group centroids.
 - **Retrieving Demographic Data** - Pull census data for the identified areas
 - **Visualizing Results** - Generate maps showing the demographic variables around the POIs
 - **Data Export** - Export census data with travel distances to CSV for further analysis
