@@ -235,7 +235,8 @@ def run_socialmapper(
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
     from .isochrone import create_isochrones_from_poi_list
     from .blockgroups import isochrone_to_block_groups_by_county
-    from .census_data import get_census_data_for_block_groups
+    from .distance import add_travel_distances
+    from .census import get_census_data_for_block_groups
     from .visualization import generate_maps_for_variables
     from .states import normalize_state, normalize_state_list, StateFormat
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
@@ -396,10 +397,30 @@ def run_socialmapper(
     if export_geojson:
         result_files["block_groups"] = block_groups_file
     
-    # Step 4: Fetch census data for block groups (always needed regardless of output type)
-    print("\n=== Step 4: Fetching Census Data ===")
+    # Step 4: Calculate travel distances for block groups
+    print("\n=== Step 4: Calculating Travel Distances ===")
     if progress_callback:
-        progress_callback(4, "Retrieving census data")
+        progress_callback(4, "Calculating travel distances")
+        
+    travel_distances_file = os.path.join(
+        output_dir,
+        f"{base_filename}_{travel_time}min_travel_distances.geojson"
+    )
+    
+    # Calculate travel distances
+    block_groups_with_distances = add_travel_distances(
+        block_groups_gdf=block_groups_gdf,  # Pass the GeoDataFrame directly
+        poi_data=poi_data,
+        output_path=travel_distances_file if export_geojson else None  # Only save if exporting GeoJSON
+    )
+    
+    if export_geojson:
+        result_files["travel_distances"] = travel_distances_file
+    
+    # Step 5: Fetch census data for block groups (always needed regardless of output type)
+    print("\n=== Step 5: Fetching Census Data ===")
+    if progress_callback:
+        progress_callback(5, "Retrieving census data")
     
     # Create a human-readable mapping for the census variables
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
@@ -414,7 +435,7 @@ def run_socialmapper(
     )
     
     census_data_gdf = get_census_data_for_block_groups(
-        geojson_path=block_groups_gdf,  # Pass the GeoDataFrame directly
+        geojson_path=block_groups_with_distances,  # Pass the GeoDataFrame with distances
         variables=census_codes,
         output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
         variable_mapping=variable_mapping,
@@ -425,11 +446,11 @@ def run_socialmapper(
     if export_geojson:
         result_files["census_data"] = census_data_file
     
-    # Step 4b: Export census data to CSV (optional)
+    # Step 6: Export census data to file
     if export_csv:
-        print("\n=== Step 4b: Exporting Census Data to CSV ===")
+        print("\n=== Step 6: Exporting Census Data to File ===")
         if progress_callback:
-            progress_callback(4, "Exporting census data to CSV")
+            progress_callback(6, "Exporting census data to file")
         
         csv_file = os.path.join(
             output_dir,
@@ -445,11 +466,11 @@ def run_socialmapper(
         result_files["csv_data"] = csv_output
         print(f"Exported census data to CSV: {csv_output}")
     
-    # Step 5: Generate maps (optional)
+    # Step 7: Generate maps (optional)
     if export_maps:
-        print("\n=== Step 5: Generating Maps ===")
+        print("\n=== Step 7: Generating Maps ===")
         if progress_callback:
-            progress_callback(5, "Creating maps")
+            progress_callback(7, "Creating maps")
         
         # Get visualization variables from the census data result
         if hasattr(census_data_gdf, 'attrs') and 'variables_for_visualization' in census_data_gdf.attrs:
