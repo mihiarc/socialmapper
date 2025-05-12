@@ -177,7 +177,7 @@ def get_network_graph(latitude, longitude, dist_meters):
         
         # Record time spent downloading
         download_time = time.time() - start_time
-        logger.info(f"Downloaded network graph in {download_time:.2f}s ({len(G.nodes)} nodes, {len(G.edges)} edges)")
+        logger.debug(f"Downloaded network graph in {download_time:.2f}s ({len(G.nodes)} nodes, {len(G.edges)} edges)")
         
         # Add speeds and travel times
         G = ox.add_edge_speeds(G, fallback=50)

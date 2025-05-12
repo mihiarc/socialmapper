@@ -35,7 +35,7 @@ def generate_cache_key(
     
     Args:
         state_fips_list: List of state FIPS codes
-        variables: List of census variables
+        variables: List of census variables (will be normalized if needed)
         year: Census year
         dataset: Census dataset
         
@@ -44,7 +44,10 @@ def generate_cache_key(
     """
     # Sort inputs to ensure consistent keys
     sorted_states = sorted(state_fips_list)
-    sorted_vars = sorted([normalize_census_variable(v) for v in variables])
+    
+    # Variables should be already normalized by the caller to avoid redundant normalization
+    # But handle the case where they're not normalized for backwards compatibility
+    sorted_vars = sorted(variables)
     
     # Create a dictionary of parameters
     params = {
@@ -138,11 +141,15 @@ class MemoryCache:
             DataFrame with census data
         """
         self.total_calls += 1
-        cache_key = generate_cache_key(state_fips_list, variables, year, dataset)
+        
+        # Normalize variables once upfront
+        normalized_variables = [normalize_census_variable(v) for v in variables]
+        
+        cache_key = generate_cache_key(state_fips_list, normalized_variables, year, dataset)
         
         # Convert lists to tuples for hashability in lru_cache
         states_tuple = tuple(sorted(state_fips_list))
-        vars_tuple = tuple(sorted([normalize_census_variable(v) for v in variables]))
+        vars_tuple = tuple(sorted(normalized_variables))
         
         # Check if already in cache
         if hasattr(self._fetch_census_data, 'cache_info'):
@@ -264,13 +271,17 @@ class DiskCache:
             DataFrame with census data
         """
         self.total_calls += 1
-        cache_key = generate_cache_key(state_fips_list, variables, year, dataset)
+        
+        # Normalize variables once upfront
+        normalized_variables = [normalize_census_variable(v) for v in variables]
+        
+        cache_key = generate_cache_key(state_fips_list, normalized_variables, year, dataset)
         
         # Try to get from cache
         cached_data = self._get_from_cache(cache_key)
         if cached_data is not None:
             self.hits += 1
-            get_progress_bar().write(f"Census data cache hit: using cached data for {len(state_fips_list)} states, {len(variables)} variables.")
+            get_progress_bar().write(f"Census data cache hit: using cached data for {len(state_fips_list)} states, {len(normalized_variables)} variables.")
             return cached_data
         
         # Fetch new data
@@ -281,7 +292,7 @@ class DiskCache:
         
         data = fetch_census_data_for_states(
             state_fips_list=state_fips_list,
-            variables=variables,
+            variables=normalized_variables,
             year=year,
             dataset=dataset,
             api_key=api_key,
@@ -289,7 +300,7 @@ class DiskCache:
         )
         
         # Store in cache
-        self._store_in_cache(cache_key, data, state_fips_list, variables, year, dataset)
+        self._store_in_cache(cache_key, data, state_fips_list, normalized_variables, year, dataset)
         
         return data
     
@@ -355,9 +366,9 @@ class DiskCache:
             data_bytes = pickle.dumps(data)
             timestamp = int(time.time())
             
-            # Store metadata for diagnostics
+            # Store metadata for diagnostics - variables should already be normalized
             states_json = json.dumps(sorted(state_fips_list))
-            vars_json = json.dumps(sorted([normalize_census_variable(v) for v in variables]))
+            vars_json = json.dumps(sorted(variables))
             
             # Insert or replace
             cursor.execute(
@@ -478,12 +489,15 @@ class HybridCache:
         """
         self.total_calls += 1
         
+        # Normalize variables once upfront
+        normalized_variables = [normalize_census_variable(v) for v in variables]
+        
         # Check memory cache first (faster)
         memory_calls_before = self.memory_cache.total_calls
         memory_hits_before = self.memory_cache.hits
         
         data = self.memory_cache.get_or_fetch(
-            state_fips_list, variables, year, dataset, api_key, use_async
+            state_fips_list, normalized_variables, year, dataset, api_key, use_async
         )
         
         # Check if it was a memory hit
@@ -498,7 +512,7 @@ class HybridCache:
         
         # This will be cached in memory for next time
         data = self.disk_cache.get_or_fetch(
-            state_fips_list, variables, year, dataset, api_key, use_async
+            state_fips_list, normalized_variables, year, dataset, api_key, use_async
         )
         
         if self.disk_cache.hits > disk_hits_before:
