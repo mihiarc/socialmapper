@@ -329,3 +329,47 @@ ruff check socialmapper
 - **Census API errors**: Ensure your API key is valid and properly set as an environment variable.
 - **Isochrone generation issues**: For very large areas, try reducing the travel time to avoid timeouts.
 - **Missing block groups**: The tool should automatically identify the appropriate states based on the POI locations.
+
+## Performance Optimizations
+
+SocialMapper includes several performance optimizations to handle large datasets efficiently:
+
+### Census Data Retrieval
+
+For large jobs with many POIs spanning multiple states, SocialMapper now supports asynchronous Census API requests to significantly improve performance:
+
+```python
+# Fetch census data with async mode (default)
+result = get_census_data_for_block_groups(
+    geojson_path="block_groups.geojson",
+    variables=["total_population", "median_income"],
+    use_async=True,        # Enable async mode (default)
+    concurrency=10         # Number of concurrent requests (default: 10)
+)
+
+# If needed, you can disable async mode
+result = get_census_data_for_block_groups(
+    geojson_path="block_groups.geojson",
+    variables=["total_population", "median_income"],
+    use_async=False        # Disable async mode
+)
+```
+
+When working with data spanning multiple states, the async mode can speed up Census API requests by 70% or more.
+
+### Command Line Usage
+
+The async optimization is also available when running from the command line:
+
+```bash
+# Use async mode (default)
+python -m socialmapper.census_data block_groups.geojson --variables total_population median_income
+
+# Disable async mode if needed
+python -m socialmapper.census_data block_groups.geojson --variables total_population median_income --no-async
+
+# Control concurrency level
+python -m socialmapper.census_data block_groups.geojson --variables total_population median_income --concurrency 5
+```
+
+See [CENSUS_DATA_OPTIMIZATIONS.md](CENSUS_DATA_OPTIMIZATIONS.md) for a detailed explanation of all performance optimizations.

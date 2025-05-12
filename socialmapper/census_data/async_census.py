@@ -13,7 +13,8 @@ from typing import List, Optional
 import httpx
 import pandas as pd
 
-from socialmapper.util import normalize_census_variable, state_fips_to_abbreviation, STATE_NAMES_TO_ABBR
+from socialmapper.util import normalize_census_variable
+from socialmapper.states import state_fips_to_name, STATE_NAMES_TO_ABBR
 
 BASE_URL_TEMPLATE = "https://api.census.gov/data/{year}/{dataset}"
 
@@ -46,13 +47,10 @@ async def _fetch_state(
 
 def get_state_name_from_fips(fips_code: str) -> str:
     """Utility replicated from census_data to avoid circular import."""
-    state_abbr = state_fips_to_abbreviation(fips_code)
-    if not state_abbr:
+    state_name = state_fips_to_name(fips_code)
+    if not state_name:
         return fips_code
-    for name, abbr in STATE_NAMES_TO_ABBR.items():
-        if abbr == state_abbr:
-            return name
-    return state_abbr
+    return state_name
 
 
 async def fetch_census_data_for_states_async(
@@ -91,4 +89,19 @@ async def fetch_census_data_for_states_async(
 
         results = await asyncio.gather(*(sem_task(code) for code in state_fips_list))
 
-    return pd.concat(results, ignore_index=True) 
+    # Combine results into a single DataFrame
+    if not results:
+        # Return empty DataFrame with correct columns if no results
+        return pd.DataFrame(columns=api_variables + ['state', 'county', 'tract', 'block group'])
+
+    final_df = pd.concat(results, ignore_index=True)
+    
+    # Create a GEOID column to match with GeoJSON - ensure proper formatting with leading zeros
+    final_df['GEOID'] = (
+        final_df['state'].str.zfill(2) + 
+        final_df['county'].str.zfill(3) + 
+        final_df['tract'].str.zfill(6) + 
+        final_df['block group']
+    )
+    
+    return final_df 

@@ -6,17 +6,13 @@ import os
 import pandas as pd
 import geopandas as gpd
 import requests
+import asyncio
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
 from tqdm import tqdm
-from socialmapper.states import (
-    normalize_state,
-    normalize_state_list,
-    StateFormat,
-    is_fips_code,
-    state_fips_to_name
+from socialmapper.states import (state_fips_to_name
 )
 from socialmapper.util import (
     census_code_to_name,
@@ -24,6 +20,10 @@ from socialmapper.util import (
     CENSUS_VARIABLE_MAPPING,
     get_readable_census_variables
 )
+# Import the async implementation
+from socialmapper.census_data.async_census import fetch_census_data_for_states_async
+# Add the import for the caching system
+from socialmapper.census_data.cache import get_default_cache
 
 
 def load_block_groups(geojson_path: Union[str, gpd.GeoDataFrame]) -> gpd.GeoDataFrame:
@@ -60,60 +60,86 @@ def extract_block_group_ids(gdf: gpd.GeoDataFrame) -> Dict[str, List[str]]:
     Returns:
         Dictionary mapping state FIPS codes to lists of block group IDs
     """
-    state_block_groups = {}
+    get_progress_bar().write("Extracting block group IDs by state (vectorized)...")
     
-    get_progress_bar().write("Extracting block group IDs by state...")
-
-    for _, row in gdf.iterrows():
-        state = row.get('STATE')
-        geoid = row.get('GEOID')
+    # Create a copy of relevant columns to avoid modifying the original
+    working_df = gdf.copy()
+    
+    # Convert STATE column to string and pad with leading zeros
+    if 'STATE' in working_df.columns:
+        working_df['STATE'] = working_df['STATE'].astype(str).str.zfill(2)
+    else:
+        get_progress_bar().write("Warning: No STATE column found in block groups data")
+        return {}  # Cannot proceed without STATE column
+    
+    # Process GEOIDs
+    if 'GEOID' in working_df.columns:
+        # Convert GEOID to string first to avoid string accessor errors
+        working_df['GEOID'] = working_df['GEOID'].astype(str)
         
-        if not state or not geoid:
-            continue
+        # Create a mask for valid GEOIDs (length >= 11)
+        valid_geoid_mask = working_df['GEOID'].str.len() >= 11
         
-        # Ensure state code is padded to 2 digits with leading zeros if needed
-        state = state.zfill(2) if isinstance(state, str) else f"{state:02d}"
+        # Create a new standardized GEOID column
+        working_df['std_geoid'] = None
+        
+        # Process valid GEOIDs
+        if valid_geoid_mask.any():
+            valid_geoids = working_df.loc[valid_geoid_mask, 'GEOID']
             
-        if state not in state_block_groups:
-            state_block_groups[state] = []
+            # Handle GEOIDs of different lengths
+            # For GEOIDs longer than 12 characters
+            long_geoid_mask = valid_geoids.str.len() > 12
+            if long_geoid_mask.any():
+                working_df.loc[valid_geoid_mask & long_geoid_mask, 'std_geoid'] = (
+                    working_df.loc[valid_geoid_mask & long_geoid_mask, 'STATE'] + 
+                    working_df.loc[valid_geoid_mask & long_geoid_mask, 'GEOID'].str[-10:]
+                )
             
-        # Ensure GEOID is properly formatted
-        if isinstance(geoid, str):
-            # Standardize to 12-character GEOID format used by Census API
-            # Format should be STATE(2) + COUNTY(3) + TRACT(6) + BLKGRP(1)
-            if len(geoid) >= 11:
-                # Some GEOIDs might be missing leading zeros or have different formats
-                # Extract the last 10 digits (county + tract + block group) and prepend state
-                if len(geoid) > 12:  
-                    # If longer than standard, take the rightmost 10 digits and prepend state
-                    geoid = state + geoid[-10:]
-                elif len(geoid) < 12:
-                    # If shorter than standard, ensure proper padding
-                    county_tract_bg = geoid[len(state):]
-                    geoid = state + county_tract_bg.zfill(10)
+            # For GEOIDs shorter than 12 characters
+            short_geoid_mask = valid_geoids.str.len() < 12
+            if short_geoid_mask.any():
+                # Use a simpler approach to extract and pad the suffix
+                for idx, row in working_df.loc[valid_geoid_mask & short_geoid_mask].iterrows():
+                    state_len = len(row['STATE'])
+                    geoid_suffix = row['GEOID'][state_len:].zfill(10)
+                    working_df.at[idx, 'std_geoid'] = row['STATE'] + geoid_suffix
+            
+            # For GEOIDs with exactly 12 characters
+            exact_geoid_mask = valid_geoids.str.len() == 12
+            if exact_geoid_mask.any():
+                working_df.loc[valid_geoid_mask & exact_geoid_mask, 'std_geoid'] = (
+                    working_df.loc[valid_geoid_mask & exact_geoid_mask, 'GEOID']
+                )
+    
+    # For records without valid GEOIDs, try to construct from components
+    missing_geoid_mask = working_df['std_geoid'].isna()
+    if missing_geoid_mask.any() and all(col in working_df.columns for col in ['COUNTY', 'TRACT', 'BLKGRP']):
+        # Convert all component columns to strings first
+        for col in ['COUNTY', 'TRACT', 'BLKGRP']:
+            if col in working_df.columns:
+                working_df[col] = working_df[col].astype(str)
                 
-                # Now GEOID should be exactly 12 characters
-                state_block_groups[state].append(geoid)
-            else:
-                # Try to construct from separate fields if available
-                county = row.get('COUNTY', '')
-                tract = row.get('TRACT', '')
-                blkgrp = row.get('BLKGRP', '')
-                
-                if county and tract and blkgrp:
-                    # Construct GEOID from components
-                    constructed_geoid = (
-                        state + 
-                        county.zfill(3) + 
-                        tract.zfill(6) + 
-                        blkgrp
-                    )
-                    state_block_groups[state].append(constructed_geoid)
-                else:
-                    get_progress_bar().write(f"Warning: Cannot standardize GEOID format: {geoid}")
-        else:
-            get_progress_bar().write(f"Warning: Invalid GEOID format: {geoid}")
-
+        has_components = (
+            working_df['COUNTY'].notna() & 
+            working_df['TRACT'].notna() & 
+            working_df['BLKGRP'].notna()
+        )
+        
+        if (missing_geoid_mask & has_components).any():
+            working_df.loc[missing_geoid_mask & has_components, 'std_geoid'] = (
+                working_df.loc[missing_geoid_mask & has_components, 'STATE'] + 
+                working_df.loc[missing_geoid_mask & has_components, 'COUNTY'].str.zfill(3) + 
+                working_df.loc[missing_geoid_mask & has_components, 'TRACT'].str.zfill(6) + 
+                working_df.loc[missing_geoid_mask & has_components, 'BLKGRP']
+            )
+    
+    # Group by STATE and create the dictionary
+    state_block_groups = {}
+    for state, group in working_df[working_df['std_geoid'].notna()].groupby('STATE'):
+        state_block_groups[state] = group['std_geoid'].tolist()
+        get_progress_bar().write(f"  - State {state}: {len(state_block_groups[state])} block groups")
+    
     return state_block_groups
 
 
@@ -136,7 +162,10 @@ def fetch_census_data_for_states(
     variables: List[str],
     year: int = 2021,
     dataset: str = 'acs/acs5',
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    use_async: bool = True,
+    concurrency: int = 10,
+    use_cache: bool = True
 ) -> pd.DataFrame:
     """
     Fetch census data for all block groups in specified states.
@@ -147,6 +176,9 @@ def fetch_census_data_for_states(
         year: Census year
         dataset: Census dataset
         api_key: Census API key (optional if set as environment variable)
+        use_async: Whether to use async implementation for faster fetching (default: True)
+        concurrency: Number of concurrent requests when using async (default: 10)
+        use_cache: Whether to use the caching system (default: True)
         
     Returns:
         DataFrame with census data for all block groups in the specified states
@@ -155,6 +187,18 @@ def fetch_census_data_for_states(
         api_key = os.getenv('CENSUS_API_KEY')
         if not api_key:
             raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
+    
+    # If caching is enabled, try to get from cache first
+    if use_cache:
+        cache = get_default_cache()
+        return cache.get_or_fetch(
+            state_fips_list=state_fips_list,
+            variables=variables,
+            year=year,
+            dataset=dataset,
+            api_key=api_key,
+            use_async=use_async
+        )
     
     # Create a copy of variables to avoid modifying the original list
     api_variables = []
@@ -177,6 +221,53 @@ def fetch_census_data_for_states(
     if invalid_vars:
         raise ValueError(f"Invalid variable types detected: {', '.join(invalid_vars)}. All variables must be strings.")
     
+    # Use async implementation if requested (for multiple states this is much faster)
+    if use_async and len(state_fips_list) > 1:
+        get_progress_bar().write(f"Using asynchronous implementation to fetch data for {len(state_fips_list)} states...")
+        try:
+            # Handle async execution in a way compatible with Python 3.10+ asyncio changes
+            try:
+                # Get the current event loop or create a new one
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # No event loop exists in this thread, create a new one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            # Run the async function
+            if loop.is_running():
+                # If the loop is already running (e.g., in Jupyter/IPython), use run_coroutine_threadsafe
+                import concurrent.futures
+                future = asyncio.run_coroutine_threadsafe(
+                    fetch_census_data_for_states_async(
+                        state_fips_list=state_fips_list,
+                        variables=api_variables,
+                        year=year,
+                        dataset=dataset,
+                        api_key=api_key,
+                        concurrency=concurrency
+                    ),
+                    loop
+                )
+                final_df = future.result()
+            else:
+                # If no loop is running, run until complete
+                final_df = loop.run_until_complete(
+                    fetch_census_data_for_states_async(
+                        state_fips_list=state_fips_list,
+                        variables=api_variables,
+                        year=year,
+                        dataset=dataset,
+                        api_key=api_key,
+                        concurrency=concurrency
+                    )
+                )
+            return final_df
+        except Exception as e:
+            get_progress_bar().write(f"Error using async implementation, falling back to synchronous: {str(e)}")
+            # If async fails, fall back to synchronous implementation
+    
+    # Original synchronous implementation (kept for fallback and single-state requests)
     # Base URL for Census API
     base_url = f'https://api.census.gov/data/{year}/{dataset}'
     
@@ -302,7 +393,10 @@ def get_census_data_for_block_groups(
     dataset: str = 'acs/acs5',
     api_key: Optional[str] = None,
     export_geojson: bool = False,
-    exclude_from_visualization: List[str] = ['NAME']
+    exclude_from_visualization: List[str] = ['NAME'],
+    use_async: bool = True,
+    concurrency: int = 10,
+    use_cache: bool = True
 ) -> gpd.GeoDataFrame:
     """
     Main function to fetch census data for block groups identified by isochrone analysis.
@@ -318,6 +412,9 @@ def get_census_data_for_block_groups(
         api_key: Census API key (optional if set as environment variable)
         export_geojson: Whether to export the result to a GeoJSON file
         exclude_from_visualization: Variables to exclude from visualization (default: ['NAME'])
+        use_async: Whether to use async implementation for faster fetching (default: True)
+        concurrency: Number of concurrent requests when using async (default: 10)
+        use_cache: Whether to use the caching system (default: True)
         
     Returns:
         GeoDataFrame with block group geometries and census data. 
@@ -373,13 +470,19 @@ def get_census_data_for_block_groups(
         else:
             get_progress_bar().write("WARNING: No Census API key provided!")
     
-    # Fetch census data
+    # Log performance optimization settings
+    get_progress_bar().write(f"Performance settings: async={use_async}, concurrency={concurrency}, cache={use_cache}")
+    
+    # Fetch census data with async and caching options
     all_state_census_data = fetch_census_data_for_states(
         state_fips_list,
         variables,
         year=year,
         dataset=dataset,
-        api_key=api_key
+        api_key=api_key,
+        use_async=use_async,
+        concurrency=concurrency,
+        use_cache=use_cache
     )
     
     # Extract just the GEOIDs we need from all the block groups
@@ -498,8 +601,18 @@ if __name__ == "__main__":
     parser.add_argument("--year", type=int, default=2021, help="Census year")
     parser.add_argument("--dataset", default="acs/acs5", help="Census dataset")
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
+    parser.add_argument("--no-async", action="store_true", help="Disable asynchronous API requests")
+    parser.add_argument("--concurrency", type=int, default=10, help="Number of concurrent requests when using async (default: 10)")
+    parser.add_argument("--no-cache", action="store_true", help="Disable census data caching")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear the census data cache before running")
     
     args = parser.parse_args()
+    
+    # If clear-cache option is specified, clear the cache
+    if args.clear_cache:
+        from socialmapper.census_data.cache import get_default_cache
+        cache = get_default_cache()
+        cache.clear()
     
     result = get_census_data_for_block_groups(
         geojson_path=args.geojson,
@@ -507,7 +620,10 @@ if __name__ == "__main__":
         output_path=args.output,
         year=args.year,
         dataset=args.dataset,
-        api_key=args.api_key
+        api_key=args.api_key,
+        use_async=not args.no_async,
+        concurrency=args.concurrency,
+        use_cache=not args.no_cache
     )
     
     # Print summary
