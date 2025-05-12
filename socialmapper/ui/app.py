@@ -208,7 +208,44 @@ def run_app():
                 elif file_extension == ".json":
                     with open(custom_file_path, "r") as f:
                         json_data = json.load(f)
-                    st.json(json_data)
+                    
+                    # Determine fields available for mapping
+                    field_options = []
+                    if isinstance(json_data, list) and len(json_data) > 0:
+                        # Get all fields from the first item
+                        field_options = list(json_data[0].keys())
+                        # Also include fields within original_properties if it exists
+                        if 'original_properties' in json_data[0]:
+                            for field in json_data[0]['original_properties'].keys():
+                                field_options.append(f"original_properties.{field}")
+                    
+                    # Show data preview
+                    with st.expander("Preview JSON data", expanded=True):
+                        st.json(json_data[:3] if isinstance(json_data, list) else json_data)
+                    
+                    # Field mapping options
+                    st.subheader("Field Mapping")
+                    st.info("SocialMapper needs to know which fields in your data represent POI names and types. Select the appropriate fields below.")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        name_field = st.selectbox(
+                            "Field to use as POI name",
+                            options=["name"] + [f for f in field_options if f != "name"],
+                            help="Select the field that contains the name of each location"
+                        )
+                    
+                    with col2:
+                        type_field = st.selectbox(
+                            "Field to use as POI type",
+                            options=["type"] + [f for f in field_options if f != "type"],
+                            help="Select the field that represents the type/category of each location"
+                        )
+                    
+                    # Store the selected field mappings in session state
+                    st.session_state.name_field = name_field
+                    st.session_state.type_field = type_field
         else:
             st.subheader("Enter Coordinates Manually")
             
@@ -370,6 +407,11 @@ def run_app():
                         and uploaded_file is not None
                     ):
                         update_step(1, "Processing uploaded coordinates")
+                        
+                        # Get field mappings from session state if available
+                        name_field = st.session_state.get("name_field", None)
+                        type_field = st.session_state.get("type_field", None)
+                        
                         results = run_socialmapper(
                             custom_coords_path=custom_file_path,
                             travel_time=travel_time,
@@ -379,7 +421,9 @@ def run_app():
                             progress_callback=update_step,
                             export_csv=export_csv,
                             export_geojson=export_geojson,
-                            export_maps=export_maps
+                            export_maps=export_maps,
+                            name_field=name_field,
+                            type_field=type_field
                         )
                     elif (
                         upload_method == "Manual Entry"

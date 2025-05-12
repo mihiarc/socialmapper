@@ -93,7 +93,7 @@ def export_census_data_to_csv(
     # Add census variables
     exclude_cols = ['geometry', 'GEOID', 'STATE', 'COUNTY', 'TRACT', 'BLKGRP', 'NAME', 
                     'pct', 'percent_overlap', 'overlap_pct', 'intersection_area_pct', 'centroid']
-    exclude_cols.extend(travel_columns)  # Don't duplicate travel columns
+    exclude_cols.extend(travel_columns)
     
     for col in df.columns:
         if col not in exclude_cols:
@@ -136,6 +136,26 @@ def export_census_data_to_csv(
     for col in csv_data.columns:
         if col.lower() in ['state', 'county']:
             csv_data = csv_data.drop(columns=[col])
+    
+    # DEDUPLICATION: Group by block group and POI to handle duplicate entries
+    if 'census_block_group' in csv_data.columns and 'poi_id' in csv_data.columns:
+        print(f"Deduplicating records: {len(csv_data)} rows before deduplication")
+        
+        # Group by census block group and POI ID
+        groupby_cols = ['census_block_group', 'poi_id']
+        
+        # For area percentage, take the maximum value
+        agg_dict = {'area_within_travel_time_pct': 'max'}
+        
+        # For all other columns, take the first value (they should be identical within a group)
+        for col in csv_data.columns:
+            if col not in groupby_cols and col != 'area_within_travel_time_pct':
+                agg_dict[col] = 'first'
+        
+        # Apply the aggregation
+        csv_data = csv_data.groupby(groupby_cols, as_index=False).agg(agg_dict)
+        
+        print(f"Deduplication complete: {len(csv_data)} rows after deduplication")
     
     # Create output directory if it doesn't exist
     if output_path is None:
