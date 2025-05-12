@@ -9,6 +9,7 @@ import pandas as pd
 from socialmapper.progress import get_progress_bar
 import logging
 import json
+import time
 
 def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
     """
@@ -78,7 +79,8 @@ def preprocess_poi_data(pois):
 def add_travel_distances(
     block_groups_gdf: gpd.GeoDataFrame,
     poi_data: Union[Dict, List[Dict]],
-    output_path: Optional[str] = None
+    output_path: Optional[str] = None,
+    verbose: bool = False
 ) -> gpd.GeoDataFrame:
     """
     Calculate and add travel distances from block groups to nearest POIs.
@@ -87,6 +89,7 @@ def add_travel_distances(
         block_groups_gdf: GeoDataFrame with block group geometries
         poi_data: Dictionary with POI data or list of POIs
         output_path: Optional path to save the enhanced GeoDataFrame
+        verbose: If True, print detailed debug information
         
     Returns:
         GeoDataFrame with travel distance information added
@@ -151,8 +154,8 @@ def add_travel_distances(
     # Convert POIs to Points
     poi_points = []
     for poi in pois:
-        # Debug POI structure
-        if len(poi_points) == 0:  # Only print the first POI as an example
+        # Debug POI structure only if verbose
+        if verbose and len(poi_points) == 0:  # Only print the first POI as an example
             get_progress_bar().write(f"POI example: {json.dumps(poi, default=str)[:100]}...")
         
         if 'lon' in poi and 'lat' in poi:
@@ -175,19 +178,29 @@ def add_travel_distances(
                 poi_points.append(Point(props['longitude'], props['latitude']))
             elif 'lng' in props and 'lat' in props:
                 poi_points.append(Point(props['lng'], props['lat']))
-        
-    get_progress_bar().write(f"Found {len(poi_points)} POI points for distance calculation")
     
     if not poi_points:
         get_progress_bar().write("WARNING: No POI points available for distance calculation!")
-        get_progress_bar().write(f"POI data example: {pois[0] if pois else None}")
+        if verbose:
+            get_progress_bar().write(f"POI data example: {pois[0] if pois else None}")
         # Set distances to NaN instead of inf
         df['travel_distance_km'] = float('nan')
         df['travel_distance_miles'] = float('nan')
     else:
-        get_progress_bar().write("Calculating travel distances to POIs...")
+        # Initialize progress tracking
+        total_calculations = len(df) * len(poi_points)
+        get_progress_bar().write(f"Calculating distances for {len(df)} block groups and {len(poi_points)} POIs...")
+        
         # For each block group, find the closest POI and calculate distance
         distances_km = []
+        start_time = time.time()
+        last_update_time = start_time
+        update_interval = 10  # Update progress every 10 seconds (reduced frequency)
+        
+        # Track progress
+        completed = 0
+        batch_size = max(1, len(df) // 5)  # Report progress after every 20% of calculations
+        progress_threshold = batch_size
         
         for idx, row in df.iterrows():
             # Calculate distance to each POI and find the minimum
@@ -195,36 +208,64 @@ def add_travel_distances(
             
             try:
                 centroid = row['centroid']
-                # Debug centroid info
-                if idx == 0:  # Only print for the first block group
+                # Debug centroid info only if verbose
+                if verbose and idx == 0:  # Only print for the first block group
                     get_progress_bar().write(f"Example centroid: {centroid}")
                 
                 # Calculate distance to each POI
-                for point in poi_points:
+                for i, point in enumerate(poi_points):
                     try:
                         # Direct distance calculation using the calculate_distance function
                         distance = calculate_distance(point, centroid)
                         
-                        # For first block group and first POI, print debug info
-                        if idx == 0 and point == poi_points[0]:
+                        # Debug info only if verbose
+                        if verbose and idx == 0 and i == 0:
                             get_progress_bar().write(f"Debug - POI: {point}, Centroid: {centroid}, Distance: {distance} km")
                         
                         # Update min distance
                         if distance < min_distance:
                             min_distance = distance
+                        
+                        # Update progress count
+                        completed += 1
+                        
                     except Exception as e:
-                        get_progress_bar().write(f"Error calculating distance: {e}")
+                        if verbose:
+                            get_progress_bar().write(f"Error calculating distance: {e}")
                         continue
+                
+                # Report progress periodically but with reduced frequency
+                current_time = time.time()
+                if completed >= progress_threshold or (current_time - last_update_time) >= update_interval:
+                    elapsed = current_time - start_time
+                    percentage = (completed / total_calculations) * 100
+                    if elapsed > 0:
+                        rate = completed / elapsed
+                        remaining = (total_calculations - completed) / rate if rate > 0 else 0
+                        # Simplified progress message
+                        get_progress_bar().write(f"Distance calculation: {percentage:.1f}% complete, ~{remaining:.1f}s remaining")
+                    else:
+                        get_progress_bar().write(f"Distance calculation: {percentage:.1f}% complete")
+                    
+                    # Update tracking variables
+                    last_update_time = current_time
+                    progress_threshold = completed + batch_size
                 
                 # If we still have infinity, something went wrong
                 if min_distance == float('inf'):
-                    get_progress_bar().write(f"Warning: Unable to calculate distance for block group {idx}")
+                    if verbose:
+                        get_progress_bar().write(f"Warning: Unable to calculate distance for block group {idx}")
                     min_distance = float('nan')  # Use NaN instead of inf
                 
                 distances_km.append(min_distance)
             except Exception as e:
-                get_progress_bar().write(f"Error processing block group {idx}: {e}")
+                if verbose:
+                    get_progress_bar().write(f"Error processing block group {idx}: {e}")
                 distances_km.append(float('nan'))
+        
+        # Final progress update (always show this)
+        total_time = time.time() - start_time
+        get_progress_bar().write(f"Distance calculation completed in {total_time:.2f}s.")
         
         # Add both km and miles
         df['travel_distance_km'] = distances_km
@@ -233,6 +274,7 @@ def add_travel_distances(
     # Save enhanced GeoDataFrame if output path is provided
     if output_path:
         df.to_file(output_path, driver="GeoJSON")
-        get_progress_bar().write(f"Saved block groups with travel distances to {output_path}")
+        if verbose:
+            get_progress_bar().write(f"Saved block groups with travel distances to {output_path}")
     
     return df 
