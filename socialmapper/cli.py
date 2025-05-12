@@ -29,8 +29,8 @@ def parse_arguments():
         description=f"SocialMapper v{__version__}: Tool for mapping community resources and demographics"
     )
     
-    # Input source group
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    # Input source group - making it required=False when using --list-variables
+    input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument("--custom-coords", help="Path to custom coordinates file (CSV or JSON)")
     input_group.add_argument("--poi", action="store_true", help="Use direct POI parameters")
     
@@ -88,6 +88,14 @@ def parse_arguments():
     )
     
     args = parser.parse_args()
+    
+    # If --list-variables is used, don't validate POI arguments
+    if args.list_variables:
+        return args
+    
+    # Check if either --custom-coords or --poi is specified when not using --list-variables
+    if not args.custom_coords and not args.poi:
+        parser.error("One of --custom-coords or --poi is required unless using --list-variables")
     
     # Validate POI arguments if --poi is specified for querying OSM
     if args.poi:

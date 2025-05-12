@@ -15,6 +15,8 @@ if __name__ == "__main__":
     # Make sure socialmapper package is in the Python path
     sys.path.insert(0, current_dir)
     
+    # Note: The quiet mode is set inside streamlit_app.py
+    
     # Launch the Streamlit app
     sys.argv = ["streamlit", "run", streamlit_app_path]
     sys.exit(stcli.main()) 
