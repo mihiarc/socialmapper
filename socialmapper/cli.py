@@ -8,8 +8,8 @@ import time
 import traceback
 
 from . import __version__
-from .core import run_socialmapper, setup_directories
-from .util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
+from .core import run_socialmapper, setup_directories, set_quiet_logging
+from .util import CENSUS_VARIABLE_MAPPING
 from .states import normalize_state, StateFormat
 
 # Configure basic logging
@@ -53,6 +53,7 @@ def parse_arguments():
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
     parser.add_argument("--list-variables", action="store_true", help="List available census variables and exit")
     parser.add_argument("--dry-run", action="store_true", help="Print what would be done without actually doing it")
+    parser.add_argument("--quiet", action="store_true", help="Suppress most log messages (only show warnings and errors)")
     
     # Output type controls - only CSV enabled by default
     parser.add_argument(
@@ -99,6 +100,10 @@ def main():
     """Main entry point for the application."""
     args = parse_arguments()
     
+    # Set quiet logging if requested
+    if args.quiet:
+        set_quiet_logging()
+        
     # If user just wants to list available variables
     if args.list_variables:
         print("\nAvailable Census Variables:")
@@ -115,6 +120,10 @@ def main():
     print("=" * 80)
     print(f"SocialMapper v{__version__}: End-to-end tool for mapping community resources")
     print("=" * 80)
+    
+    # If quiet mode is enabled, mention it
+    if args.quiet:
+        print("Running in quiet mode - most log messages will be suppressed")
     
     # If dry-run, just print what would be done and exit
     if args.dry_run:

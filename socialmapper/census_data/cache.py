@@ -12,14 +12,17 @@ import hashlib
 import pickle
 import sqlite3
 from functools import lru_cache
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple
+import logging
 
 import pandas as pd
 
 from socialmapper.util import normalize_census_variable
 from socialmapper.census_data.async_census import fetch_census_data_for_states_async
 from socialmapper.progress import get_progress_bar
+
+# Add a logger for this module
+logger = logging.getLogger(__name__)
 
 # Default cache settings
 DEFAULT_CACHE_DIR = os.path.join("cache", "census_data")
@@ -105,17 +108,146 @@ class MemoryCache:
         """
         self.misses += 1
         
-        from socialmapper.census_data import fetch_census_data_for_states
+        import requests
+        import pandas as pd
+        import asyncio
         
-        # Call the actual data fetching function
-        return fetch_census_data_for_states(
-            state_fips_list=list(states_tuple),
-            variables=list(vars_tuple),
-            year=year,
-            dataset=dataset,
-            api_key=api_key,
-            use_async=use_async
+        # Convert from tuples back to lists
+        state_fips_list = list(states_tuple)
+        variables = list(vars_tuple)
+        
+        # Make sure 'NAME' is included
+        api_variables = list(variables)
+        if 'NAME' not in api_variables:
+            api_variables.append('NAME')
+            
+        # Use async implementation if requested
+        if use_async and len(state_fips_list) > 1:
+            logger.debug(f"Using asynchronous implementation to fetch data for {len(state_fips_list)} states...")
+            
+            # Import here to avoid circular imports at top level
+            from socialmapper.census_data.async_census import fetch_census_data_for_states_async
+            
+            try:
+                # Handle async execution in a way compatible with Python 3.10+ asyncio changes
+                try:
+                    # Get the current event loop or create a new one
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    # No event loop exists in this thread, create a new one
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                
+                # Run the async function
+                if loop.is_running():
+                    # If the loop is already running (e.g., in Jupyter/IPython), use run_coroutine_threadsafe
+                    import concurrent.futures
+                    future = asyncio.run_coroutine_threadsafe(
+                        fetch_census_data_for_states_async(
+                            state_fips_list=state_fips_list,
+                            variables=api_variables,
+                            year=year,
+                            dataset=dataset,
+                            api_key=api_key,
+                            concurrency=10  # Use default concurrency
+                        ),
+                        loop
+                    )
+                    final_df = future.result()
+                else:
+                    # If no loop is running, run until complete
+                    final_df = loop.run_until_complete(
+                        fetch_census_data_for_states_async(
+                            state_fips_list=state_fips_list,
+                            variables=api_variables,
+                            year=year,
+                            dataset=dataset,
+                            api_key=api_key,
+                            concurrency=10  # Use default concurrency
+                        )
+                    )
+                return final_df
+            except Exception as e:
+                logger.warning(f"Error using async implementation, falling back to synchronous: {str(e)}")
+        
+        # Original synchronous implementation (kept for fallback and single-state requests)
+        # Base URL for Census API
+        base_url = f'https://api.census.gov/data/{year}/{dataset}'
+        
+        # Verify the API URL with a test request
+        test_url = f"{base_url}/variables.json"
+        try:
+            test_response = requests.get(test_url, params={'key': api_key})
+            if test_response.status_code != 200:
+                raise ValueError(f"Census API returned status code {test_response.status_code} for URL {test_url}")
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Cannot connect to Census API: {str(e)}")
+        
+        # Initialize an empty list to store dataframes
+        dfs = []
+        
+        # Helper function to get state name
+        def get_state_name(fips_code):
+            """Get state name from FIPS code for better logging."""
+            # Import here to avoid circular dependency
+            from socialmapper.census_data import state_fips_to_name
+            state_name = state_fips_to_name(fips_code)
+            return state_name if state_name else fips_code
+        
+        # Loop over each state
+        for state_code in get_progress_bar(state_fips_list, desc="Fetching census data by state", unit="state"):
+            state_name = get_state_name(state_code)
+            
+            # Define the parameters for this state
+            params = {
+                'get': ','.join(api_variables),
+                'for': 'block group:*',
+                'in': f'state:{state_code} county:* tract:*',
+                'key': api_key
+            }
+            
+            try:
+                # Make the API request
+                response = requests.get(base_url, params=params)
+                
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # Parse the JSON response
+                    data = response.json()
+                    
+                    # Validate response structure
+                    if not data or len(data) < 2:
+                        continue
+                    
+                    # Convert to DataFrame
+                    df = pd.DataFrame(data[1:], columns=data[0])
+                    
+                    # Append the dataframe to the list
+                    dfs.append(df)
+                    
+                    logger.debug(f"  - Retrieved data for {len(df)} block groups")
+                    
+                else:
+                    logger.warning(f"Error fetching data for {state_name}: Status {response.status_code}")
+            
+            except Exception as e:
+                logger.warning(f"Exception while fetching data for {state_name}: {str(e)}")
+        
+        # Combine all data
+        if not dfs:
+            raise ValueError("No census data retrieved. Please check your API key and the census variables you're requesting.")
+            
+        final_df = pd.concat(dfs, ignore_index=True)
+        
+        # Create a GEOID column to match with GeoJSON - ensure proper formatting with leading zeros
+        final_df['GEOID'] = (
+            final_df['state'].str.zfill(2) + 
+            final_df['county'].str.zfill(3) + 
+            final_df['tract'].str.zfill(6) + 
+            final_df['block group']
         )
+        
+        return final_df
     
     def get_or_fetch(
         self, 
@@ -245,7 +377,7 @@ class DiskCache:
             conn.commit()
             conn.close()
         except Exception as e:
-            get_progress_bar().write(f"Error initializing cache database: {e}")
+            logger.warning(f"Error initializing cache database: {e}")
     
     def get_or_fetch(
         self, 
@@ -281,12 +413,12 @@ class DiskCache:
         cached_data = self._get_from_cache(cache_key)
         if cached_data is not None:
             self.hits += 1
-            get_progress_bar().write(f"Census data cache hit: using cached data for {len(state_fips_list)} states, {len(normalized_variables)} variables.")
+            logger.info(f"Census data cache hit: using cached data for {len(state_fips_list)} states, {len(normalized_variables)} variables.")
             return cached_data
         
         # Fetch new data
         self.misses += 1
-        get_progress_bar().write(f"Census data cache miss: fetching fresh data...")
+        logger.info(f"Census data cache miss: fetching fresh data...")
         
         from socialmapper.census_data import fetch_census_data_for_states
         
@@ -296,7 +428,8 @@ class DiskCache:
             year=year,
             dataset=dataset,
             api_key=api_key,
-            use_async=use_async
+            use_async=use_async,
+            use_internal_cache=False  # Prevent infinite recursion
         )
         
         # Store in cache
@@ -335,7 +468,7 @@ class DiskCache:
             
             return None
         except Exception as e:
-            get_progress_bar().write(f"Error retrieving from cache: {e}")
+            logger.warning(f"Error retrieving from cache: {e}")
             return None
     
     def _store_in_cache(
@@ -382,9 +515,9 @@ class DiskCache:
             
             conn.commit()
             conn.close()
-            get_progress_bar().write(f"Stored census data in cache.")
+            logger.debug(f"Stored census data in cache.")
         except Exception as e:
-            get_progress_bar().write(f"Error storing in cache: {e}")
+            logger.warning(f"Error storing in cache: {e}")
     
     def clear(self):
         """Clear the cache."""
@@ -397,9 +530,9 @@ class DiskCache:
             self.hits = 0
             self.misses = 0
             self.total_calls = 0
-            get_progress_bar().write(f"Cleared census data cache.")
+            logger.debug(f"Cleared census data cache.")
         except Exception as e:
-            get_progress_bar().write(f"Error clearing cache: {e}")
+            logger.warning(f"Error clearing cache: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
@@ -435,7 +568,7 @@ class DiskCache:
             
             conn.close()
         except Exception as e:
-            get_progress_bar().write(f"Error getting cache stats: {e}")
+            logger.warning(f"Error getting cache stats: {e}")
         
         return stats
 
@@ -503,7 +636,7 @@ class HybridCache:
         # Check if it was a memory hit
         if self.memory_cache.hits > memory_hits_before:
             self.memory_hits += 1
-            get_progress_bar().write(f"Memory cache hit: using in-memory census data.")
+            logger.debug(f"Memory cache hit: using in-memory census data.")
             return data
         
         # If not in memory, check if it was a disk hit
@@ -530,7 +663,7 @@ class HybridCache:
         self.disk_hits = 0
         self.misses = 0
         self.total_calls = 0
-        get_progress_bar().write(f"Cleared all census data caches.")
+        logger.debug(f"Cleared all census data caches.")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get combined cache statistics."""

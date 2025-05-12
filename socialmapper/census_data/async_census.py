@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import logging
 from typing import List, Optional
 
 import httpx
@@ -15,6 +16,9 @@ import pandas as pd
 
 from socialmapper.util import normalize_census_variable
 from socialmapper.states import state_fips_to_name, STATE_NAMES_TO_ABBR
+
+# Add a logger for this module
+logger = logging.getLogger(__name__)
 
 BASE_URL_TEMPLATE = "https://api.census.gov/data/{year}/{dataset}"
 
@@ -33,6 +37,11 @@ async def _fetch_state(
         "in": f"state:{state_code} county:* tract:*",
         "key": api_key,
     }
+    
+    # Log the request at DEBUG level so it won't show in normal INFO mode
+    state_name = get_state_name_from_fips(state_code)
+    logger.debug(f"Fetching census data for {state_name} (FIPS: {state_code})")
+    
     response = await client.get(base_url, params=params, timeout=30)
     response.raise_for_status()
     json_data = response.json()
@@ -40,8 +49,8 @@ async def _fetch_state(
     df = pd.DataFrame(rows, columns=header)
 
     # Helpful human-readable state name
-    state_name = get_state_name_from_fips(state_code)
     df["STATE_NAME"] = state_name
+    logger.debug(f"Retrieved {len(df)} block groups for {state_name}")
     return df
 
 
