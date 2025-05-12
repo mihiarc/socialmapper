@@ -9,6 +9,7 @@ from shapely.geometry import Point
 import numpy as np
 from typing import Dict, List, Optional, Union
 from pathlib import Path
+from scipy.spatial import cKDTree
 
 # Import census variable mapping to get friendly names
 from socialmapper.util import CENSUS_VARIABLE_MAPPING
@@ -38,12 +39,74 @@ def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
     distance_meters = points_gdf.iloc[0].geometry.distance(points_gdf.iloc[1].geometry)
     return distance_meters / 1000  # Convert to kilometers
 
+def calculate_distances_vectorized(centroids, poi_points, crs="EPSG:5070"):
+    """
+    Calculate distances between block group centroids and POIs using vectorized operations.
+    
+    Args:
+        centroids: List or array of block group centroid points
+        poi_points: List or array of POI points
+        crs: Projected CRS to use for distance calculation
+        
+    Returns:
+        Array of minimum distances from each centroid to the nearest POI in kilometers
+    """
+    if not centroids or not poi_points:
+        return []
+    
+    # Create GeoDataFrames for centroids and POIs
+    centroids_gdf = gpd.GeoDataFrame(geometry=centroids, crs="EPSG:4326")
+    pois_gdf = gpd.GeoDataFrame(geometry=poi_points, crs="EPSG:4326")
+    
+    # Project to specified CRS for accurate distance calculation
+    centroids_gdf = centroids_gdf.to_crs(crs)
+    pois_gdf = pois_gdf.to_crs(crs)
+    
+    # Extract coordinates for KDTree
+    centroids_coords = np.array([(p.x, p.y) for p in centroids_gdf.geometry])
+    pois_coords = np.array([(p.x, p.y) for p in pois_gdf.geometry])
+    
+    # Check for NaN or infinite values and remove them
+    valid_centroid_mask = np.isfinite(centroids_coords).all(axis=1)
+    valid_poi_mask = np.isfinite(pois_coords).all(axis=1)
+    
+    if not np.all(valid_centroid_mask):
+        print(f"Warning: Found {np.sum(~valid_centroid_mask)} non-finite values in centroids. These will be excluded.")
+        centroids_coords = centroids_coords[valid_centroid_mask]
+    
+    if not np.all(valid_poi_mask):
+        print(f"Warning: Found {np.sum(~valid_poi_mask)} non-finite values in POIs. These will be excluded.")
+        pois_coords = pois_coords[valid_poi_mask]
+    
+    # Make sure we still have valid points
+    if len(centroids_coords) == 0 or len(pois_coords) == 0:
+        print("Warning: No valid coordinates left after filtering out non-finite values.")
+        return np.array([float('inf')] * len(centroids))
+    
+    # Build KDTree for efficient nearest neighbor queries
+    tree = cKDTree(pois_coords)
+    
+    # Find distances to nearest POI for each centroid
+    distances_m, _ = tree.query(centroids_coords, k=1)
+    
+    # If we filtered some centroids, we need to reconstruct the full array
+    if not np.all(valid_centroid_mask):
+        full_distances = np.array([float('inf')] * len(valid_centroid_mask))
+        full_distances[valid_centroid_mask] = distances_m
+        distances_m = full_distances
+    
+    # Convert to kilometers
+    return distances_m / 1000
+
 def export_census_data_to_csv(
     census_data: gpd.GeoDataFrame,
     poi_data: Union[Dict, List[Dict]],
     output_path: Optional[str] = None,
     base_filename: Optional[str] = None,
-    output_dir: str = "output/csv"
+    output_dir: str = "output/csv",
+    optimize_memory: bool = True,
+    chunk_size: Optional[int] = None,
+    mock_distance: bool = False
 ) -> str:
     """
     Export census data to CSV format with block group identifiers and travel distances.
@@ -54,6 +117,9 @@ def export_census_data_to_csv(
         output_path: Full path to save the CSV file
         base_filename: Base filename to use if output_path is not provided
         output_dir: Directory to save the CSV if output_path is not provided
+        optimize_memory: Whether to optimize memory usage with appropriate column types
+        chunk_size: Number of rows to write at a time (None means write all at once)
+        mock_distance: Whether to use mock distance values (for testing only)
         
     Returns:
         Path to the saved CSV file
@@ -155,40 +221,39 @@ def export_census_data_to_csv(
             except (ValueError, TypeError):
                 csv_data[column_name] = df[col]
     
-    # Calculate travel distances
-    # Reproject to Albers Equal Area (EPSG:5070) for accurate centroid calculations
-    df_projected = df.copy()
-    if df_projected.crs is None:
-        # If no CRS is set, assume WGS84
-        df_projected.set_crs("EPSG:4326", inplace=True)
-    
-    # Reproject to a suitable projection for North America
-    df_projected = df_projected.to_crs("EPSG:5070")
-    
-    # Calculate centroids of block groups in the projected CRS
-    df['centroid'] = df_projected.geometry.centroid
-    
-    # Convert POIs to GeoDataFrame
-    poi_points = []
-    for poi in pois:
-        if 'lon' in poi and 'lat' in poi:
-            poi_points.append(Point(poi['lon'], poi['lat']))
-    
-    if poi_points:
-        # For each block group, find the closest POI and calculate distance
-        distances_km = []
+    # Calculate travel distances or use mock values for testing
+    if mock_distance:
+        # Use fixed mock values for testing
+        num_rows = len(csv_data)
+        csv_data['travel_distance_km'] = np.linspace(1.0, 10.0, num_rows)
+        csv_data['travel_distance_miles'] = csv_data['travel_distance_km'] * 0.621371  # Convert km to miles
+    else:
+        # Reproject to Albers Equal Area (EPSG:5070) for accurate centroid calculations
+        df_projected = df.copy()
+        if df_projected.crs is None:
+            # If no CRS is set, assume WGS84
+            df_projected.set_crs("EPSG:4326", inplace=True)
         
-        for _, row in df.iterrows():
-            # Calculate distance to each POI and find the minimum
-            min_distance = float('inf')
-            for point in poi_points:
-                distance = calculate_distance(point, row['centroid'])
-                min_distance = min(min_distance, distance)
-            distances_km.append(min_distance)
+        # Reproject to a suitable projection for North America
+        df_projected = df_projected.to_crs("EPSG:5070")
         
-        # Add both km and miles
-        csv_data['travel_distance_km'] = distances_km
-        csv_data['travel_distance_miles'] = [d * 0.621371 for d in distances_km]  # Convert km to miles
+        # Calculate centroids of block groups in the projected CRS
+        if 'centroid' not in df.columns:
+            df['centroid'] = df_projected.geometry.centroid
+        
+        # Convert POIs to GeoDataFrame
+        poi_points = []
+        for poi in pois:
+            if 'lon' in poi and 'lat' in poi:
+                poi_points.append(Point(poi['lon'], poi['lat']))
+        
+        if poi_points:
+            # Use vectorized distance calculation for improved performance
+            distances_km = calculate_distances_vectorized(df['centroid'].tolist(), poi_points)
+            
+            # Add both km and miles
+            csv_data['travel_distance_km'] = distances_km
+            csv_data['travel_distance_miles'] = [d * 0.621371 for d in distances_km]  # Convert km to miles
     
     # Reorder columns in the preferred order, explicitly exclude 'state' and 'county'
     preferred_order = [
@@ -216,6 +281,29 @@ def export_census_data_to_csv(
         if col.lower() in ['state', 'county']:
             csv_data = csv_data.drop(columns=[col])
     
+    # Optimize memory usage by converting columns to appropriate types
+    if optimize_memory and len(csv_data) > 0:
+        # Columns that should be categorical (typically have few unique values)
+        categorical_candidates = ['state_fips', 'county_fips', 'block_group', 'poi_id', 'poi_name']
+        
+        # Convert appropriate string columns to categorical
+        for col in categorical_candidates:
+            if col in csv_data.columns and csv_data[col].dtype == 'object':
+                n_unique = csv_data[col].nunique()
+                n_total = len(csv_data)
+                
+                # Only convert to categorical if it would save memory
+                # (categorical is beneficial when n_unique is much smaller than n_total)
+                if n_unique / n_total < 0.5:  # Rule of thumb: convert if less than 50% unique values
+                    csv_data[col] = csv_data[col].astype('category')
+        
+        # Downcast numeric columns to the smallest possible type
+        for col in csv_data.columns:
+            if pd.api.types.is_integer_dtype(csv_data[col].dtype):
+                csv_data[col] = pd.to_numeric(csv_data[col], downcast='integer')
+            elif pd.api.types.is_float_dtype(csv_data[col].dtype):
+                csv_data[col] = pd.to_numeric(csv_data[col], downcast='float')
+    
     # Create output directory if it doesn't exist
     if output_path is None:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -229,7 +317,26 @@ def export_census_data_to_csv(
         # Ensure directory for output_path exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Save to CSV
-    csv_data.to_csv(output_path, index=False)
+    # Save to CSV, using chunked writing for large datasets if requested
+    if chunk_size is not None and len(csv_data) > chunk_size:
+        # Calculate the total number of chunks
+        total_chunks = (len(csv_data) + chunk_size - 1) // chunk_size  # Ceiling division
+        
+        # Write the first chunk with headers
+        csv_data.iloc[:chunk_size].to_csv(output_path, index=False)
+        
+        # Append the rest without headers
+        for i in range(1, total_chunks):
+            start_idx = i * chunk_size
+            end_idx = min((i + 1) * chunk_size, len(csv_data))
+            csv_data.iloc[start_idx:end_idx].to_csv(
+                output_path, 
+                mode='a', 
+                header=False, 
+                index=False
+            )
+    else:
+        # Write all at once
+        csv_data.to_csv(output_path, index=False)
     
     return output_path 
