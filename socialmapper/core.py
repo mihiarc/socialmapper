@@ -17,6 +17,30 @@ from shapely.geometry import Point
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+# Function to set more quiet logging
+def set_quiet_logging():
+    """
+    Configure logging to be more quiet by setting the level to WARNING.
+    This will hide INFO level log messages.
+    """
+    # Set root logger to WARNING level
+    logging.getLogger().setLevel(logging.WARNING)
+    
+    # Also set specific loggers that might be noisy
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpx._client").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    
+    # Disable httpx logging of request details
+    try:
+        import httpx
+        # Try to disable httpx logging callback if available
+        httpx._config.TRACE_HOOK = None
+    except (ImportError, AttributeError):
+        pass
+
 # Check if PyArrow is available
 try:
     import pyarrow

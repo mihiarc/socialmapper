@@ -63,7 +63,7 @@ def _init_county_spatial_index(debug=False, use_mock_on_failure=True, use_bundle
                 data_path = Path(__file__).parent / "data" / "us_counties.parquet"
                 
                 if data_path.exists():
-                    logger.info(f"Loading county data from bundled package data")
+                    logger.debug(f"Loading county data from bundled package data")
                     counties_gdf = gpd.read_parquet(data_path)
                     
                     # Create spatial index for counties
@@ -74,7 +74,7 @@ def _init_county_spatial_index(debug=False, use_mock_on_failure=True, use_bundle
                     _COUNTY_SPATIAL_INDEX = spatial_idx
                     _COUNTY_DATA = counties_gdf
                     
-                    logger.info(f"Successfully loaded spatial index from bundled data with {len(counties_gdf)} counties")
+                    logger.debug(f"Successfully loaded spatial index from bundled data with {len(counties_gdf)} counties")
                     return spatial_idx, counties_gdf
                 else:
                     logger.warning("Bundled county data not found, falling back to API")
@@ -84,7 +84,7 @@ def _init_county_spatial_index(debug=False, use_mock_on_failure=True, use_bundle
                     logger.exception("Detailed error:")
         
         # If bundled data not available or not requested, use the API
-        logger.info("Initializing county spatial index from Census API")
+        logger.debug("Initializing county spatial index from Census API")
         url = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query'
         
         params = {
@@ -113,7 +113,7 @@ def _init_county_spatial_index(debug=False, use_mock_on_failure=True, use_bundle
         _COUNTY_SPATIAL_INDEX = spatial_idx
         _COUNTY_DATA = counties_gdf
         
-        logger.info(f"Successfully initialized county spatial index with {len(counties_gdf)} counties")
+        logger.debug(f"Successfully initialized county spatial index with {len(counties_gdf)} counties")
         return spatial_idx, counties_gdf
         
     except Exception as e:
@@ -150,7 +150,7 @@ def _init_county_spatial_index(debug=False, use_mock_on_failure=True, use_bundle
             _COUNTY_SPATIAL_INDEX = mock_idx
             _COUNTY_DATA = mock_gdf
             
-            logger.info("Initialized mock county spatial index")
+            logger.debug("Initialized mock county spatial index")
             return mock_idx, mock_gdf
         else:
             raise
@@ -165,7 +165,7 @@ def _create_mock_county_spatial_index():
     """
     global _COUNTY_SPATIAL_INDEX, _COUNTY_DATA
     
-    logger.info("Creating mock county spatial index")
+    logger.debug("Creating mock county spatial index")
     # Create a simple index with a few counties
     idx = index.Index()
     
@@ -330,7 +330,7 @@ def get_neighboring_counties(state_fips: str, county_fips: str) -> List[Tuple[st
     # If not in cache, fetch from Census
     if state_counties is None:
         try:
-            logger.info(f"Fetching counties for state {state_fips} using TIGERweb REST API.")
+            logger.debug(f"Fetching counties for state {state_fips} using TIGERweb REST API.")
             url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query"
             params = {
                 'where': f"STATE='{state_fips}'",
@@ -402,7 +402,7 @@ def get_neighboring_counties(state_fips: str, county_fips: str) -> List[Tuple[st
                 if county_geom.is_valid and county_geom.touches(target_geom):
                     neighbors.append((state_fips, county_row['COUNTY']))
                 elif county_geom.is_valid and county_geom.intersects(target_geom) and not county_geom.overlaps(target_geom):
-                    logger.info(f"Adding county {county_row['BASENAME']} ({county_row['COUNTY']}) as neighbor to {county_fips} based on intersection (not just touches).")
+                    logger.debug(f"Adding county {county_row['BASENAME']} ({county_row['COUNTY']}) as neighbor to {county_fips} based on intersection (not just touches).")
                     neighbors.append((state_fips, county_row['COUNTY']))
 
     except Exception as e:
@@ -597,7 +597,7 @@ def get_counties_from_pois(
     # Initialize the spatial index if not already done
     try:
         _init_county_spatial_index()
-        logger.info("County spatial index initialized for efficient lookups")
+        logger.debug("County spatial index initialized for efficient lookups")
     except Exception as e:
         logger.warning(f"Could not initialize county spatial index: {e}")
         logger.warning("Falling back to standard API lookups which may be slower")
@@ -606,12 +606,12 @@ def get_counties_from_pois(
     if not pois:
         raise ValueError("No POIs found in input data")
     
-    logger.info(f"Processing {len(pois)} POIs to determine counties")
+    logger.debug(f"Processing {len(pois)} POIs to determine counties")
     start_time = time.time()
     
     # For very small POI sets, don't use multiprocessing overhead
     if len(pois) < 20:
-        logger.info("Small POI set detected, using single-threaded processing")
+        logger.debug("Small POI set detected, using single-threaded processing")
         counties_set = _process_poi_batch(pois, include_neighbors, api_key)
         return list(counties_set)
     
@@ -620,7 +620,7 @@ def get_counties_from_pois(
     for i in range(0, len(pois), batch_size):
         poi_batches.append(pois[i:i+batch_size])
     
-    logger.info(f"Split {len(pois)} POIs into {len(poi_batches)} batches of size ~{batch_size}")
+    logger.debug(f"Split {len(pois)} POIs into {len(poi_batches)} batches of size ~{batch_size}")
     
     all_counties = set()
     
@@ -653,7 +653,7 @@ def get_counties_from_pois(
                 tqdm.write(f"Error processing batch {batch_idx}: {e}")
     
     elapsed = time.time() - start_time
-    logger.info(f"County determination complete. Found {len(all_counties)} counties in {elapsed:.2f} seconds")
+    logger.debug(f"County determination complete. Found {len(all_counties)} counties in {elapsed:.2f} seconds")
     
     return list(all_counties)
 

@@ -165,7 +165,8 @@ def fetch_census_data_for_states(
     api_key: Optional[str] = None,
     use_async: bool = True,
     concurrency: int = 10,
-    use_cache: bool = True
+    use_cache: bool = True,
+    use_internal_cache: bool = True
 ) -> pd.DataFrame:
     """
     Fetch census data for all block groups in specified states.
@@ -179,6 +180,8 @@ def fetch_census_data_for_states(
         use_async: Whether to use async implementation for faster fetching (default: True)
         concurrency: Number of concurrent requests when using async (default: 10)
         use_cache: Whether to use the caching system (default: True)
+        use_internal_cache: Whether to use the internal cache (default: True).
+                            Set to False when called from the cache itself to prevent recursion.
         
     Returns:
         DataFrame with census data for all block groups in the specified states
@@ -188,8 +191,8 @@ def fetch_census_data_for_states(
         if not api_key:
             raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
     
-    # If caching is enabled, try to get from cache first
-    if use_cache:
+    if use_cache and use_internal_cache:
+        from socialmapper.census_data.cache import get_default_cache
         cache = get_default_cache()
         return cache.get_or_fetch(
             state_fips_list=state_fips_list,

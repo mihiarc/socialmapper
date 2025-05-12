@@ -158,6 +158,9 @@ socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "ameni
 
 # Run with custom coordinates
 socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census-variables total_population median_household_income
+
+# Run in quiet mode (suppresses most log messages)
+socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --quiet
 ```
 
 ### Using the Python API
