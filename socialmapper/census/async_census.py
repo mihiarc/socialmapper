@@ -1,6 +1,6 @@
 """Asynchronous helpers for retrieving Census data.
 
-These functions mirror parts of `src.census_data` but leverage `httpx` + `asyncio`
+These functions mirror parts of `socialmapper.census` but leverage `httpx` + `asyncio`
 for parallelism, which speeds up multi-state queries.
 """
 
@@ -67,7 +67,7 @@ async def _fetch_state(
 
 
 def get_state_name_from_fips(fips_code: str) -> str:
-    """Utility replicated from census_data to avoid circular import."""
+    """Utility replicated from census to avoid circular import."""
     state_abbr = state_fips_to_abbreviation(fips_code)
     if not state_abbr:
         return fips_code
@@ -89,7 +89,7 @@ async def fetch_census_data_for_states_async(
     """Asynchronously fetch census data for many states.
 
     This is a drop-in async alternative to
-    `census_data.fetch_census_data_for_states`.
+    `census.fetch_census_data_for_states`.
     """
 
     if api_key is None:
