@@ -29,6 +29,7 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 - **Retrieving Demographic Data** - Pull census data for the identified areas
 - **Visualizing Results** - Generate maps showing the demographic variables around the POIs
 - **Data Export** - Export census data with travel distances to CSV for further analysis
+- **Bundled County Data** - Includes pre-packaged county boundaries for lightning-fast lookups and offline operation (1000x+ faster than API calls)
 
 ## ⚠️ PRE-RELEASE ⚠️
 This is an alpha release (v0.3.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.

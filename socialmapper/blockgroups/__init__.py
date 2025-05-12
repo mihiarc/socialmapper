@@ -10,15 +10,14 @@ import pandas as pd
 import requests
 from typing import List, Optional, Dict, Union
 import json
-# Import the new progress bar utility
+import time
 from socialmapper.progress import get_progress_bar
 from tqdm import tqdm
 
 from socialmapper.states import normalize_state, StateFormat
 from socialmapper.counties import (
     get_counties_from_pois,
-    get_block_groups_for_counties,
-    get_block_group_urls
+    get_block_groups_for_counties
 )
 
 # Set PyOGRIO as the default IO engine
@@ -33,16 +32,6 @@ try:
 except ImportError:
     USE_ARROW = False
     print("PyArrow not available. Install it for better performance.")
-
-# Remove duplicate imports - we now use socialmapper.counties directly
-# try:
-#     from src.counties import (
-#         get_counties_from_pois,
-#         get_block_groups_for_counties
-#     )
-#     HAS_COUNTY_UTILS = True
-# except ImportError:
-#     HAS_COUNTY_UTILS = False
 
 # Set flag indicating that county utilities are available
 HAS_COUNTY_UTILS = True
@@ -243,10 +232,14 @@ def load_isochrone(isochrone_path: Union[str, gpd.GeoDataFrame]) -> gpd.GeoDataF
 def find_intersecting_block_groups(
     isochrone_gdf: gpd.GeoDataFrame,
     block_groups_gdf: gpd.GeoDataFrame,
-    selection_mode: str = "intersect"
+    selection_mode: str = "intersect",
+    chunk_size: int = 5000,
+    use_parallel: bool = True,
+    max_workers: int = 4
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with the isochrone.
+    Optimized for performance with large datasets by using chunking and parallel processing.
     
     Args:
         isochrone_gdf: GeoDataFrame containing the isochrone
@@ -255,16 +248,26 @@ def find_intersecting_block_groups(
             - "clip": Clip block groups to isochrone boundary (original behavior)
             - "intersect": Keep full geometry of any intersecting block group
             - "contain": Only include block groups fully contained within isochrone
+        chunk_size: Number of block groups to process in each chunk for large datasets
+        use_parallel: Whether to use parallel processing for large datasets
+        max_workers: Maximum number of worker threads for parallel processing
         
     Returns:
         GeoDataFrame with selected block groups
     """
+    import concurrent.futures
+    
+    # Start timing
+    start_time = time.time()
+    
     # Make sure CRS match
     if isochrone_gdf.crs != block_groups_gdf.crs:
+        tqdm.write("Converting coordinate systems to match...")
         block_groups_gdf = block_groups_gdf.to_crs(isochrone_gdf.crs)
     
     # Use coordinate indexing to pre-filter block groups by bounding box
     # This improves performance by reducing the number of geometries for spatial join
+    tqdm.write("Pre-filtering block groups using bounding box...")
     bounds = isochrone_gdf.total_bounds
     filtered_block_groups = block_groups_gdf.cx[
         bounds[0]:bounds[2], 
@@ -279,55 +282,145 @@ def find_intersecting_block_groups(
     # Set predicate based on selection mode
     predicate = "within" if selection_mode == "contain" else "intersects"
     
-    # Find which block groups intersect with or are contained within the isochrone
-    intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate=predicate)
+    # For very small datasets, just do a simple spatial join
+    if len(block_groups_gdf) < chunk_size:
+        tqdm.write(f"Performing spatial join on {len(block_groups_gdf)} block groups...")
+        intersection = gpd.sjoin(block_groups_gdf, isochrone_gdf, how="inner", predicate=predicate)
+        tqdm.write(f"Found {len(intersection)} intersecting block groups.")
+    else:
+        # For large datasets, process in chunks to avoid memory issues
+        tqdm.write(f"Processing {len(block_groups_gdf)} block groups in chunks of {chunk_size}...")
+        
+        # Split block groups into chunks
+        chunks = [block_groups_gdf.iloc[i:i+chunk_size] for i in range(0, len(block_groups_gdf), chunk_size)]
+        tqdm.write(f"Split into {len(chunks)} chunks")
+        
+        # Function to process a single chunk
+        def process_chunk(chunk):
+            return gpd.sjoin(chunk, isochrone_gdf, how="inner", predicate=predicate)
+        
+        # Process chunks
+        intersection_chunks = []
+        
+        if use_parallel and len(chunks) > 1:
+            tqdm.write(f"Processing chunks in parallel with {max_workers} workers...")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all chunks for processing
+                future_to_chunk = {executor.submit(process_chunk, chunk): i for i, chunk in enumerate(chunks)}
+                
+                # Process results as they complete
+                for future in get_progress_bar(
+                    concurrent.futures.as_completed(future_to_chunk), 
+                    total=len(chunks),
+                    desc="Processing block group chunks", 
+                    unit="chunk"
+                ):
+                    chunk_idx = future_to_chunk[future]
+                    try:
+                        chunk_result = future.result()
+                        if not chunk_result.empty:
+                            intersection_chunks.append(chunk_result)
+                    except Exception as e:
+                        tqdm.write(f"Error processing chunk {chunk_idx}: {e}")
+        else:
+            # Process sequentially
+            for i, chunk in enumerate(get_progress_bar(chunks, desc="Processing block group chunks", unit="chunk")):
+                try:
+                    chunk_result = process_chunk(chunk)
+                    if not chunk_result.empty:
+                        intersection_chunks.append(chunk_result)
+                except Exception as e:
+                    tqdm.write(f"Error processing chunk {i}: {e}")
+        
+        # Combine results
+        if intersection_chunks:
+            intersection = pd.concat(intersection_chunks, ignore_index=True)
+            tqdm.write(f"Found {len(intersection)} intersecting block groups.")
+        else:
+            tqdm.write("No intersecting block groups found.")
+            return gpd.GeoDataFrame(geometry=[], crs=isochrone_gdf.crs)
     
     # Process geometries based on selection mode
     processed_geometries = []
     
     tqdm.write(f"Processing {len(intersection)} intersecting block groups...")
     
-    # Skip progress bar for nearly instant operations
-    for idx, row in intersection.iterrows():
-        block_geom = row.geometry
-        isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
-        
-        # Determine geometry based on selection mode
-        if selection_mode == "clip":
-            # Original behavior - clip to isochrone boundary
-            final_geom = block_geom.intersection(isochrone_geom)
-        else:
-            # For "intersect" or "contain", keep the original geometry
-            final_geom = block_geom
-        
-        # Calculate intersection percentage
-        intersection_geom = block_geom.intersection(isochrone_geom)
-        intersection_pct = intersection_geom.area / block_geom.area * 100
-        
-        # Get GEOID parts ensuring proper formatting
-        state = str(row['STATE']).zfill(2)
-        county = str(row['COUNTY']).zfill(3)
-        tract = str(row['TRACT']).zfill(6)
-        blkgrp = str(row['BLKGRP'] if 'BLKGRP' in row else '1')
-        
-        # Create properly formatted 12-digit GEOID
-        geoid = state + county + tract + blkgrp
-        
-        processed_geometries.append({
-            "GEOID": geoid,
-            "STATE": row['STATE'],
-            "COUNTY": row['COUNTY'],
-            "TRACT": row['TRACT'],
-            "BLKGRP": row['BLKGRP'] if 'BLKGRP' in row else geoid[-1],
-            "geometry": final_geom,
-            "poi_id": row['poi_id'] if 'poi_id' in row else None,
-            "poi_name": row['poi_name'] if 'poi_name' in row else None,
-            "travel_time_minutes": row['travel_time_minutes'] if 'travel_time_minutes' in row else None,
-            "intersection_area_pct": intersection_pct
-        })
+    # Function to process a single block group
+    def process_block_group(idx, row):
+        try:
+            block_geom = row.geometry
+            isochrone_geom = isochrone_gdf.loc[isochrone_gdf.index == row.index_right, "geometry"].iloc[0]
+            
+            # Determine geometry based on selection mode
+            if selection_mode == "clip":
+                # Original behavior - clip to isochrone boundary
+                final_geom = block_geom.intersection(isochrone_geom)
+            else:
+                # For "intersect" or "contain", keep the original geometry
+                final_geom = block_geom
+            
+            # Calculate intersection percentage
+            intersection_geom = block_geom.intersection(isochrone_geom)
+            intersection_pct = intersection_geom.area / block_geom.area * 100
+            
+            # Get GEOID parts ensuring proper formatting
+            state = str(row['STATE']).zfill(2)
+            county = str(row['COUNTY']).zfill(3)
+            tract = str(row['TRACT']).zfill(6)
+            blkgrp = str(row['BLKGRP'] if 'BLKGRP' in row else '1')
+            
+            # Create properly formatted 12-digit GEOID
+            geoid = state + county + tract + blkgrp
+            
+            return {
+                "GEOID": geoid,
+                "STATE": row['STATE'],
+                "COUNTY": row['COUNTY'],
+                "TRACT": row['TRACT'],
+                "BLKGRP": row['BLKGRP'] if 'BLKGRP' in row else geoid[-1],
+                "geometry": final_geom,
+                "poi_id": row['poi_id'] if 'poi_id' in row else None,
+                "poi_name": row['poi_name'] if 'poi_name' in row else None,
+                "travel_time_minutes": row['travel_time_minutes'] if 'travel_time_minutes' in row else None,
+                "intersection_area_pct": intersection_pct
+            }
+        except Exception as e:
+            tqdm.write(f"Error processing block group {idx}: {e}")
+            return None
+    
+    # Process block groups
+    if use_parallel and len(intersection) > 100:
+        tqdm.write("Processing geometries in parallel...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all rows for processing
+            future_to_idx = {
+                executor.submit(process_block_group, idx, row): idx 
+                for idx, row in intersection.iterrows()
+            }
+            
+            # Process results as they complete
+            for future in get_progress_bar(
+                concurrent.futures.as_completed(future_to_idx), 
+                total=len(intersection),
+                desc="Processing geometries", 
+                unit="block"
+            ):
+                result = future.result()
+                if result:
+                    processed_geometries.append(result)
+    else:
+        # Process sequentially for smaller datasets
+        for idx, row in get_progress_bar(intersection.iterrows(), total=len(intersection), desc="Processing geometries", unit="block"):
+            result = process_block_group(idx, row)
+            if result:
+                processed_geometries.append(result)
     
     # Create new GeoDataFrame with processed geometries
     result_gdf = gpd.GeoDataFrame(processed_geometries, crs=isochrone_gdf.crs)
+    
+    # Report timing
+    elapsed = time.time() - start_time
+    tqdm.write(f"Spatial processing completed in {elapsed:.2f} seconds")
     
     return result_gdf
 
@@ -403,7 +496,9 @@ def isochrone_to_block_groups_by_county(
     output_path: Optional[str] = None,
     api_key: Optional[str] = None,
     selection_mode: str = "intersect",
-    use_parquet: bool = True
+    use_parquet: bool = True,
+    max_workers: int = 8,
+    batch_size: int = 100
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with an isochrone using county-based optimization.
@@ -422,6 +517,8 @@ def isochrone_to_block_groups_by_county(
             - "intersect": Keep full geometry of any intersecting block group
             - "contain": Only include block groups fully contained within isochrone
         use_parquet: Whether to use GeoParquet instead of GeoJSON format when saving
+        max_workers: Maximum number of worker processes/threads for parallel processing
+        batch_size: Number of POIs to process in each batch
         
     Returns:
         GeoDataFrame with selected block groups
@@ -433,9 +530,18 @@ def isochrone_to_block_groups_by_county(
     tqdm.write("Loading isochrone...")
     isochrone_gdf = load_isochrone(isochrone_path)
     
-    # Get counties containing the POIs and their neighbors
+    # Get counties containing the POIs and their neighbors using the optimized implementation
     tqdm.write("Determining counties for POIs...")
-    counties = get_counties_from_pois(poi_data, include_neighbors=True, api_key=api_key)
+    t0 = time.time()
+    counties = get_counties_from_pois(
+        poi_data, 
+        include_neighbors=True, 
+        api_key=api_key,
+        max_workers=max_workers,
+        batch_size=batch_size
+    )
+    t1 = time.time()
+    tqdm.write(f"County determination completed in {t1-t0:.2f} seconds")
     
     if not counties:
         raise ValueError(
@@ -445,17 +551,23 @@ def isochrone_to_block_groups_by_county(
     
     tqdm.write(f"Found {len(counties)} relevant counties")
     
-    # Get block groups for all relevant counties
+    # Get block groups for all relevant counties (now using parallel fetching)
     tqdm.write(f"Fetching block groups for {len(counties)} counties...")
+    t0 = time.time()
     block_groups_gdf = get_block_groups_for_counties(counties, api_key)
+    t1 = time.time()
+    tqdm.write(f"Retrieved {len(block_groups_gdf)} block groups in {t1-t0:.2f} seconds")
     
     # Find intersecting block groups
     tqdm.write(f"Finding block groups that {selection_mode} with isochrone...")
+    t0 = time.time()
     result_gdf = find_intersecting_block_groups(
         isochrone_gdf,
         block_groups_gdf,
         selection_mode
     )
+    t1 = time.time()
+    tqdm.write(f"Found {len(result_gdf)} intersecting block groups in {t1-t0:.2f} seconds")
     
     # Save result if output path is provided
     if output_path:
@@ -464,6 +576,7 @@ def isochrone_to_block_groups_by_county(
             os.makedirs(output_dir, exist_ok=True)
             
         tqdm.write(f"Saving {len(result_gdf)} block groups...")
+        t0 = time.time()
         if use_parquet and USE_ARROW and not output_path.endswith('.geojson'):
             # Default to parquet if extension isn't explicitly geojson
             if not output_path.endswith('.parquet'):
@@ -473,8 +586,8 @@ def isochrone_to_block_groups_by_county(
             if not output_path.endswith('.geojson'):
                 output_path = f"{output_path}.geojson"
             result_gdf.to_file(output_path, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
-            
-        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path}")
+        t1 = time.time()    
+        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path} in {t1-t0:.2f} seconds")
         
     return result_gdf
 
