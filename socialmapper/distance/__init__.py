@@ -7,6 +7,8 @@ from shapely.geometry import Point
 from typing import Dict, List, Optional, Union
 import pandas as pd
 from socialmapper.progress import get_progress_bar
+import logging
+import json
 
 def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
     """
@@ -33,6 +35,46 @@ def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
     distance_meters = points_gdf.iloc[0].geometry.distance(points_gdf.iloc[1].geometry)
     return distance_meters / 1000  # Convert to kilometers
 
+def preprocess_poi_data(pois):
+    """
+    Preprocess POI data to ensure coordinates are at the top level
+    
+    Args:
+        pois: List of POI dictionaries
+        
+    Returns:
+        List of POI dictionaries with coordinates at the top level
+    """
+    processed_pois = []
+    
+    for poi in pois:
+        poi_copy = dict(poi)  # Create a copy to avoid modifying original
+        
+        # Check if coordinates are in properties
+        if 'properties' in poi and 'lon' not in poi:
+            props = poi['properties']
+            if isinstance(props, dict):
+                if 'lon' in props and 'lat' in props:
+                    poi_copy['lon'] = props['lon']
+                    poi_copy['lat'] = props['lat']
+                elif 'longitude' in props and 'latitude' in props:
+                    poi_copy['lon'] = props['longitude']
+                    poi_copy['lat'] = props['latitude']
+                elif 'lng' in props and 'lat' in props:
+                    poi_copy['lon'] = props['lng']
+                    poi_copy['lat'] = props['lat']
+        
+        # Check if coordinates are in geometry
+        elif 'geometry' in poi and 'lon' not in poi and isinstance(poi['geometry'], Point):
+            geom = poi['geometry']
+            if hasattr(geom, 'x') and hasattr(geom, 'y'):
+                poi_copy['lon'] = geom.x
+                poi_copy['lat'] = geom.y
+        
+        processed_pois.append(poi_copy)
+    
+    return processed_pois
+
 def add_travel_distances(
     block_groups_gdf: gpd.GeoDataFrame,
     poi_data: Union[Dict, List[Dict]],
@@ -55,6 +97,9 @@ def add_travel_distances(
         pois = poi_data['pois']
     if not isinstance(pois, list):
         pois = [pois]
+    
+    # Preprocess POIs to ensure coordinates are available
+    pois = preprocess_poi_data(pois)
     
     # Create a copy of the block groups data to avoid modifying the original
     df = block_groups_gdf.copy()
@@ -88,40 +133,102 @@ def add_travel_distances(
     df['avg_travel_speed_kmh'] = 50  # Default from isochrone.py
     df['avg_travel_speed_mph'] = 31  # Default from isochrone.py
     
-    # Reproject to Albers Equal Area (EPSG:5070) for accurate centroid calculations
-    df_projected = df.copy()
-    if df_projected.crs is None:
+    # Calculate centroids properly by first projecting to a projected CRS for accuracy
+    # then converting back to WGS84 for compatibility with POI coordinates
+    if df.crs is None:
         # If no CRS is set, assume WGS84
-        df_projected.set_crs("EPSG:4326", inplace=True)
+        df.set_crs("EPSG:4326", inplace=True)
     
-    # Reproject to a suitable projection for North America
-    df_projected = df_projected.to_crs("EPSG:5070")
+    # Project to Albers Equal Area, calculate centroids, then convert back to WGS84
+    df_projected = df.to_crs("EPSG:5070")
+    centroids_projected = df_projected.geometry.centroid
+    centroids_gdf = gpd.GeoDataFrame(geometry=centroids_projected, crs="EPSG:5070")
+    centroids_wgs84 = centroids_gdf.to_crs("EPSG:4326")
     
-    # Calculate centroids of block groups in the projected CRS
-    df['centroid'] = df_projected.geometry.centroid
+    # Store the centroids in WGS84
+    df['centroid'] = centroids_wgs84.geometry
     
-    # Convert POIs to GeoDataFrame
+    # Convert POIs to Points
     poi_points = []
     for poi in pois:
+        # Debug POI structure
+        if len(poi_points) == 0:  # Only print the first POI as an example
+            get_progress_bar().write(f"POI example: {json.dumps(poi, default=str)[:100]}...")
+        
         if 'lon' in poi and 'lat' in poi:
             poi_points.append(Point(poi['lon'], poi['lat']))
+        elif 'longitude' in poi and 'latitude' in poi:
+            poi_points.append(Point(poi['longitude'], poi['latitude']))
+        elif 'lng' in poi and 'lat' in poi:
+            poi_points.append(Point(poi['lng'], poi['lat']))
+        elif 'geometry' in poi and hasattr(poi['geometry'], 'x') and hasattr(poi['geometry'], 'y'):
+            poi_points.append(Point(poi['geometry'].x, poi['geometry'].y))
+        elif 'coordinates' in poi:
+            coords = poi['coordinates']
+            if isinstance(coords, list) and len(coords) >= 2:
+                poi_points.append(Point(coords[0], coords[1]))
+        elif 'properties' in poi and isinstance(poi['properties'], dict):
+            props = poi['properties']
+            if 'lon' in props and 'lat' in props:
+                poi_points.append(Point(props['lon'], props['lat']))
+            elif 'longitude' in props and 'latitude' in props:
+                poi_points.append(Point(props['longitude'], props['latitude']))
+            elif 'lng' in props and 'lat' in props:
+                poi_points.append(Point(props['lng'], props['lat']))
+        
+    get_progress_bar().write(f"Found {len(poi_points)} POI points for distance calculation")
     
-    if poi_points:
+    if not poi_points:
+        get_progress_bar().write("WARNING: No POI points available for distance calculation!")
+        get_progress_bar().write(f"POI data example: {pois[0] if pois else None}")
+        # Set distances to NaN instead of inf
+        df['travel_distance_km'] = float('nan')
+        df['travel_distance_miles'] = float('nan')
+    else:
         get_progress_bar().write("Calculating travel distances to POIs...")
         # For each block group, find the closest POI and calculate distance
         distances_km = []
         
-        for _, row in df.iterrows():
+        for idx, row in df.iterrows():
             # Calculate distance to each POI and find the minimum
             min_distance = float('inf')
-            for point in poi_points:
-                distance = calculate_distance(point, row['centroid'])
-                min_distance = min(min_distance, distance)
-            distances_km.append(min_distance)
+            
+            try:
+                centroid = row['centroid']
+                # Debug centroid info
+                if idx == 0:  # Only print for the first block group
+                    get_progress_bar().write(f"Example centroid: {centroid}")
+                
+                # Calculate distance to each POI
+                for point in poi_points:
+                    try:
+                        # Direct distance calculation using the calculate_distance function
+                        distance = calculate_distance(point, centroid)
+                        
+                        # For first block group and first POI, print debug info
+                        if idx == 0 and point == poi_points[0]:
+                            get_progress_bar().write(f"Debug - POI: {point}, Centroid: {centroid}, Distance: {distance} km")
+                        
+                        # Update min distance
+                        if distance < min_distance:
+                            min_distance = distance
+                    except Exception as e:
+                        get_progress_bar().write(f"Error calculating distance: {e}")
+                        continue
+                
+                # If we still have infinity, something went wrong
+                if min_distance == float('inf'):
+                    get_progress_bar().write(f"Warning: Unable to calculate distance for block group {idx}")
+                    min_distance = float('nan')  # Use NaN instead of inf
+                
+                distances_km.append(min_distance)
+            except Exception as e:
+                get_progress_bar().write(f"Error processing block group {idx}: {e}")
+                distances_km.append(float('nan'))
         
         # Add both km and miles
         df['travel_distance_km'] = distances_km
-        df['travel_distance_miles'] = [d * 0.621371 for d in distances_km]  # Convert km to miles
+        df['travel_distance_miles'] = [d * 0.621371 if not pd.isna(d) else float('nan') for d in distances_km]  # Convert km to miles
     
     # Save enhanced GeoDataFrame if output path is provided
     if output_path:
