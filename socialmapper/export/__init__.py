@@ -7,7 +7,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 import numpy as np
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Literal
 from pathlib import Path
 from scipy.spatial import cKDTree
 
@@ -98,31 +98,23 @@ def calculate_distances_vectorized(centroids, poi_points, crs="EPSG:5070"):
     # Convert to kilometers
     return distances_m / 1000
 
-def export_census_data_to_csv(
+def prepare_census_data_for_export(
     census_data: gpd.GeoDataFrame,
     poi_data: Union[Dict, List[Dict]],
-    output_path: Optional[str] = None,
-    base_filename: Optional[str] = None,
-    output_dir: str = "output/csv",
     optimize_memory: bool = True,
-    chunk_size: Optional[int] = None,
     mock_distance: bool = False
-) -> str:
+) -> pd.DataFrame:
     """
-    Export census data to CSV format with block group identifiers and travel distances.
+    Prepare census data for export by creating a DataFrame with all necessary columns.
     
     Args:
         census_data: GeoDataFrame with census data for block groups
         poi_data: Dictionary with POI data or list of POIs
-        output_path: Full path to save the CSV file
-        base_filename: Base filename to use if output_path is not provided
-        output_dir: Directory to save the CSV if output_path is not provided
         optimize_memory: Whether to optimize memory usage with appropriate column types
-        chunk_size: Number of rows to write at a time (None means write all at once)
         mock_distance: Whether to use mock distance values (for testing only)
         
     Returns:
-        Path to the saved CSV file
+        DataFrame ready for export
     """
     # Extract POIs from dictionary if needed
     pois = poi_data
@@ -134,7 +126,7 @@ def export_census_data_to_csv(
     # Create a copy of the census data to avoid modifying the original
     df = census_data.copy()
     
-    # Create a new dataframe for the CSV with required columns
+    # Create a new dataframe for export with required columns
     csv_data = pd.DataFrame()
     
     # Extract components from the GEOID if available
@@ -265,7 +257,7 @@ def export_census_data_to_csv(
     # Add remaining columns, but specifically exclude 'state' and 'county'
     excluded_columns = ['state', 'county', 'State', 'County']
     all_columns = preferred_order + [col for col in csv_data.columns 
-                                     if col not in preferred_order and col not in excluded_columns]
+                                    if col not in preferred_order and col not in excluded_columns]
     
     # Ensure 'state' and 'county' columns are not included, even if they were created
     for col in excluded_columns:
@@ -304,6 +296,42 @@ def export_census_data_to_csv(
             elif pd.api.types.is_float_dtype(csv_data[col].dtype):
                 csv_data[col] = pd.to_numeric(csv_data[col], downcast='float')
     
+    return csv_data
+
+def export_census_data_to_csv(
+    census_data: gpd.GeoDataFrame,
+    poi_data: Union[Dict, List[Dict]],
+    output_path: Optional[str] = None,
+    base_filename: Optional[str] = None,
+    output_dir: str = "output/csv",
+    optimize_memory: bool = True,
+    chunk_size: Optional[int] = None,
+    mock_distance: bool = False
+) -> str:
+    """
+    Export census data to CSV format with block group identifiers and travel distances.
+    
+    Args:
+        census_data: GeoDataFrame with census data for block groups
+        poi_data: Dictionary with POI data or list of POIs
+        output_path: Full path to save the CSV file
+        base_filename: Base filename to use if output_path is not provided
+        output_dir: Directory to save the CSV if output_path is not provided
+        optimize_memory: Whether to optimize memory usage with appropriate column types
+        chunk_size: Number of rows to write at a time (None means write all at once)
+        mock_distance: Whether to use mock distance values (for testing only)
+        
+    Returns:
+        Path to the saved CSV file
+    """
+    # Prepare the data for export
+    csv_data = prepare_census_data_for_export(
+        census_data=census_data,
+        poi_data=poi_data,
+        optimize_memory=optimize_memory,
+        mock_distance=mock_distance
+    )
+    
     # Create output directory if it doesn't exist
     if output_path is None:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -339,4 +367,241 @@ def export_census_data_to_csv(
         # Write all at once
         csv_data.to_csv(output_path, index=False)
     
-    return output_path 
+    return output_path
+
+def export_census_data_to_parquet(
+    census_data: gpd.GeoDataFrame,
+    poi_data: Union[Dict, List[Dict]],
+    output_path: Optional[str] = None,
+    base_filename: Optional[str] = None,
+    output_dir: str = "output/parquet",
+    optimize_memory: bool = True,
+    mock_distance: bool = False,
+    compression: str = "snappy",
+    use_geoparquet: bool = False
+) -> str:
+    """
+    Export census data to Parquet or GeoParquet format with block group identifiers and travel distances.
+    
+    Args:
+        census_data: GeoDataFrame with census data for block groups
+        poi_data: Dictionary with POI data or list of POIs
+        output_path: Full path to save the Parquet file
+        base_filename: Base filename to use if output_path is not provided
+        output_dir: Directory to save the Parquet if output_path is not provided
+        optimize_memory: Whether to optimize memory usage with appropriate column types
+        mock_distance: Whether to use mock distance values (for testing only)
+        compression: Compression codec to use (snappy, gzip, brotli, zstd, or None)
+        use_geoparquet: Whether to save as GeoParquet (preserves spatial data)
+        
+    Returns:
+        Path to the saved Parquet file
+    """
+    # Ensure pyarrow is available
+    try:
+        import pyarrow
+        if use_geoparquet:
+            try:
+                import geoparquet
+            except ImportError:
+                raise ImportError(
+                    "The geoparquet package is required to use GeoParquet format. "
+                    "Please install it with: pip install geoparquet"
+                )
+    except ImportError:
+        raise ImportError(
+            "The pyarrow package is required to use Parquet format. "
+            "Please install it with: pip install pyarrow"
+        )
+    
+    # Create output directory if it doesn't exist
+    if output_path is None:
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        
+        # Generate output path based on base_filename
+        if base_filename is None:
+            base_filename = "census_data"
+        
+        extension = "parquet"
+        if use_geoparquet:
+            extension = "geoparquet"
+        
+        output_path = os.path.join(output_dir, f"{base_filename}_export.{extension}")
+    else:
+        # Ensure directory for output_path exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    if use_geoparquet:
+        # For GeoParquet, we need to keep the geometries
+        import geoparquet
+        
+        # Prepare the GeoDataFrame for export
+        # Include the geometries and distances
+        if 'centroid' in census_data.columns:
+            # Drop the centroid column as it's derived and may cause issues
+            census_data = census_data.drop(columns=['centroid'])
+        
+        # Calculate travel distances or use mock values
+        if mock_distance:
+            # Add mock distances
+            num_rows = len(census_data)
+            census_data['travel_distance_km'] = np.linspace(1.0, 10.0, num_rows)
+            census_data['travel_distance_miles'] = census_data['travel_distance_km'] * 0.621371
+        else:
+            # Calculate actual distances - need to handle this part similar to the CSV export
+            # Extract POIs from dictionary if needed
+            if isinstance(poi_data, dict) and 'pois' in poi_data:
+                pois_list = poi_data['pois']
+            else:
+                pois_list = poi_data
+                
+            if not isinstance(pois_list, list):
+                pois_list = [pois_list]
+                
+            poi_points = []
+            for poi in pois_list:
+                if 'lon' in poi and 'lat' in poi:
+                    poi_points.append(Point(poi['lon'], poi['lat']))
+            
+            # Calculate centroids if not already present
+            if 'centroid' not in census_data.columns:
+                # Reproject to appropriate CRS for accurate centroid calculation
+                census_data_projected = census_data.copy()
+                if census_data_projected.crs is None:
+                    census_data_projected.set_crs("EPSG:4326", inplace=True)
+                
+                # Reproject to a suitable projection for North America
+                census_data_projected = census_data_projected.to_crs("EPSG:5070")
+                
+                # Calculate centroids
+                census_data['centroid'] = census_data_projected.geometry.centroid
+            
+            # Calculate distances using vectorized method
+            if poi_points:
+                distances_km = calculate_distances_vectorized(
+                    census_data['centroid'].tolist(), 
+                    poi_points
+                )
+                
+                # Add distances in km and miles
+                census_data['travel_distance_km'] = distances_km
+                census_data['travel_distance_miles'] = [d * 0.621371 for d in distances_km]
+        
+        # Extract POI information
+        if isinstance(poi_data, dict) and 'pois' in poi_data:
+            pois = poi_data['pois']
+        else:
+            pois = poi_data
+            
+        if not isinstance(pois, list):
+            pois = [pois]
+            
+        if pois and len(pois) > 0:
+            first_poi = pois[0]
+            poi_id = first_poi.get('id', 'unknown')
+            poi_name = first_poi.get('name', first_poi.get('tags', {}).get('name', 'unknown'))
+            travel_time = first_poi.get('travel_time_minutes', 
+                           first_poi.get('travel_time', 
+                           first_poi.get('isochrone_minutes', 15)))
+            
+            # Add POI information as columns
+            census_data['poi_id'] = poi_id
+            census_data['poi_name'] = poi_name
+            census_data['travel_time_minutes'] = travel_time
+            census_data['avg_travel_speed_kmh'] = 50  # Default from isochrone.py
+            census_data['avg_travel_speed_mph'] = 31  # Default from isochrone.py
+        
+        # Write to GeoParquet - geoparquet doesn't directly accept compression parameter
+        # but it uses pyarrow under the hood
+        geoparquet.to_geoparquet(census_data, output_path)
+    else:
+        # For regular Parquet, convert to DataFrame without geometries
+        export_data = prepare_census_data_for_export(
+            census_data=census_data,
+            poi_data=poi_data,
+            optimize_memory=optimize_memory,
+            mock_distance=mock_distance
+        )
+        
+        # Write to Parquet
+        export_data.to_parquet(output_path, engine="pyarrow", compression=compression, index=False)
+    
+    return output_path
+
+def export_census_data(
+    census_data: gpd.GeoDataFrame,
+    poi_data: Union[Dict, List[Dict]],
+    output_path: Optional[str] = None,
+    base_filename: Optional[str] = None,
+    output_dir: Optional[str] = None,
+    format: Literal["csv", "parquet", "geoparquet"] = "csv",
+    optimize_memory: bool = True,
+    chunk_size: Optional[int] = None,
+    mock_distance: bool = False,
+    compression: str = "snappy"
+) -> str:
+    """
+    Export census data in the specified format (CSV, Parquet, or GeoParquet).
+    
+    Args:
+        census_data: GeoDataFrame with census data for block groups
+        poi_data: Dictionary with POI data or list of POIs
+        output_path: Full path to save the exported file
+        base_filename: Base filename to use if output_path is not provided
+        output_dir: Directory to save the export if output_path is not provided
+                   (defaults to format-specific directory)
+        format: Export format (csv, parquet, or geoparquet)
+        optimize_memory: Whether to optimize memory usage with appropriate column types
+        chunk_size: Number of rows to write at a time for CSV (None means write all at once)
+        mock_distance: Whether to use mock distance values (for testing only)
+        compression: Compression codec to use for Parquet (snappy, gzip, brotli, zstd, or None)
+        
+    Returns:
+        Path to the saved file
+    """
+    # Set default output directory based on format if not provided
+    if output_dir is None:
+        if format == "csv":
+            output_dir = "output/csv"
+        elif format == "parquet" or format == "geoparquet":
+            output_dir = "output/parquet"
+    
+    # Export in the requested format
+    if format == "csv":
+        return export_census_data_to_csv(
+            census_data=census_data,
+            poi_data=poi_data,
+            output_path=output_path,
+            base_filename=base_filename,
+            output_dir=output_dir,
+            optimize_memory=optimize_memory,
+            chunk_size=chunk_size,
+            mock_distance=mock_distance
+        )
+    elif format == "parquet":
+        return export_census_data_to_parquet(
+            census_data=census_data,
+            poi_data=poi_data,
+            output_path=output_path,
+            base_filename=base_filename,
+            output_dir=output_dir,
+            optimize_memory=optimize_memory,
+            mock_distance=mock_distance,
+            compression=compression,
+            use_geoparquet=False
+        )
+    elif format == "geoparquet":
+        return export_census_data_to_parquet(
+            census_data=census_data,
+            poi_data=poi_data,
+            output_path=output_path,
+            base_filename=base_filename,
+            output_dir=output_dir,
+            optimize_memory=optimize_memory,
+            mock_distance=mock_distance,
+            compression=compression,
+            use_geoparquet=True
+        )
+    else:
+        raise ValueError(f"Unsupported export format: {format}. "
+                        f"Supported formats are: csv, parquet, geoparquet") 
