@@ -30,12 +30,15 @@ try:
 except ImportError:
     RunConfig = None  # Fallback when model not available
 
-def parse_custom_coordinates(file_path: str) -> Dict:
+def parse_custom_coordinates(file_path: str, name_field: str = None, type_field: str = None, preserve_original: bool = True) -> Dict:
     """
     Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
     
     Args:
         file_path: Path to the custom coordinates file
+        name_field: Field name to use for the POI name (if different from 'name')
+        type_field: Field name to use for the POI type (if different from 'type')
+        preserve_original: Whether to preserve original properties in tags
         
     Returns:
         Dictionary containing POI data in the format expected by the isochrone generator
@@ -64,13 +67,39 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                     if state:
                         states_found.add(state)
                     
+                    # Use user-specified field for name if provided
+                    if name_field and name_field in item:
+                        name = item.get(name_field)
+                    else:
+                        name = item.get('name', f"Custom POI {len(pois)}")
+                    
+                    # Use user-specified field for type if provided
+                    poi_type = None
+                    if type_field and type_field in item:
+                        poi_type = item.get(type_field)
+                    else:
+                        poi_type = item.get('type', 'custom')
+                    
+                    # Create tags dict and preserve original properties if requested
+                    tags = item.get('tags', {})
+                    if preserve_original and 'original_properties' in item:
+                        tags.update(item['original_properties'])
+                    
                     poi = {
                         'id': item.get('id', f"custom_{len(pois)}"),
-                        'name': item.get('name', f"Custom POI {len(pois)}"),
+                        'name': name,
+                        'type': poi_type,
                         'lat': lat,
                         'lon': lon,
-                        'tags': item.get('tags', {})
+                        'tags': tags
                     }
+                    
+                    # If preserve_original is True, keep all original properties
+                    if preserve_original:
+                        for key, value in item.items():
+                            if key not in ['id', 'name', 'lat', 'lon', 'tags', 'type', 'state']:
+                                poi['tags'][key] = value
+                    
                     pois.append(poi)
                 else:
                     print(f"Warning: Skipping item missing required coordinates: {item}")
@@ -97,9 +126,23 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                         break
                 
                 if lat is not None and lon is not None:
+                    # Use user-specified field for name if provided
+                    if name_field and name_field in row:
+                        name = row.get(name_field)
+                    else:
+                        name = row.get('name', f"Custom POI {i}")
+                    
+                    # Use user-specified field for type if provided
+                    poi_type = None
+                    if type_field and type_field in row:
+                        poi_type = row.get(type_field)
+                    else:
+                        poi_type = row.get('type', 'custom')
+                    
                     poi = {
                         'id': row.get('id', f"custom_{i}"),
-                        'name': row.get('name', f"Custom POI {i}"),
+                        'name': name,
+                        'type': poi_type,
                         'lat': lat,
                         'lon': lon,
                         'tags': {}
@@ -107,7 +150,7 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                     
                     # Add any additional columns as tags
                     for key, value in row.items():
-                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state']:
+                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state', 'type']:
                             poi['tags'][key] = value
                     
                     pois.append(poi)
@@ -176,7 +219,12 @@ def convert_poi_to_geodataframe(poi_data_list):
         geometries.append(Point(lon, lat))
         names.append(poi.get('name', poi.get('tags', {}).get('name', poi.get('id', 'Unknown'))))
         ids.append(poi.get('id', ''))
-        types.append(poi.get('type', poi.get('tags', {}).get('amenity', 'Unknown')))
+        
+        # Check for type directly in the POI data first, then fallback to tags
+        if 'type' in poi:
+            types.append(poi.get('type'))
+        else:
+            types.append(poi.get('tags', {}).get('amenity', 'Unknown'))
     
     # Create GeoDataFrame
     gdf = gpd.GeoDataFrame({
@@ -205,7 +253,9 @@ def run_socialmapper(
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
     export_geojson: bool = False,
-    export_maps: bool = False
+    export_maps: bool = False,
+    name_field: Optional[str] = None,
+    type_field: Optional[str] = None
 ) -> Dict[str, str]:
     """
     Run the full community mapping process.
@@ -227,6 +277,8 @@ def run_socialmapper(
         export_csv: Boolean to control export of census data to CSV
         export_geojson: Boolean to control export of data to GeoJSON
         export_maps: Boolean to control generation of maps
+        name_field: Field name to use for POI name from custom coordinates
+        type_field: Field name to use for POI type from custom coordinates
         
     Returns:
         Dictionary of output file paths
@@ -269,7 +321,7 @@ def run_socialmapper(
     if custom_coords_path:
         # Skip Step 1: Use custom coordinates
         print("\n=== Using Custom Coordinates (Skipping POI Query) ===")
-        poi_data = parse_custom_coordinates(custom_coords_path)
+        poi_data = parse_custom_coordinates(custom_coords_path, name_field, type_field)
         
         # Extract state information from the custom coordinates if available
         if 'metadata' in poi_data and 'states' in poi_data['metadata'] and poi_data['metadata']['states']:
