@@ -114,3 +114,5 @@ test_testpypi/test_env/bin/socialmapper
 test_testpypi/test_env/bin/tqdm
 test_testpypi/test_env/bin/ttx
 test_testpypi/test_env/share/man/man1/ttx.1
+scripts/convert_geojson_to_csv.py
+scripts/convert_geojson_to_json.py

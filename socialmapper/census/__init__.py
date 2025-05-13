@@ -311,7 +311,7 @@ def get_census_data_for_block_groups(
         geojson_path: Path to GeoJSON file with block groups or a GeoDataFrame object
         variables: List of Census API variable codes or human-readable names (e.g., 'total_population', 'B01003_001E')
                   Human-readable names will be automatically converted to Census API codes
-        output_path: Path to save the result (defaults to output/census_data/[filename]_census.geojson)
+        output_path: Path to save the result (defaults to output/census/[filename]_census.geojson)
         variable_mapping: Optional dictionary mapping Census API variable codes to readable column names
         year: Census year
         dataset: Census dataset
@@ -417,10 +417,10 @@ def get_census_data_for_block_groups(
             # Extract filename from input path without extension if it's a string
             if isinstance(geojson_path, str):
                 input_name = Path(geojson_path).stem
-                output_path = Path(f"output/census_data/{input_name}_census.geojson")
+                output_path = Path(f"output/census/{input_name}_census.geojson")
             else:
                 # Default name for GeoDataFrame input
-                output_path = Path(f"output/census_data/block_groups_census.geojson")
+                output_path = Path(f"output/census/block_groups_census.geojson")
         else:
             output_path = Path(output_path)
         
@@ -494,7 +494,7 @@ if __name__ == "__main__":
     parser.add_argument("geojson", help="Path to GeoJSON file with block groups")
     parser.add_argument("--variables", required=True, nargs="+", 
                        help=f"Census API variable codes or human-readable names. {mapping_help}")
-    parser.add_argument("--output", help="Output GeoJSON file path (defaults to output/census_data/[filename]_census.geojson)")
+    parser.add_argument("--output", help="Output GeoJSON file path (defaults to output/census/[filename]_census.geojson)")
     parser.add_argument("--year", type=int, default=2021, help="Census year")
     parser.add_argument("--dataset", default="acs/acs5", help="Census dataset")
     parser.add_argument("--api-key", help="Census API key (optional if set as environment variable)")
