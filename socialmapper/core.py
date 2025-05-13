@@ -399,7 +399,7 @@ def run_socialmapper(
     # Step 2: Generate isochrones (always needed for analysis)
     print("\n=== Step 2: Generating Isochrones ===")
     if progress_callback:
-        progress_callback(2, "Generating travel time areas")
+        progress_callback(2, "Downloading Road Networks")
     
     # Always process in memory, no GeoJSON export
     isochrone_gdf = create_isochrones_from_poi_list(
