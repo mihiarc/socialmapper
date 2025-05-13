@@ -46,6 +46,23 @@ def generate_folium_map(
     Returns:
         Folium map object
     """
+    # Helper function to make data JSON-serializable by converting geometries to strings
+    def make_serializable(df):
+        """Make a dataframe serializable by converting geometry objects to strings."""
+        df_clean = df.copy()
+        
+        # Process each column
+        for col in df_clean.columns:
+            if col != 'geometry':  # Don't modify the main geometry column
+                # Check if column has Shapely geometries
+                if df_clean[col].dtype == 'object':
+                    # Convert each value in the column if it's a Shapely geometry
+                    df_clean[col] = df_clean[col].apply(
+                        lambda x: str(x) if hasattr(x, 'geom_type') else x
+                    )
+        
+        return df_clean
+    
     # Convert colormap name if specified (matplotlib to folium naming)
     colormap_mapping = {
         'Reds': 'Reds',
@@ -185,11 +202,17 @@ def generate_folium_map(
     # Create a feature group for the census data layer
     census_layer = folium.FeatureGroup(name=f"Census Data: {get_variable_label(variable)}", show=True)
     
+    # Create a clean version of the GeoDataFrame with safe values for JSON
+    gdf_clean = make_serializable(gdf)
+    
+    # Create a very minimal version with only the required columns for the choropleth
+    gdf_minimal = gdf[[variable, 'GEOID', 'geometry']].copy()
+    
     # Add census data choropleth - must be added directly to the map per folium requirements
     choropleth = folium.Choropleth(
-        geo_data=gdf.__geo_interface__,
+        geo_data=gdf_minimal.__geo_interface__,  # Use minimal data to avoid serialization issues
         name=get_variable_label(variable),
-        data=gdf,
+        data=gdf_minimal,  # Use minimal data
         columns=["GEOID", variable],
         key_on="feature.properties.GEOID",
         fill_color=colormap,
@@ -200,7 +223,7 @@ def generate_folium_map(
         smooth_factor=1.0
     ).add_to(m)  # Choropleth must be added directly to the map
     
-    # Add hover functionality to show data
+    # Add hover functionality to show data - use only the necessary fields
     choropleth.geojson.add_child(
         folium.features.GeoJsonTooltip(
             fields=["GEOID", variable],
@@ -208,9 +231,6 @@ def generate_folium_map(
             style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;")
         )
     )
-    
-    # Add other census data info to the feature group if needed
-    # census_layer.add_to(m)
     
     # Add isochrone if provided
     if isochrone_path is not None:
@@ -229,6 +249,9 @@ def generate_folium_map(
                 isochrone = isochrone.set_crs("EPSG:4326")
             elif isochrone.crs != "EPSG:4326":
                 isochrone = isochrone.to_crs("EPSG:4326")
+            
+            # Clean the isochrone data for serialization
+            isochrone = make_serializable(isochrone)
                 
             # Get travel time values if available
             travel_times = []
@@ -274,11 +297,17 @@ def generate_folium_map(
     
     # Add POIs if provided
     if poi_df is not None and not poi_df.empty:
+        # Make a clean copy for processing
+        poi_df = poi_df.copy()
+        
         # Ensure POI data is in WGS84
         if poi_df.crs is None:
             poi_df = poi_df.set_crs("EPSG:4326")
         elif poi_df.crs != "EPSG:4326":
             poi_df = poi_df.to_crs("EPSG:4326")
+        
+        # Clean the POI data for serialization
+        poi_df = make_serializable(poi_df)
             
         # Create a feature group for POIs
         poi_group = folium.FeatureGroup(name="Points of Interest", show=False)
@@ -352,6 +381,23 @@ def generate_folium_isochrone_map(
     Returns:
         Folium map object
     """
+    # Helper function to make data JSON-serializable by converting geometries to strings
+    def make_serializable(df):
+        """Make a dataframe serializable by converting geometry objects to strings."""
+        df_clean = df.copy()
+        
+        # Process each column
+        for col in df_clean.columns:
+            if col != 'geometry':  # Don't modify the main geometry column
+                # Check if column has Shapely geometries
+                if df_clean[col].dtype == 'object':
+                    # Convert each value in the column if it's a Shapely geometry
+                    df_clean[col] = df_clean[col].apply(
+                        lambda x: str(x) if hasattr(x, 'geom_type') else x
+                    )
+        
+        return df_clean
+    
     # Load isochrone data
     if isinstance(isochrone_path, str):
         try:
@@ -370,6 +416,9 @@ def generate_folium_isochrone_map(
         isochrone = isochrone.set_crs("EPSG:4326")
     elif isochrone.crs != "EPSG:4326":
         isochrone = isochrone.to_crs("EPSG:4326")
+    
+    # Clean the isochrone data for serialization
+    isochrone = make_serializable(isochrone)
     
     # Calculate center of the map
     center = [isochrone.geometry.centroid.y.mean(), isochrone.geometry.centroid.x.mean()]
@@ -437,11 +486,17 @@ def generate_folium_isochrone_map(
     
     # Add POIs if provided
     if poi_df is not None and not poi_df.empty:
+        # Make a clean copy for processing
+        poi_df = poi_df.copy()
+        
         # Ensure POI data is in WGS84
         if poi_df.crs is None:
             poi_df = poi_df.set_crs("EPSG:4326")
         elif poi_df.crs != "EPSG:4326":
             poi_df = poi_df.to_crs("EPSG:4326")
+        
+        # Clean the POI data for serialization
+        poi_df = make_serializable(poi_df)
         
         # Create a feature group for POIs
         poi_group = folium.FeatureGroup(name="Points of Interest", show=False)

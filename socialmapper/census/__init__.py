@@ -301,7 +301,6 @@ def get_census_data_for_block_groups(
     year: int = 2021,
     dataset: str = 'acs/acs5',
     api_key: Optional[str] = None,
-    export_geojson: bool = False,
     exclude_from_visualization: List[str] = ['NAME']
 ) -> gpd.GeoDataFrame:
     """
@@ -311,12 +310,11 @@ def get_census_data_for_block_groups(
         geojson_path: Path to GeoJSON file with block groups or a GeoDataFrame object
         variables: List of Census API variable codes or human-readable names (e.g., 'total_population', 'B01003_001E')
                   Human-readable names will be automatically converted to Census API codes
-        output_path: Path to save the result (defaults to output/census/[filename]_census.geojson)
+        output_path: Path to save the result (no longer used - kept for backwards compatibility)
         variable_mapping: Optional dictionary mapping Census API variable codes to readable column names
         year: Census year
         dataset: Census dataset
         api_key: Census API key (optional if set as environment variable)
-        export_geojson: Whether to export the result to a GeoJSON file
         exclude_from_visualization: Variables to exclude from visualization (default: ['NAME'])
         
     Returns:
@@ -410,37 +408,9 @@ def get_census_data_for_block_groups(
         if null_names > 0:
             result_gdf['NAME'] = result_gdf['NAME'].fillna("Block Group").astype(str)
     
-    # Only save to file if export_geojson is True and output_path is provided or can be derived
-    if export_geojson:
-        # Generate default output path if none provided
-        if output_path is None:
-            # Extract filename from input path without extension if it's a string
-            if isinstance(geojson_path, str):
-                input_name = Path(geojson_path).stem
-                output_path = Path(f"output/census/{input_name}_census.geojson")
-            else:
-                # Default name for GeoDataFrame input
-                output_path = Path(f"output/census/block_groups_census.geojson")
-        else:
-            output_path = Path(output_path)
-        
-        # Ensure output directory exists
-        output_dir = output_path.parent
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Save to file
-        get_progress_bar().write(f"Saving result with census data to {output_path}...")
-        
-        try:
-            result_gdf.to_file(output_path, driver="GeoJSON")
-            get_progress_bar().write(f"Saved result with census data to {output_path}")
-        except Exception as e:
-            # Try an alternative approach - convert to string types first
-            for col in result_gdf.columns:
-                if col != 'geometry':
-                    result_gdf[col] = result_gdf[col].astype(str)
-            
-            result_gdf.to_file(output_path, driver="GeoJSON")
+    # Set attributes on GeoDataFrame for visualization
+    variables_for_viz = [var for var in normalized_variables if var not in exclude_from_visualization]
+    result_gdf.attrs['variables_for_visualization'] = variables_for_viz
     
     return result_gdf
 
