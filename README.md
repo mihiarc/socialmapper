@@ -19,14 +19,10 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 
 **[Launch the SocialMapper Streamlit App](https://socialmapper.streamlit.app)** - Explore community connections with our interactive web app - no coding required!
 
-<!-- 
+
 **Total Population Within 15-Minute Travel Time**
 
 ![Total Population Map](output/maps/fuquay-varina_amenity_library_15min_B01003_001E_map.png)
-
-**Median Household Income Within 15-Minute Travel Time**
-
-![Median Household Income Map](output/maps/fuquay-varina_amenity_library_15min_B19013_001E_map.png) -->
 
 ## What's New in v0.4.0-beta
 
