@@ -88,7 +88,7 @@ def add_travel_distances(
     Args:
         block_groups_gdf: GeoDataFrame with block group geometries
         poi_data: Dictionary with POI data or list of POIs
-        output_path: Optional path to save the enhanced GeoDataFrame
+        output_path: Optional path (no longer used - kept for backwards compatibility)
         verbose: If True, print detailed debug information
         
     Returns:
@@ -270,11 +270,5 @@ def add_travel_distances(
         # Add both km and miles
         df['travel_distance_km'] = distances_km
         df['travel_distance_miles'] = [d * 0.621371 if not pd.isna(d) else float('nan') for d in distances_km]  # Convert km to miles
-    
-    # Save enhanced GeoDataFrame if output path is provided
-    if output_path:
-        df.to_file(output_path, driver="GeoJSON")
-        if verbose:
-            get_progress_bar().write(f"Saved block groups with travel distances to {output_path}")
     
     return df 
