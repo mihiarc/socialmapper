@@ -9,7 +9,6 @@ import os
 import json
 import csv
 import logging
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 import geopandas as gpd
 from shapely.geometry import Point
@@ -252,12 +251,11 @@ def run_socialmapper(
     custom_coords_path: Optional[str] = None,
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
-    export_geojson: bool = False,
     export_maps: bool = False,
-    use_interactive_maps: bool = True
+    use_interactive_maps: bool = True,
     name_field: Optional[str] = None,
     type_field: Optional[str] = None
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     """
     Run the full community mapping process.
     
@@ -276,7 +274,6 @@ def run_socialmapper(
         custom_coords_path: Path to custom coordinates file
         progress_callback: Callback function for progress updates
         export_csv: Boolean to control export of census data to CSV
-        export_geojson: Boolean to control export of data to GeoJSON
         export_maps: Boolean to control generation of maps
         use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
         name_field: Field name to use for POI name from custom coordinates
@@ -299,6 +296,12 @@ def run_socialmapper(
 
     # Set up output directory
     setup_directory(output_dir)
+    
+    # Create subdirectories for different output types
+    subdirs = ["isochrones", "block_groups", "census_data", "maps", "pois", "csv"]
+    for subdir in subdirs:
+        subdir_path = os.path.join(output_dir, subdir)
+        os.makedirs(subdir_path, exist_ok=True)
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -393,121 +396,101 @@ def run_socialmapper(
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from parameters: {state_name} ({state_abbr})")
     
-    # Step 2: Generate isochrones (always needed for analysis regardless of output type)
+    # Step 2: Generate isochrones (always needed for analysis)
     print("\n=== Step 2: Generating Isochrones ===")
     if progress_callback:
         progress_callback(2, "Generating travel time areas")
-        
-    combined_isochrone_gdf = create_isochrones_from_poi_list(
+    
+    # Always process in memory, no GeoJSON export
+    isochrone_gdf = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
         output_dir=output_dir,
-        save_individual_files=False,  # Never save individual files, only use combined results
-        combine_results=True,  # Always combine for internal use
-        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
+        save_individual_files=False,
+        combine_results=True,
+        use_parquet=True  # Use parquet format for internal processing
     )
     
-    # Store the combined isochrone GeoDataFrame for in-memory processing
-    isochrone_file_path = None
+    # If the function returned a file path, load the GeoDataFrame from it
+    if isinstance(isochrone_gdf, str):
+        try:
+            isochrone_gdf = gpd.read_parquet(isochrone_gdf)
+        except Exception as e:
+            print(f"Warning: Error loading isochrones from parquet: {e}")
+            # Alternative method using pyarrow
+            try:
+                import pyarrow.parquet as pq
+                table = pq.read_table(isochrone_gdf)
+                isochrone_gdf = gpd.GeoDataFrame.from_arrow(table)
+            except Exception as e2:
+                print(f"Critical error loading isochrones: {e2}")
+                raise ValueError("Failed to load isochrone data")
     
-    # Only save to file if explicitly requested
-    if export_geojson:
-        # If function returned a file path, use it
-        if isinstance(combined_isochrone_gdf, str):
-            isochrone_file_path = combined_isochrone_gdf
-        # Otherwise, save the GeoDataFrame to file
-        else:
-            isochrone_file_path = os.path.join(
-                output_dir,
-                f'{base_filename}_{travel_time}min_isochrones.geojson'
-            )
-            combined_isochrone_gdf.to_file(isochrone_file_path, driver='GeoJSON', use_arrow=True)
-        
-        result_files["isochrone"] = isochrone_file_path
-        print(f"Isochrones generated and saved to {isochrone_file_path}")
-    else:
-        print("Isochrones generated (not saved as files)")
+    print(f"Generated isochrones for {len(isochrone_gdf)} locations")
     
-    # Step 3: Find intersecting block groups (always needed regardless of output type)
+    # Step 3: Find intersecting block groups
     print("\n=== Step 3: Finding Intersecting Census Block Groups ===")
     if progress_callback:
         progress_callback(3, "Finding census block groups")
-        
-    block_groups_file = os.path.join(
-        output_dir,
-        f"{base_filename}_{travel_time}min_block_groups.geojson"
-    )
     
-    # Use county-based block group selection
-    print("Using county-based block group selection...")
+    # Process block groups in memory
     block_groups_gdf = isochrone_to_block_groups_by_county(
-        isochrone_path=combined_isochrone_gdf,  # Pass the GeoDataFrame directly
+        isochrone_path=isochrone_gdf,
         poi_data=poi_data,
-        output_path=block_groups_file if export_geojson else None,  # Only save if exporting GeoJSON
-        api_key=api_key,
-        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
+        output_path=None,  # No file output
+        api_key=api_key
     )
     
-    if export_geojson:
-        result_files["block_groups"] = block_groups_file
+    print(f"Found {len(block_groups_gdf)} intersecting block groups")
     
-    # Step 4: Calculate travel distances for block groups
+    # Step 4: Calculate travel distances
     print("\n=== Step 4: Calculating Travel Distances ===")
     if progress_callback:
         progress_callback(4, "Calculating travel distances")
-        
-    travel_distances_file = os.path.join(
-        output_dir,
-        f"{base_filename}_{travel_time}min_travel_distances.geojson"
-    )
     
-    # Calculate travel distances
+    # Calculate travel distances in memory
     block_groups_with_distances = add_travel_distances(
-        block_groups_gdf=block_groups_gdf,  # Pass the GeoDataFrame directly
+        block_groups_gdf=block_groups_gdf,
         poi_data=poi_data,
-        output_path=travel_distances_file if export_geojson else None  # Only save if exporting GeoJSON
+        output_path=None  # No file output
     )
     
-    if export_geojson:
-        result_files["travel_distances"] = travel_distances_file
+    print(f"Calculated travel distances for {len(block_groups_with_distances)} block groups")
     
-    # Step 5: Fetch census data for block groups (always needed regardless of output type)
+    # Step 5: Fetch census data
     print("\n=== Step 5: Fetching Census Data ===")
     if progress_callback:
         progress_callback(5, "Retrieving census data")
     
-    # Create a human-readable mapping for the census variables
+    # Create variable mapping for human-readable names
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
     
     # Display human-readable names for requested census variables
     readable_names = get_readable_census_variables(census_codes)
     print(f"Requesting census data for: {', '.join(readable_names)}")
     
-    census_data_file = os.path.join(
-        output_dir,
-        f"{base_filename}_{travel_time}min_census_data.geojson"
-    )
-    
+    # Get census data in memory
     census_data_gdf = get_census_data_for_block_groups(
-        geojson_path=block_groups_with_distances,  # Pass the GeoDataFrame with distances
+        geojson_path=block_groups_with_distances,
         variables=census_codes,
-        output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
+        output_path=None,  # No file output
         variable_mapping=variable_mapping,
-        api_key=api_key,
-        export_geojson=export_geojson  # Explicitly pass the export_geojson parameter
+        api_key=api_key
     )
     
-    if export_geojson:
-        result_files["census_data"] = census_data_file
+    print(f"Retrieved census data for {len(census_data_gdf)} block groups")
     
-    # Step 6: Export census data to file
+    # Step 6: Export census data to CSV (optional)
     if export_csv:
-        print("\n=== Step 6: Exporting Census Data to File ===")
+        print("\n=== Step 6: Exporting Census Data to CSV ===")
         if progress_callback:
-            progress_callback(6, "Exporting census data to file")
+            progress_callback(6, "Exporting census data to CSV")
+        
+        csv_dir = os.path.join(output_dir, "csv")
+        os.makedirs(csv_dir, exist_ok=True)
         
         csv_file = os.path.join(
-            output_dir,
+            csv_dir,
             f"{base_filename}_{travel_time}min_census_data.csv"
         )
         
@@ -526,14 +509,14 @@ def run_socialmapper(
         if progress_callback:
             progress_callback(7, "Creating maps")
         
-        # Get visualization variables from the census data result
+        # Get visualization variables
         if hasattr(census_data_gdf, 'attrs') and 'variables_for_visualization' in census_data_gdf.attrs:
             visualization_variables = census_data_gdf.attrs['variables_for_visualization']
         else:
             # Fallback to filtering out known non-visualization variables
             visualization_variables = [var for var in census_codes if var != 'NAME']
         
-        # Transform census variable codes to their mapped names for the map generator
+        # Transform census variable codes to mapped names for the map generator
         mapped_variables = []
         for var in get_progress_bar(visualization_variables, desc="Processing variables"):
             # Use the mapped name if available, otherwise use the original code
@@ -548,21 +531,11 @@ def run_socialmapper(
         use_panels = False
         poi_data_for_map = None
         
-        if isinstance(census_data_file, list) and len(census_data_file) > 1:
-            # If we have multiple census data files, use panels
-            use_panels = True
-            
-        elif poi_data is not None and 'pois' in poi_data and len(poi_data['pois']) > 1:
+        if poi_data is not None and 'pois' in poi_data and len(poi_data['pois']) > 1:
             # If we have multiple POIs, check if they're in different states
-            # Check if any POIs have a 'state' field
             states = [poi.get('state') for poi in poi_data['pois'] if 'state' in poi]
             if len(states) > 1 and len(set(states)) > 1:
                 use_panels = True
-                # Convert to list if not already
-                if isinstance(census_data_file, str):
-                    census_data_file = [census_data_file]
-                if isinstance(isochrone_file_path, str):
-                    isochrone_file_path = [isochrone_file_path]
         
         # Prepare POI data for the map generator
         if poi_data:
@@ -578,13 +551,6 @@ def run_socialmapper(
                 # For single map, convert the entire POI list to one GeoDataFrame
                 poi_data_for_map = convert_poi_to_geodataframe(poi_data.get('pois', []))
 
-        # Fix for isochrone path handling when it's a list
-        isochrone_path_for_map = isochrone_file_path
-        if isinstance(isochrone_file_path, list) and not use_panels:
-            # If we have a list of isochrones but aren't using panels,
-            # just use the first isochrone file to avoid the error
-            isochrone_path_for_map = isochrone_file_path[0]
-        
         # Check if we're in Streamlit and should use interactive maps
         from .progress import _IN_STREAMLIT
         streamlit_folium_available = False
@@ -598,13 +564,13 @@ def run_socialmapper(
                 streamlit_folium_available = False
                 print("Warning: streamlit-folium package not available, falling back to static maps")
 
-        # Generate maps for each census variable using the mapped names
+        # Generate maps for each census variable
         map_files = generate_maps_for_variables(
-            census_data_path=census_data_file if export_geojson else census_data_gdf,
+            census_data_path=census_data_gdf,  # Always pass the GeoDataFrame directly
             variables=mapped_variables,
             output_dir=output_dir,
             basename=f"{base_filename}_{travel_time}min",
-            isochrone_path=isochrone_path_for_map if export_geojson else combined_isochrone_gdf,
+            isochrone_path=isochrone_gdf,  # Always pass the GeoDataFrame directly
             poi_df=poi_data_for_map,
             use_panels=use_panels,
             use_folium=streamlit_folium_available and use_interactive_maps
@@ -621,4 +587,6 @@ def run_socialmapper(
     else:
         print("\n=== Skipping Map Generation (use --export-maps to enable) ===")
     
+    # Return results dictionary
+    result_files["census_data_gdf"] = census_data_gdf  # Include the actual GeoDataFrame for access
     return result_files 

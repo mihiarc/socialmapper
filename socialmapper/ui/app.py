@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from stqdm import stqdm
 
 # Import the socialmapper modules
-from socialmapper import run_socialmapper, setup_directories
+from socialmapper import run_socialmapper
 from socialmapper.states import state_name_to_abbreviation
 
 # Load environment variables
@@ -82,12 +82,6 @@ def run_app():
         "Export data to CSV",
         value=True,
         help="Export census data to CSV format with block group identifiers and travel distances"
-    )
-    
-    export_geojson = st.sidebar.checkbox(
-        "Export data to GeoJSON",
-        value=False,
-        help="Export data to GeoJSON format (for GIS software)"
     )
     
     export_maps = st.sidebar.checkbox(
@@ -345,6 +339,7 @@ def run_app():
             "Generating isochrones",
             "Finding census block groups",
             "Retrieving census data",
+            "Exporting results",
             "Creating maps",
         ]
 
@@ -355,16 +350,16 @@ def run_app():
         def update_step(idx: int, detail: str) -> None:
             """Write step text & advance progress bar."""
             # If the detail message indicates we're in a substep, show the appropriate step
-            current_step = idx
-            progress_fraction = (idx + 1) / len(steps)
+            current_step = min(idx, len(steps) - 1)  # Ensure index is in bounds
+            progress_fraction = min((idx + 1) / len(steps), 1.0)  # Ensure progress doesn't exceed 100%
             
-            step_description = steps[idx]
+            step_description = steps[current_step]
             
             # Check if the detail message indicates a sub-task
             if "exporting" in detail.lower() and "csv" in detail.lower():
                 # For CSV export substep, use a slightly higher progress percentage 
                 # (somewhere between step 4 and 5)
-                progress_fraction = (idx + 0.5) / len(steps)
+                progress_fraction = (current_step + 0.5) / len(steps)
             
             step_placeholder.markdown(
                 f"**Step {current_step + 1}/{len(steps)} – {step_description}:** {detail}"
@@ -380,7 +375,16 @@ def run_app():
                 update_step(0, "Creating output directories and loading config")
                 
                 # Ensure all output directories exist before anything else
-                output_dirs = setup_directories()
+                output_dirs = {}
+                base_dir = "output"
+                os.makedirs(base_dir, exist_ok=True)
+                
+                # Create subdirectories
+                subdirs = ["isochrones", "block_groups", "census_data", "maps", "pois", "csv"]
+                for subdir in subdirs:
+                    subdir_path = os.path.join(base_dir, subdir)
+                    os.makedirs(subdir_path, exist_ok=True)
+                    output_dirs[subdir] = subdir_path
                 
                 # STEP 2 – POI / COORD PROCESSING ------------------------------------------------
                 if input_method == "OpenStreetMap POI Query":
@@ -405,10 +409,8 @@ def run_app():
                         travel_time=travel_time,
                         census_variables=census_variables,
                         api_key=census_api_key or None,
-                        output_dirs=output_dirs,
                         progress_callback=update_step,
                         export_csv=export_csv,
-                        export_geojson=export_geojson,
                         export_maps=export_maps,
                         use_interactive_maps=use_interactive_maps
                     )
@@ -430,12 +432,10 @@ def run_app():
                             travel_time=travel_time,
                             census_variables=census_variables,
                             api_key=census_api_key or None,
-                            output_dirs=output_dirs,
                             progress_callback=update_step,
                             export_csv=export_csv,
-                            export_geojson=export_geojson,
                             export_maps=export_maps,
-                            use_interactive_maps=use_interactive_maps
+                            use_interactive_maps=use_interactive_maps,
                             name_field=name_field,
                             type_field=type_field
                         )
@@ -449,10 +449,8 @@ def run_app():
                             travel_time=travel_time,
                             census_variables=census_variables,
                             api_key=census_api_key or None,
-                            output_dirs=output_dirs,
                             progress_callback=update_step,
                             export_csv=export_csv,
-                            export_geojson=export_geojson,
                             export_maps=export_maps,
                             use_interactive_maps=use_interactive_maps
                         )

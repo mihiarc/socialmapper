@@ -31,6 +31,14 @@ def export_census_data_to_csv(
     Returns:
         Path to the saved CSV file
     """
+    # Check if census data is empty
+    if census_data is None or census_data.empty:
+        print("Warning: Census data is empty, creating minimal CSV output")
+        df = gpd.GeoDataFrame()
+    else:
+        # Create a copy of the census data to avoid modifying the original
+        df = census_data.copy()
+    
     # Extract POIs from dictionary if needed
     pois = poi_data
     if isinstance(poi_data, dict) and 'pois' in poi_data:
@@ -38,40 +46,46 @@ def export_census_data_to_csv(
     if not isinstance(pois, list):
         pois = [pois]
     
-    # Create a copy of the census data to avoid modifying the original
-    df = census_data.copy()
-    
     # Create a new dataframe for the CSV with required columns
     csv_data = pd.DataFrame()
     
     # Extract components from the GEOID if available
-    if 'GEOID' in df.columns:
+    if 'GEOID' in df.columns and not df['GEOID'].empty:
         csv_data['census_block_group'] = df['GEOID']
         
-        # Extract tract and block group components
-        if df['GEOID'].iloc[0] and len(df['GEOID'].iloc[0]) >= 12:
-            csv_data['tract'] = df['GEOID'].str[5:11]
-            csv_data['block_group'] = df['GEOID'].str[11:12]
+        # Extract tract and block group components - add safety check for length
+        try:
+            if not df['GEOID'].empty and df['GEOID'].iloc[0] is not None and len(str(df['GEOID'].iloc[0])) >= 12:
+                csv_data['tract'] = df['GEOID'].str[5:11]
+                csv_data['block_group'] = df['GEOID'].str[11:12]
+        except (IndexError, TypeError) as e:
+            print(f"Warning: Unable to extract tract and block group from GEOID: {e}")
 
     # Add county and state FIPS codes
-    if 'STATE' in df.columns:
-        csv_data['state_fips'] = df['STATE'].str.zfill(2)
+    if 'STATE' in df.columns and not df['STATE'].empty:
+        try:
+            csv_data['state_fips'] = df['STATE'].str.zfill(2)
+        except (AttributeError, ValueError) as e:
+            print(f"Warning: Error processing STATE column: {e}")
 
-    if 'COUNTY' in df.columns:
-        if 'STATE' in df.columns:
-            csv_data['county_fips'] = df['STATE'].str.zfill(2) + df['COUNTY'].str.zfill(3)
-        else:
-            csv_data['county_fips'] = df['COUNTY'].str.zfill(3)
+    if 'COUNTY' in df.columns and not df['COUNTY'].empty:
+        try:
+            if 'STATE' in df.columns and not df['STATE'].empty:
+                csv_data['county_fips'] = df['STATE'].str.zfill(2) + df['COUNTY'].str.zfill(3)
+            else:
+                csv_data['county_fips'] = df['COUNTY'].str.zfill(3)
+        except (AttributeError, ValueError) as e:
+            print(f"Warning: Error processing COUNTY column: {e}")
     
     # Add intersection area percentage
-    if 'pct' in df.columns:
-        csv_data['area_within_travel_time_pct'] = df['pct']
-    elif 'percent_overlap' in df.columns:
-        csv_data['area_within_travel_time_pct'] = df['percent_overlap'] * 100
-    elif 'overlap_pct' in df.columns:
-        csv_data['area_within_travel_time_pct'] = df['overlap_pct']
-    elif 'intersection_area_pct' in df.columns:
-        csv_data['area_within_travel_time_pct'] = df['intersection_area_pct']
+    percentage_columns = ['pct', 'percent_overlap', 'overlap_pct', 'intersection_area_pct']
+    for col in percentage_columns:
+        if col in df.columns and not df[col].empty:
+            try:
+                csv_data['area_within_travel_time_pct'] = df[col]
+                break
+            except Exception as e:
+                print(f"Warning: Error processing {col} column: {e}")
     
     # Copy travel information if already available in the input DataFrame
     travel_columns = [
@@ -81,8 +95,19 @@ def export_census_data_to_csv(
     ]
     
     for col in travel_columns:
-        if col in df.columns:
-            csv_data[col] = df[col]
+        if col in df.columns and not df[col].empty:
+            try:
+                csv_data[col] = df[col]
+            except Exception as e:
+                print(f"Warning: Error copying {col} column: {e}")
+    
+    # If all poi metadata is missing, add at least a minimal poi_name column
+    if 'poi_name' not in csv_data.columns and len(pois) > 0 and 'name' in pois[0]:
+        try:
+            # Create a basic poi_name column using the first POI's name
+            csv_data['poi_name'] = pois[0].get('name', 'Unknown POI')
+        except Exception as e:
+            print(f"Warning: Error adding basic POI name: {e}")
     
     # Add census variables with friendly names but in lowercase with underscores
     # Create a mapping from census variable code to human-readable name
@@ -97,19 +122,22 @@ def export_census_data_to_csv(
     
     for col in df.columns:
         if col not in exclude_cols:
-            # Convert census variable code to human-readable name if possible
-            if col.startswith('B') and '_' in col and col.endswith('E'):
-                # This looks like a census variable code
-                column_name = code_to_name.get(col, col).lower()
-            else:
-                # Not a census variable code, use as is but convert to lowercase with underscores
-                column_name = col.lower().replace(' ', '_')
-            
-            # Convert to numeric if possible, otherwise keep as is
             try:
-                csv_data[column_name] = pd.to_numeric(df[col])
-            except (ValueError, TypeError):
-                csv_data[column_name] = df[col]
+                # Convert census variable code to human-readable name if possible
+                if col.startswith('B') and '_' in col and col.endswith('E'):
+                    # This looks like a census variable code
+                    column_name = code_to_name.get(col, col).lower()
+                else:
+                    # Not a census variable code, use as is but convert to lowercase with underscores
+                    column_name = col.lower().replace(' ', '_')
+                
+                # Convert to numeric if possible, otherwise keep as is
+                try:
+                    csv_data[column_name] = pd.to_numeric(df[col])
+                except (ValueError, TypeError):
+                    csv_data[column_name] = df[col]
+            except Exception as e:
+                print(f"Warning: Error processing column {col}: {e}")
     
     # Reorder columns in the preferred order, explicitly exclude 'state' and 'county'
     preferred_order = [
@@ -130,7 +158,10 @@ def export_census_data_to_csv(
     
     # Reorder columns (only include those that exist)
     existing_columns = [col for col in all_columns if col in csv_data.columns]
-    csv_data = csv_data[existing_columns]
+    if existing_columns:
+        csv_data = csv_data[existing_columns]
+    else:
+        print("Warning: No existing columns found that match the preferred order")
     
     # Final check before saving - absolutely ensure no state or county column
     for col in csv_data.columns:
@@ -138,24 +169,30 @@ def export_census_data_to_csv(
             csv_data = csv_data.drop(columns=[col])
     
     # DEDUPLICATION: Group by block group and POI to handle duplicate entries
-    if 'census_block_group' in csv_data.columns and 'poi_id' in csv_data.columns:
-        print(f"Deduplicating records: {len(csv_data)} rows before deduplication")
-        
-        # Group by census block group and POI ID
-        groupby_cols = ['census_block_group', 'poi_id']
-        
-        # For area percentage, take the maximum value
-        agg_dict = {'area_within_travel_time_pct': 'max'}
-        
-        # For all other columns, take the first value (they should be identical within a group)
-        for col in csv_data.columns:
-            if col not in groupby_cols and col != 'area_within_travel_time_pct':
-                agg_dict[col] = 'first'
-        
-        # Apply the aggregation
-        csv_data = csv_data.groupby(groupby_cols, as_index=False).agg(agg_dict)
-        
-        print(f"Deduplication complete: {len(csv_data)} rows after deduplication")
+    # Only perform deduplication if we have the necessary columns and at least one row
+    if not csv_data.empty and 'census_block_group' in csv_data.columns and 'poi_id' in csv_data.columns:
+        try:
+            print(f"Deduplicating records: {len(csv_data)} rows before deduplication")
+            
+            # Group by census block group and POI ID
+            groupby_cols = ['census_block_group', 'poi_id']
+            
+            # For area percentage, take the maximum value
+            agg_dict = {}
+            if 'area_within_travel_time_pct' in csv_data.columns:
+                agg_dict['area_within_travel_time_pct'] = 'max'
+            
+            # For all other columns, take the first value (they should be identical within a group)
+            for col in csv_data.columns:
+                if col not in groupby_cols and col != 'area_within_travel_time_pct':
+                    agg_dict[col] = 'first'
+            
+            # Apply the aggregation
+            csv_data = csv_data.groupby(groupby_cols, as_index=False).agg(agg_dict)
+            
+            print(f"Deduplication complete: {len(csv_data)} rows after deduplication")
+        except Exception as e:
+            print(f"Warning: Error during deduplication: {e}")
     
     # Create output directory if it doesn't exist
     if output_path is None:
@@ -170,7 +207,24 @@ def export_census_data_to_csv(
         # Ensure directory for output_path exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Save to CSV
-    csv_data.to_csv(output_path, index=False)
+    # Save to CSV - handle empty dataframe case
+    if csv_data.empty:
+        # Create a minimal CSV with just a message
+        csv_data = pd.DataFrame({'message': ['No census data available for export']})
+        print("Warning: Creating minimal CSV with no data")
+    
+    try:
+        csv_data.to_csv(output_path, index=False)
+        print(f"Successfully saved CSV to {output_path}")
+    except Exception as e:
+        print(f"Error saving CSV file: {e}")
+        # Create a fallback path in current directory
+        fallback_path = f"census_data_fallback.csv"
+        try:
+            csv_data.to_csv(fallback_path, index=False)
+            output_path = fallback_path
+            print(f"Saved to fallback location: {fallback_path}")
+        except Exception as fallback_error:
+            print(f"Could not save to fallback location: {fallback_error}")
     
     return output_path 

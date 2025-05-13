@@ -402,8 +402,7 @@ def isochrone_to_block_groups_by_county(
     poi_data: Dict,
     output_path: Optional[str] = None,
     api_key: Optional[str] = None,
-    selection_mode: str = "intersect",
-    use_parquet: bool = True
+    selection_mode: str = "intersect"
 ) -> gpd.GeoDataFrame:
     """
     Find census block groups that intersect with an isochrone using county-based optimization.
@@ -415,13 +414,12 @@ def isochrone_to_block_groups_by_county(
     Args:
         isochrone_path: Path to isochrone GeoJSON/GeoParquet file OR a GeoDataFrame
         poi_data: Dictionary with POI data including coordinates
-        output_path: Path to save result GeoJSON (defaults to output/blockgroups/[filename].geojson)
+        output_path: Path to save result (no longer used - kept for backwards compatibility)
         api_key: Census API key (optional if using cached data)
         selection_mode: Method to select and process block groups
             - "clip": Clip block groups to isochrone boundary
             - "intersect": Keep full geometry of any intersecting block group
             - "contain": Only include block groups fully contained within isochrone
-        use_parquet: Whether to use GeoParquet instead of GeoJSON format when saving
         
     Returns:
         GeoDataFrame with selected block groups
@@ -457,25 +455,8 @@ def isochrone_to_block_groups_by_county(
         selection_mode
     )
     
-    # Save result if output path is provided
-    if output_path:
-        output_dir = os.path.dirname(output_path)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
-            
-        tqdm.write(f"Saving {len(result_gdf)} block groups...")
-        if use_parquet and USE_ARROW and not output_path.endswith('.geojson'):
-            # Default to parquet if extension isn't explicitly geojson
-            if not output_path.endswith('.parquet'):
-                output_path = f"{output_path}.parquet"
-            result_gdf.to_parquet(output_path)
-        else:
-            if not output_path.endswith('.geojson'):
-                output_path = f"{output_path}.geojson"
-            result_gdf.to_file(output_path, driver="GeoJSON", engine="pyogrio", use_arrow=USE_ARROW)
-            
-        tqdm.write(f"Saved {len(result_gdf)} block groups to {output_path}")
-        
+    # File output functionality completely removed
+    
     return result_gdf
 
 if __name__ == "__main__":
@@ -523,6 +504,5 @@ if __name__ == "__main__":
         poi_data=poi_data,
         output_path=args.output_path,
         api_key=args.api_key,
-        selection_mode=args.selection_mode,
-        use_parquet=not args.no_parquet
+        selection_mode=args.selection_mode
     ) 
