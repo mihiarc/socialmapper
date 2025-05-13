@@ -226,7 +226,7 @@ def create_isochrones_from_poi_list(
     isochrone_gdfs = []
     
     # Use the new progress bar utility
-    for poi in get_progress_bar(pois, desc="Generating isochrones", unit="POI"):
+    for poi in get_progress_bar(pois, desc="Downloading Road Networks", unit="POI"):
         poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
         try:
             result = create_isochrone_from_poi(

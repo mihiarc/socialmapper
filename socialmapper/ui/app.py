@@ -336,7 +336,7 @@ def run_app():
         steps = [
             "Setting up",
             "Processing POIs / coordinates",
-            "Generating isochrones",
+            "Downloading Road Networks",
             "Finding census block groups",
             "Retrieving census data",
             "Exporting results",
