@@ -14,11 +14,7 @@ class RunConfig(BaseModel):
 
     # Output control parameters
     export_csv: bool = Field(True, description="Export census data to CSV format")
-    export_geojson: bool = Field(False, description="Export data to GeoJSON format")
     export_maps: bool = Field(False, description="Generate map visualizations")
-
-    # Advanced – allows caller to inject pre-created output dirs
-    output_dirs: Optional[dict] = None
 
     @validator("custom_coords_path", always=True)
     def at_least_one_input(cls, v, values):

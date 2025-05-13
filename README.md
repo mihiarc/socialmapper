@@ -165,7 +165,7 @@ socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census
 You can import SocialMapper in your own Python code:
 
 ```python
-from socialmapper import run_socialmapper, setup_directories
+from socialmapper import run_socialmapper
 
 # Run with POI query
 results = run_socialmapper(
