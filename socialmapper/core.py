@@ -9,7 +9,6 @@ import os
 import json
 import csv
 import logging
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 import geopandas as gpd
 from shapely.geometry import Point
@@ -439,8 +438,7 @@ def run_socialmapper(
         isochrone_path=isochrone_gdf,
         poi_data=poi_data,
         output_path=None,  # No file output
-        api_key=api_key,
-        use_parquet=True  # Use parquet for internal processing
+        api_key=api_key
     )
     
     print(f"Found {len(block_groups_gdf)} intersecting block groups")
