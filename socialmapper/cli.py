@@ -69,12 +69,6 @@ def parse_arguments():
         help="Disable exporting census data to CSV format"
     )
     parser.add_argument(
-        "--export-geojson", 
-        action="store_true", 
-        default=False, 
-        help="Export data to GeoJSON format (default: disabled)"
-    )
-    parser.add_argument(
         "--export-maps", 
         action="store_true", 
         default=False, 
@@ -134,7 +128,6 @@ def main():
         print(f"Output directory: {args.output_dir}")
         print("\nOutput types to be generated:")
         print(f"  - CSV: {'Yes' if args.export_csv else 'No'}")
-        print(f"  - GeoJSON: {'Yes' if args.export_geojson else 'No'}")
         print(f"  - Maps: {'Yes' if args.export_maps else 'No'}")
         print("\nNo operations will be performed.")
         sys.exit(0)
@@ -161,7 +154,6 @@ def main():
                 api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_geojson=args.export_geojson,
                 export_maps=args.export_maps
             )
         else:
@@ -173,7 +165,6 @@ def main():
                 custom_coords_path=args.custom_coords,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_geojson=args.export_geojson,
                 export_maps=args.export_maps
             )
         
