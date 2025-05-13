@@ -1,42 +1,15 @@
 #!/usr/bin/env python3
 """
-Module to export census data to CSV format with travel distances.
+Module to export census data to CSV or Parquet format.
 """
 import os
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point
-import numpy as np
 from typing import Dict, List, Optional, Union
 from pathlib import Path
 
 # Import census variable mapping to get friendly names
 from socialmapper.util import CENSUS_VARIABLE_MAPPING
-
-def calculate_distance(poi_point, block_group_centroid, crs="EPSG:5070"):
-    """
-    Calculate the distance between a POI and a block group centroid using Albers Equal Area projection.
-    
-    Args:
-        poi_point: Point geometry of the POI
-        block_group_centroid: Point geometry of the block group centroid
-        crs: Projected CRS to use for distance calculation (default: EPSG:5070 - Albers Equal Area for US)
-        
-    Returns:
-        Distance in kilometers
-    """
-    # Create GeoSeries for the two points
-    points_gdf = gpd.GeoDataFrame(
-        geometry=[poi_point, block_group_centroid],
-        crs="EPSG:4326"  # Assuming points are in WGS84
-    )
-    
-    # Project to Albers Equal Area
-    points_gdf = points_gdf.to_crs(crs)
-    
-    # Calculate distance in meters and convert to kilometers
-    distance_meters = points_gdf.iloc[0].geometry.distance(points_gdf.iloc[1].geometry)
-    return distance_meters / 1000  # Convert to kilometers
 
 def export_census_data_to_csv(
     census_data: gpd.GeoDataFrame,
@@ -90,35 +63,6 @@ def export_census_data_to_csv(
         else:
             csv_data['county_fips'] = df['COUNTY'].str.zfill(3)
     
-    # Add POI information
-    poi_name = "unknown"
-    poi_id = "unknown"
-    travel_time_minutes = 15  # Default value
-    
-    # Try to extract the travel time and POI info from the first POI
-    if pois and len(pois) > 0:
-        first_poi = pois[0]
-        poi_id = first_poi.get('id', poi_id)
-        poi_name = first_poi.get('name', first_poi.get('tags', {}).get('name', poi_name))
-        
-        # Try to extract travel time from various possible sources
-        if 'travel_time' in first_poi:
-            travel_time_minutes = first_poi['travel_time']
-        elif 'travel_time_minutes' in first_poi:
-            travel_time_minutes = first_poi['travel_time_minutes']
-        elif 'isochrone_minutes' in first_poi:
-            travel_time_minutes = first_poi['isochrone_minutes']
-    
-    # Add POI information to all rows
-    csv_data['poi_id'] = poi_id
-    csv_data['poi_name'] = poi_name
-    csv_data['travel_time_minutes'] = travel_time_minutes
-    
-    # Add average travel speed from isochrone calculation - standard value from the isochrone module
-    # The default speed in the isochrone module is 50 km/h (31 mph) 
-    csv_data['avg_travel_speed_kmh'] = 50  # Default from isochrone.py
-    csv_data['avg_travel_speed_mph'] = 31  # Default from isochrone.py
-    
     # Add intersection area percentage
     if 'pct' in df.columns:
         csv_data['area_within_travel_time_pct'] = df['pct']
@@ -129,6 +73,17 @@ def export_census_data_to_csv(
     elif 'intersection_area_pct' in df.columns:
         csv_data['area_within_travel_time_pct'] = df['intersection_area_pct']
     
+    # Copy travel information if already available in the input DataFrame
+    travel_columns = [
+        'poi_id', 'poi_name', 'travel_time_minutes', 
+        'avg_travel_speed_kmh', 'avg_travel_speed_mph',
+        'travel_distance_km', 'travel_distance_miles'
+    ]
+    
+    for col in travel_columns:
+        if col in df.columns:
+            csv_data[col] = df[col]
+    
     # Add census variables with friendly names but in lowercase with underscores
     # Create a mapping from census variable code to human-readable name
     code_to_name = {}
@@ -138,6 +93,7 @@ def export_census_data_to_csv(
     # Add census variables
     exclude_cols = ['geometry', 'GEOID', 'STATE', 'COUNTY', 'TRACT', 'BLKGRP', 'NAME', 
                     'pct', 'percent_overlap', 'overlap_pct', 'intersection_area_pct', 'centroid']
+    exclude_cols.extend(travel_columns)
     
     for col in df.columns:
         if col not in exclude_cols:
@@ -154,41 +110,6 @@ def export_census_data_to_csv(
                 csv_data[column_name] = pd.to_numeric(df[col])
             except (ValueError, TypeError):
                 csv_data[column_name] = df[col]
-    
-    # Calculate travel distances
-    # Reproject to Albers Equal Area (EPSG:5070) for accurate centroid calculations
-    df_projected = df.copy()
-    if df_projected.crs is None:
-        # If no CRS is set, assume WGS84
-        df_projected.set_crs("EPSG:4326", inplace=True)
-    
-    # Reproject to a suitable projection for North America
-    df_projected = df_projected.to_crs("EPSG:5070")
-    
-    # Calculate centroids of block groups in the projected CRS
-    df['centroid'] = df_projected.geometry.centroid
-    
-    # Convert POIs to GeoDataFrame
-    poi_points = []
-    for poi in pois:
-        if 'lon' in poi and 'lat' in poi:
-            poi_points.append(Point(poi['lon'], poi['lat']))
-    
-    if poi_points:
-        # For each block group, find the closest POI and calculate distance
-        distances_km = []
-        
-        for _, row in df.iterrows():
-            # Calculate distance to each POI and find the minimum
-            min_distance = float('inf')
-            for point in poi_points:
-                distance = calculate_distance(point, row['centroid'])
-                min_distance = min(min_distance, distance)
-            distances_km.append(min_distance)
-        
-        # Add both km and miles
-        csv_data['travel_distance_km'] = distances_km
-        csv_data['travel_distance_miles'] = [d * 0.621371 for d in distances_km]  # Convert km to miles
     
     # Reorder columns in the preferred order, explicitly exclude 'state' and 'county'
     preferred_order = [
@@ -215,6 +136,26 @@ def export_census_data_to_csv(
     for col in csv_data.columns:
         if col.lower() in ['state', 'county']:
             csv_data = csv_data.drop(columns=[col])
+    
+    # DEDUPLICATION: Group by block group and POI to handle duplicate entries
+    if 'census_block_group' in csv_data.columns and 'poi_id' in csv_data.columns:
+        print(f"Deduplicating records: {len(csv_data)} rows before deduplication")
+        
+        # Group by census block group and POI ID
+        groupby_cols = ['census_block_group', 'poi_id']
+        
+        # For area percentage, take the maximum value
+        agg_dict = {'area_within_travel_time_pct': 'max'}
+        
+        # For all other columns, take the first value (they should be identical within a group)
+        for col in csv_data.columns:
+            if col not in groupby_cols and col != 'area_within_travel_time_pct':
+                agg_dict[col] = 'first'
+        
+        # Apply the aggregation
+        csv_data = csv_data.groupby(groupby_cols, as_index=False).agg(agg_dict)
+        
+        print(f"Deduplication complete: {len(csv_data)} rows after deduplication")
     
     # Create output directory if it doesn't exist
     if output_path is None:

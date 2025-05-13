@@ -30,12 +30,15 @@ try:
 except ImportError:
     RunConfig = None  # Fallback when model not available
 
-def parse_custom_coordinates(file_path: str) -> Dict:
+def parse_custom_coordinates(file_path: str, name_field: str = None, type_field: str = None, preserve_original: bool = True) -> Dict:
     """
     Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
     
     Args:
         file_path: Path to the custom coordinates file
+        name_field: Field name to use for the POI name (if different from 'name')
+        type_field: Field name to use for the POI type (if different from 'type')
+        preserve_original: Whether to preserve original properties in tags
         
     Returns:
         Dictionary containing POI data in the format expected by the isochrone generator
@@ -64,13 +67,39 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                     if state:
                         states_found.add(state)
                     
+                    # Use user-specified field for name if provided
+                    if name_field and name_field in item:
+                        name = item.get(name_field)
+                    else:
+                        name = item.get('name', f"Custom POI {len(pois)}")
+                    
+                    # Use user-specified field for type if provided
+                    poi_type = None
+                    if type_field and type_field in item:
+                        poi_type = item.get(type_field)
+                    else:
+                        poi_type = item.get('type', 'custom')
+                    
+                    # Create tags dict and preserve original properties if requested
+                    tags = item.get('tags', {})
+                    if preserve_original and 'original_properties' in item:
+                        tags.update(item['original_properties'])
+                    
                     poi = {
                         'id': item.get('id', f"custom_{len(pois)}"),
-                        'name': item.get('name', f"Custom POI {len(pois)}"),
+                        'name': name,
+                        'type': poi_type,
                         'lat': lat,
                         'lon': lon,
-                        'tags': item.get('tags', {})
+                        'tags': tags
                     }
+                    
+                    # If preserve_original is True, keep all original properties
+                    if preserve_original:
+                        for key, value in item.items():
+                            if key not in ['id', 'name', 'lat', 'lon', 'tags', 'type', 'state']:
+                                poi['tags'][key] = value
+                    
                     pois.append(poi)
                 else:
                     print(f"Warning: Skipping item missing required coordinates: {item}")
@@ -97,9 +126,23 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                         break
                 
                 if lat is not None and lon is not None:
+                    # Use user-specified field for name if provided
+                    if name_field and name_field in row:
+                        name = row.get(name_field)
+                    else:
+                        name = row.get('name', f"Custom POI {i}")
+                    
+                    # Use user-specified field for type if provided
+                    poi_type = None
+                    if type_field and type_field in row:
+                        poi_type = row.get(type_field)
+                    else:
+                        poi_type = row.get('type', 'custom')
+                    
                     poi = {
                         'id': row.get('id', f"custom_{i}"),
-                        'name': row.get('name', f"Custom POI {i}"),
+                        'name': name,
+                        'type': poi_type,
                         'lat': lat,
                         'lon': lon,
                         'tags': {}
@@ -107,7 +150,7 @@ def parse_custom_coordinates(file_path: str) -> Dict:
                     
                     # Add any additional columns as tags
                     for key, value in row.items():
-                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state']:
+                        if key not in ['id', 'name', 'lat', 'latitude', 'y', 'lon', 'lng', 'longitude', 'x', 'state', 'type']:
                             poi['tags'][key] = value
                     
                     pois.append(poi)
@@ -130,27 +173,18 @@ def parse_custom_coordinates(file_path: str) -> Dict:
         }
     }
 
-def setup_directories() -> Dict[str, str]:
+def setup_directory(output_dir: str = "output") -> str:
     """
-    Create directories for output files.
+    Create a single output directory.
     
+    Args:
+        output_dir: Path to the output directory
+        
     Returns:
-        Dictionary of directory paths
+        The output directory path
     """
-    dirs = {
-        "output": "output",
-        "pois": "output/pois",
-        "isochrones": "output/isochrones",
-        "block_groups": "output/block_groups",
-        "census_data": "output/census_data",
-        "maps": "output/maps",
-        "csv": "output/csv"  # CSV output directory
-    }
-    
-    for directory in dirs.values():
-        os.makedirs(directory, exist_ok=True)
-    
-    return dirs
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
 
 def convert_poi_to_geodataframe(poi_data_list):
     """
@@ -185,7 +219,12 @@ def convert_poi_to_geodataframe(poi_data_list):
         geometries.append(Point(lon, lat))
         names.append(poi.get('name', poi.get('tags', {}).get('name', poi.get('id', 'Unknown'))))
         ids.append(poi.get('id', ''))
-        types.append(poi.get('type', poi.get('tags', {}).get('amenity', 'Unknown')))
+        
+        # Check for type directly in the POI data first, then fallback to tags
+        if 'type' in poi:
+            types.append(poi.get('type'))
+        else:
+            types.append(poi.get('tags', {}).get('amenity', 'Unknown'))
     
     # Create GeoDataFrame
     gdf = gpd.GeoDataFrame({
@@ -209,14 +248,16 @@ def run_socialmapper(
     travel_time: int = 15,
     census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
-    output_dirs: Optional[Dict[str, str]] = None,
+    output_dir: str = "output",
     custom_coords_path: Optional[str] = None,
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
     export_geojson: bool = False,
     export_maps: bool = False,
     use_interactive_maps: bool = True
-) -> Dict[str, Any]:
+    name_field: Optional[str] = None,
+    type_field: Optional[str] = None
+) -> Dict[str, str]:
     """
     Run the full community mapping process.
     
@@ -231,13 +272,15 @@ def run_socialmapper(
         travel_time: Travel time limit in minutes
         census_variables: List of census variables to retrieve
         api_key: Census API key
-        output_dirs: Dictionary of output directories
+        output_dir: Output directory for all files
         custom_coords_path: Path to custom coordinates file
         progress_callback: Callback function for progress updates
         export_csv: Boolean to control export of census data to CSV
         export_geojson: Boolean to control export of data to GeoJSON
         export_maps: Boolean to control generation of maps
         use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
+        name_field: Field name to use for POI name from custom coordinates
+        type_field: Field name to use for POI type from custom coordinates
         
     Returns:
         Dictionary of output file paths and metadata
@@ -246,16 +289,16 @@ def run_socialmapper(
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
     from .isochrone import create_isochrones_from_poi_list
     from .blockgroups import isochrone_to_block_groups_by_county
-    from .census_data import get_census_data_for_block_groups
+    from .distance import add_travel_distances
+    from .census import get_census_data_for_block_groups
     from .visualization import generate_maps_for_variables
     from .states import normalize_state, normalize_state_list, StateFormat
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
     from .export import export_census_data_to_csv
     from .progress import get_progress_bar
 
-    # Set up output directories
-    if not output_dirs:
-        output_dirs = setup_directories()
+    # Set up output directory
+    setup_directory(output_dir)
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -263,7 +306,9 @@ def run_socialmapper(
         travel_time = run_config.travel_time if travel_time == 15 else travel_time
         census_variables = census_variables or run_config.census_variables
         api_key = run_config.api_key or api_key
-        output_dirs = output_dirs or run_config.output_dirs
+        # Use output_dir from run_config if available
+        if hasattr(run_config, 'output_dir') and run_config.output_dir:
+            output_dir = run_config.output_dir
 
     if census_variables is None:
         census_variables = ["total_population"]
@@ -278,7 +323,7 @@ def run_socialmapper(
     if custom_coords_path:
         # Skip Step 1: Use custom coordinates
         print("\n=== Using Custom Coordinates (Skipping POI Query) ===")
-        poi_data = parse_custom_coordinates(custom_coords_path)
+        poi_data = parse_custom_coordinates(custom_coords_path, name_field, type_field)
         
         # Extract state information from the custom coordinates if available
         if 'metadata' in poi_data and 'states' in poi_data['metadata'] and poi_data['metadata']['states']:
@@ -356,9 +401,10 @@ def run_socialmapper(
     combined_isochrone_gdf = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
-        output_dir=output_dirs["isochrones"],
-        save_individual_files=export_geojson,  # Only save individual files if exporting GeoJSON
-        combine_results=True  # Always combine for internal use
+        output_dir=output_dir,
+        save_individual_files=False,  # Never save individual files, only use combined results
+        combine_results=True,  # Always combine for internal use
+        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
     )
     
     # Store the combined isochrone GeoDataFrame for in-memory processing
@@ -372,7 +418,7 @@ def run_socialmapper(
         # Otherwise, save the GeoDataFrame to file
         else:
             isochrone_file_path = os.path.join(
-                output_dirs["isochrones"],
+                output_dir,
                 f'{base_filename}_{travel_time}min_isochrones.geojson'
             )
             combined_isochrone_gdf.to_file(isochrone_file_path, driver='GeoJSON', use_arrow=True)
@@ -388,7 +434,7 @@ def run_socialmapper(
         progress_callback(3, "Finding census block groups")
         
     block_groups_file = os.path.join(
-        output_dirs["block_groups"],
+        output_dir,
         f"{base_filename}_{travel_time}min_block_groups.geojson"
     )
     
@@ -398,16 +444,37 @@ def run_socialmapper(
         isochrone_path=combined_isochrone_gdf,  # Pass the GeoDataFrame directly
         poi_data=poi_data,
         output_path=block_groups_file if export_geojson else None,  # Only save if exporting GeoJSON
-        api_key=api_key
+        api_key=api_key,
+        use_parquet=not export_geojson  # Use GeoJSON instead of parquet when export_geojson is True
     )
     
     if export_geojson:
         result_files["block_groups"] = block_groups_file
     
-    # Step 4: Fetch census data for block groups (always needed regardless of output type)
-    print("\n=== Step 4: Fetching Census Data ===")
+    # Step 4: Calculate travel distances for block groups
+    print("\n=== Step 4: Calculating Travel Distances ===")
     if progress_callback:
-        progress_callback(4, "Retrieving census data")
+        progress_callback(4, "Calculating travel distances")
+        
+    travel_distances_file = os.path.join(
+        output_dir,
+        f"{base_filename}_{travel_time}min_travel_distances.geojson"
+    )
+    
+    # Calculate travel distances
+    block_groups_with_distances = add_travel_distances(
+        block_groups_gdf=block_groups_gdf,  # Pass the GeoDataFrame directly
+        poi_data=poi_data,
+        output_path=travel_distances_file if export_geojson else None  # Only save if exporting GeoJSON
+    )
+    
+    if export_geojson:
+        result_files["travel_distances"] = travel_distances_file
+    
+    # Step 5: Fetch census data for block groups (always needed regardless of output type)
+    print("\n=== Step 5: Fetching Census Data ===")
+    if progress_callback:
+        progress_callback(5, "Retrieving census data")
     
     # Create a human-readable mapping for the census variables
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
@@ -417,29 +484,30 @@ def run_socialmapper(
     print(f"Requesting census data for: {', '.join(readable_names)}")
     
     census_data_file = os.path.join(
-        output_dirs["census_data"],
+        output_dir,
         f"{base_filename}_{travel_time}min_census_data.geojson"
     )
     
     census_data_gdf = get_census_data_for_block_groups(
-        geojson_path=block_groups_gdf,  # Pass the GeoDataFrame directly
+        geojson_path=block_groups_with_distances,  # Pass the GeoDataFrame with distances
         variables=census_codes,
         output_path=census_data_file if export_geojson else None,  # Only save if exporting GeoJSON
         variable_mapping=variable_mapping,
-        api_key=api_key
+        api_key=api_key,
+        export_geojson=export_geojson  # Explicitly pass the export_geojson parameter
     )
     
     if export_geojson:
         result_files["census_data"] = census_data_file
     
-    # Step 4b: Export census data to CSV (optional)
+    # Step 6: Export census data to file
     if export_csv:
-        print("\n=== Step 4b: Exporting Census Data to CSV ===")
+        print("\n=== Step 6: Exporting Census Data to File ===")
         if progress_callback:
-            progress_callback(4, "Exporting census data to CSV")
+            progress_callback(6, "Exporting census data to file")
         
         csv_file = os.path.join(
-            output_dirs["csv"],
+            output_dir,
             f"{base_filename}_{travel_time}min_census_data.csv"
         )
         
@@ -452,11 +520,11 @@ def run_socialmapper(
         result_files["csv_data"] = csv_output
         print(f"Exported census data to CSV: {csv_output}")
     
-    # Step 5: Generate maps (optional)
+    # Step 7: Generate maps (optional)
     if export_maps:
-        print("\n=== Step 5: Generating Maps ===")
+        print("\n=== Step 7: Generating Maps ===")
         if progress_callback:
-            progress_callback(5, "Creating maps")
+            progress_callback(7, "Creating maps")
         
         # Get visualization variables from the census data result
         if hasattr(census_data_gdf, 'attrs') and 'variables_for_visualization' in census_data_gdf.attrs:
@@ -534,7 +602,7 @@ def run_socialmapper(
         map_files = generate_maps_for_variables(
             census_data_path=census_data_file if export_geojson else census_data_gdf,
             variables=mapped_variables,
-            output_dir=output_dirs["maps"],
+            output_dir=output_dir,
             basename=f"{base_filename}_{travel_time}min",
             isochrone_path=isochrone_path_for_map if export_geojson else combined_isochrone_gdf,
             poi_df=poi_data_for_map,

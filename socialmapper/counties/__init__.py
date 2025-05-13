@@ -217,7 +217,7 @@ def get_neighboring_counties(state_fips: str, county_fips: str) -> List[Tuple[st
         target_geom = target_county_gdf.iloc[0].geometry # Use the GeoDataFrame
         # Ensure geometries are valid
         if not target_geom.is_valid:
-            logger.warning(f"Target county {county_fips} in state {state_fips} has invalid geometry. Attempting to buffer by 0.")
+            logger.debug(f"Target county {county_fips} in state {state_fips} has invalid geometry. Attempting to buffer by 0.")
             target_geom = target_geom.buffer(0)
             if not target_geom.is_valid:
                 logger.error(f"Target county {county_fips} in state {state_fips} geometry still invalid after buffer(0). Cannot find neighbors.")
@@ -227,7 +227,7 @@ def get_neighboring_counties(state_fips: str, county_fips: str) -> List[Tuple[st
             if county_row['COUNTY'] != county_fips:
                 county_geom = county_row.geometry
                 if not county_geom.is_valid:
-                    logger.warning(f"Neighbor candidate county {county_row['BASENAME']} ({county_row['COUNTY']}) in state {state_fips} has invalid geometry. Attempting to buffer by 0.")
+                    logger.debug(f"Neighbor candidate county {county_row['BASENAME']} ({county_row['COUNTY']}) in state {state_fips} has invalid geometry. Attempting to buffer by 0.")
                     county_geom = county_geom.buffer(0)
                 
                 if county_geom.is_valid and county_geom.touches(target_geom):
