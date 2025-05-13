@@ -4,6 +4,8 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/socialmapper.svg)](https://pypi.org/project/socialmapper/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Status](https://img.shields.io/pypi/status/socialmapper.svg)](https://pypi.org/project/socialmapper/)
+[![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://socialmapper.streamlit.app)
 
 SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
 
@@ -13,118 +15,57 @@ Whether you're looking at bustling city neighborhoods or more spread-out rural a
 
 With plans to expand and explore our connection to the natural world, SocialMapper is a tool for understanding people, places, and the environment around us.
 
+## 🚀 Try SocialMapper Now!
+
+**[Launch the SocialMapper Streamlit App](https://socialmapper.streamlit.app)** - Explore community connections with our interactive web app - no coding required!
+
+<!-- 
 **Total Population Within 15-Minute Travel Time**
 
 ![Total Population Map](output/maps/fuquay-varina_amenity_library_15min_B01003_001E_map.png)
 
 **Median Household Income Within 15-Minute Travel Time**
 
-![Median Household Income Map](output/maps/fuquay-varina_amenity_library_15min_B19013_001E_map.png)
+![Median Household Income Map](output/maps/fuquay-varina_amenity_library_15min_B19013_001E_map.png) -->
+
+## What's New in v0.4.0-beta
+
+We're excited to announce our beta release with these new features:
+
+- **Live Streamlit App** - Now available at [socialmapper.streamlit.app](https://socialmapper.streamlit.app)
+- **Interactive Maps** - Explore data with interactive Folium maps in the Streamlit app
+- **Distance Data Export** - Export travel distance data for deeper analysis
+- **CSV Export** - Easily share and analyze your data in spreadsheet applications
+- **Runtime Optimizations** - Significantly improved performance for faster analysis
 
 ## Features
 
 - **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
 - **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
-- **Calculating Travel Distance** - Measure the travel distance along roads from the point of interest to the block group centroids.
+- **Calculating Travel Distance** - Measure the travel distance along roads from the point of interest to the block group centroids
 - **Retrieving Demographic Data** - Pull census data for the identified areas
-- **Visualizing Results** - Generate maps showing the demographic variables around the POIs
+- **Interactive Visualizations** - Generate both static and interactive maps showing demographic variables around POIs
 - **Data Export** - Export census data with travel distances to CSV for further analysis
-
-## ⚠️ PRE-RELEASE ⚠️
-This is an alpha release (v0.3.0-alpha). Major features are still missing and those implemented may contain significant bugs. Not recommended for production use.
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.9 or later
-- A Census API key (get one at https://api.census.gov/data/key_signup.html)
-
-### Option 1: Installation with uv (Recommended)
-
-The fastest and recommended way to install SocialMapper is using the provided installation scripts with uv:
-
-#### On Unix/macOS:
+SocialMapper is available on PyPI. Install it easily with pip:
 
 ```bash
-# Clone this repository
-git clone https://github.com/mihiarc/socialmapper.git
-cd socialmapper
-
-# Make the script executable
-chmod +x install_with_uv.sh
-
-# Run the installation script
-./install_with_uv.sh
-```
-
-#### On Windows:
-
-```cmd
-# Clone this repository
-git clone https://github.com/mihiarc/socialmapper.git
-cd socialmapper
-
-# Run the installation script
-install_with_uv.bat
-```
-
-The installation script will:
-- Check if Python is installed
-- Install uv if needed
-- Create a virtual environment
-- Install all dependencies
-- Set up the required directory structure
-- Create a template .env file for your Census API key
-
-After the script completes:
-1. Edit the `.env` file in a text editor like notepad, and add your Census API key
-2. Activate the environment:
-    ```
-    # On Linux/macOS:
-    source .venv/bin/activate
-    
-    # On Windows:
-    .venv\Scripts\activate
-    ```
-
-### Option 2: Manual Installation
-
-You can also install SocialMapper manually:
-
-```bash
-# Create a virtual environment
-python -m venv .venv
-
-# Activate the environment (Linux/macOS)
-source .venv/bin/activate
-
-# Or activate on Windows
-# .venv\Scripts\activate
-
-# Install with uv
-uv pip install -e .
-```
-
-To install with Streamlit support:
-
-```bash
-uv pip install -e ".[streamlit]"
-```
-
-To install with development dependencies:
-
-```bash
-uv pip install -e ".[dev,streamlit]"
+pip install socialmapper
 ```
 
 ## Using SocialMapper
 
 ### Using the Streamlit App
 
-The easiest way to use SocialMapper is through the Streamlit web app, which provides a user-friendly interface:
+The easiest way to use SocialMapper is through the Streamlit web app:
 
+**Option 1: Use our hosted app (Recommended)**
+Visit [socialmapper.streamlit.app](https://socialmapper.streamlit.app) - no installation required!
+
+**Option 2: Run locally**
 ```bash
 # Run the Streamlit app
 python -m socialmapper.streamlit_app
@@ -300,27 +241,7 @@ Here are some examples of community mapping projects you could create:
 For development, install with the development dependencies:
 
 ```bash
-uv pip install -e ".[dev,streamlit]"
-```
-
-### Code Style
-
-This project uses:
-- Black for code formatting
-- isort for import sorting
-- Ruff for linting
-
-Format your code with:
-
-```bash
-# Format with black
-black socialmapper
-
-# Sort imports
-isort socialmapper
-
-# Lint with ruff
-ruff check socialmapper
+pip install -e ".[dev,streamlit]"
 ```
 
 ### Troubleshooting
