@@ -49,7 +49,7 @@ We're excited to announce our beta release with these new features:
 SocialMapper is available on PyPI. Install it easily with pip:
 
 ```bash
-pip install socialmapper
+pip install socialmapper==0.4.0b0
 ```
 
 ## Using SocialMapper
