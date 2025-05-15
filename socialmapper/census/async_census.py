@@ -17,6 +17,7 @@ import pandas as pd
 from socialmapper.util import AsyncRateLimitedClient
 from socialmapper.util import rate_limiter
 from socialmapper.util import normalize_census_variable, state_fips_to_abbreviation, STATE_NAMES_TO_ABBR
+from socialmapper.util import get_census_api_key
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ async def fetch_census_data_for_states_async(
     """
 
     if api_key is None:
-        api_key = os.getenv("CENSUS_API_KEY")
+        api_key = get_census_api_key()
         if not api_key:
             raise ValueError("Census API key missing; set env var or pass api_key.")
 

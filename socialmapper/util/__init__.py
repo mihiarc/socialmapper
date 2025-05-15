@@ -3,7 +3,14 @@
 Utility functions for the socialmapper project.
 """
 
-from typing import List
+from typing import List, Optional
+import asyncio
+import logging
+import os
+import time
+import re
+from ratelimit import limits, sleep_and_retry
+import httpx
 
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
@@ -186,4 +193,112 @@ __all__ = [
     'with_retry',
     'RateLimitedClient',
     'AsyncRateLimitedClient',
-] 
+]
+
+# Define rate limiters for different services
+# 1 call per second for Census API and OSM
+class RateLimiter:
+    def __init__(self):
+        self.last_call_time = {}
+    
+    def wait_if_needed(self, service, calls_per_second=1):
+        now = time.time()
+        if service in self.last_call_time:
+            elapsed = now - self.last_call_time[service]
+            min_interval = 1.0 / calls_per_second
+            if elapsed < min_interval:
+                time.sleep(min_interval - elapsed)
+        self.last_call_time[service] = time.time()
+
+rate_limiter = RateLimiter()
+
+# State name mapping utilities
+STATE_NAMES_TO_ABBR = {
+    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+    'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+    'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+    'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+    'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+    'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+    'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+    'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+    'District of Columbia': 'DC', 'Puerto Rico': 'PR'
+}
+
+def state_fips_to_abbreviation(fips_code):
+    """
+    Convert state FIPS code to state abbreviation.
+    """
+    fips_to_abbrev = {
+        '01': 'AL', '02': 'AK', '04': 'AZ', '05': 'AR', '06': 'CA', '08': 'CO', '09': 'CT',
+        '10': 'DE', '11': 'DC', '12': 'FL', '13': 'GA', '15': 'HI', '16': 'ID', '17': 'IL',
+        '18': 'IN', '19': 'IA', '20': 'KS', '21': 'KY', '22': 'LA', '23': 'ME', '24': 'MD',
+        '25': 'MA', '26': 'MI', '27': 'MN', '28': 'MS', '29': 'MO', '30': 'MT', '31': 'NE',
+        '32': 'NV', '33': 'NH', '34': 'NJ', '35': 'NM', '36': 'NY', '37': 'NC', '38': 'ND',
+        '39': 'OH', '40': 'OK', '41': 'OR', '42': 'PA', '44': 'RI', '45': 'SC', '46': 'SD',
+        '47': 'TN', '48': 'TX', '49': 'UT', '50': 'VT', '51': 'VA', '53': 'WA', '54': 'WV',
+        '55': 'WI', '56': 'WY', '72': 'PR'
+    }
+    return fips_to_abbrev.get(fips_code)
+
+def get_census_api_key() -> Optional[str]:
+    """
+    Get the Census API key from Streamlit secrets or environment variable.
+    
+    Returns:
+        Census API key if found, None otherwise
+    """
+    # First try to get from Streamlit secrets
+    try:
+        import streamlit as st
+        if 'census' in st.secrets and 'CENSUS_API_KEY' in st.secrets['census']:
+            return st.secrets['census']['CENSUS_API_KEY']
+    except (ImportError, AttributeError, KeyError):
+        pass
+    
+    # Fall back to environment variable
+    return os.getenv('CENSUS_API_KEY')
+
+class AsyncRateLimitedClient:
+    """Custom async HTTP client with built-in rate limiting.
+    
+    This client helps manage:
+    1. Rate limiting for APIs
+    2. Retries with exponential backoff
+    3. Proper client cleanup
+    """
+    
+    def __init__(self, service="default", max_retries=3, timeout=30, transport=None):
+        self.service = service
+        self.max_retries = max_retries
+        self.client = httpx.AsyncClient(timeout=timeout, transport=transport)
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.client.aclose()
+    
+    async def get(self, *args, **kwargs):
+        """Rate-limited GET request with retries."""
+        # Apply service-specific rate limiting
+        rate_limiter.wait_if_needed(self.service)
+        
+        # Try the request with retries
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = await self.client.get(*args, **kwargs)
+                return response
+            except httpx.TransportError as e:
+                if attempt == self.max_retries:
+                    raise
+                
+                # Exponential backoff with jitter
+                wait_time = 2 ** attempt + (0.1 * attempt)
+                logging.warning(
+                    f"Request failed (attempt {attempt+1}/{self.max_retries+1}): {str(e)}. "
+                    f"Retrying in {wait_time:.1f}s"
+                )
+                await asyncio.sleep(wait_time) 

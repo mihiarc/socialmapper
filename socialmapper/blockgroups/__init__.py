@@ -14,12 +14,13 @@ import json
 from socialmapper.progress import get_progress_bar
 from tqdm import tqdm
 
-from socialmapper.states import normalize_state, StateFormat
+from socialmapper.states import normalize_state, StateFormat, state_fips_to_name
 from socialmapper.counties import (
     get_counties_from_pois,
     get_block_groups_for_counties,
     get_block_group_urls
 )
+from socialmapper.util import get_census_api_key
 
 # Set PyOGRIO as the default IO engine
 gpd.options.io_engine = "pyogrio"
@@ -105,7 +106,7 @@ def get_census_block_groups(
     
     # If not all states were cached or there was an error, fetch from Census API
     if api_key is None:
-        api_key = os.getenv('CENSUS_API_KEY')
+        api_key = get_census_api_key()
 
     tqdm.write("Fetching block groups from Census TIGER API")
     

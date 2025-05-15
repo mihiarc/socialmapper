@@ -16,6 +16,9 @@ from stqdm import stqdm
 from socialmapper import run_socialmapper
 from socialmapper.states import state_name_to_abbreviation
 
+# Get the Census API key from secrets
+census_api_key = st.secrets["census"]["CENSUS_API_KEY"]
+
 # Load environment variables
 load_dotenv()
 
@@ -101,13 +104,6 @@ def run_app():
         use_interactive_maps = map_type == "Interactive (Folium)"
     else:
         use_interactive_maps = False
-
-    # API key input
-    census_api_key = st.sidebar.text_input(
-        "Census API Key (optional if set as environment variable)",
-        value=os.environ.get("CENSUS_API_KEY", ""),
-        type="password"
-    )
 
     # Main content area based on input method
     if input_method == "OpenStreetMap POI Query":
@@ -408,7 +404,7 @@ def run_app():
                         additional_tags=additional_tags_dict,
                         travel_time=travel_time,
                         census_variables=census_variables,
-                        api_key=census_api_key or None,
+                        api_key=census_api_key,
                         progress_callback=update_step,
                         export_csv=export_csv,
                         export_maps=export_maps,
@@ -431,7 +427,7 @@ def run_app():
                             custom_coords_path=custom_file_path,
                             travel_time=travel_time,
                             census_variables=census_variables,
-                            api_key=census_api_key or None,
+                            api_key=census_api_key,
                             progress_callback=update_step,
                             export_csv=export_csv,
                             export_maps=export_maps,
@@ -448,7 +444,7 @@ def run_app():
                             custom_coords_path="output/pois/custom_coordinates.json",
                             travel_time=travel_time,
                             census_variables=census_variables,
-                            api_key=census_api_key or None,
+                            api_key=census_api_key,
                             progress_callback=update_step,
                             export_csv=export_csv,
                             export_maps=export_maps,

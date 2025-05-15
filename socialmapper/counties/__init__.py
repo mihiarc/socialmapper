@@ -13,12 +13,11 @@ import logging
 import geopandas as gpd
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union, Any
 from tqdm import tqdm
 from socialmapper.progress import get_progress_bar
-
-# Import state utilities
-from socialmapper.states import normalize_state, StateFormat
+from socialmapper.states import normalize_state, StateFormat, state_fips_to_name
+from socialmapper.util import get_census_api_key
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -286,6 +285,9 @@ def get_block_groups_for_county(
             tqdm.write(f"Error loading cache: {e}")
     
     # If not in cache, fetch from Census API
+    if api_key is None:
+        api_key = get_census_api_key()
+    
     tqdm.write(f"Fetching block groups for county {county_fips} in state {state_fips}")
     
     # Use the Tracts_Blocks MapServer endpoint
