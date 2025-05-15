@@ -22,7 +22,8 @@ from socialmapper.util import (
     census_code_to_name,
     normalize_census_variable,
     CENSUS_VARIABLE_MAPPING,
-    get_readable_census_variables
+    get_readable_census_variables,
+    get_census_api_key
 )
 
 
@@ -152,7 +153,7 @@ def fetch_census_data_for_states(
         DataFrame with census data for all block groups in the specified states
     """
     if not api_key:
-        api_key = os.getenv('CENSUS_API_KEY')
+        api_key = get_census_api_key()
         if not api_key:
             raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
     
@@ -432,7 +433,7 @@ def get_variable_metadata(
         Dictionary with variable metadata
     """
     if not api_key:
-        api_key = os.getenv('CENSUS_API_KEY')
+        api_key = get_census_api_key()
         if not api_key:
             raise ValueError("Census API key not found. Please set the 'CENSUS_API_KEY' environment variable or provide it as an argument.")
     
