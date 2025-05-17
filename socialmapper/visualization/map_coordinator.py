@@ -34,7 +34,7 @@ def generate_maps_for_variables(
     output_dir: str = "output/maps",
     basename: Optional[str] = None,
     isochrone_path: Optional[Union[str, gpd.GeoDataFrame, List[str], List[gpd.GeoDataFrame]]] = None,
-    include_isochrone_only_map: bool = True,
+    include_isochrone_only_map: bool = True,  # This parameter is kept for static maps but ignored for folium maps
     poi_df: Optional[Union[gpd.GeoDataFrame, List[gpd.GeoDataFrame]]] = None,
     use_panels: bool = False,
     use_folium: bool = False,
@@ -49,7 +49,7 @@ def generate_maps_for_variables(
         output_dir: Directory to save maps (default: output/maps)
         basename: Base filename to use for output files (default: derived from input file)
         isochrone_path: Optional path to isochrone GeoJSON or GeoDataFrame to overlay on the maps
-        include_isochrone_only_map: Whether to generate an isochrone-only map
+        include_isochrone_only_map: Whether to generate an isochrone-only map (only used for static maps)
         poi_df: Optional GeoDataFrame containing POI data
         use_panels: Whether to generate paneled maps (requires list inputs)
         use_folium: Whether to generate interactive Folium maps (for Streamlit) instead of static maps
@@ -92,40 +92,7 @@ def generate_maps_for_variables(
                     ]}
                 )
         else:
-            # Generate isochrone-only map if requested
-            if include_isochrone_only_map and isochrone_path is not None:
-                # For isochrone-only map, we'll only use the first isochrone path if it's a list
-                isochrone_path_for_map = isochrone_path
-                if isinstance(isochrone_path, list) and isochrone_path:
-                    isochrone_path_for_map = isochrone_path[0]
-                
-                # Use the first POI dataframe if it's a list
-                poi_df_for_map = poi_df
-                if isinstance(poi_df, list) and poi_df:
-                    poi_df_for_map = poi_df[0]
-                
-                # Get a title for the isochrone map
-                isochrone_title = kwargs.get('title')
-                if isochrone_title is None:
-                    if isinstance(isochrone_path_for_map, str):
-                        isochrone_title = f"Travel Time from {Path(isochrone_path_for_map).stem.replace('_isochrones', '').replace('_', ' ').title()}"
-                    else:
-                        isochrone_title = "Travel Time Accessibility"
-                
-                # Create an isochrone-only map
-                generate_folium_map_for_streamlit(
-                    census_data_path=None,  # Not used for isochrone-only maps
-                    variable=None,  # Not used for isochrone-only maps
-                    isochrone_path=isochrone_path_for_map,
-                    poi_df=poi_df_for_map,
-                    title=isochrone_title,
-                    isochrone_only=True,
-                    **{k: v for k, v in kwargs.items() if k in [
-                        'height', 'width', 'base_map'
-                    ]}
-                )
-            
-            # Generate maps for each variable
+            # Generate maps for each variable - no separate isochrone map
             for variable in variables:
                 # For single maps, we'll only use the first items if inputs are lists
                 census_data_for_map = census_data_path
