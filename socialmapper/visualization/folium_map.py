@@ -197,15 +197,13 @@ def generate_folium_map(
     # Calculate optimal bins and color thresholds
     values = gdf[variable].dropna().tolist()
     num_bins = calculate_optimal_bins(values)
-    bins, labels = apply_quantile_classification(values, num_bins=num_bins)
+    _ = apply_quantile_classification(values, num_bins=num_bins)
     
     # Create a feature group for the census data layer
     census_layer = folium.FeatureGroup(name=f"Census Data: {get_variable_label(variable)}", show=True)
+    census_layer.add_to(m)  # Add the layer to the map
     
-    # Create a clean version of the GeoDataFrame with safe values for JSON
-    gdf_clean = make_serializable(gdf)
-    
-    # Create a very minimal version with only the required columns for the choropleth
+    # Create a minimal version with only the required columns for the choropleth
     gdf_minimal = gdf[[variable, 'GEOID', 'geometry']].copy()
     
     # Add census data choropleth - must be added directly to the map per folium requirements
@@ -273,7 +271,7 @@ def generate_folium_map(
             iso_colors = ['#00CC0088', '#33CC3388', '#66CC6688', '#99CC9988', '#CCCCCC88']
             
             # Create isochrone feature group so it can be toggled as a whole
-            isochrone_group = folium.FeatureGroup(name="Travel Time Isochrones", show=False)
+            isochrone_group = folium.FeatureGroup(name="Travel Time Isochrones", show=True)
             
             # Add each isochrone to the map with dynamic styling
             for i, (_, row) in enumerate(isochrone.iterrows()):
@@ -310,15 +308,13 @@ def generate_folium_map(
         poi_df = make_serializable(poi_df)
             
         # Create a feature group for POIs
-        poi_group = folium.FeatureGroup(name="Points of Interest", show=False)
+        poi_group = folium.FeatureGroup(name="Points of Interest", show=True)
             
-        # Create a marker cluster for POIs
-        marker_cluster = MarkerCluster(name="Points of Interest").add_to(poi_group)
-        
-        # Add each POI to the cluster
+        # Add each POI to the map
         for idx, row in poi_df.iterrows():
-            # Get POI name
+            # Get POI name and coordinates
             poi_name = row.get('name', f"POI {idx}")
+            poi_location = [row.geometry.y, row.geometry.x]
             
             # Additional information if available
             info = {}
@@ -326,25 +322,147 @@ def generate_folium_map(
                 if col not in ['geometry', 'name'] and pd.notna(row[col]):
                     info[col] = row[col]
             
-            # Create popup content
-            popup_content = f"<b>{poi_name}</b><br>"
+            # Create popup content with OpenStreetMap data
+            popup_content = f"""
+            <div style='font-family: Arial, sans-serif; max-width: 300px;'>
+                <h4 style='margin-bottom: 5px; color: #0078FF;'>{poi_name}</h4>
+                <hr style='margin: 5px 0; border-color: #0078FF;'>
+            """
+
+            # Get OSM tags, handling different possible data structures
+            osm_tags = {}
+            if 'tags' in row:
+                if isinstance(row['tags'], dict):
+                    osm_tags = row['tags']
+                elif isinstance(row['tags'], str):
+                    try:
+                        # Try to parse if it's a string representation of a dict
+                        import ast
+                        osm_tags = ast.literal_eval(row['tags'])
+                    except:
+                        pass
+
+            # Add all tags and properties from OSM
+            if osm_tags:
+                popup_content += "<h5 style='margin: 5px 0;'>OpenStreetMap Info:</h5>"
+                popup_content += "<div style='margin-left: 10px;'>"
+                
+                # Sort tags for consistent display
+                sorted_tags = sorted(osm_tags.items())
+                for key, value in sorted_tags:
+                    if pd.notna(value):
+                        # Special handling for address fields
+                        if key.startswith('addr:'):
+                            key_name = key.replace('addr:', 'Address ').replace('_', ' ').title()
+                        else:
+                            key_name = key.replace('_', ' ').replace(':', ' ').title()
+                        popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
+                popup_content += "</div>"
+
+            # Add other attributes
             if info:
-                for key, value in info.items():
-                    popup_content += f"{key.replace('_', ' ').title()}: {value}<br>"
-            
-            # Add marker
+                popup_content += "<h5 style='margin: 5px 0;'>Additional Information:</h5>"
+                popup_content += "<div style='margin-left: 10px;'>"
+                
+                # Sort info for consistent display
+                sorted_info = sorted(info.items())
+                for key, value in sorted_info:
+                    if key != 'tags' and pd.notna(value):  # We already processed tags
+                        key_name = key.replace('_', ' ').title()
+                        popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
+                popup_content += "</div>"
+
+            popup_content += "</div>"
+
+            # Debug print to check the data structure
+            print(f"POI Name: {poi_name}")
+            print(f"OSM Tags: {osm_tags}")
+            print(f"Additional Info: {info}")
+
+            # Compose tooltip with OSM way info
+            osm_tags = row.get('tags', {}) if isinstance(row.get('tags'), dict) else {}
+
+            # Build address string
+            address_parts = []
+            if osm_tags.get('addr:housenumber') and osm_tags.get('addr:street'):
+                address_parts.append(f"{osm_tags['addr:housenumber']} {osm_tags['addr:street']}")
+            if osm_tags.get('addr:city'):
+                address_parts.append(osm_tags['addr:city'])
+            if osm_tags.get('addr:state'):
+                address_parts.append(osm_tags['addr:state'])
+            if osm_tags.get('addr:postcode'):
+                address_parts.append(osm_tags['addr:postcode'])
+            address = ', '.join(address_parts)
+
+            # Build tooltip content
+            tooltip_lines = [f"<b>{poi_name}</b>"]
+
+            # Add amenity or type
+            amenity = osm_tags.get('amenity', '').replace('_', ' ').title()
+            if amenity:
+                tooltip_lines.append(f"Amenity: {amenity}")
+            elif 'type' in info:
+                tooltip_lines.append(f"Type: {info['type']}")
+
+            # Add address if available
+            if address:
+                tooltip_lines.append(f"Address: {address}")
+
+            # Add operator if available
+            operator = osm_tags.get('operator')
+            if operator:
+                tooltip_lines.append(f"Operator: {operator}")
+
+            # Add opening hours if available (shortened version)
+            hours = osm_tags.get('opening_hours')
+            if hours:
+                # Shorten the hours string if it's too long
+                if len(hours) > 30:
+                    hours = hours.split(';')[0] + '...'
+                tooltip_lines.append(f"Hours: {hours}")
+
+            # Add phone if available
+            phone = osm_tags.get('phone')
+            if phone:
+                tooltip_lines.append(f"Phone: {phone}")
+
+            # Join tooltip lines with line breaks
+            tooltip_content = '<br>'.join(tooltip_lines)
+
+            # Add pulsing circle marker to highlight POI location
+            folium.CircleMarker(
+                location=poi_location,
+                radius=15,
+                color='#0078FF',
+                fill=True,
+                fill_color='#0078FF',
+                fill_opacity=0.3,
+                weight=2,
+                popup=None,
+                tooltip=folium.Tooltip(tooltip_content, sticky=True),
+                opacity=0.7
+            ).add_to(poi_group)
+
+            # Add marker with custom icon
             folium.Marker(
-                location=[row.geometry.y, row.geometry.x],
+                location=poi_location,
                 popup=folium.Popup(popup_content, max_width=300),
-                tooltip=poi_name,
-                icon=folium.Icon(color='red', icon='info-sign')
-            ).add_to(marker_cluster)
+                tooltip=folium.Tooltip(tooltip_content, sticky=True),
+                icon=folium.Icon(
+                    color='blue',
+                    icon='star',
+                    prefix='fa',
+                    icon_color='white'
+                )
+            ).add_to(poi_group)
         
         # Add the POI group to the map
         poi_group.add_to(m)
     
     # Add layer control
-    folium.LayerControl().add_to(m)
+    folium.LayerControl(position='bottomleft').add_to(m)
     
     # Add a title if provided
     if title:
@@ -356,6 +474,12 @@ def generate_folium_map(
     # Add colormap legend if requested
     if show_legend:
         colormap_function.add_to(m)
+        # Move the colormap to bottom left after adding it
+        for child in m._children.values():
+            if isinstance(child, LinearColormap):
+                child._parent = None
+                m.add_child(child, name=child.get_name(), index=0)
+                child.position = 'bottomleft'
         
     return m
 
@@ -499,12 +623,13 @@ def generate_folium_isochrone_map(
         poi_df = make_serializable(poi_df)
         
         # Create a feature group for POIs
-        poi_group = folium.FeatureGroup(name="Points of Interest", show=False)
+        poi_group = folium.FeatureGroup(name="Points of Interest", show=True)
         
         # Add each POI to the map
         for idx, row in poi_df.iterrows():
-            # Get POI name
+            # Get POI name and coordinates
             poi_name = row.get('name', f"POI {idx}")
+            poi_location = [row.geometry.y, row.geometry.x]
             
             # Additional information if available
             info = {}
@@ -512,25 +637,147 @@ def generate_folium_isochrone_map(
                 if col not in ['geometry', 'name'] and pd.notna(row[col]):
                     info[col] = row[col]
             
-            # Create popup content
-            popup_content = f"<b>{poi_name}</b><br>"
+            # Create popup content with OpenStreetMap data
+            popup_content = f"""
+            <div style='font-family: Arial, sans-serif; max-width: 300px;'>
+                <h4 style='margin-bottom: 5px; color: #0078FF;'>{poi_name}</h4>
+                <hr style='margin: 5px 0; border-color: #0078FF;'>
+            """
+
+            # Get OSM tags, handling different possible data structures
+            osm_tags = {}
+            if 'tags' in row:
+                if isinstance(row['tags'], dict):
+                    osm_tags = row['tags']
+                elif isinstance(row['tags'], str):
+                    try:
+                        # Try to parse if it's a string representation of a dict
+                        import ast
+                        osm_tags = ast.literal_eval(row['tags'])
+                    except:
+                        pass
+
+            # Add all tags and properties from OSM
+            if osm_tags:
+                popup_content += "<h5 style='margin: 5px 0;'>OpenStreetMap Info:</h5>"
+                popup_content += "<div style='margin-left: 10px;'>"
+                
+                # Sort tags for consistent display
+                sorted_tags = sorted(osm_tags.items())
+                for key, value in sorted_tags:
+                    if pd.notna(value):
+                        # Special handling for address fields
+                        if key.startswith('addr:'):
+                            key_name = key.replace('addr:', 'Address ').replace('_', ' ').title()
+                        else:
+                            key_name = key.replace('_', ' ').replace(':', ' ').title()
+                        popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
+                popup_content += "</div>"
+
+            # Add other attributes
             if info:
-                for key, value in info.items():
-                    popup_content += f"{key.replace('_', ' ').title()}: {value}<br>"
-            
-            # Add marker
+                popup_content += "<h5 style='margin: 5px 0;'>Additional Information:</h5>"
+                popup_content += "<div style='margin-left: 10px;'>"
+                
+                # Sort info for consistent display
+                sorted_info = sorted(info.items())
+                for key, value in sorted_info:
+                    if key != 'tags' and pd.notna(value):  # We already processed tags
+                        key_name = key.replace('_', ' ').title()
+                        popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
+                popup_content += "</div>"
+
+            popup_content += "</div>"
+
+            # Debug print to check the data structure
+            print(f"POI Name: {poi_name}")
+            print(f"OSM Tags: {osm_tags}")
+            print(f"Additional Info: {info}")
+
+            # Compose tooltip with OSM way info
+            osm_tags = row.get('tags', {}) if isinstance(row.get('tags'), dict) else {}
+
+            # Build address string
+            address_parts = []
+            if osm_tags.get('addr:housenumber') and osm_tags.get('addr:street'):
+                address_parts.append(f"{osm_tags['addr:housenumber']} {osm_tags['addr:street']}")
+            if osm_tags.get('addr:city'):
+                address_parts.append(osm_tags['addr:city'])
+            if osm_tags.get('addr:state'):
+                address_parts.append(osm_tags['addr:state'])
+            if osm_tags.get('addr:postcode'):
+                address_parts.append(osm_tags['addr:postcode'])
+            address = ', '.join(address_parts)
+
+            # Build tooltip content
+            tooltip_lines = [f"<b>{poi_name}</b>"]
+
+            # Add amenity or type
+            amenity = osm_tags.get('amenity', '').replace('_', ' ').title()
+            if amenity:
+                tooltip_lines.append(f"Amenity: {amenity}")
+            elif 'type' in info:
+                tooltip_lines.append(f"Type: {info['type']}")
+
+            # Add address if available
+            if address:
+                tooltip_lines.append(f"Address: {address}")
+
+            # Add operator if available
+            operator = osm_tags.get('operator')
+            if operator:
+                tooltip_lines.append(f"Operator: {operator}")
+
+            # Add opening hours if available (shortened version)
+            hours = osm_tags.get('opening_hours')
+            if hours:
+                # Shorten the hours string if it's too long
+                if len(hours) > 30:
+                    hours = hours.split(';')[0] + '...'
+                tooltip_lines.append(f"Hours: {hours}")
+
+            # Add phone if available
+            phone = osm_tags.get('phone')
+            if phone:
+                tooltip_lines.append(f"Phone: {phone}")
+
+            # Join tooltip lines with line breaks
+            tooltip_content = '<br>'.join(tooltip_lines)
+
+            # Add pulsing circle marker to highlight POI location
+            folium.CircleMarker(
+                location=poi_location,
+                radius=15,
+                color='#0078FF',
+                fill=True,
+                fill_color='#0078FF',
+                fill_opacity=0.3,
+                weight=2,
+                popup=None,
+                tooltip=folium.Tooltip(tooltip_content, sticky=True),
+                opacity=0.7
+            ).add_to(poi_group)
+
+            # Add marker with custom icon
             folium.Marker(
-                location=[row.geometry.y, row.geometry.x],
+                location=poi_location,
                 popup=folium.Popup(popup_content, max_width=300),
-                tooltip=poi_name,
-                icon=folium.Icon(color='blue', icon='info-sign')
+                tooltip=folium.Tooltip(tooltip_content, sticky=True),
+                icon=folium.Icon(
+                    color='blue',
+                    icon='star',
+                    prefix='fa',
+                    icon_color='white'
+                )
             ).add_to(poi_group)
         
         # Add the POI group to the map
         poi_group.add_to(m)
     
     # Add layer control
-    folium.LayerControl().add_to(m)
+    folium.LayerControl(position='bottomleft').add_to(m)
     
     # Add a title if provided
     if title:
@@ -568,30 +815,21 @@ def generate_folium_map_for_streamlit(
         width: Width of the map in pixels
         show_legend: Whether to display the legend
         base_map: Base map provider name
-        isochrone_only: Whether to display only isochrones without census data
+        isochrone_only: Whether to display only isochrones without census data (deprecated)
     """
-    if isochrone_only and isochrone_path is not None:
-        map_obj = generate_folium_isochrone_map(
-            isochrone_path=isochrone_path,
-            poi_df=poi_df,
-            title=title,
-            height=height,
-            width=width,
-            base_map=base_map
-        )
-    else:
-        map_obj = generate_folium_map(
-            census_data_path=census_data_path,
-            variable=variable,
-            isochrone_path=isochrone_path,
-            poi_df=poi_df,
-            title=title,
-            colormap=colormap,
-            height=height,
-            width=width,
-            show_legend=show_legend,
-            base_map=base_map
-        )
+    # Always display combined map with all available layers
+    map_obj = generate_folium_map(
+        census_data_path=census_data_path,
+        variable=variable,
+        isochrone_path=isochrone_path,
+        poi_df=poi_df,
+        title=title,
+        colormap=colormap,
+        height=height,
+        width=width,
+        show_legend=show_legend,
+        base_map=base_map
+    )
     
     # Display the map in Streamlit
     folium_static(map_obj, width=width, height=height)
