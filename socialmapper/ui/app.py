@@ -162,17 +162,19 @@ def run_app():
         if poi_type in ["natural", "historic"]:
             st.warning(f"Note: Not all {poi_type} features are available in every location. If no results are found, try a different POI type or location.")
         
+        # POI limit settings (moved out of advanced options)
+        st.info("⚠️ Processing large numbers of POIs can be resource-intensive. For jobs with more than 10 POIs, consider using the Python package directly.")
+        max_poi_count = st.slider(
+            "Maximum number of POIs to analyze",
+            min_value=1,
+            max_value=50,
+            value=10,
+            step=1,
+            help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+        )
+        
         # Advanced options in expander
         with st.expander("Advanced Query Options"):
-            max_poi_count = st.slider(
-                "Maximum number of POIs to analyze",
-                min_value=1,
-                max_value=50,
-                value=10,
-                step=1,
-                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
-            )
-            
             tags_input = st.text_area("Additional tags (YAML format):", 
                                     "# Example:\n# operator: Chicago Park District")
             
@@ -510,7 +512,21 @@ def run_app():
             if results.get("sampled_pois", False):
                 original_count = results.get("original_poi_count", 0)
                 sampled_count = results.get("sampled_poi_count", 0)
-                st.warning(f"⚠️ Found {original_count} locations, but only using {sampled_count} to avoid performance issues. Results are based on a random sample of POIs.")
+                st.warning(
+                    f"""
+                    ⚠️ **Large POI Set Detected**
+                    
+                    Found {original_count} locations, but only processing {sampled_count} to prevent performance issues.
+                    Results are based on a random sample of POIs.
+                    
+                    For analyzing larger sets of POIs (more than 10), we recommend:
+                    1. Using the Python package directly (`pip install socialmapper`)
+                    2. Running the analysis in smaller batches
+                    3. Using the command-line interface for batch processing
+                    
+                    See the [documentation](https://github.com/mihiarc/socialmapper#installation) for more details.
+                    """
+                )
             
             # ---- POIs tab ---------------------------------------------------
             poi_data = results.get("poi_data")
