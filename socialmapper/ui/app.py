@@ -89,7 +89,7 @@ def run_app():
     
     export_maps = st.sidebar.checkbox(
         "Generate maps",
-        value=True,
+        value=False,
         help="Generate map visualizations for each census variable"
     )
 
