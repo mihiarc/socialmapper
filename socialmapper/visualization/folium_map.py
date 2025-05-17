@@ -176,8 +176,7 @@ def generate_folium_map(
         colors=colors,
         vmin=gdf[variable].min(),
         vmax=gdf[variable].max(),
-        caption=get_variable_label(variable),
-        position='bottomleft'
+        caption=get_variable_label(variable)
     )
     
     # Create the map
@@ -475,6 +474,12 @@ def generate_folium_map(
     # Add colormap legend if requested
     if show_legend:
         colormap_function.add_to(m)
+        # Move the colormap to bottom left after adding it
+        for child in m._children.values():
+            if isinstance(child, LinearColormap):
+                child._parent = None
+                m.add_child(child, name=child.get_name(), index=0)
+                child.position = 'bottomleft'
         
     return m
 
