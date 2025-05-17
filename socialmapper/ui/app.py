@@ -95,7 +95,7 @@ def run_app():
 
     # Map type selection
     if export_maps:
-        st.sidebar.info("Note: For performance reasons, maps will only be generated for the first POI found.")
+        st.sidebar.info("Note: For performance reasons, maps will only be generated for the first POI found.\n\nIf you want to generate a map for a specific POI, use the Advanced Query Options.")
         map_type = st.sidebar.radio(
             "Map Type:",
             ["Interactive (Folium)", "Static"],
