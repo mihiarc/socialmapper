@@ -162,7 +162,7 @@ def run_app():
         if poi_type in ["natural", "historic"]:
             st.warning(f"Note: Not all {poi_type} features are available in every location. If no results are found, try a different POI type or location.")
         
-        # POI limit settings (moved out of advanced options)
+        # POI limit settings
         st.info("⚠️ Processing large numbers of POIs can be resource-intensive. For jobs with more than 10 POIs, consider using the Python package directly.")
         max_poi_count = st.slider(
             "Maximum number of POIs to analyze",
@@ -172,20 +172,6 @@ def run_app():
             step=1,
             help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
         )
-        
-        # Advanced options in expander
-        with st.expander("Advanced Query Options"):
-            tags_input = st.text_area("Additional tags (YAML format):", 
-                                    "# Example:\n# operator: Chicago Park District")
-            
-            try:
-                if tags_input.strip() and not tags_input.startswith('#'):
-                    additional_tags = yaml.safe_load(tags_input)
-                else:
-                    additional_tags = {}
-            except Exception as e:
-                st.error(f"Error parsing tags: {str(e)}")
-                additional_tags = {}
 
     elif input_method == "Custom Coordinates":
         st.header("Custom Coordinates Input")
@@ -195,16 +181,9 @@ def run_app():
             ["Upload CSV/JSON File", "Manual Entry"]
         )
         
-        # Advanced options expander for both upload and manual entry
-        with st.expander("Advanced Options"):
-            max_poi_count = st.slider(
-                "Maximum number of POIs to analyze",
-                min_value=1,
-                max_value=50,
-                value=10,
-                step=1,
-                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
-            )
+        # Set default max_poi_count for custom coordinates
+        max_poi_count = 10
+        st.info("⚠️ Processing large numbers of POIs can be resource-intensive. For custom coordinates, a maximum of 10 POIs will be processed.")
         
         if upload_method == "Upload CSV/JSON File":
             uploaded_file = st.file_uploader(
@@ -408,14 +387,6 @@ def run_app():
                 if input_method == "OpenStreetMap POI Query":
                     update_step(1, "Querying OpenStreetMap for Points of Interest")
                     
-                    # Parse any additional tags if provided
-                    additional_tags_dict = None
-                    if 'tags_input' in locals() and tags_input.strip() and not tags_input.startswith('#'):
-                        try:
-                            additional_tags_dict = yaml.safe_load(tags_input)
-                        except Exception as e:
-                            st.error(f"Error parsing tags: {str(e)}")
-                    
                     # Pass POI parameters directly
                     results = run_socialmapper(
                         geocode_area=geocode_area,
@@ -423,7 +394,6 @@ def run_app():
                         city=geocode_area,  # Use geocode_area as city if not specified separately
                         poi_type=poi_type,
                         poi_name=poi_name,
-                        additional_tags=additional_tags_dict,
                         travel_time=travel_time,
                         census_variables=census_variables,
                         api_key=census_api_key,
