@@ -459,7 +459,39 @@ def run_app():
                 tb_text = traceback.format_exc()
             except Exception as err:
                 status.update(label="Analysis failed", state="error")
-                st.error(f"An error occurred: {err}")
+                error_msg = str(err).lower()
+                
+                if "overpass" in error_msg or "connection refused" in error_msg:
+                    st.error("""
+                    ⚠️ **OpenStreetMap API Error**
+                    
+                    The OpenStreetMap server is currently busy or rate limiting requests. This can happen when:
+                    1. Too many POIs are being processed at once
+                    2. The server is experiencing high load
+                    3. We've hit rate limits
+                    
+                    Please try:
+                    - Reducing the number of POIs you're searching for
+                    - Waiting a few minutes before trying again
+                    - Using a more specific search area
+                    
+                    For large jobs (10+ POIs), consider using the Python package directly for better rate limiting control.
+                    """)
+                elif "timeout" in error_msg:
+                    st.error("""
+                    ⚠️ **Query Timeout**
+                    
+                    The search took too long to complete. This usually happens when:
+                    1. The search area is too large
+                    2. There are too many POIs to process
+                    
+                    Please try:
+                    - Using a more specific search area
+                    - Reducing the number of POIs
+                    - Breaking your analysis into smaller parts
+                    """)
+                else:
+                    st.error(f"An error occurred: {err}")
                 tb_text = traceback.format_exc()
 
             finally:

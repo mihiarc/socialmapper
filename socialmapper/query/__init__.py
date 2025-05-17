@@ -9,12 +9,27 @@ import yaml
 import overpy
 import os
 import logging
+import time
+import random
 from typing import Dict, Any, Optional
 
 from ..util import rate_limited, with_retry, RateLimitedClient
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+# Configure rate limiting
+OVERPASS_RATE_LIMIT = 2.0  # seconds between requests
+last_request_time = 0
+
+def wait_between_requests():
+    """Ensure we wait appropriate time between requests."""
+    global last_request_time
+    current_time = time.time()
+    time_since_last = current_time - last_request_time
+    if time_since_last < OVERPASS_RATE_LIMIT:
+        time.sleep(OVERPASS_RATE_LIMIT - time_since_last + random.uniform(0.1, 0.5))
+    last_request_time = time.time()
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):
     """
@@ -154,11 +169,20 @@ def query_overpass(query):
     Uses rate limiting and retry logic to handle transient errors
     and respect API usage limits.
     """
+    wait_between_requests()  # Ensure we respect rate limits
+    
     api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
     try:
         logger.info("Sending query to Overpass API...")
         return api.query(query)
     except Exception as e:
+        if "429" in str(e) or "too many requests" in str(e).lower():
+            logger.warning("Rate limit exceeded, waiting longer before retry...")
+            time.sleep(OVERPASS_RATE_LIMIT * 2)  # Wait twice as long on rate limit
+        elif "timeout" in str(e).lower():
+            logger.warning("Query timeout, might need to reduce search area...")
+        elif "refused" in str(e).lower():
+            logger.warning("Connection refused, server might be overloaded...")
         logger.error(f"Error querying Overpass API: {e}")
         logger.debug(f"Query used: {query}")
         raise
