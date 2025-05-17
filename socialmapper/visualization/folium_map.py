@@ -176,7 +176,8 @@ def generate_folium_map(
         colors=colors,
         vmin=gdf[variable].min(),
         vmax=gdf[variable].max(),
-        caption=get_variable_label(variable)
+        caption=get_variable_label(variable),
+        position='bottomleft'
     )
     
     # Create the map
@@ -197,15 +198,13 @@ def generate_folium_map(
     # Calculate optimal bins and color thresholds
     values = gdf[variable].dropna().tolist()
     num_bins = calculate_optimal_bins(values)
-    bins, labels = apply_quantile_classification(values, num_bins=num_bins)
+    _ = apply_quantile_classification(values, num_bins=num_bins)
     
     # Create a feature group for the census data layer
     census_layer = folium.FeatureGroup(name=f"Census Data: {get_variable_label(variable)}", show=True)
+    census_layer.add_to(m)  # Add the layer to the map
     
-    # Create a clean version of the GeoDataFrame with safe values for JSON
-    gdf_clean = make_serializable(gdf)
-    
-    # Create a very minimal version with only the required columns for the choropleth
+    # Create a minimal version with only the required columns for the choropleth
     gdf_minimal = gdf[[variable, 'GEOID', 'geometry']].copy()
     
     # Add census data choropleth - must be added directly to the map per folium requirements
@@ -331,27 +330,57 @@ def generate_folium_map(
                 <hr style='margin: 5px 0; border-color: #0078FF;'>
             """
 
+            # Get OSM tags, handling different possible data structures
+            osm_tags = {}
+            if 'tags' in row:
+                if isinstance(row['tags'], dict):
+                    osm_tags = row['tags']
+                elif isinstance(row['tags'], str):
+                    try:
+                        # Try to parse if it's a string representation of a dict
+                        import ast
+                        osm_tags = ast.literal_eval(row['tags'])
+                    except:
+                        pass
+
             # Add all tags and properties from OSM
-            if 'tags' in row and isinstance(row['tags'], dict):
+            if osm_tags:
                 popup_content += "<h5 style='margin: 5px 0;'>OpenStreetMap Info:</h5>"
                 popup_content += "<div style='margin-left: 10px;'>"
-                for key, value in row['tags'].items():
+                
+                # Sort tags for consistent display
+                sorted_tags = sorted(osm_tags.items())
+                for key, value in sorted_tags:
                     if pd.notna(value):
-                        key_name = key.replace('_', ' ').title()
+                        # Special handling for address fields
+                        if key.startswith('addr:'):
+                            key_name = key.replace('addr:', 'Address ').replace('_', ' ').title()
+                        else:
+                            key_name = key.replace('_', ' ').replace(':', ' ').title()
                         popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
                 popup_content += "</div>"
 
             # Add other attributes
             if info:
                 popup_content += "<h5 style='margin: 5px 0;'>Additional Information:</h5>"
                 popup_content += "<div style='margin-left: 10px;'>"
-                for key, value in info.items():
-                    if key != 'tags':  # We already processed tags
+                
+                # Sort info for consistent display
+                sorted_info = sorted(info.items())
+                for key, value in sorted_info:
+                    if key != 'tags' and pd.notna(value):  # We already processed tags
                         key_name = key.replace('_', ' ').title()
                         popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
                 popup_content += "</div>"
 
             popup_content += "</div>"
+
+            # Debug print to check the data structure
+            print(f"POI Name: {poi_name}")
+            print(f"OSM Tags: {osm_tags}")
+            print(f"Additional Info: {info}")
 
             # Compose tooltip with OSM way info
             osm_tags = row.get('tags', {}) if isinstance(row.get('tags'), dict) else {}
@@ -434,7 +463,7 @@ def generate_folium_map(
         poi_group.add_to(m)
     
     # Add layer control
-    folium.LayerControl().add_to(m)
+    folium.LayerControl(position='bottomleft').add_to(m)
     
     # Add a title if provided
     if title:
@@ -610,27 +639,57 @@ def generate_folium_isochrone_map(
                 <hr style='margin: 5px 0; border-color: #0078FF;'>
             """
 
+            # Get OSM tags, handling different possible data structures
+            osm_tags = {}
+            if 'tags' in row:
+                if isinstance(row['tags'], dict):
+                    osm_tags = row['tags']
+                elif isinstance(row['tags'], str):
+                    try:
+                        # Try to parse if it's a string representation of a dict
+                        import ast
+                        osm_tags = ast.literal_eval(row['tags'])
+                    except:
+                        pass
+
             # Add all tags and properties from OSM
-            if 'tags' in row and isinstance(row['tags'], dict):
+            if osm_tags:
                 popup_content += "<h5 style='margin: 5px 0;'>OpenStreetMap Info:</h5>"
                 popup_content += "<div style='margin-left: 10px;'>"
-                for key, value in row['tags'].items():
+                
+                # Sort tags for consistent display
+                sorted_tags = sorted(osm_tags.items())
+                for key, value in sorted_tags:
                     if pd.notna(value):
-                        key_name = key.replace('_', ' ').title()
+                        # Special handling for address fields
+                        if key.startswith('addr:'):
+                            key_name = key.replace('addr:', 'Address ').replace('_', ' ').title()
+                        else:
+                            key_name = key.replace('_', ' ').replace(':', ' ').title()
                         popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
                 popup_content += "</div>"
 
             # Add other attributes
             if info:
                 popup_content += "<h5 style='margin: 5px 0;'>Additional Information:</h5>"
                 popup_content += "<div style='margin-left: 10px;'>"
-                for key, value in info.items():
-                    if key != 'tags':  # We already processed tags
+                
+                # Sort info for consistent display
+                sorted_info = sorted(info.items())
+                for key, value in sorted_info:
+                    if key != 'tags' and pd.notna(value):  # We already processed tags
                         key_name = key.replace('_', ' ').title()
                         popup_content += f"<b>{key_name}:</b> {value}<br>"
+                
                 popup_content += "</div>"
 
             popup_content += "</div>"
+
+            # Debug print to check the data structure
+            print(f"POI Name: {poi_name}")
+            print(f"OSM Tags: {osm_tags}")
+            print(f"Additional Info: {info}")
 
             # Compose tooltip with OSM way info
             osm_tags = row.get('tags', {}) if isinstance(row.get('tags'), dict) else {}
@@ -713,7 +772,7 @@ def generate_folium_isochrone_map(
         poi_group.add_to(m)
     
     # Add layer control
-    folium.LayerControl().add_to(m)
+    folium.LayerControl(position='bottomleft').add_to(m)
     
     # Add a title if provided
     if title:
