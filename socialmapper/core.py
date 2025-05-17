@@ -12,6 +12,7 @@ import logging
 from typing import Dict, List, Optional, Any
 import geopandas as gpd
 from shapely.geometry import Point
+import random
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -254,7 +255,8 @@ def run_socialmapper(
     export_maps: bool = False,
     use_interactive_maps: bool = True,
     name_field: Optional[str] = None,
-    type_field: Optional[str] = None
+    type_field: Optional[str] = None,
+    max_poi_count: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Run the full community mapping process.
@@ -278,6 +280,7 @@ def run_socialmapper(
         use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
+        max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
         
     Returns:
         Dictionary of output file paths and metadata
@@ -321,6 +324,7 @@ def run_socialmapper(
     
     result_files = {}
     state_abbreviations = []
+    sampled_pois = False  # Flag to indicate if POIs were sampled
     
     # Determine if we're using custom coordinates or querying POIs
     if custom_coords_path:
@@ -340,6 +344,21 @@ def run_socialmapper(
         file_basename = os.path.basename(custom_coords_path)
         base_filename = f"custom_{os.path.splitext(file_basename)[0]}"
         
+        # Apply POI limit if specified
+        if max_poi_count and 'pois' in poi_data and len(poi_data['pois']) > max_poi_count:
+            original_count = len(poi_data['pois'])
+            # Sample a subset of POIs
+            poi_data['pois'] = random.sample(poi_data['pois'], max_poi_count)
+            # Update the POI count
+            poi_data['poi_count'] = len(poi_data['pois'])
+            print(f"Sampled {max_poi_count} POIs from {original_count} total POIs")
+            sampled_pois = True
+            # Add sampling info to metadata
+            if 'metadata' not in poi_data:
+                poi_data['metadata'] = {}
+            poi_data['metadata']['sampled'] = True
+            poi_data['metadata']['original_count'] = original_count
+            
         result_files["poi_data"] = poi_data
         
         print(f"Using {len(poi_data['pois'])} custom coordinates from {custom_coords_path}")
@@ -382,6 +401,21 @@ def run_socialmapper(
             base_filename = f"{location}_{poi_type_str}_{poi_name_str}"
         else:
             base_filename = f"{poi_type_str}_{poi_name_str}"
+        
+        # Apply POI limit if specified
+        if max_poi_count and 'pois' in poi_data and len(poi_data['pois']) > max_poi_count:
+            original_count = len(poi_data['pois'])
+            # Sample a subset of POIs
+            poi_data['pois'] = random.sample(poi_data['pois'], max_poi_count)
+            # Update the POI count
+            poi_data['poi_count'] = len(poi_data['pois'])
+            print(f"Sampled {max_poi_count} POIs from {original_count} total POIs")
+            sampled_pois = True
+            # Add sampling info to metadata
+            if 'metadata' not in poi_data:
+                poi_data['metadata'] = {}
+            poi_data['metadata']['sampled'] = True
+            poi_data['metadata']['original_count'] = original_count
         
         result_files["poi_data"] = poi_data
         
@@ -587,6 +621,24 @@ def run_socialmapper(
     else:
         print("\n=== Skipping Map Generation (use --export-maps to enable) ===")
     
-    # Return results dictionary
-    result_files["census_data_gdf"] = census_data_gdf  # Include the actual GeoDataFrame for access
-    return result_files 
+    # Return a dictionary of output paths and metadata
+    result = {
+        "poi_data": poi_data,
+        "isochrones": isochrone_gdf,
+        "block_groups": block_groups_gdf,
+        "census_data": census_data_gdf,
+        "maps": map_files if export_maps else [],
+        "folium_maps_available": streamlit_folium_available and use_interactive_maps
+    }
+    
+    # Add CSV path if applicable
+    if export_csv and "csv_data" in result_files:
+        result["csv_data"] = result_files["csv_data"]
+    
+    # Add sampling information if POIs were sampled
+    if sampled_pois:
+        result["sampled_pois"] = True
+        result["original_poi_count"] = poi_data.get('metadata', {}).get('original_count', 0)
+        result["sampled_poi_count"] = len(poi_data.get('pois', []))
+    
+    return result 

@@ -164,6 +164,15 @@ def run_app():
         
         # Advanced options in expander
         with st.expander("Advanced Query Options"):
+            max_poi_count = st.slider(
+                "Maximum number of POIs to analyze",
+                min_value=1,
+                max_value=50,
+                value=10,
+                step=1,
+                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+            )
+            
             tags_input = st.text_area("Additional tags (YAML format):", 
                                     "# Example:\n# operator: Chicago Park District")
             
@@ -183,6 +192,17 @@ def run_app():
             "Select input format:",
             ["Upload CSV/JSON File", "Manual Entry"]
         )
+        
+        # Advanced options expander for both upload and manual entry
+        with st.expander("Advanced Options"):
+            max_poi_count = st.slider(
+                "Maximum number of POIs to analyze",
+                min_value=1,
+                max_value=50,
+                value=10,
+                step=1,
+                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+            )
         
         if upload_method == "Upload CSV/JSON File":
             uploaded_file = st.file_uploader(
@@ -408,7 +428,8 @@ def run_app():
                         progress_callback=update_step,
                         export_csv=export_csv,
                         export_maps=export_maps,
-                        use_interactive_maps=use_interactive_maps
+                        use_interactive_maps=use_interactive_maps,
+                        max_poi_count=max_poi_count
                     )
                 else:
                     # Custom coordinate workflows
@@ -433,7 +454,8 @@ def run_app():
                             export_maps=export_maps,
                             use_interactive_maps=use_interactive_maps,
                             name_field=name_field,
-                            type_field=type_field
+                            type_field=type_field,
+                            max_poi_count=max_poi_count
                         )
                     elif (
                         upload_method == "Manual Entry"
@@ -448,7 +470,8 @@ def run_app():
                             progress_callback=update_step,
                             export_csv=export_csv,
                             export_maps=export_maps,
-                            use_interactive_maps=use_interactive_maps
+                            use_interactive_maps=use_interactive_maps,
+                            max_poi_count=max_poi_count
                         )
                     else:
                         raise ValueError("No valid coordinates provided – please upload or enter coordinates first.")
@@ -483,6 +506,12 @@ def run_app():
         if results:
             st.header("Results")
 
+            # Check if POIs were sampled and show a notification
+            if results.get("sampled_pois", False):
+                original_count = results.get("original_poi_count", 0)
+                sampled_count = results.get("sampled_poi_count", 0)
+                st.warning(f"⚠️ Found {original_count} locations, but only using {sampled_count} to avoid performance issues. Results are based on a random sample of POIs.")
+            
             # ---- POIs tab ---------------------------------------------------
             poi_data = results.get("poi_data")
             if poi_data:
