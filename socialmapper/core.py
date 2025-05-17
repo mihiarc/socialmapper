@@ -561,29 +561,15 @@ def run_socialmapper(
         readable_var_names = [name.replace('_', ' ').title() for name in mapped_variables]
         print(f"Creating maps for: {', '.join(readable_var_names)}")
         
-        # Check if we're dealing with multiple locations spread across states
-        use_panels = False
-        poi_data_for_map = None
-        
-        if poi_data is not None and 'pois' in poi_data and len(poi_data['pois']) > 1:
-            # If we have multiple POIs, check if they're in different states
-            states = [poi.get('state') for poi in poi_data['pois'] if 'state' in poi]
-            if len(states) > 1 and len(set(states)) > 1:
-                use_panels = True
-        
         # Prepare POI data for the map generator
         if poi_data:
-            if use_panels and 'pois' in poi_data:
-                # When using panels, prepare individual POI dicts
-                poi_data_list = poi_data['pois']
-                # Convert the POI list to a list of GeoDataFrames for panel maps
-                if isinstance(poi_data_list, list):
-                    poi_data_for_map = [convert_poi_to_geodataframe([poi]) for poi in get_progress_bar(poi_data_list, desc="Processing POIs")]
-                else:
-                    poi_data_for_map = convert_poi_to_geodataframe([poi_data_list])
+            if 'pois' in poi_data and len(poi_data['pois']) > 0:
+                # Always use just the first POI for mapping
+                first_poi = poi_data['pois'][0]
+                poi_data_for_map = convert_poi_to_geodataframe([first_poi])
+                print(f"Note: Only mapping the first POI: {first_poi.get('name', 'Unknown')}")
             else:
-                # For single map, convert the entire POI list to one GeoDataFrame
-                poi_data_for_map = convert_poi_to_geodataframe(poi_data.get('pois', []))
+                poi_data_for_map = None
 
         # Check if we're in Streamlit and should use interactive maps
         from .progress import _IN_STREAMLIT
@@ -606,7 +592,7 @@ def run_socialmapper(
             basename=f"{base_filename}_{travel_time}min",
             isochrone_path=isochrone_gdf,  # Always pass the GeoDataFrame directly
             poi_df=poi_data_for_map,
-            use_panels=use_panels,
+            use_panels=False,
             use_folium=streamlit_folium_available and use_interactive_maps
         )
         result_files["maps"] = map_files
