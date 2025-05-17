@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Any
 import geopandas as gpd
 from shapely.geometry import Point
 import random
+from urllib.error import URLError
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -295,7 +296,19 @@ def run_socialmapper(
     from .states import normalize_state, normalize_state_list, StateFormat
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
     from .export import export_census_data_to_csv
-    from .progress import get_progress_bar
+    from .progress import get_progress_bar, _IN_STREAMLIT
+
+    # Initialize streamlit_folium_available flag
+    streamlit_folium_available = False
+    if _IN_STREAMLIT and use_interactive_maps:
+        try:
+            import folium
+            from streamlit_folium import folium_static
+            streamlit_folium_available = True
+            print("Using interactive Folium maps for Streamlit")
+        except ImportError:
+            streamlit_folium_available = False
+            print("Warning: streamlit-folium package not available, falling back to static maps")
 
     # Set up output directory
     setup_directory(output_dir)
@@ -384,56 +397,76 @@ def run_socialmapper(
                 additional_tags=additional_tags
             )
             print(f"Querying OpenStreetMap for: {geocode_area} - {poi_type} - {poi_name}")
-        else:
-            raise ValueError("POI parameters (geocode_area, poi_type, poi_name) must be provided")
             
-        query = build_overpass_query(config)
-        raw_results = query_overpass(query)
-        poi_data = format_results(raw_results, config)
-        
-        # Set a name for the output file based on the POI configuration
-        poi_type_str = config.get("type", "poi")
-        poi_name_str = config.get("name", "custom").replace(" ", "_").lower()
-        location = config.get("geocode_area", "").replace(" ", "_").lower()
-        
-        # Create a base filename component for all outputs
-        if location:
-            base_filename = f"{location}_{poi_type_str}_{poi_name_str}"
-        else:
-            base_filename = f"{poi_type_str}_{poi_name_str}"
-        
-        # Apply POI limit if specified
-        if max_poi_count and 'pois' in poi_data and len(poi_data['pois']) > max_poi_count:
-            original_count = len(poi_data['pois'])
-            # Sample a subset of POIs
-            poi_data['pois'] = random.sample(poi_data['pois'], max_poi_count)
-            # Update the POI count
-            poi_data['poi_count'] = len(poi_data['pois'])
-            print(f"Sampled {max_poi_count} POIs from {original_count} total POIs")
-            sampled_pois = True
-            # Add sampling info to metadata
-            if 'metadata' not in poi_data:
-                poi_data['metadata'] = {}
-            poi_data['metadata']['sampled'] = True
-            poi_data['metadata']['original_count'] = original_count
-        
-        result_files["poi_data"] = poi_data
-        
-        print(f"Found {len(poi_data['pois'])} POIs")
-        
-        # Extract state from config if available
-        state_name = config.get("state")
-        if state_name:
-            # Use normalize_state for more robust state handling
-            state_abbr = normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
-            if state_abbr and state_abbr not in state_abbreviations:
-                state_abbreviations.append(state_abbr)
-                print(f"Using state from parameters: {state_name} ({state_abbr})")
+            query = build_overpass_query(config)
+            try:
+                raw_results = query_overpass(query)
+            except (URLError, OSError) as e:
+                # Handle connection issues
+                error_msg = str(e)
+                if "Connection refused" in error_msg:
+                    raise ValueError(
+                        "Unable to connect to OpenStreetMap API. This could be due to:\n"
+                        "- Temporary API outage\n"
+                        "- Network connectivity issues\n"
+                        "- Rate limiting\n\n"
+                        "Please try:\n"
+                        "1. Waiting a few minutes and trying again\n"
+                        "2. Checking your internet connection\n"
+                        "3. Using a different POI type or location"
+                    ) from e
+                else:
+                    raise ValueError(f"Error querying OpenStreetMap: {error_msg}") from e
+                
+            poi_data = format_results(raw_results, config)
+            
+            # Set a name for the output file based on the POI configuration
+            poi_type_str = config.get("type", "poi")
+            poi_name_str = config.get("name", "custom").replace(" ", "_").lower()
+            location = config.get("geocode_area", "").replace(" ", "_").lower()
+            
+            # Create a base filename component for all outputs
+            if location:
+                base_filename = f"{location}_{poi_type_str}_{poi_name_str}"
+            else:
+                base_filename = f"{poi_type_str}_{poi_name_str}"
+            
+            # Apply POI limit if specified
+            if max_poi_count and 'pois' in poi_data and len(poi_data['pois']) > max_poi_count:
+                original_count = len(poi_data['pois'])
+                # Sample a subset of POIs
+                poi_data['pois'] = random.sample(poi_data['pois'], max_poi_count)
+                # Update the POI count
+                poi_data['poi_count'] = len(poi_data['pois'])
+                print(f"Sampled {max_poi_count} POIs from {original_count} total POIs")
+                sampled_pois = True
+                # Add sampling info to metadata
+                if 'metadata' not in poi_data:
+                    poi_data['metadata'] = {}
+                poi_data['metadata']['sampled'] = True
+                poi_data['metadata']['original_count'] = original_count
+            
+            result_files["poi_data"] = poi_data
+            
+            print(f"Found {len(poi_data['pois'])} POIs")
+            
+            # Extract state from config if available
+            state_name = config.get("state")
+            if state_name:
+                # Use normalize_state for more robust state handling
+                state_abbr = normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
+                if state_abbr and state_abbr not in state_abbreviations:
+                    state_abbreviations.append(state_abbr)
+                    print(f"Using state from parameters: {state_name} ({state_abbr})")
     
     # Step 2: Generate isochrones (always needed for analysis)
     print("\n=== Step 2: Generating Isochrones ===")
     if progress_callback:
         progress_callback(2, "Downloading Road Networks")
+    
+    # Validate that we have POIs to process
+    if not poi_data or 'pois' not in poi_data or not poi_data['pois']:
+        raise ValueError("No POIs found to analyze. Please try different search criteria or check your input data.")
     
     # Always process in memory, no GeoJSON export
     isochrone_gdf = create_isochrones_from_poi_list(
@@ -570,19 +603,6 @@ def run_socialmapper(
                 print(f"Note: Only mapping the first POI: {first_poi.get('name', 'Unknown')}")
             else:
                 poi_data_for_map = None
-
-        # Check if we're in Streamlit and should use interactive maps
-        from .progress import _IN_STREAMLIT
-        streamlit_folium_available = False
-        if _IN_STREAMLIT and use_interactive_maps:
-            try:
-                import folium
-                from streamlit_folium import folium_static
-                streamlit_folium_available = True
-                print("Using interactive Folium maps for Streamlit")
-            except ImportError:
-                streamlit_folium_available = False
-                print("Warning: streamlit-folium package not available, falling back to static maps")
 
         # Generate maps for each census variable
         map_files = generate_maps_for_variables(

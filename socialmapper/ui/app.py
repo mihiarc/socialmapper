@@ -113,7 +113,7 @@ def run_app():
         # Input fields for POI query
         col1, col2 = st.columns(2)
         with col1:
-            geocode_area = st.text_input("Area (City/Town)", "Fuquay-Varina")
+            geocode_area = st.text_input("Area (City/Town)", value="Corvallis")
             state = st.selectbox("State", [
                 "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", 
                 "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", 
@@ -123,7 +123,7 @@ def run_app():
                 "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", 
                 "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", 
                 "Wisconsin", "Wyoming"
-            ], index=32)  # North Carolina as default (index 32)
+            ], index=36)  # Oregon is at index 36
         
         with col2:
             poi_type = st.selectbox(
@@ -134,18 +134,13 @@ def run_app():
             # Dynamic options based on selected POI type
             poi_options = {
                 
-                "amenity": ["library", "school", "hospital", "restaurant", "cafe", "bank", "pharmacy", "police", "fire_station", "place_of_worship", "community_centre", "post_office", "university", "college", "kindergarten", "bar", "fast_food", "pub", "ice_cream", "cinema", "theatre", "marketplace", "bus_station", "fuel", "parking", "atm", "toilet", "charging_station", "doctors", "clinic", "veterinary", "courthouse", "shelter", "social_facility", "arts_centre"],
+                "amenity": ["library", "school", "hospital", "restaurant", "bank", "pharmacy", "place_of_worship", "bar", "fast_food", "pub", "parking"],
 
-                "leisure": ["park", "garden", "playground", "sports_centre", "swimming_pool", "fitness_centre", "golf_course", "stadium", "nature_reserve", "track", "pitch", "water_park", "dog_park", "sports_hall", "marina", "beach_resort", "picnic_table", "ice_rink", "miniature_golf", "dance", "bowling_alley", "amusement_arcade", "fishing", "horse_riding", "disc_golf_course", "bird_hide", "sauna", "outdoor_seating"],
+                "natural": ["wood", "beach", "water"],
 
-                "shop": ["supermarket", "convenience", "clothing", "bakery", "butcher", "hardware", "department_store", "mall", "bicycle", "books", "electronics", "florist", "furniture", "garden_centre", "gift", "greengrocer", "hairdresser", "jewelry", "mobile_phone", "optician", "pet", "shoe", "sports", "stationery", "toy", "alcohol", "beverages", "car", "car_repair", "travel_agency", "laundry", "dry_cleaning", "beauty", "deli", "tobacco", "tea", "coffee", "charity", "art", "music", "computer", "video_games", "kiosk"],
-                "healthcare": ["hospital"],
+                "shop": ["supermarket", "convenience", "clothes", "bakery"],
 
-                "highway": ["path"],
-
-                "education": ["school", "university", "college", "kindergarten", "preschool", "primary", "secondary", "high_school", "language_school", "music_school", "driving_school", "art_school", "dance_school", "culinary_school", "trade_school", "adult_education", "library", "research_institute", "training", "technical", "vocational", "special_education", "cram_school", "tutoring_center", "preparatory", "boarding_school"],
-                
-                "transportation": ["bus_station", "train_station", "subway_station"]
+                "highway": ["path", "footway"]
             }
             
             # Get default options based on selected type
@@ -164,27 +159,27 @@ def run_app():
             st.warning(f"Note: Not all {poi_type} features are available in every location. If no results are found, try a different POI type or location.")
         
         # Advanced options in expander
-        with st.expander("Advanced Query Options"):
-            max_poi_count = st.slider(
-                "Maximum number of POIs to analyze",
-                min_value=1,
-                max_value=50,
-                value=10,
-                step=1,
-                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
-            )
-            
-            tags_input = st.text_area("Additional tags (YAML format):", 
-                                    "# Example:\n# operator: Chicago Park District")
-            
-            try:
-                if tags_input.strip() and not tags_input.startswith('#'):
-                    additional_tags = yaml.safe_load(tags_input)
-                else:
-                    additional_tags = {}
-            except Exception as e:
-                st.error(f"Error parsing tags: {str(e)}")
-                additional_tags = {}
+        # with st.expander("Advanced Query Options"):
+        #     max_poi_count = st.slider(
+        #         "Maximum number of POIs to analyze",
+        #         min_value=1,
+        #         max_value=50,
+        #         value=10,
+        #         step=1,
+        #         help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+        #     )
+        #     
+        #     tags_input = st.text_area("Additional tags (YAML format):", 
+        #                             "# Example:\n# operator: Chicago Park District")
+        #     
+        #     try:
+        #         if tags_input.strip() and not tags_input.startswith('#'):
+        #             additional_tags = yaml.safe_load(tags_input)
+        #         else:
+        #             additional_tags = {}
+        #     except Exception as e:
+        #         st.error(f"Error parsing tags: {str(e)}")
+        #         additional_tags = {}
 
     elif input_method == "Custom Coordinates":
         st.header("Custom Coordinates Input")
@@ -195,15 +190,15 @@ def run_app():
         )
         
         # Advanced options expander for both upload and manual entry
-        with st.expander("Advanced Options"):
-            max_poi_count = st.slider(
-                "Maximum number of POIs to analyze",
-                min_value=1,
-                max_value=50,
-                value=10,
-                step=1,
-                help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
-            )
+        # with st.expander("Advanced Options"):
+        #     max_poi_count = st.slider(
+        #         "Maximum number of POIs to analyze",
+        #         min_value=1,
+        #         max_value=50,
+        #         value=10,
+        #         step=1,
+        #         help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+        #     )
         
         if upload_method == "Upload CSV/JSON File":
             uploaded_file = st.file_uploader(
@@ -407,13 +402,34 @@ def run_app():
                 if input_method == "OpenStreetMap POI Query":
                     update_step(1, "Querying OpenStreetMap for Points of Interest")
                     
+                    # Validate required fields
+                    if not geocode_area or not poi_type or not poi_name:
+                        raise ValueError("Please fill in all required fields: Area, POI Type, and POI Name.")
+                    
                     # Parse any additional tags if provided
                     additional_tags_dict = None
-                    if 'tags_input' in locals() and tags_input.strip() and not tags_input.startswith('#'):
-                        try:
-                            additional_tags_dict = yaml.safe_load(tags_input)
-                        except Exception as e:
-                            st.error(f"Error parsing tags: {str(e)}")
+                    # Advanced options in expander
+                    # with st.expander("Advanced Query Options"):
+                    #     max_poi_count = st.slider(
+                    #         "Maximum number of POIs to analyze",
+                    #         min_value=1,
+                    #         max_value=50,
+                    #         value=10,
+                    #         step=1,
+                    #         help="Limit the number of POIs to analyze to prevent performance issues. If more POIs are found, a random sample will be used."
+                    #     )
+                    #     
+                    #     tags_input = st.text_area("Additional tags (YAML format):", 
+                    #                             "# Example:\n# operator: Chicago Park District")
+                    #     
+                    #     try:
+                    #         if tags_input.strip() and not tags_input.startswith('#'):
+                    #             additional_tags_dict = yaml.safe_load(tags_input)
+                    #         else:
+                    #             additional_tags_dict = {}
+                    #     except Exception as e:
+                    #         st.error(f"Error parsing tags: {str(e)}")
+                    #         additional_tags_dict = {}
                     
                     # Pass POI parameters directly
                     results = run_socialmapper(
@@ -481,8 +497,22 @@ def run_app():
 
             except ValueError as err:
                 status.update(label="Analysis failed", state="error")
-                if "No POIs found in input data" in str(err):
-                    st.error("No Points of Interest found with your search criteria. Please try a different search or location.")
+                if "No POIs found" in str(err):
+                    st.error("""
+                    No Points of Interest found with your search criteria. This could be due to:
+                    - The area name might be misspelled
+                    - The POI type or name might not exist in that area
+                    - The search area might be too specific
+                    
+                    Try:
+                    - Double-checking the spelling of the area name
+                    - Using a different POI type or name
+                    - Expanding your search area
+                    - Using the Advanced Query Options to add more specific tags
+                    """)
+                elif "Unable to connect to OpenStreetMap API" in str(err):
+                    st.error(str(err))
+                    st.info("The app will automatically retry when you make any changes to the inputs.")
                 else:
                     st.error(f"An error occurred: {err}")
                 tb_text = traceback.format_exc()
