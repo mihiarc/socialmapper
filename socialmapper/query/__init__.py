@@ -11,7 +11,7 @@ import os
 import logging
 from typing import Dict, Any, Optional
 
-from ..util import rate_limited, with_retry, RateLimitedClient
+from ..util import with_retry
 
 # Configure logger
 logger = logging.getLogger(__name__)
