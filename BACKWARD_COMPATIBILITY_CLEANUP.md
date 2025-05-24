@@ -21,6 +21,20 @@ This document summarizes the backward compatibility code that was removed from S
 ### From `socialmapper/census/neighbors.py`
 - `_fetch_counties_from_local_shapefile()` - Deprecated method for development only
 
+## Removed Development/Migration Files
+
+The following development and migration utility files were also removed as they are no longer needed in production:
+
+- **`socialmapper/census/migrate.py`** - Migration script for transitioning from old census module to new DuckDB system
+- **`socialmapper/census/neighbor_loader.py`** - Distributed neighbor data loader for loading from external formats
+- **`socialmapper/census/init_neighbors.py`** - Initialization script for setting up neighbor relationships
+- **`socialmapper/census/export_neighbors.py`** - Export script for creating distributable neighbor data files
+
+These files were useful during development and migration but are no longer needed because:
+- The neighbor database is now pre-built and packaged with the distribution
+- Migration from old systems is complete
+- The system is production-ready with no setup required
+
 ## Updated Files
 
 ### `socialmapper/core.py`

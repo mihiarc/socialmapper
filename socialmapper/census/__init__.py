@@ -860,31 +860,8 @@ from .neighbors import (
     DEFAULT_NEIGHBOR_DB_PATH
 )
 
-# Import distributed neighbor functionality
-try:
-    from .neighbor_loader import (
-        DistributedNeighborLoader,
-        get_distributed_neighbor_loader,
-        get_neighboring_states_distributed,
-        get_neighboring_counties_distributed
-    )
-except ImportError:
-    # Distributed neighbor functionality not available
-    DistributedNeighborLoader = None
-    get_distributed_neighbor_loader = None
-    get_neighboring_states_distributed = None
-    get_neighboring_counties_distributed = None
-
-# Import export functionality
-try:
-    from .export_neighbors import (
-        NeighborExporter,
-        export_neighbor_data
-    )
-except ImportError:
-    # Export functionality not available
-    NeighborExporter = None
-    export_neighbor_data = None
+# Note: Development utilities (migrate.py, neighbor_loader.py, init_neighbors.py, export_neighbors.py) 
+# have been removed as they are no longer needed in production.
 
 # Note: Backward compatibility functions have been removed.
 # Users should migrate to the new optimized APIs.
@@ -897,11 +874,8 @@ __all__ = [
     'CensusDataManager',
     'NeighborDatabase',
     'NeighborManager',
-    'DistributedNeighborLoader',
-    'NeighborExporter',
     'get_census_database',
     'get_neighbor_manager',
-    'get_distributed_neighbor_loader',
     
     # Neighbor functions (replaces states and counties modules)
     'initialize_all_neighbors',
@@ -910,10 +884,7 @@ __all__ = [
     'get_geography_from_point',
     'get_counties_from_pois',
     
-    # Distributed neighbor functions
-    'get_neighboring_states_distributed',
-    'get_neighboring_counties_distributed',
-    'export_neighbor_data',
+    # Note: Distributed neighbor functions removed (no longer needed)
     
     # Note: Backward compatibility functions removed
     
