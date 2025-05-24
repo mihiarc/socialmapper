@@ -836,14 +836,10 @@ def get_census_database(
 
 # Import and expose submodules
 from .data import (
-    CensusDataManager,
-    get_census_data_for_block_groups,
-    fetch_census_data_for_states_async
+    CensusDataManager
 )
 
 from .utils import (
-    migrate_from_old_cache,
-    cleanup_old_cache,
     optimize_database,
     export_database_info,
     create_summary_views,
@@ -890,123 +886,8 @@ except ImportError:
     NeighborExporter = None
     export_neighbor_data = None
 
-# Backward compatibility functions for existing APIs
-
-def get_census_block_groups(
-    state_fips: List[str],
-    api_key: Optional[str] = None,
-    force_refresh: bool = False
-) -> gpd.GeoDataFrame:
-    """
-    Backward compatibility function for blockgroups module.
-    
-    Args:
-        state_fips: List of state FIPS codes or abbreviations
-        api_key: Census API key
-        force_refresh: Whether to force refresh from API
-        
-    Returns:
-        GeoDataFrame with block groups
-    """
-    db = get_census_database()
-    return db.get_or_stream_block_groups(state_fips, force_refresh, api_key)
-
-
-def isochrone_to_block_groups(
-    isochrone_path: Union[str, gpd.GeoDataFrame],
-    state_fips: List[str],
-    output_path: Optional[str] = None,
-    api_key: Optional[str] = None,
-    selection_mode: str = "intersect",
-    use_parquet: bool = True
-) -> gpd.GeoDataFrame:
-    """
-    Backward compatibility function for blockgroups module.
-    
-    Args:
-        isochrone_path: Path to isochrone file or GeoDataFrame
-        state_fips: List of state FIPS codes
-        output_path: Output path (ignored in new implementation)
-        api_key: Census API key
-        selection_mode: Selection mode for block groups
-        use_parquet: Format preference (ignored in new implementation)
-        
-    Returns:
-        GeoDataFrame with intersecting block groups
-    """
-    # Load isochrone if it's a file path
-    if isinstance(isochrone_path, str):
-        if isochrone_path.endswith('.parquet'):
-            isochrone_gdf = gpd.read_parquet(isochrone_path)
-        else:
-            isochrone_gdf = gpd.read_file(isochrone_path)
-    else:
-        isochrone_gdf = isochrone_path
-    
-    # Get database and ensure we have block groups for the states
-    db = get_census_database()
-    db.get_or_stream_block_groups(state_fips, api_key=api_key)
-    
-    # Find intersecting block groups
-    result_gdf = db.find_intersecting_block_groups(isochrone_gdf, state_fips, selection_mode)
-    
-    # Save if output path provided
-    if output_path:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        if use_parquet and output_path.endswith('.parquet'):
-            result_gdf.to_parquet(output_path)
-        else:
-            result_gdf.to_file(output_path, driver='GeoJSON')
-    
-    return result_gdf
-
-
-def isochrone_to_block_groups_by_county(
-    isochrone_path: Union[str, gpd.GeoDataFrame],
-    poi_data: Dict,
-    output_path: Optional[str] = None,
-    api_key: Optional[str] = None,
-    selection_mode: str = "intersect"
-) -> gpd.GeoDataFrame:
-    """
-    Backward compatibility function for blockgroups module.
-    
-    This function now uses the DuckDB implementation but maintains the same API.
-    The county-based optimization is handled internally by the database queries.
-    """
-    # Load isochrone if it's a file path
-    if isinstance(isochrone_path, str):
-        if isochrone_path.endswith('.parquet'):
-            isochrone_gdf = gpd.read_parquet(isochrone_path)
-        else:
-            isochrone_gdf = gpd.read_file(isochrone_path)
-    else:
-        isochrone_gdf = isochrone_path
-    
-    # Extract states from POI data or isochrone bounds
-    state_fips = []
-    if 'pois' in poi_data:
-        for poi in poi_data['pois']:
-            # Try to determine state from coordinates
-            # This is a simplified approach - in practice you might want to use
-            # a more sophisticated method to determine states from coordinates
-            pass
-    
-    # Fallback: determine states from isochrone bounds
-    if not state_fips:
-        # Get all states that might intersect with the isochrone
-        # For now, we'll use a broad approach and let the spatial query handle it
-        from socialmapper.states import get_all_states
-        state_fips = get_all_states(StateFormat.FIPS)
-    
-    # Use the standard function
-    return isochrone_to_block_groups(
-        isochrone_path=isochrone_gdf,
-        state_fips=state_fips,
-        output_path=output_path,
-        api_key=api_key,
-        selection_mode=selection_mode
-    )
+# Note: Backward compatibility functions have been removed.
+# Users should migrate to the new optimized APIs.
 
 
 # Public API
@@ -1034,16 +915,9 @@ __all__ = [
     'get_neighboring_counties_distributed',
     'export_neighbor_data',
     
-    # Backward compatibility functions
-    'get_census_block_groups',
-    'isochrone_to_block_groups',
-    'isochrone_to_block_groups_by_county',
-    'get_census_data_for_block_groups',
-    'fetch_census_data_for_states_async',
+    # Note: Backward compatibility functions removed
     
     # Utility functions
-    'migrate_from_old_cache',
-    'cleanup_old_cache',
     'optimize_database',
     'export_database_info',
     'create_summary_views',

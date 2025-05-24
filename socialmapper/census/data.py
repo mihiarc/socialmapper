@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Census data retrieval and management for the new census module.
+Census data retrieval and management for the optimized census module.
 
 This module handles:
 - Fetching census data from the Census API
 - Caching data in DuckDB
 - Creating data views for analysis
-- Backward compatibility with existing census data functions
+- High-performance data operations
 """
 
 import asyncio
@@ -418,155 +418,9 @@ class CensusDataManager:
         return result_gdf
 
 
-# Async version for better performance
-async def fetch_census_data_for_states_async(
-    state_fips_list: List[str],
-    variables: List[str],
-    *,
-    year: int = 2021,
-    dataset: str = "acs/acs5",
-    api_key: Optional[str] = None,
-    concurrency: int = 5,
-) -> pd.DataFrame:
-    """
-    Asynchronously fetch census data for multiple states.
-    
-    Args:
-        state_fips_list: List of state FIPS codes
-        variables: List of census variable codes
-        year: Census year
-        dataset: Census dataset
-        api_key: Census API key
-        concurrency: Number of concurrent requests
-        
-    Returns:
-        DataFrame with census data
-    """
-    if api_key is None:
-        api_key = get_census_api_key()
-        if not api_key:
-            raise ValueError("Census API key missing")
-
-    api_variables = [normalize_census_variable(v) for v in variables]
-    if "NAME" not in api_variables:
-        api_variables.append("NAME")
-
-    base_url = f"https://api.census.gov/data/{year}/{dataset}"
-
-    async with AsyncRateLimitedClient(
-        service="census",
-        max_retries=3,
-        timeout=30,
-    ) as client:
-        semaphore = asyncio.Semaphore(concurrency)
-
-        async def fetch_state(state_code: str) -> pd.DataFrame:
-            async with semaphore:
-                params = {
-                    "get": ",".join(api_variables),
-                    "for": "block group:*",
-                    "in": f"state:{state_code} county:* tract:*",
-                    "key": api_key,
-                }
-                
-                try:
-                    response = await client.get(base_url, params=params)
-                    response.raise_for_status()
-                    json_data = response.json()
-                    header, *rows = json_data
-                    df = pd.DataFrame(rows, columns=header)
-                    
-                    # Create GEOID
-                    df['GEOID'] = (
-                        df['state'].str.zfill(2) + 
-                        df['county'].str.zfill(3) + 
-                        df['tract'].str.zfill(6) + 
-                        df['block group']
-                    )
-                    
-                    return df
-                except Exception as e:
-                    logger.error(f"Failed to fetch data for state {state_code}: {e}")
-                    return pd.DataFrame()
-
-        tasks = [fetch_state(code) for code in state_fips_list]
-        results = await asyncio.gather(*tasks)
-
-    # Filter out empty DataFrames and combine
-    valid_results = [df for df in results if not df.empty]
-    
-    if not valid_results:
-        return pd.DataFrame()
-        
-    return pd.concat(valid_results, ignore_index=True)
+# Note: Async functions have been integrated into CensusDataManager.
+# Use CensusDataManager.get_or_fetch_census_data() for optimized data fetching.
 
 
-# Backward compatibility functions
-
-def get_census_data_for_block_groups(
-    geojson_path: Union[str, gpd.GeoDataFrame],
-    variables: List[str],
-    output_path: Optional[str] = None,
-    variable_mapping: Optional[Dict[str, str]] = None,
-    year: int = 2021,
-    dataset: str = 'acs/acs5',
-    api_key: Optional[str] = None,
-    exclude_from_visualization: List[str] = ['NAME']
-) -> gpd.GeoDataFrame:
-    """
-    Backward compatibility function for the old census module.
-    
-    This function maintains the same API as the original but uses the new
-    DuckDB-based implementation underneath.
-    """
-    # Load block groups
-    if isinstance(geojson_path, gpd.GeoDataFrame):
-        block_groups_gdf = geojson_path
-    else:
-        block_groups_gdf = gpd.read_file(geojson_path)
-    
-    if block_groups_gdf.empty:
-        raise ValueError("No block groups found in input data")
-    
-    # Get GEOIDs
-    geoids = block_groups_gdf['GEOID'].tolist()
-    
-    # Get database and data manager
-    db = get_census_database()
-    data_manager = CensusDataManager(db)
-    
-    # Fetch census data
-    get_progress_bar().write(f"Fetching census data for {len(geoids)} block groups")
-    census_data = data_manager.get_or_fetch_census_data(
-        geoids, variables, year, dataset, api_key
-    )
-    
-    if census_data.empty:
-        get_progress_bar().write("Warning: No census data retrieved")
-        # Return block groups with empty census columns
-        for var in variables:
-            normalized_var = normalize_census_variable(var)
-            block_groups_gdf[normalized_var] = None
-        return block_groups_gdf
-    
-    # Create view and get as GeoDataFrame
-    view_name = data_manager.create_census_view(geoids, variables, year, dataset)
-    result_gdf = data_manager.get_view_as_geodataframe(view_name)
-    
-    # Apply variable mapping if provided
-    if variable_mapping:
-        result_gdf = result_gdf.rename(columns=variable_mapping)
-    
-    # Convert numeric columns
-    normalized_vars = [normalize_census_variable(var) for var in variables]
-    for var in normalized_vars:
-        if var in result_gdf.columns and var != 'NAME':
-            result_gdf[var] = pd.to_numeric(result_gdf[var], errors='coerce')
-    
-    # Set visualization attributes
-    variables_for_viz = [var for var in normalized_vars if var not in exclude_from_visualization]
-    result_gdf.attrs['variables_for_visualization'] = variables_for_viz
-    
-    get_progress_bar().write(f"Retrieved census data for {len(result_gdf)} block groups")
-    
-    return result_gdf 
+# Note: Backward compatibility functions have been removed.
+# Users should migrate to the new CensusDataManager API. 

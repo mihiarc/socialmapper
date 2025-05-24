@@ -74,6 +74,12 @@ socialmapper = "socialmapper.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["socialmapper"]
+include = [
+    "socialmapper/data/*.duckdb",
+]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"socialmapper/data" = "socialmapper/data"
 
 [tool.black]
 line-length = 100
