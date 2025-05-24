@@ -2,7 +2,7 @@
 """
 Neighbor relationship management for the SocialMapper census module.
 
-This module provides optimized neighbor identification using DuckDB spatial indexing
+This module provides optimized neighbor identification using a dedicated DuckDB database
 to pre-compute and store all neighbor relationships (states, counties, tracts, block groups).
 This replaces the need for separate states and counties modules by providing
 fast lookups without real-time spatial computation bottlenecks.
@@ -10,6 +10,7 @@ fast lookups without real-time spatial computation bottlenecks.
 
 import logging
 import asyncio
+import duckdb
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, Any
 import pandas as pd
@@ -19,31 +20,58 @@ from shapely.geometry import Point
 
 from socialmapper.progress import get_progress_bar
 from socialmapper.util import get_census_api_key, rate_limiter
-from . import get_census_database, CensusDatabase
+from . import get_census_database
 
 logger = logging.getLogger(__name__)
 
+# Default path for the dedicated neighbor database
+DEFAULT_NEIGHBOR_DB_PATH = Path.home() / ".socialmapper" / "neighbors.duckdb"
 
-class NeighborManager:
+
+class NeighborDatabase:
     """
-    Manages pre-computed neighbor relationships using DuckDB spatial indexing.
+    Dedicated DuckDB database for neighbor relationships.
     
-    This class handles:
-    - Pre-computing neighbor relationships for all geographic levels
-    - Fast neighbor lookups without real-time spatial computation
-    - Point-to-geography lookups for POIs
-    - Cross-state neighbor relationships
+    This keeps neighbor data separate from the main census cache to prevent bloat.
     """
     
-    def __init__(self, db: Optional[CensusDatabase] = None):
-        self.db = db or get_census_database()
-        self._ensure_neighbor_schema()
+    def __init__(self, db_path: Optional[Union[str, Path]] = None):
+        """
+        Initialize the neighbor database.
+        
+        Args:
+            db_path: Path to the neighbor database file. If None, uses default location.
+        """
+        self.db_path = Path(db_path) if db_path else DEFAULT_NEIGHBOR_DB_PATH
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize connection
+        self.conn = None
+        self._initialize_database()
     
-    def _ensure_neighbor_schema(self):
-        """Create neighbor relationship tables if they don't exist."""
+    def _initialize_database(self):
+        """Initialize the DuckDB database with spatial extension and neighbor tables."""
+        try:
+            self.conn = duckdb.connect(str(self.db_path))
+            
+            # Install and load spatial extension
+            self.conn.execute("INSTALL spatial;")
+            self.conn.execute("LOAD spatial;")
+            
+            # Create schema for neighbor relationships
+            self._create_neighbor_schema()
+            
+            get_progress_bar().write(f"Initialized neighbor database at {self.db_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize neighbor database: {e}")
+            raise
+    
+    def _create_neighbor_schema(self):
+        """Create the database schema for neighbor relationships."""
         
         # State neighbor relationships (pre-computed from known adjacencies)
-        self.db.conn.execute("""
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS state_neighbors (
                 state_fips VARCHAR(2) NOT NULL,
                 neighbor_state_fips VARCHAR(2) NOT NULL,
@@ -54,7 +82,7 @@ class NeighborManager:
         """)
         
         # County neighbor relationships (computed from spatial analysis)
-        self.db.conn.execute("""
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS county_neighbors (
                 state_fips VARCHAR(2) NOT NULL,
                 county_fips VARCHAR(3) NOT NULL,
@@ -68,7 +96,7 @@ class NeighborManager:
         """)
         
         # Tract neighbor relationships
-        self.db.conn.execute("""
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS tract_neighbors (
                 geoid VARCHAR(11) NOT NULL,
                 neighbor_geoid VARCHAR(11) NOT NULL,
@@ -80,7 +108,7 @@ class NeighborManager:
         """)
         
         # Block group neighbor relationships
-        self.db.conn.execute("""
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS block_group_neighbors (
                 geoid VARCHAR(12) NOT NULL,
                 neighbor_geoid VARCHAR(12) NOT NULL,
@@ -92,7 +120,7 @@ class NeighborManager:
         """)
         
         # Point-to-geography lookup cache for fast POI processing
-        self.db.conn.execute("""
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS point_geography_cache (
                 lat DOUBLE NOT NULL,
                 lon DOUBLE NOT NULL,
@@ -102,6 +130,15 @@ class NeighborManager:
                 block_group_geoid VARCHAR(12),
                 cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY(lat, lon)
+            );
+        """)
+        
+        # Metadata table for tracking neighbor data
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS neighbor_metadata (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
         
@@ -122,9 +159,42 @@ class NeighborManager:
         
         for index_sql in indexes:
             try:
-                self.db.conn.execute(index_sql)
+                self.conn.execute(index_sql)
             except Exception as e:
                 logger.warning(f"Failed to create index: {e}")
+    
+    def close(self):
+        """Close the database connection."""
+        if self.conn:
+            self.conn.close()
+            self.conn = None
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+class NeighborManager:
+    """
+    Manages pre-computed neighbor relationships using a dedicated DuckDB database.
+    
+    This class handles:
+    - Pre-computing neighbor relationships for all geographic levels
+    - Fast neighbor lookups without real-time spatial computation
+    - Point-to-geography lookups for POIs
+    - Cross-state neighbor relationships
+    """
+    
+    def __init__(self, db_path: Optional[Union[str, Path]] = None):
+        """
+        Initialize the neighbor manager with a dedicated database.
+        
+        Args:
+            db_path: Path to the neighbor database file. If None, uses default location.
+        """
+        self.db = NeighborDatabase(db_path)
     
     def initialize_state_neighbors(self, force_refresh: bool = False) -> int:
         """
@@ -202,7 +272,7 @@ class NeighborManager:
         if force_refresh:
             self.db.conn.execute("DELETE FROM state_neighbors")
         
-        # Insert neighbor relationships
+        # Insert state neighbor relationships
         relationships = []
         for state_fips, neighbors in STATE_NEIGHBORS.items():
             for neighbor_fips in neighbors:
@@ -216,6 +286,13 @@ class NeighborManager:
         
         count = len(relationships)
         get_progress_bar().write(f"Initialized {count} state neighbor relationships")
+        
+        # Update metadata
+        self.db.conn.execute(
+            "INSERT OR REPLACE INTO neighbor_metadata (key, value) VALUES (?, ?)",
+            ['state_neighbors_initialized', str(count)]
+        )
+        
         return count
     
     async def initialize_county_neighbors(
@@ -228,131 +305,176 @@ class NeighborManager:
         Initialize county neighbor relationships using spatial analysis.
         
         Args:
-            state_fips_list: List of states to process (None for all)
+            state_fips_list: List of state FIPS codes to process. If None, processes all states.
             force_refresh: Whether to refresh existing data
-            include_cross_state: Whether to include cross-state neighbors
+            include_cross_state: Whether to include cross-state county neighbors
             
         Returns:
             Number of neighbor relationships created
         """
         if state_fips_list is None:
-            # Get all states that have geographic units
-            result = self.db.conn.execute("""
-                SELECT DISTINCT STATEFP 
-                FROM geographic_units 
-                WHERE unit_type = 'county' 
-                ORDER BY STATEFP
-            """).fetchall()
-            state_fips_list = [row[0] for row in result]
-        
-        if not state_fips_list:
-            get_progress_bar().write("No states found for county neighbor initialization")
-            return 0
-        
-        # Check if already initialized
-        if not force_refresh:
-            count = self.db.conn.execute("SELECT COUNT(*) FROM county_neighbors").fetchone()[0]
-            if count > 0:
-                get_progress_bar().write(f"County neighbors already initialized ({count} relationships)")
-                return count
+            # Get all states from the state neighbors table
+            state_fips_list = [row[0] for row in self.db.conn.execute("SELECT DISTINCT state_fips FROM state_neighbors").fetchall()]
         
         total_relationships = 0
         
-        # Process each state
-        for state_fips in get_progress_bar(state_fips_list, desc="Computing county neighbors", unit="state"):
-            try:
-                # Get counties for this state with geometries
-                counties_gdf = await self._get_counties_with_geometries(state_fips)
-                if counties_gdf.empty:
+        for state_fips in state_fips_list:
+            # Check if already processed
+            if not force_refresh:
+                count = self.db.conn.execute(
+                    "SELECT COUNT(*) FROM county_neighbors WHERE state_fips = ?", 
+                    [state_fips]
+                ).fetchone()[0]
+                
+                if count > 0:
+                    get_progress_bar().write(f"County neighbors for state {state_fips} already initialized ({count} relationships)")
+                    total_relationships += count
                     continue
-                
-                # Find neighbors within the same state
-                intra_state_neighbors = self._compute_county_neighbors_spatial(counties_gdf, state_fips)
-                total_relationships += len(intra_state_neighbors)
-                
-                # Find cross-state neighbors if requested
-                if include_cross_state:
-                    neighboring_states = self.get_neighboring_states(state_fips)
-                    for neighbor_state in neighboring_states:
-                        neighbor_counties_gdf = await self._get_counties_with_geometries(neighbor_state)
-                        if not neighbor_counties_gdf.empty:
-                            cross_state_neighbors = self._compute_cross_state_county_neighbors(
-                                counties_gdf, neighbor_counties_gdf, state_fips, neighbor_state
-                            )
-                            total_relationships += len(cross_state_neighbors)
-                
-            except Exception as e:
-                logger.error(f"Failed to process county neighbors for state {state_fips}: {e}")
+            
+            # Get counties with geometries for this state
+            counties_gdf = await self._get_counties_with_geometries(state_fips)
+            if counties_gdf.empty:
+                get_progress_bar().write(f"No counties found for state {state_fips}")
                 continue
+            
+            # Compute within-state neighbors
+            within_state_neighbors = self._compute_county_neighbors_spatial(counties_gdf, state_fips)
+            
+            # Clear existing data for this state if refreshing
+            if force_refresh:
+                self.db.conn.execute("DELETE FROM county_neighbors WHERE state_fips = ?", [state_fips])
+            
+            # Insert within-state relationships
+            if within_state_neighbors:
+                self.db.conn.executemany("""
+                    INSERT OR IGNORE INTO county_neighbors 
+                    (state_fips, county_fips, neighbor_state_fips, neighbor_county_fips, relationship_type, shared_boundary_length)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, within_state_neighbors)
+                
+                total_relationships += len(within_state_neighbors)
+                get_progress_bar().write(f"Added {len(within_state_neighbors)} within-state neighbors for {state_fips}")
+            
+            # Compute cross-state neighbors if requested
+            if include_cross_state:
+                # Get neighboring states
+                neighboring_states = self.get_neighboring_states(state_fips)
+                
+                for neighbor_state_fips in neighboring_states:
+                    # Get counties for neighboring state
+                    neighbor_counties_gdf = await self._get_counties_with_geometries(neighbor_state_fips)
+                    if neighbor_counties_gdf.empty:
+                        continue
+                    
+                    # Compute cross-state neighbors
+                    cross_state_neighbors = self._compute_cross_state_county_neighbors(
+                        counties_gdf, neighbor_counties_gdf, state_fips, neighbor_state_fips
+                    )
+                    
+                    if cross_state_neighbors:
+                        self.db.conn.executemany("""
+                            INSERT OR IGNORE INTO county_neighbors 
+                            (state_fips, county_fips, neighbor_state_fips, neighbor_county_fips, relationship_type, shared_boundary_length)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, cross_state_neighbors)
+                        
+                        total_relationships += len(cross_state_neighbors)
+                        get_progress_bar().write(f"Added {len(cross_state_neighbors)} cross-state neighbors between {state_fips} and {neighbor_state_fips}")
         
-        get_progress_bar().write(f"Initialized {total_relationships} county neighbor relationships")
+        # Update metadata
+        self.db.conn.execute(
+            "INSERT OR REPLACE INTO neighbor_metadata (key, value) VALUES (?, ?)",
+            ['county_neighbors_total', str(total_relationships)]
+        )
+        
         return total_relationships
     
     async def _get_counties_with_geometries(self, state_fips: str) -> gpd.GeoDataFrame:
-        """Get counties for a state with their geometries."""
-        try:
-            # Try to get from boundary cache first
-            if self.db.cache_boundaries:
-                cached_gdf = self.db.conn.execute("""
-                    SELECT 
-                        gu.GEOID,
-                        gu.STATEFP,
-                        gu.COUNTYFP,
-                        gu.NAME,
-                        ST_AsText(bc.geometry) as geometry_wkt
-                    FROM geographic_units gu
-                    JOIN boundary_cache bc ON gu.GEOID = bc.GEOID
-                    WHERE gu.STATEFP = ? AND gu.unit_type = 'county'
-                """, [state_fips]).df()
-                
-                if not cached_gdf.empty:
-                    from shapely import wkt
-                    cached_gdf['geometry'] = cached_gdf['geometry_wkt'].apply(wkt.loads)
-                    return gpd.GeoDataFrame(cached_gdf.drop('geometry_wkt', axis=1), 
-                                          geometry='geometry', crs='EPSG:4326')
+        """
+        Get counties with geometries for a state using the main census database.
+        
+        Args:
+            state_fips: State FIPS code
             
-            # Fetch from Census API
-            return await self._fetch_counties_from_api(state_fips)
+        Returns:
+            GeoDataFrame with county geometries
+        """
+        try:
+            # Use the main census database to get county data
+            census_db = get_census_database()
+            
+            # Try to get from cache first, then stream from API
+            counties_gdf = await self._fetch_counties_from_api(state_fips)
+            
+            return counties_gdf
             
         except Exception as e:
             logger.error(f"Failed to get counties for state {state_fips}: {e}")
             return gpd.GeoDataFrame()
     
     async def _fetch_counties_from_api(self, state_fips: str) -> gpd.GeoDataFrame:
-        """Fetch county boundaries from Census API."""
-        url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query"
-        params = {
-            'where': f"STATE='{state_fips}'",
-            'outFields': 'STATE,COUNTY,NAME,GEOID',
-            'returnGeometry': 'true',
-            'f': 'geojson'
-        }
+        """
+        Fetch counties from Census API.
+        
+        Args:
+            state_fips: State FIPS code
+            
+        Returns:
+            GeoDataFrame with county boundaries
+        """
+        url = f"https://www2.census.gov/geo/tiger/GENZ2021/shp/cb_2021_{state_fips}_county_500k.zip"
         
         rate_limiter.wait_if_needed("census")
-        response = requests.get(url, params=params, timeout=60)
-        response.raise_for_status()
         
-        data = response.json()
-        if 'features' not in data or not data['features']:
-            return gpd.GeoDataFrame()
+        try:
+            response = requests.get(url, timeout=60)
+            response.raise_for_status()
+        except requests.exceptions.SSLError:
+            import warnings
+            warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+            response = requests.get(url, timeout=60, verify=False)
+            response.raise_for_status()
+            warnings.resetwarnings()
         
-        gdf = gpd.GeoDataFrame.from_features(data['features'], crs="EPSG:4326")
+        # Save and extract
+        import tempfile
+        import zipfile
         
-        # Standardize column names
-        if 'STATE' in gdf.columns:
-            gdf['STATEFP'] = gdf['STATE']
-        if 'COUNTY' in gdf.columns:
-            gdf['COUNTYFP'] = gdf['COUNTY']
+        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp_zip:
+            tmp_zip.write(response.content)
+            tmp_zip_path = tmp_zip.name
         
-        # Create GEOID if missing
-        if 'GEOID' not in gdf.columns:
-            gdf['GEOID'] = gdf['STATEFP'].str.zfill(2) + gdf['COUNTYFP'].str.zfill(3)
-        
-        return gdf
+        try:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmp_dir)
+                
+                shp_files = list(Path(tmp_dir).glob("*.shp"))
+                if not shp_files:
+                    return gpd.GeoDataFrame()
+                
+                gdf = gpd.read_file(shp_files[0])
+                
+                # Ensure proper column names
+                if 'GEOID' not in gdf.columns and 'STATEFP' in gdf.columns and 'COUNTYFP' in gdf.columns:
+                    gdf['GEOID'] = gdf['STATEFP'].astype(str).str.zfill(2) + gdf['COUNTYFP'].astype(str).str.zfill(3)
+                
+                return gdf
+        finally:
+            Path(tmp_zip_path).unlink()
     
     def _compute_county_neighbors_spatial(self, counties_gdf: gpd.GeoDataFrame, state_fips: str) -> List[Tuple]:
-        """Compute neighbor relationships within a state using spatial analysis."""
-        relationships = []
+        """
+        Compute county neighbor relationships using spatial analysis.
+        
+        Args:
+            counties_gdf: GeoDataFrame with county geometries
+            state_fips: State FIPS code
+            
+        Returns:
+            List of tuples: (state_fips, county_fips, neighbor_state_fips, neighbor_county_fips, relationship_type, boundary_length)
+        """
+        neighbors = []
         
         for i, county1 in counties_gdf.iterrows():
             for j, county2 in counties_gdf.iterrows():
@@ -360,33 +482,27 @@ class NeighborManager:
                     continue
                 
                 try:
-                    geom1 = county1.geometry
-                    geom2 = county2.geometry
-                    
-                    if geom1.is_valid and geom2.is_valid and geom1.touches(geom2):
+                    # Check if counties share a boundary
+                    if county1.geometry.touches(county2.geometry):
                         # Calculate shared boundary length
-                        shared_boundary = geom1.boundary.intersection(geom2.boundary)
-                        boundary_length = shared_boundary.length if hasattr(shared_boundary, 'length') else 0
+                        intersection = county1.geometry.boundary.intersection(county2.geometry.boundary)
+                        boundary_length = intersection.length if hasattr(intersection, 'length') else 0
                         
                         # Add both directions
-                        relationships.extend([
-                            (state_fips, county1['COUNTYFP'], state_fips, county2['COUNTYFP'], 'adjacent', boundary_length),
-                            (state_fips, county2['COUNTYFP'], state_fips, county1['COUNTYFP'], 'adjacent', boundary_length)
-                        ])
-                
+                        neighbors.append((
+                            state_fips, county1['COUNTYFP'], state_fips, county2['COUNTYFP'], 
+                            'adjacent', boundary_length
+                        ))
+                        neighbors.append((
+                            state_fips, county2['COUNTYFP'], state_fips, county1['COUNTYFP'], 
+                            'adjacent', boundary_length
+                        ))
+                        
                 except Exception as e:
-                    logger.warning(f"Failed to compute neighbor relationship: {e}")
+                    logger.warning(f"Failed to compute neighbor relationship between counties: {e}")
                     continue
         
-        # Store in database
-        if relationships:
-            self.db.conn.executemany("""
-                INSERT OR IGNORE INTO county_neighbors 
-                (state_fips, county_fips, neighbor_state_fips, neighbor_county_fips, relationship_type, shared_boundary_length)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, relationships)
-        
-        return relationships
+        return neighbors
     
     def _compute_cross_state_county_neighbors(
         self, 
@@ -395,50 +511,55 @@ class NeighborManager:
         state1_fips: str,
         state2_fips: str
     ) -> List[Tuple]:
-        """Compute neighbor relationships between counties in different states."""
-        relationships = []
+        """
+        Compute cross-state county neighbor relationships.
+        
+        Args:
+            counties1_gdf: Counties from first state
+            counties2_gdf: Counties from second state
+            state1_fips: First state FIPS code
+            state2_fips: Second state FIPS code
+            
+        Returns:
+            List of neighbor relationships
+        """
+        neighbors = []
         
         for _, county1 in counties1_gdf.iterrows():
             for _, county2 in counties2_gdf.iterrows():
                 try:
-                    geom1 = county1.geometry
-                    geom2 = county2.geometry
-                    
-                    if geom1.is_valid and geom2.is_valid and geom1.touches(geom2):
+                    # Check if counties share a boundary
+                    if county1.geometry.touches(county2.geometry):
                         # Calculate shared boundary length
-                        shared_boundary = geom1.boundary.intersection(geom2.boundary)
-                        boundary_length = shared_boundary.length if hasattr(shared_boundary, 'length') else 0
+                        intersection = county1.geometry.boundary.intersection(county2.geometry.boundary)
+                        boundary_length = intersection.length if hasattr(intersection, 'length') else 0
                         
-                        # Add both directions
-                        relationships.extend([
-                            (state1_fips, county1['COUNTYFP'], state2_fips, county2['COUNTYFP'], 'adjacent', boundary_length),
-                            (state2_fips, county2['COUNTYFP'], state1_fips, county1['COUNTYFP'], 'adjacent', boundary_length)
-                        ])
-                
+                        # Add relationship from state1 to state2
+                        neighbors.append((
+                            state1_fips, county1['COUNTYFP'], state2_fips, county2['COUNTYFP'], 
+                            'adjacent', boundary_length
+                        ))
+                        
                 except Exception as e:
                     logger.warning(f"Failed to compute cross-state neighbor relationship: {e}")
                     continue
         
-        # Store in database
-        if relationships:
-            self.db.conn.executemany("""
-                INSERT OR IGNORE INTO county_neighbors 
-                (state_fips, county_fips, neighbor_state_fips, neighbor_county_fips, relationship_type, shared_boundary_length)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, relationships)
-        
-        return relationships
-    
-    # Fast lookup methods (the main benefit of pre-computation)
+        return neighbors
     
     def get_neighboring_states(self, state_fips: str) -> List[str]:
-        """Get neighboring states for a given state (fast lookup)."""
-        result = self.db.conn.execute("""
-            SELECT neighbor_state_fips 
-            FROM state_neighbors 
-            WHERE state_fips = ?
-            ORDER BY neighbor_state_fips
-        """, [state_fips]).fetchall()
+        """
+        Get neighboring states for a given state.
+        
+        Args:
+            state_fips: State FIPS code
+            
+        Returns:
+            List of neighboring state FIPS codes
+        """
+        result = self.db.conn.execute(
+            "SELECT neighbor_state_fips FROM state_neighbors WHERE state_fips = ? ORDER BY neighbor_state_fips",
+            [state_fips]
+        ).fetchall()
         
         return [row[0] for row in result]
     
@@ -448,21 +569,36 @@ class NeighborManager:
         county_fips: str,
         include_cross_state: bool = True
     ) -> List[Tuple[str, str]]:
-        """Get neighboring counties for a given county (fast lookup)."""
+        """
+        Get neighboring counties for a given county.
+        
+        Args:
+            state_fips: State FIPS code
+            county_fips: County FIPS code
+            include_cross_state: Whether to include cross-state neighbors
+            
+        Returns:
+            List of (neighbor_state_fips, neighbor_county_fips) tuples
+        """
         if include_cross_state:
-            result = self.db.conn.execute("""
+            query = """
                 SELECT neighbor_state_fips, neighbor_county_fips 
                 FROM county_neighbors 
                 WHERE state_fips = ? AND county_fips = ?
                 ORDER BY neighbor_state_fips, neighbor_county_fips
-            """, [state_fips, county_fips]).fetchall()
+            """
         else:
-            result = self.db.conn.execute("""
+            query = """
                 SELECT neighbor_state_fips, neighbor_county_fips 
                 FROM county_neighbors 
                 WHERE state_fips = ? AND county_fips = ? AND neighbor_state_fips = ?
                 ORDER BY neighbor_county_fips
-            """, [state_fips, county_fips, state_fips]).fetchall()
+            """
+        
+        if include_cross_state:
+            result = self.db.conn.execute(query, [state_fips, county_fips]).fetchall()
+        else:
+            result = self.db.conn.execute(query, [state_fips, county_fips, state_fips]).fetchall()
         
         return [(row[0], row[1]) for row in result]
     
@@ -474,12 +610,12 @@ class NeighborManager:
         cache_result: bool = True
     ) -> Dict[str, Optional[str]]:
         """
-        Get geographic identifiers for a point (fast lookup with caching).
+        Get geographic identifiers for a point using cached lookups.
         
         Args:
             lat: Latitude
             lon: Longitude
-            use_cache: Whether to check cache first
+            use_cache: Whether to use cached results
             cache_result: Whether to cache the result
             
         Returns:
@@ -487,11 +623,10 @@ class NeighborManager:
         """
         # Check cache first
         if use_cache:
-            cached = self.db.conn.execute("""
-                SELECT state_fips, county_fips, tract_geoid, block_group_geoid
-                FROM point_geography_cache
-                WHERE lat = ? AND lon = ?
-            """, [lat, lon]).fetchone()
+            cached = self.db.conn.execute(
+                "SELECT state_fips, county_fips, tract_geoid, block_group_geoid FROM point_geography_cache WHERE lat = ? AND lon = ?",
+                [lat, lon]
+            ).fetchone()
             
             if cached:
                 return {
@@ -501,69 +636,94 @@ class NeighborManager:
                     'block_group_geoid': cached[3]
                 }
         
-        # Use Census Geocoder API
+        # Geocode the point
         result = self._geocode_point(lat, lon)
         
         # Cache the result
-        if cache_result and any(result.values()):
+        if cache_result:
             self.db.conn.execute("""
                 INSERT OR REPLACE INTO point_geography_cache 
                 (lat, lon, state_fips, county_fips, tract_geoid, block_group_geoid)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, [lat, lon, result['state_fips'], result['county_fips'], 
-                  result['tract_geoid'], result['block_group_geoid']])
+            """, [
+                lat, lon, 
+                result.get('state_fips'),
+                result.get('county_fips'),
+                result.get('tract_geoid'),
+                result.get('block_group_geoid')
+            ])
         
         return result
     
     def _geocode_point(self, lat: float, lon: float) -> Dict[str, Optional[str]]:
-        """Geocode a point using Census Geocoder API."""
-        url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
-        params = {
-            "x": lon,
-            "y": lat,
-            "benchmark": "Public_AR_Current",
-            "vintage": "Current_Current",
-            "format": "json"
-        }
+        """
+        Geocode a point to get geographic identifiers using Census API.
         
+        Args:
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Dictionary with geographic identifiers
+        """
         try:
+            # Use Census Geocoding API
+            url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
+            params = {
+                'x': lon,
+                'y': lat,
+                'benchmark': 'Public_AR_Current',
+                'vintage': 'Current_Current',
+                'format': 'json'
+            }
+            
             rate_limiter.wait_if_needed("census")
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             
             data = response.json()
-            geographies = data.get("result", {}).get("geographies", {})
             
-            result = {
-                'state_fips': None,
-                'county_fips': None,
-                'tract_geoid': None,
-                'block_group_geoid': None
+            if 'result' not in data or 'geographies' not in data['result']:
+                return {
+                    'state_fips': None,
+                    'county_fips': None,
+                    'tract_geoid': None,
+                    'block_group_geoid': None
+                }
+            
+            geographies = data['result']['geographies']
+            
+            # Extract identifiers
+            state_fips = None
+            county_fips = None
+            tract_geoid = None
+            block_group_geoid = None
+            
+            # Get state
+            if 'States' in geographies and geographies['States']:
+                state_fips = geographies['States'][0].get('STATE')
+            
+            # Get county
+            if 'Counties' in geographies and geographies['Counties']:
+                county_fips = geographies['Counties'][0].get('COUNTY')
+            
+            # Get tract
+            if 'Census Tracts' in geographies and geographies['Census Tracts']:
+                tract_geoid = geographies['Census Tracts'][0].get('GEOID')
+            
+            # Get block group
+            if 'Census Block Groups' in geographies and geographies['Census Block Groups']:
+                block_group_geoid = geographies['Census Block Groups'][0].get('GEOID')
+            
+            return {
+                'state_fips': state_fips,
+                'county_fips': county_fips,
+                'tract_geoid': tract_geoid,
+                'block_group_geoid': block_group_geoid
             }
             
-            # Extract state and county
-            counties = geographies.get("Counties", [])
-            if counties:
-                county = counties[0]
-                result['state_fips'] = county.get("STATE")
-                result['county_fips'] = county.get("COUNTY")
-            
-            # Extract tract
-            tracts = geographies.get("Census Tracts", [])
-            if tracts:
-                tract = tracts[0]
-                result['tract_geoid'] = tract.get("GEOID")
-            
-            # Extract block group
-            block_groups = geographies.get("Census Block Groups", [])
-            if block_groups:
-                bg = block_groups[0]
-                result['block_group_geoid'] = bg.get("GEOID")
-            
-            return result
-            
         except Exception as e:
-            logger.error(f"Geocoding failed for point ({lat}, {lon}): {e}")
+            logger.warning(f"Failed to geocode point ({lat}, {lon}): {e}")
             return {
                 'state_fips': None,
                 'county_fips': None,
@@ -578,43 +738,43 @@ class NeighborManager:
         neighbor_distance: int = 1
     ) -> List[Tuple[str, str]]:
         """
-        Get counties for POIs with optional neighbors (optimized batch processing).
+        Get counties for a list of POIs, optionally including neighboring counties.
         
         Args:
             pois: List of POI dictionaries with 'lat' and 'lon' keys
             include_neighbors: Whether to include neighboring counties
-            neighbor_distance: How many neighbor levels to include (1=direct, 2=neighbors of neighbors)
+            neighbor_distance: Distance of neighbors to include (1 = immediate neighbors)
             
         Returns:
-            List of (state_fips, county_fips) tuples
+            List of unique (state_fips, county_fips) tuples
         """
-        counties_set = set()
+        counties = set()
         
-        # Process POIs in batch
-        for poi in get_progress_bar(pois, desc="Processing POIs", unit="POI"):
-            lat = poi.get('lat')
-            lon = poi.get('lon')
-            
-            if lat is None or lon is None:
-                logger.warning(f"POI missing coordinates: {poi.get('id', 'unknown')}")
+        # Get counties for each POI
+        for poi in pois:
+            if 'lat' not in poi or 'lon' not in poi:
                 continue
             
-            # Get geography for this POI
-            geography = self.get_geography_from_point(lat, lon)
-            
-            if geography['state_fips'] and geography['county_fips']:
-                counties_set.add((geography['state_fips'], geography['county_fips']))
+            try:
+                geography = self.get_geography_from_point(poi['lat'], poi['lon'])
                 
-                # Add neighboring counties if requested
-                if include_neighbors:
-                    neighbors = self._get_county_neighbors_recursive(
-                        geography['state_fips'], 
-                        geography['county_fips'],
-                        neighbor_distance
-                    )
-                    counties_set.update(neighbors)
+                if geography['state_fips'] and geography['county_fips']:
+                    counties.add((geography['state_fips'], geography['county_fips']))
+                    
+                    # Add neighboring counties if requested
+                    if include_neighbors:
+                        neighbor_counties = self._get_county_neighbors_recursive(
+                            geography['state_fips'], 
+                            geography['county_fips'], 
+                            neighbor_distance
+                        )
+                        counties.update(neighbor_counties)
+                        
+            except Exception as e:
+                logger.warning(f"Failed to process POI {poi}: {e}")
+                continue
         
-        return list(counties_set)
+        return list(counties)
     
     def _get_county_neighbors_recursive(
         self, 
@@ -623,71 +783,112 @@ class NeighborManager:
         distance: int,
         visited: Optional[Set] = None
     ) -> Set[Tuple[str, str]]:
-        """Get neighbors recursively up to specified distance."""
+        """
+        Get county neighbors recursively up to a specified distance.
+        
+        Args:
+            state_fips: State FIPS code
+            county_fips: County FIPS code
+            distance: Maximum distance to search
+            visited: Set of already visited counties
+            
+        Returns:
+            Set of (state_fips, county_fips) tuples
+        """
         if visited is None:
             visited = set()
         
-        if distance <= 0 or (state_fips, county_fips) in visited:
+        if distance <= 0:
             return set()
         
-        visited.add((state_fips, county_fips))
+        current_county = (state_fips, county_fips)
+        if current_county in visited:
+            return set()
+        
+        visited.add(current_county)
         neighbors = set()
         
-        # Get direct neighbors
-        direct_neighbors = self.get_neighboring_counties(state_fips, county_fips)
-        neighbors.update(direct_neighbors)
+        # Get immediate neighbors
+        immediate_neighbors = self.get_neighboring_counties(state_fips, county_fips)
+        neighbors.update(immediate_neighbors)
         
-        # Get neighbors of neighbors if distance > 1
+        # Recursively get neighbors at greater distances
         if distance > 1:
-            for neighbor_state, neighbor_county in direct_neighbors:
+            for neighbor_state, neighbor_county in immediate_neighbors:
                 if (neighbor_state, neighbor_county) not in visited:
                     recursive_neighbors = self._get_county_neighbors_recursive(
-                        neighbor_state, neighbor_county, distance - 1, visited
+                        neighbor_state, neighbor_county, distance - 1, visited.copy()
                     )
                     neighbors.update(recursive_neighbors)
         
         return neighbors
     
     def get_neighbor_statistics(self) -> Dict[str, Any]:
-        """Get statistics about neighbor relationships in the database."""
+        """
+        Get statistics about the neighbor relationships in the database.
+        
+        Returns:
+            Dictionary with statistics
+        """
         stats = {}
         
-        # State neighbor stats
+        # State neighbor statistics
         state_count = self.db.conn.execute("SELECT COUNT(*) FROM state_neighbors").fetchone()[0]
-        stats['state_neighbors'] = state_count
+        stats['state_relationships'] = state_count
         
-        # County neighbor stats
+        # County neighbor statistics
         county_count = self.db.conn.execute("SELECT COUNT(*) FROM county_neighbors").fetchone()[0]
-        stats['county_neighbors'] = county_count
+        stats['county_relationships'] = county_count
         
-        # Cross-state county neighbors
-        cross_state_count = self.db.conn.execute("""
-            SELECT COUNT(*) FROM county_neighbors 
-            WHERE state_fips != neighbor_state_fips
-        """).fetchone()[0]
-        stats['cross_state_county_neighbors'] = cross_state_count
+        # Cross-state county relationships
+        cross_state_count = self.db.conn.execute(
+            "SELECT COUNT(*) FROM county_neighbors WHERE state_fips != neighbor_state_fips"
+        ).fetchone()[0]
+        stats['cross_state_county_relationships'] = cross_state_count
         
-        # Point cache stats
+        # Point cache statistics
         cache_count = self.db.conn.execute("SELECT COUNT(*) FROM point_geography_cache").fetchone()[0]
         stats['cached_points'] = cache_count
         
         # States with county data
-        states_with_counties = self.db.conn.execute("""
-            SELECT COUNT(DISTINCT state_fips) FROM county_neighbors
-        """).fetchone()[0]
+        states_with_counties = self.db.conn.execute(
+            "SELECT COUNT(DISTINCT state_fips) FROM county_neighbors"
+        ).fetchone()[0]
         stats['states_with_county_data'] = states_with_counties
         
         return stats
 
 
-# Convenience functions for backward compatibility and easy access
+# Global instance
+_neighbor_manager = None
 
-def get_neighbor_manager(db: Optional[CensusDatabase] = None) -> NeighborManager:
-    """Get a NeighborManager instance."""
-    return NeighborManager(db)
+def get_neighbor_manager(db_path: Optional[Union[str, Path]] = None) -> NeighborManager:
+    """
+    Get the global neighbor manager instance.
+    
+    Args:
+        db_path: Optional path to neighbor database file
+        
+    Returns:
+        NeighborManager instance
+    """
+    global _neighbor_manager
+    
+    if _neighbor_manager is None or db_path is not None:
+        _neighbor_manager = NeighborManager(db_path)
+    
+    return _neighbor_manager
 
 def initialize_all_neighbors(force_refresh: bool = False) -> Dict[str, int]:
-    """Initialize all neighbor relationships."""
+    """
+    Initialize all neighbor relationships.
+    
+    Args:
+        force_refresh: Whether to refresh existing data
+        
+    Returns:
+        Dictionary with counts of relationships created
+    """
     manager = get_neighbor_manager()
     
     results = {}
@@ -704,33 +905,21 @@ def initialize_all_neighbors(force_refresh: bool = False) -> Dict[str, int]:
     return results
 
 def get_neighboring_states(state_fips: str) -> List[str]:
-    """Get neighboring states (fast lookup)."""
+    """Get neighboring states for a given state."""
     manager = get_neighbor_manager()
-    
-    # Ensure state neighbors are initialized
-    count = manager.db.conn.execute("SELECT COUNT(*) FROM state_neighbors").fetchone()[0]
-    if count == 0:
-        manager.initialize_state_neighbors()
-    
     return manager.get_neighboring_states(state_fips)
 
 def get_neighboring_counties(state_fips: str, county_fips: str, include_cross_state: bool = True) -> List[Tuple[str, str]]:
-    """Get neighboring counties (fast lookup)."""
+    """Get neighboring counties for a given county."""
     manager = get_neighbor_manager()
-    
-    # Check if county neighbors are initialized
-    count = manager.db.conn.execute("SELECT COUNT(*) FROM county_neighbors").fetchone()[0]
-    if count == 0:
-        logger.warning("County neighbors not initialized. Run initialize_all_neighbors() first.")
-    
     return manager.get_neighboring_counties(state_fips, county_fips, include_cross_state)
 
 def get_geography_from_point(lat: float, lon: float) -> Dict[str, Optional[str]]:
-    """Get geographic identifiers for a point (fast lookup with caching)."""
+    """Get geographic identifiers for a point."""
     manager = get_neighbor_manager()
     return manager.get_geography_from_point(lat, lon)
 
 def get_counties_from_pois(pois: List[Dict], include_neighbors: bool = True) -> List[Tuple[str, str]]:
-    """Get counties for POIs with optional neighbors (optimized)."""
+    """Get counties for a list of POIs."""
     manager = get_neighbor_manager()
     return manager.get_counties_from_pois(pois, include_neighbors) 
