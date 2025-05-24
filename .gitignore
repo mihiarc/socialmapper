@@ -123,3 +123,4 @@ scripts/convert_geojson_to_json.py
 docs/RELEASE_NOTES_v0.4.2.md
 docs/RELEASE_STRATEGY_v0.4.2.md
 docs/RELEASE_SUMMARY_v0.4.2.md
+dev_scripts/verify_release.py
