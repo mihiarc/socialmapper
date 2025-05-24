@@ -25,7 +25,18 @@ from . import get_census_database
 logger = logging.getLogger(__name__)
 
 # Default path for the dedicated neighbor database
-DEFAULT_NEIGHBOR_DB_PATH = Path.home() / ".socialmapper" / "neighbors.duckdb"
+# Use packaged database if available, otherwise fall back to user directory
+def get_default_neighbor_db_path() -> Path:
+    """Get the default path for the neighbor database."""
+    # Try packaged database first
+    package_db_path = Path(__file__).parent.parent / "data" / "neighbors.duckdb"
+    if package_db_path.exists():
+        return package_db_path
+    
+    # Fall back to user directory for development/custom setups
+    return Path.home() / ".socialmapper" / "neighbors.duckdb"
+
+DEFAULT_NEIGHBOR_DB_PATH = get_default_neighbor_db_path()
 
 
 class NeighborDatabase:
@@ -304,6 +315,10 @@ class NeighborManager:
         """
         Initialize county neighbor relationships using spatial analysis.
         
+        NOTE: This method is for package development/setup only. In production,
+        county neighbor relationships should be pre-computed and included in the package.
+        End users should not need to call this method.
+        
         Args:
             state_fips_list: List of state FIPS codes to process. If None, processes all states.
             force_refresh: Whether to refresh existing data
@@ -391,7 +406,7 @@ class NeighborManager:
     
     async def _get_counties_with_geometries(self, state_fips: str) -> gpd.GeoDataFrame:
         """
-        Get counties with geometries for a state using the main census database.
+        Get counties with geometries for a state using local shapefile.
         
         Args:
             state_fips: State FIPS code
@@ -400,11 +415,8 @@ class NeighborManager:
             GeoDataFrame with county geometries
         """
         try:
-            # Use the main census database to get county data
-            census_db = get_census_database()
-            
-            # Try to get from cache first, then stream from API
-            counties_gdf = await self._fetch_counties_from_api(state_fips)
+            # Use local US county shapefile and filter by state
+            counties_gdf = await self._fetch_counties_from_local_shapefile(state_fips)
             
             return counties_gdf
             
@@ -412,56 +424,8 @@ class NeighborManager:
             logger.error(f"Failed to get counties for state {state_fips}: {e}")
             return gpd.GeoDataFrame()
     
-    async def _fetch_counties_from_api(self, state_fips: str) -> gpd.GeoDataFrame:
-        """
-        Fetch counties from Census API.
-        
-        Args:
-            state_fips: State FIPS code
-            
-        Returns:
-            GeoDataFrame with county boundaries
-        """
-        url = f"https://www2.census.gov/geo/tiger/GENZ2021/shp/cb_2021_{state_fips}_county_500k.zip"
-        
-        rate_limiter.wait_if_needed("census")
-        
-        try:
-            response = requests.get(url, timeout=60)
-            response.raise_for_status()
-        except requests.exceptions.SSLError:
-            import warnings
-            warnings.filterwarnings('ignore', message='Unverified HTTPS request')
-            response = requests.get(url, timeout=60, verify=False)
-            response.raise_for_status()
-            warnings.resetwarnings()
-        
-        # Save and extract
-        import tempfile
-        import zipfile
-        
-        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp_zip:
-            tmp_zip.write(response.content)
-            tmp_zip_path = tmp_zip.name
-        
-        try:
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
-                    zip_ref.extractall(tmp_dir)
-                
-                shp_files = list(Path(tmp_dir).glob("*.shp"))
-                if not shp_files:
-                    return gpd.GeoDataFrame()
-                
-                gdf = gpd.read_file(shp_files[0])
-                
-                # Ensure proper column names
-                if 'GEOID' not in gdf.columns and 'STATEFP' in gdf.columns and 'COUNTYFP' in gdf.columns:
-                    gdf['GEOID'] = gdf['STATEFP'].astype(str).str.zfill(2) + gdf['COUNTYFP'].astype(str).str.zfill(3)
-                
-                return gdf
-        finally:
-            Path(tmp_zip_path).unlink()
+    # Note: Deprecated methods have been removed.
+    # County neighbor relationships are now pre-computed and packaged.
     
     def _compute_county_neighbors_spatial(self, counties_gdf: gpd.GeoDataFrame, state_fips: str) -> List[Tuple]:
         """
