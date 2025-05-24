@@ -120,3 +120,6 @@ test_testpypi/test_env/bin/ttx
 test_testpypi/test_env/share/man/man1/ttx.1
 scripts/convert_geojson_to_csv.py
 scripts/convert_geojson_to_json.py
+docs/RELEASE_NOTES_v0.4.2.md
+docs/RELEASE_STRATEGY_v0.4.2.md
+docs/RELEASE_SUMMARY_v0.4.2.md
