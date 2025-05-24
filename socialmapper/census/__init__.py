@@ -853,14 +853,42 @@ from .utils import (
 )
 
 from .neighbors import (
+    NeighborDatabase,
     NeighborManager,
     get_neighbor_manager,
     initialize_all_neighbors,
     get_neighboring_states,
     get_neighboring_counties,
     get_geography_from_point,
-    get_counties_from_pois
+    get_counties_from_pois,
+    DEFAULT_NEIGHBOR_DB_PATH
 )
+
+# Import distributed neighbor functionality
+try:
+    from .neighbor_loader import (
+        DistributedNeighborLoader,
+        get_distributed_neighbor_loader,
+        get_neighboring_states_distributed,
+        get_neighboring_counties_distributed
+    )
+except ImportError:
+    # Distributed neighbor functionality not available
+    DistributedNeighborLoader = None
+    get_distributed_neighbor_loader = None
+    get_neighboring_states_distributed = None
+    get_neighboring_counties_distributed = None
+
+# Import export functionality
+try:
+    from .export_neighbors import (
+        NeighborExporter,
+        export_neighbor_data
+    )
+except ImportError:
+    # Export functionality not available
+    NeighborExporter = None
+    export_neighbor_data = None
 
 # Backward compatibility functions for existing APIs
 
@@ -986,9 +1014,13 @@ __all__ = [
     # Core classes
     'CensusDatabase',
     'CensusDataManager',
+    'NeighborDatabase',
     'NeighborManager',
+    'DistributedNeighborLoader',
+    'NeighborExporter',
     'get_census_database',
     'get_neighbor_manager',
+    'get_distributed_neighbor_loader',
     
     # Neighbor functions (replaces states and counties modules)
     'initialize_all_neighbors',
@@ -996,6 +1028,11 @@ __all__ = [
     'get_neighboring_counties',
     'get_geography_from_point',
     'get_counties_from_pois',
+    
+    # Distributed neighbor functions
+    'get_neighboring_states_distributed',
+    'get_neighboring_counties_distributed',
+    'export_neighbor_data',
     
     # Backward compatibility functions
     'get_census_block_groups',
@@ -1015,5 +1052,6 @@ __all__ = [
     'clear_cache',
     
     # Constants
-    'DEFAULT_DB_PATH'
+    'DEFAULT_DB_PATH',
+    'DEFAULT_NEIGHBOR_DB_PATH'
 ] 
