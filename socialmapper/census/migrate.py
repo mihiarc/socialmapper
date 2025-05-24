@@ -21,7 +21,7 @@ import shutil
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper.progress import get_progress_bar
-from socialmapper.census_new import (
+from socialmapper.census import (
     get_census_database,
     migrate_from_old_cache,
     cleanup_old_cache,
@@ -231,7 +231,7 @@ def verify_migration() -> Dict[str, Any]:
             get_progress_bar().write("✓ Data present in database")
         
         # Test API functionality
-        from socialmapper.census_new import get_census_block_groups
+        from socialmapper.census import get_census_block_groups
         
         # Try to get block groups for a small state (Delaware)
         test_gdf = get_census_block_groups(['10'], force_refresh=False)
@@ -254,27 +254,27 @@ def print_usage_examples():
 === New API Usage Examples ===
 
 1. Get block groups for states:
-   from socialmapper.census_new import get_census_block_groups
+   from socialmapper.census import get_census_block_groups
    gdf = get_census_block_groups(['06', '36'])  # CA and NY
 
 2. Find intersecting block groups:
-   from socialmapper.census_new import isochrone_to_block_groups
+   from socialmapper.census import isochrone_to_block_groups
    result = isochrone_to_block_groups(isochrone_gdf, ['06'])
 
 3. Get census data:
-   from socialmapper.census_new import get_census_data_for_block_groups
+   from socialmapper.census import get_census_data_for_block_groups
    census_gdf = get_census_data_for_block_groups(
        block_groups_gdf, 
        ['total_population', 'median_income']
    )
 
 4. Database management:
-   from socialmapper.census_new import get_census_database, optimize_database
+   from socialmapper.census import get_census_database, optimize_database
    db = get_census_database()
    optimize_database()
 
 5. Create custom views:
-   from socialmapper.census_new import CensusDataManager
+   from socialmapper.census import CensusDataManager
    data_manager = CensusDataManager(db)
    view_name = data_manager.create_census_view(geoids, variables)
 

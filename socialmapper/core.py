@@ -289,7 +289,7 @@ def run_socialmapper(
     # Import components here to avoid circular imports
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
     from .isochrone import create_isochrones_from_poi_list
-    from .blockgroups import isochrone_to_block_groups_by_county
+    from .census import isochrone_to_block_groups_by_county
     from .distance import add_travel_distances
     from .census import get_census_data_for_block_groups
     from .visualization import generate_maps_for_variables
