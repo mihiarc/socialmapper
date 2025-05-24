@@ -675,9 +675,21 @@ class NeighborManager:
             if 'Census Tracts' in geographies and geographies['Census Tracts']:
                 tract_geoid = geographies['Census Tracts'][0].get('GEOID')
             
-            # Get block group
-            if 'Census Block Groups' in geographies and geographies['Census Block Groups']:
-                block_group_geoid = geographies['Census Block Groups'][0].get('GEOID')
+            # Get block group - FIXED VERSION
+            # The Census API doesn't return 'Census Block Groups' directly
+            # Instead, we need to extract it from the '2020 Census Blocks' data
+            if '2020 Census Blocks' in geographies and geographies['2020 Census Blocks']:
+                block_data = geographies['2020 Census Blocks'][0]
+                
+                # Extract components to build block group GEOID
+                block_state = block_data.get('STATE')
+                block_county = block_data.get('COUNTY') 
+                block_tract = block_data.get('TRACT')
+                block_group = block_data.get('BLKGRP')
+                
+                # Construct block group GEOID: STATE(2) + COUNTY(3) + TRACT(6) + BLKGRP(1) = 12 digits
+                if all([block_state, block_county, block_tract, block_group]):
+                    block_group_geoid = f"{block_state.zfill(2)}{block_county.zfill(3)}{block_tract.zfill(6)}{block_group}"
             
             return {
                 'state_fips': state_fips,
