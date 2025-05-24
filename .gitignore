@@ -18,6 +18,9 @@
 **/tests/
 /output/*
 
+# Exception: Include the packaged neighbor database
+!socialmapper/data/neighbors.duckdb
+
 # Cache files
 code/cache/
 **/cache/
