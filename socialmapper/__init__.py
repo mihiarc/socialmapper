@@ -20,7 +20,35 @@ except PackageNotFoundError:
 # Import main functionality
 from .core import run_socialmapper, setup_directory
 
-__all__ = [
-    "run_socialmapper",
-    "setup_directory",
-] 
+# Import neighbor functionality for direct access
+try:
+    from .census import (
+        get_neighboring_states,
+        get_neighboring_counties,
+        get_geography_from_point,
+        get_counties_from_pois,
+        get_neighbor_manager
+    )
+    
+    # Neighbor functionality is available
+    _NEIGHBORS_AVAILABLE = True
+    
+    __all__ = [
+        "run_socialmapper",
+        "setup_directory",
+        # Neighbor functions
+        "get_neighboring_states",
+        "get_neighboring_counties", 
+        "get_geography_from_point",
+        "get_counties_from_pois",
+        "get_neighbor_manager",
+    ]
+    
+except ImportError as e:
+    # Neighbor functionality not available (optional dependency missing)
+    _NEIGHBORS_AVAILABLE = False
+    
+    __all__ = [
+        "run_socialmapper",
+        "setup_directory",
+    ] 

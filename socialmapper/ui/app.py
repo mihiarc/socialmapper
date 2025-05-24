@@ -92,6 +92,16 @@ def run_app():
         value=False,
         help="Generate map visualizations for each census variable"
     )
+    
+    # POI limit (moved from advanced options to prevent NameError)
+    max_poi_count = st.sidebar.slider(
+        "Maximum POIs to analyze",
+        min_value=1,
+        max_value=50,
+        value=10,
+        step=1,
+        help="Limit the number of POIs to analyze to prevent performance issues"
+    )
 
     # Map type selection
     if export_maps:

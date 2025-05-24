@@ -289,9 +289,8 @@ def run_socialmapper(
     # Import components here to avoid circular imports
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
     from .isochrone import create_isochrones_from_poi_list
-    from .blockgroups import isochrone_to_block_groups_by_county
     from .distance import add_travel_distances
-    from .census import get_census_data_for_block_groups
+    from .census import get_census_database, CensusDataManager
     from .visualization import generate_maps_for_variables
     from .states import normalize_state, normalize_state_list, StateFormat
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
@@ -500,12 +499,19 @@ def run_socialmapper(
     if progress_callback:
         progress_callback(3, "Finding census block groups")
     
-    # Process block groups in memory
-    block_groups_gdf = isochrone_to_block_groups_by_county(
-        isochrone_path=isochrone_gdf,
-        poi_data=poi_data,
-        output_path=None,  # No file output
-        api_key=api_key
+    # Process block groups in memory using new API
+    db = get_census_database()
+    
+    # Determine states to search from POI data
+    from .census import get_counties_from_pois
+    counties = get_counties_from_pois(poi_data['pois'], include_neighbors=False)
+    state_fips = list(set([county[0] for county in counties]))
+    
+    # Find intersecting block groups
+    block_groups_gdf = db.find_intersecting_block_groups(
+        geometry=isochrone_gdf,
+        state_fips=state_fips,
+        selection_mode="intersect"
     )
     
     print(f"Found {len(block_groups_gdf)} intersecting block groups")
@@ -536,14 +542,30 @@ def run_socialmapper(
     readable_names = get_readable_census_variables(census_codes)
     print(f"Requesting census data for: {', '.join(readable_names)}")
     
-    # Get census data in memory
-    census_data_gdf = get_census_data_for_block_groups(
-        geojson_path=block_groups_with_distances,
+    # Get census data in memory using new API
+    data_manager = CensusDataManager(db)
+    
+    # Get GEOIDs from block groups
+    geoids = block_groups_with_distances['GEOID'].tolist()
+    
+    # Fetch census data
+    census_data = data_manager.get_or_fetch_census_data(
+        geoids=geoids,
         variables=census_codes,
-        output_path=None,  # No file output
-        variable_mapping=variable_mapping,
         api_key=api_key
     )
+    
+    # Create view and get as GeoDataFrame
+    view_name = data_manager.create_census_view(geoids, census_codes)
+    census_data_gdf = data_manager.get_view_as_geodataframe(view_name)
+    
+    # Apply variable mapping
+    if variable_mapping:
+        census_data_gdf = census_data_gdf.rename(columns=variable_mapping)
+    
+    # Set visualization attributes
+    variables_for_viz = [var for var in census_codes if var != 'NAME']
+    census_data_gdf.attrs['variables_for_visualization'] = variables_for_viz
     
     print(f"Retrieved census data for {len(census_data_gdf)} block groups")
     
