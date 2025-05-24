@@ -90,60 +90,9 @@ STATE_ABBR_TO_NAME = {abbr: name for name, abbr in STATE_NAMES_TO_ABBR.items()}
 STATE_FIPS_TO_ABBR = {fips: abbr for abbr, fips in STATE_ABBR_TO_FIPS.items()}
 STATE_FIPS_TO_NAME = {fips: STATE_ABBR_TO_NAME[abbr] for fips, abbr in STATE_FIPS_TO_ABBR.items()}
 
-# Map of state adjacencies for the United States
-STATE_NEIGHBORS = {
-    'AL': ['FL', 'GA', 'MS', 'TN'],
-    'AK': [],
-    'AZ': ['CA', 'CO', 'NM', 'NV', 'UT'],
-    'AR': ['LA', 'MO', 'MS', 'OK', 'TN', 'TX'],
-    'CA': ['AZ', 'NV', 'OR'],
-    'CO': ['AZ', 'KS', 'NE', 'NM', 'OK', 'UT', 'WY'],
-    'CT': ['MA', 'NY', 'RI'],
-    'DE': ['MD', 'NJ', 'PA'],
-    'FL': ['AL', 'GA'],
-    'GA': ['AL', 'FL', 'NC', 'SC', 'TN'],
-    'HI': [],
-    'ID': ['MT', 'NV', 'OR', 'UT', 'WA', 'WY'],
-    'IL': ['IN', 'IA', 'KY', 'MO', 'WI'],
-    'IN': ['IL', 'KY', 'MI', 'OH'],
-    'IA': ['IL', 'MN', 'MO', 'NE', 'SD', 'WI'],
-    'KS': ['CO', 'MO', 'NE', 'OK'],
-    'KY': ['IL', 'IN', 'MO', 'OH', 'TN', 'VA', 'WV'],
-    'LA': ['AR', 'MS', 'TX'],
-    'ME': ['NH'],
-    'MD': ['DE', 'PA', 'VA', 'WV', 'DC'],
-    'MA': ['CT', 'NH', 'NY', 'RI', 'VT'],
-    'MI': ['IN', 'OH', 'WI'],
-    'MN': ['IA', 'ND', 'SD', 'WI'],
-    'MS': ['AL', 'AR', 'LA', 'TN'],
-    'MO': ['AR', 'IL', 'IA', 'KS', 'KY', 'NE', 'OK', 'TN'],
-    'MT': ['ID', 'ND', 'SD', 'WY'],
-    'NE': ['CO', 'IA', 'KS', 'MO', 'SD', 'WY'],
-    'NV': ['AZ', 'CA', 'ID', 'OR', 'UT'],
-    'NH': ['ME', 'MA', 'VT'],
-    'NJ': ['DE', 'NY', 'PA'],
-    'NM': ['AZ', 'CO', 'OK', 'TX', 'UT'],
-    'NY': ['CT', 'MA', 'NJ', 'PA', 'VT'],
-    'NC': ['GA', 'SC', 'TN', 'VA'],
-    'ND': ['MN', 'MT', 'SD'],
-    'OH': ['IN', 'KY', 'MI', 'PA', 'WV'],
-    'OK': ['AR', 'CO', 'KS', 'MO', 'NM', 'TX'],
-    'OR': ['CA', 'ID', 'NV', 'WA'],
-    'PA': ['DE', 'MD', 'NJ', 'NY', 'OH', 'WV'],
-    'RI': ['CT', 'MA'],
-    'SC': ['GA', 'NC'],
-    'SD': ['IA', 'MN', 'MT', 'NE', 'ND', 'WY'],
-    'TN': ['AL', 'AR', 'GA', 'KY', 'MS', 'MO', 'NC', 'VA'],
-    'TX': ['AR', 'LA', 'NM', 'OK'],
-    'UT': ['AZ', 'CO', 'ID', 'NM', 'NV', 'WY'],
-    'VT': ['MA', 'NH', 'NY'],
-    'VA': ['KY', 'MD', 'NC', 'TN', 'WV', 'DC'],
-    'WA': ['ID', 'OR'],
-    'WV': ['KY', 'MD', 'OH', 'PA', 'VA'],
-    'WI': ['IL', 'IA', 'MI', 'MN'],
-    'WY': ['CO', 'ID', 'MT', 'NE', 'SD', 'UT'],
-    'DC': ['MD', 'VA']
-}
+# Note: STATE_NEIGHBORS hardcoded dictionary removed.
+# Use the optimized neighbor system instead:
+# from socialmapper.census import get_neighboring_states
 
 def is_fips_code(code: Union[str, int]) -> bool:
     """
@@ -331,30 +280,9 @@ def state_name_to_fips(state_name: str) -> Optional[str]:
     """
     return normalize_state(state_name, to_format=StateFormat.FIPS)
 
-def get_neighboring_states(state: str, output_format: StateFormat = StateFormat.ABBREVIATION) -> List[str]:
-    """
-    Get all neighboring states for a given state.
-    
-    Args:
-        state: State identifier (name, abbreviation, or FIPS code)
-        output_format: Format for the returned state list
-        
-    Returns:
-        List of neighboring state identifiers in the requested format
-    """
-    # Convert to abbreviation first (for lookup in neighbors map)
-    state_abbr = normalize_state(state, to_format=StateFormat.ABBREVIATION)
-    if not state_abbr:
-        return []
-    
-    neighbors = STATE_NEIGHBORS.get(state_abbr, [])
-    
-    # If the output format is already abbreviation, just return
-    if output_format == StateFormat.ABBREVIATION:
-        return neighbors
-    
-    # Otherwise convert to requested format
-    return [normalize_state(abbr, to_format=output_format) for abbr in neighbors]
+# Note: get_neighboring_states() function removed.
+# Use the optimized neighbor system instead:
+# from socialmapper.census import get_neighboring_states
 
 def is_valid_state(state: Union[str, int]) -> bool:
     """
