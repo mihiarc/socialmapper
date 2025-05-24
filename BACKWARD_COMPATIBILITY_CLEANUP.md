@@ -35,6 +35,28 @@ These files were useful during development and migration but are no longer neede
 - Migration from old systems is complete
 - The system is production-ready with no setup required
 
+## Removed Redundant Functions from Legacy Modules
+
+### From `socialmapper/states/__init__.py`
+- **`get_neighboring_states()`** - Replaced by optimized `socialmapper.census.get_neighboring_states()`
+- **`STATE_NEIGHBORS` dictionary** - Replaced by database-backed neighbor relationships
+
+### From `socialmapper/counties/__init__.py`  
+- **`get_neighboring_counties()`** - Replaced by optimized `socialmapper.census.get_neighboring_counties()`
+- **`get_counties_from_pois()`** - Replaced by optimized `socialmapper.census.get_counties_from_pois()`
+- **`get_county_fips_from_point()`** - Replaced by optimized `socialmapper.census.get_geography_from_point()`
+
+### What Remains in Legacy Modules
+**States module (✅ KEPT):**
+- State format conversion functions (`normalize_state()`, `state_fips_to_name()`, etc.)
+- State mapping dictionaries and `StateFormat` enum
+- Essential utilities used throughout the codebase
+
+**Counties module (✅ KEPT):**
+- Block group fetching functions (`get_block_groups_for_county()`, etc.)
+- Census boundary download utilities
+- Functions not replaced by the neighbor system
+
 ## Updated Files
 
 ### `socialmapper/core.py`
