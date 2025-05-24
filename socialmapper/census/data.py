@@ -393,7 +393,7 @@ class CensusDataManager:
         
         # Since we're not storing geometries in the view (streaming approach),
         # we need to get the block groups with geometries separately
-        from socialmapper.census_new import get_census_database
+        from socialmapper.census import get_census_database
         
         # Get the GEOIDs from the view
         geoids = df['GEOID'].tolist()
