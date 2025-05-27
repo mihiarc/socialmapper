@@ -173,6 +173,14 @@ from .rate_limiter import (
     AsyncRateLimitedClient
 )
 
+# Import performance utilities
+from .performance import (
+    PerformanceMetrics,
+    PerformanceBenchmark,
+    IsochroneBenchmark,
+    performance_timer
+)
+
 # Export these symbols at the package level
 __all__ = [
     # Census variable utilities
@@ -193,6 +201,12 @@ __all__ = [
     'with_retry',
     'RateLimitedClient',
     'AsyncRateLimitedClient',
+    
+    # Performance utilities
+    'PerformanceMetrics',
+    'PerformanceBenchmark',
+    'IsochroneBenchmark',
+    'performance_timer',
 ]
 
 # Define rate limiters for different services

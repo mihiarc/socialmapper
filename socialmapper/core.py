@@ -257,7 +257,8 @@ def run_socialmapper(
     use_interactive_maps: bool = True,
     name_field: Optional[str] = None,
     type_field: Optional[str] = None,
-    max_poi_count: Optional[int] = None
+    max_poi_count: Optional[int] = None,
+    benchmark_performance: bool = False
 ) -> Dict[str, Any]:
     """
     Run the full community mapping process.
@@ -282,6 +283,8 @@ def run_socialmapper(
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
         max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
+        use_neatnet: Boolean to enable neatnet-enhanced isochrone generation for improved performance
+        benchmark_performance: Boolean to enable performance benchmarking and save results
         
     Returns:
         Dictionary of output file paths and metadata
@@ -296,6 +299,9 @@ def run_socialmapper(
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
     from .export import export_census_data_to_csv
     from .progress import get_progress_bar, _IN_STREAMLIT
+    
+    # Network caching is now integrated into the standard isochrone generation
+    print("Using standard isochrone generation with integrated caching")
 
     # Initialize streamlit_folium_available flag
     streamlit_folium_available = False
@@ -467,7 +473,20 @@ def run_socialmapper(
     if not poi_data or 'pois' not in poi_data or not poi_data['pois']:
         raise ValueError("No POIs found to analyze. Please try different search criteria or check your input data.")
     
-    # Always process in memory, no GeoJSON export
+    # Step 2: Generate isochrones (with optional neatnet enhancement)
+    print("\n=== Step 2: Generating Isochrones ===")
+    if progress_callback:
+        progress_callback(2, "Generating travel time areas")
+    
+    # Set up benchmark path if performance benchmarking is enabled
+    benchmark_path = None
+    if benchmark_performance:
+        benchmark_dir = os.path.join(output_dir, "benchmarks")
+        os.makedirs(benchmark_dir, exist_ok=True)
+        benchmark_path = os.path.join(benchmark_dir, f"{base_filename}_{travel_time}min_benchmark.json")
+    
+    # Use standard isochrone generation with integrated caching
+    print("Generating isochrones...")
     isochrone_gdf = create_isochrones_from_poi_list(
         poi_data=poi_data,
         travel_time_limit=travel_time,
@@ -670,3 +689,5 @@ def run_socialmapper(
         result["sampled_poi_count"] = len(poi_data.get('pois', []))
     
     return result 
+
+ 

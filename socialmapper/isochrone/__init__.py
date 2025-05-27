@@ -72,12 +72,14 @@ def create_isochrone_from_poi(
     # Get POI name (or use ID if no name is available)
     poi_name = poi.get('tags', {}).get('name', f"poi_{poi.get('id', 'unknown')}")
     
-    # Download and prepare road network
+    # Download and prepare road network (with caching)
     try:
-        G = ox.graph_from_point(
-            (latitude, longitude),
-            network_type='drive',
-            dist=travel_time_limit * 1000  # Convert minutes to meters for initial area
+        from .network_cache import download_network_with_cache
+        G = download_network_with_cache(
+            lat=latitude,
+            lon=longitude,
+            dist=travel_time_limit * 1000,  # Convert minutes to meters for initial area
+            network_type='drive'
         )
     except Exception as e:
         logger.error(f"Error downloading road network: {e}")

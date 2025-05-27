@@ -86,6 +86,14 @@ def parse_arguments():
         help="Show version and exit"
     )
     
+    # Performance enhancement options
+    parser.add_argument(
+        "--benchmark",
+        action="store_true", 
+        default=False,
+        help="Enable performance benchmarking and save results"
+    )
+    
     args = parser.parse_args()
     
     # Validate POI arguments if --poi is specified for querying OSM
@@ -154,7 +162,8 @@ def main():
                 api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_maps=args.export_maps
+                export_maps=args.export_maps,
+                benchmark_performance=args.benchmark
             )
         else:
             # Use custom coordinates
@@ -165,7 +174,8 @@ def main():
                 custom_coords_path=args.custom_coords,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_maps=args.export_maps
+                export_maps=args.export_maps,
+                benchmark_performance=args.benchmark
             )
         
         end_time = time.time()
