@@ -149,8 +149,11 @@ manager = neighbors.get_neighbor_manager()
 stats = manager.get_neighbor_statistics()
 print(f"Cross-state relationships: {stats['cross_state_county_relationships']}")
 
-# Custom database path (for development)
-custom_manager = neighbors.get_neighbor_manager('/path/to/custom/neighbors.duckdb')
+# Custom neighbor manager with specific data path
+custom_manager = neighbors.get_neighbor_manager('/path/to/custom/neighbors/')
+
+# Or use the default packaged data
+default_manager = neighbors.get_neighbor_manager()
 ```
 
 ## 📦 **Installation & Requirements**
