@@ -17,6 +17,13 @@ from socialmapper.progress import get_progress_bar
 import time
 import logging
 
+# Import clustering optimization
+from .clustering import (
+    create_isochrones_clustered,
+    benchmark_clustering_performance,
+    cluster_pois_by_proximity
+)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -197,10 +204,13 @@ def create_isochrones_from_poi_list(
     save_individual_files: bool = True,
     combine_results: bool = False,
     simplify_tolerance: Optional[float] = None,
-    use_parquet: bool = True
+    use_parquet: bool = True,
+    use_clustering: Optional[bool] = None,
+    max_cluster_radius_km: float = 10.0,
+    min_cluster_size: int = 3
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
-    Create isochrones from a list of POIs.
+    Create isochrones from a list of POIs with optional clustering optimization.
     
     Args:
         poi_data (Dict[str, List[Dict]]): Dictionary with 'pois' key containing list of POIs
@@ -211,6 +221,10 @@ def create_isochrones_from_poi_list(
         combine_results (bool): Whether to combine all isochrones into a single file
         simplify_tolerance (float, optional): Tolerance for geometry simplification
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
+        use_clustering (bool, optional): Whether to use clustering optimization. 
+            If None, automatically decides based on POI count and distribution
+        max_cluster_radius_km (float): Maximum radius for clustering in kilometers
+        min_cluster_size (int): Minimum number of POIs to form a cluster
         
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]:
@@ -222,6 +236,90 @@ def create_isochrones_from_poi_list(
     if not pois:
         raise ValueError("No POIs found in input data. Please try different search parameters or a different location. POIs like 'natural=forest' may not exist in all areas.")
     
+    # Decide whether to use clustering optimization
+    if use_clustering is None:
+        # Auto-decide based on POI count and potential clustering benefit
+        if len(pois) >= 10:  # Only consider clustering for larger datasets
+            benchmark = benchmark_clustering_performance(
+                poi_data, travel_time_limit, max_cluster_radius_km
+            )
+            # Use clustering if we can reduce network downloads by at least 20%
+            use_clustering = benchmark['reduction_percentage'] >= 20.0
+            if use_clustering:
+                logger.info(f"Auto-enabling clustering optimization: {benchmark['reduction_percentage']:.1f}% reduction in network downloads")
+            else:
+                logger.info(f"Clustering not beneficial: only {benchmark['reduction_percentage']:.1f}% reduction")
+        else:
+            use_clustering = False
+            logger.info("Too few POIs for clustering optimization")
+    
+    # Use clustering optimization if enabled
+    if use_clustering:
+        logger.info("Using clustering optimization for isochrone generation")
+        isochrone_gdfs = create_isochrones_clustered(
+            poi_data=poi_data,
+            travel_time_limit=travel_time_limit,
+            max_cluster_radius_km=max_cluster_radius_km,
+            min_cluster_size=min_cluster_size,
+            simplify_tolerance=simplify_tolerance
+        )
+        
+        # Handle file saving and combining
+        if save_individual_files or combine_results:
+            isochrone_files = []
+            
+            # Save individual files if requested
+            if save_individual_files:
+                os.makedirs(output_dir, exist_ok=True)
+                for i, isochrone_gdf in enumerate(isochrone_gdfs):
+                    poi_name = isochrone_gdf['poi_name'].iloc[0].lower().replace(" ", "_")
+                    
+                    if use_parquet and USE_ARROW:
+                        isochrone_file = os.path.join(
+                            output_dir,
+                            f'isochrone{travel_time_limit}_{poi_name}.parquet'
+                        )
+                        isochrone_gdf.to_parquet(isochrone_file)
+                    else:
+                        isochrone_file = os.path.join(
+                            output_dir,
+                            f'isochrone{travel_time_limit}_{poi_name}.geojson'
+                        )
+                        isochrone_gdf.to_file(isochrone_file, driver='GeoJSON', use_arrow=USE_ARROW)
+                    
+                    isochrone_files.append(isochrone_file)
+            
+            # Combine results if requested
+            if combine_results:
+                combined_gdf = gpd.GeoDataFrame(pd.concat(isochrone_gdfs, ignore_index=True))
+                
+                if save_individual_files:
+                    # Save combined result
+                    if use_parquet and USE_ARROW:
+                        combined_file = os.path.join(
+                            output_dir,
+                            f'combined_isochrones_{travel_time_limit}min.parquet'
+                        )
+                        combined_gdf.to_parquet(combined_file)
+                    else:
+                        combined_file = os.path.join(
+                            output_dir,
+                            f'combined_isochrones_{travel_time_limit}min.geojson'
+                        )
+                        combined_gdf.to_file(combined_file, driver='GeoJSON', use_arrow=USE_ARROW)
+                    return combined_file
+                else:
+                    return combined_gdf
+            
+            if save_individual_files:
+                return isochrone_files
+            else:
+                return isochrone_gdfs
+        else:
+            return isochrone_gdfs
+    
+    # Fall back to original implementation
+    logger.info("Using original isochrone generation method")
     isochrone_files = []
     isochrone_gdfs = []
     
@@ -251,6 +349,7 @@ def create_isochrones_from_poi_list(
             # Continue with next POI instead of failing
             continue
     
+    # Handle combining results for original implementation
     if combine_results:
         if isochrone_gdfs or not save_individual_files:
             # If we have GeoDataFrames (or didn't save individual files), combine them
