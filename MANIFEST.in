@@ -1,1 +1,1 @@
-include socialmapper/data/neighbors.duckdb
+recursive-include socialmapper/data/neighbors *.parquet

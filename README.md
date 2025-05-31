@@ -64,6 +64,9 @@ Visit [socialmapper.streamlit.app](https://socialmapper.streamlit.app) - no inst
 **Option 2: Run locally**
 ```bash
 # Run the Streamlit app
+
+> **🚀 New in v0.4.4**: SocialMapper now uses a lightweight streaming census system that reduces storage from 118.7 MB to ~0.1 MB while maintaining all functionality!
+
 python -m socialmapper.streamlit_app
 ```
 

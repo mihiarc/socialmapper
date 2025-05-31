@@ -290,7 +290,7 @@ def run_socialmapper(
     from .query import build_overpass_query, query_overpass, format_results, create_poi_config
     from .isochrone import create_isochrones_from_poi_list
     from .distance import add_travel_distances
-    from .census import get_census_database, CensusDataManager
+    from .census import get_streaming_census_manager
     from .visualization import generate_maps_for_variables
     from .states import normalize_state, normalize_state_list, StateFormat
     from .util import census_code_to_name, normalize_census_variable, get_readable_census_variables
@@ -500,15 +500,18 @@ def run_socialmapper(
         progress_callback(3, "Finding census block groups")
     
     # Process block groups in memory using new API
-    db = get_census_database()
+    census_manager = get_streaming_census_manager()
     
     # Determine states to search from POI data
-    from .census import get_counties_from_pois
+    from .counties import get_counties_from_pois
     counties = get_counties_from_pois(poi_data['pois'], include_neighbors=False)
     state_fips = list(set([county[0] for county in counties]))
     
     # Find intersecting block groups
-    block_groups_gdf = db.find_intersecting_block_groups(
+    block_groups_gdf = census_manager.get_block_groups(state_fips)
+    # Filter to intersecting block groups
+    from shapely.geometry import Point
+    intersecting_mask = block_groups_gdf.geometry.intersects(
         geometry=isochrone_gdf,
         state_fips=state_fips,
         selection_mode="intersect"
@@ -543,21 +546,29 @@ def run_socialmapper(
     print(f"Requesting census data for: {', '.join(readable_names)}")
     
     # Get census data in memory using new API
-    data_manager = CensusDataManager(db)
-    
     # Get GEOIDs from block groups
     geoids = block_groups_with_distances['GEOID'].tolist()
     
-    # Fetch census data
-    census_data = data_manager.get_or_fetch_census_data(
+    # Fetch census data using streaming
+    census_data = census_manager.get_census_data(
         geoids=geoids,
         variables=census_codes,
         api_key=api_key
     )
     
-    # Create view and get as GeoDataFrame
-    view_name = data_manager.create_census_view(geoids, census_codes)
-    census_data_gdf = data_manager.get_view_as_geodataframe(view_name)
+    # Merge census data with block groups
+    census_data_gdf = block_groups_with_distances.copy()
+    
+    # Add census variables to the GeoDataFrame
+    for _, row in census_data.iterrows():
+        geoid = row['GEOID']
+        var_code = row['variable_code']
+        value = row['value']
+        
+        # Find matching block group and add the variable
+        mask = census_data_gdf['GEOID'] == geoid
+        if mask.any():
+            census_data_gdf.loc[mask, var_code] = value
     
     # Apply variable mapping
     if variable_mapping:
