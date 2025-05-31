@@ -27,6 +27,7 @@ from .neighbors import (
     get_neighboring_states,
     get_neighboring_counties,
     get_geography_from_point,
+    get_counties_from_pois,
     initialize_all_neighbors
 )
 
@@ -65,6 +66,7 @@ __all__ = [
     'get_neighboring_states', 
     'get_neighboring_counties',
     'get_geography_from_point',
+    'get_counties_from_pois',
     'initialize_all_neighbors',
     
     # Backward compatibility
