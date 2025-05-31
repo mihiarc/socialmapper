@@ -124,7 +124,7 @@ def create_isochrone_from_poi(
     nodes_gdf = gpd.GeoDataFrame(geometry=node_points, crs=G.graph['crs'])
     
     # Use convex hull to create the isochrone polygon
-    isochrone = nodes_gdf.unary_union.convex_hull
+    isochrone = nodes_gdf.union_all().convex_hull
     
     # Create GeoDataFrame with the isochrone
     isochrone_gdf = gpd.GeoDataFrame(

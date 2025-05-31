@@ -16,7 +16,7 @@ import random
 from urllib.error import URLError
 
 # Configure basic logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.CRITICAL, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Check if PyArrow is available
 try:
@@ -254,6 +254,7 @@ def run_socialmapper(
     progress_callback: Optional[callable] = None,
     export_csv: bool = True,
     export_maps: bool = False,
+    export_isochrones: bool = False,
     use_interactive_maps: bool = True,
     name_field: Optional[str] = None,
     type_field: Optional[str] = None,
@@ -278,6 +279,7 @@ def run_socialmapper(
         progress_callback: Callback function for progress updates
         export_csv: Boolean to control export of census data to CSV
         export_maps: Boolean to control generation of maps
+        export_isochrones: Boolean to control export of isochrones
         use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
@@ -312,11 +314,18 @@ def run_socialmapper(
     # Set up output directory
     setup_directory(output_dir)
     
-    # Create subdirectories for different output types
-    subdirs = ["isochrones", "block_groups", "census_data", "maps", "pois", "csv"]
-    for subdir in subdirs:
-        subdir_path = os.path.join(output_dir, subdir)
-        os.makedirs(subdir_path, exist_ok=True)
+    # Create subdirectories only for enabled outputs
+    if export_csv:
+        csv_dir = os.path.join(output_dir, "csv")
+        os.makedirs(csv_dir, exist_ok=True)
+    
+    if export_maps:
+        maps_dir = os.path.join(output_dir, "maps")
+        os.makedirs(maps_dir, exist_ok=True)
+    
+    if export_isochrones:
+        isochrones_dir = os.path.join(output_dir, "isochrones")
+        os.makedirs(isochrones_dir, exist_ok=True)
     
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
@@ -472,7 +481,7 @@ def run_socialmapper(
         poi_data=poi_data,
         travel_time_limit=travel_time,
         output_dir=output_dir,
-        save_individual_files=False,
+        save_individual_files=export_isochrones,
         combine_results=True,
         use_parquet=True  # Use parquet format for internal processing
     )
@@ -503,19 +512,18 @@ def run_socialmapper(
     census_manager = get_streaming_census_manager()
     
     # Determine states to search from POI data
-    from .counties import get_counties_from_pois
+    from .census import get_counties_from_pois
     counties = get_counties_from_pois(poi_data['pois'], include_neighbors=False)
-    state_fips = list(set([county[0] for county in counties]))
+    state_fips = list(set([county[:2] for county in counties]))
     
     # Find intersecting block groups
     block_groups_gdf = census_manager.get_block_groups(state_fips)
     # Filter to intersecting block groups
     from shapely.geometry import Point
-    intersecting_mask = block_groups_gdf.geometry.intersects(
-        geometry=isochrone_gdf,
-        state_fips=state_fips,
-        selection_mode="intersect"
-    )
+    # Create a union of all isochrones for intersection testing
+    isochrone_union = isochrone_gdf.geometry.union_all()
+    intersecting_mask = block_groups_gdf.geometry.intersects(isochrone_union)
+    block_groups_gdf = block_groups_gdf[intersecting_mask]
     
     print(f"Found {len(block_groups_gdf)} intersecting block groups")
     
@@ -658,7 +666,15 @@ def run_socialmapper(
         else:
             print(f"Generated {len(map_files)} static maps")
     else:
-        print("\n=== Skipping Map Generation (use --export-maps to enable) ===")
+        if not export_maps and not export_isochrones:
+            print("\n=== Processing Complete ===")
+            print("✅ Census data processed successfully!")
+            print("📄 CSV export is the primary output - all intermediate files processed in memory for efficiency")
+            if export_csv:
+                print("💾 Use export_maps=True to generate visualization maps")
+                print("💾 Use export_isochrones=True to save individual isochrone files")
+        else:
+            print("\n=== Skipping Map Generation (use export_maps=True to enable) ===")
     
     # Return a dictionary of output paths and metadata
     result = {
