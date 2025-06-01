@@ -19,6 +19,9 @@ from sklearn.neighbors import BallTree
 import time
 import logging
 
+from ..util.invalid_data_tracker import track_invalid_point
+from ..util.coordinate_validation import prevalidate_for_pyproj
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,13 +123,34 @@ class VectorizedDistanceEngine:
             
         Returns:
             Array of transformed coordinates (n_points, 2)
+            
+        Raises:
+            ValueError: If validation fails or insufficient points for distance calculations
         """
-        # Extract coordinates
+        # Pre-validate data before PyProj operations
+        is_valid, errors = prevalidate_for_pyproj(points)
+        
+        if not is_valid:
+            error_msg = f"Coordinate validation failed: {'; '.join(errors)}"
+            logger.error(error_msg)
+            
+            # Track invalid data for user review
+            for i, point in enumerate(points):
+                point_data = {
+                    'lat': point.y,
+                    'lon': point.x,
+                    'geometry_type': 'Point',
+                    'source': 'distance_calculation'
+                }
+                track_invalid_point(point_data, f"Validation failed: {errors[0] if errors else 'Unknown error'}", "coordinate_transformation")
+            
+            raise ValueError(error_msg)
+        
+        # Extract coordinates for bulk processing (validated data only)
         coords = np.array([[point.x, point.y] for point in points])
         
-        # Bulk transformation
+        # Bulk transformation for multiple validated points
         x_proj, y_proj = self.transformer.transform(coords[:, 0], coords[:, 1])
-        
         return np.column_stack([x_proj, y_proj])
     
     def calculate_distances(self, poi_points: List[Point], centroids: gpd.GeoSeries) -> np.ndarray:
