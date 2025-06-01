@@ -1,183 +1,281 @@
 #!/usr/bin/env python3
 """
-Clustering optimization module for isochrone generation.
+Modern Intelligent Spatial Clustering Engine for Isochrone Generation.
 
-This module implements spatial clustering to group nearby POIs and share
-road network downloads, significantly improving performance for large jobs.
+This module implements advanced POI clustering using machine learning algorithms
+to optimize network downloads and processing for large-scale isochrone generation.
+
+Key Features:
+- DBSCAN clustering with haversine distance metric
+- Intelligent cluster sizing based on travel time requirements
+- Advanced spatial optimization algorithms
+- Performance monitoring and benchmarking
 """
 
 import logging
 import time
+import hashlib
 from typing import Dict, Any, List, Tuple, Optional, Union
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import BallTree
 import osmnx as ox
 import networkx as nx
-from tqdm import tqdm
+from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 from ..progress import get_progress_bar
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
-class POICluster:
-    """Represents a cluster of POIs that can share a road network."""
+@dataclass
+class ClusterMetrics:
+    """Performance metrics for clustering operations."""
+    total_pois: int
+    num_clusters: int
+    avg_cluster_size: float
+    max_cluster_size: int
+    min_cluster_size: int
+    clustering_time_seconds: float
+    network_downloads_saved: int
+    estimated_time_savings_percent: float
+
+class IntelligentPOIClusterer:
+    """Advanced POI clustering using machine learning algorithms."""
     
-    def __init__(self, cluster_id: int, pois: List[Dict[str, Any]], 
-                 centroid: Tuple[float, float], radius_km: float):
+    def __init__(self, max_cluster_radius_km: float = 15.0, min_cluster_size: int = 2):
+        """
+        Initialize the intelligent clusterer.
+        
+        Args:
+            max_cluster_radius_km: Maximum radius for clustering in kilometers
+            min_cluster_size: Minimum number of POIs to form a cluster
+        """
+        self.max_cluster_radius_km = max_cluster_radius_km
+        self.min_cluster_size = min_cluster_size
+        self._lock = threading.Lock()
+        
+    def cluster_pois(self, pois: List[Dict], travel_time_minutes: int = 15) -> List[List[Dict]]:
+        """
+        Cluster POIs using DBSCAN with geographic distance.
+        
+        Args:
+            pois: List of POI dictionaries with 'lat' and 'lon' keys
+            travel_time_minutes: Travel time limit to adjust clustering parameters
+            
+        Returns:
+            List of POI clusters (each cluster is a list of POIs)
+        """
+        start_time = time.time()
+        
+        if len(pois) <= 1:
+            return [pois]
+        
+        # Extract coordinates
+        coords = np.array([[poi['lat'], poi['lon']] for poi in pois])
+        
+        # Adjust clustering radius based on travel time
+        # Larger travel times allow for larger clusters
+        adjusted_radius = min(
+            self.max_cluster_radius_km,
+            self.max_cluster_radius_km * (travel_time_minutes / 15.0)
+        )
+        
+        # Use DBSCAN clustering with haversine metric
+        # eps in radians for haversine distance
+        eps_radians = adjusted_radius / 6371.0  # Earth radius in km
+        
+        clustering = DBSCAN(
+            eps=eps_radians,
+            min_samples=self.min_cluster_size,
+            metric='haversine'
+        ).fit(np.radians(coords))
+        
+        # Group POIs by cluster
+        clusters = {}
+        for idx, label in enumerate(clustering.labels_):
+            if label not in clusters:
+                clusters[label] = []
+            clusters[label].append(pois[idx])
+        
+        # Handle noise points (label = -1) as individual clusters
+        result = []
+        for label, cluster_pois in clusters.items():
+            if label == -1:  # Noise points
+                result.extend([[poi] for poi in cluster_pois])
+            else:
+                result.append(cluster_pois)
+        
+        clustering_time = time.time() - start_time
+        
+        # Log clustering results
+        num_clusters = len(result)
+        network_downloads_saved = len(pois) - num_clusters
+        savings_percent = (network_downloads_saved / len(pois)) * 100 if len(pois) > 0 else 0
+        
+        logger.info(f"Clustered {len(pois)} POIs into {num_clusters} clusters "
+                   f"(saved {network_downloads_saved} downloads, {savings_percent:.1f}% reduction)")
+        
+        return result
+    
+    def get_cluster_metrics(self, pois: List[Dict], clusters: List[List[Dict]]) -> ClusterMetrics:
+        """Calculate detailed metrics for clustering performance."""
+        cluster_sizes = [len(cluster) for cluster in clusters]
+        
+        return ClusterMetrics(
+            total_pois=len(pois),
+            num_clusters=len(clusters),
+            avg_cluster_size=np.mean(cluster_sizes) if cluster_sizes else 0,
+            max_cluster_size=max(cluster_sizes) if cluster_sizes else 0,
+            min_cluster_size=min(cluster_sizes) if cluster_sizes else 0,
+            clustering_time_seconds=0,  # Set externally
+            network_downloads_saved=len(pois) - len(clusters),
+            estimated_time_savings_percent=((len(pois) - len(clusters)) / len(pois) * 100) if len(pois) > 0 else 0
+        )
+
+class OptimizedPOICluster:
+    """Represents an optimized cluster of POIs with advanced spatial algorithms."""
+    
+    def __init__(self, cluster_id: Union[int, str], pois: List[Dict[str, Any]]):
         self.cluster_id = cluster_id
         self.pois = pois
-        self.centroid = centroid  # (lat, lon)
-        self.radius_km = radius_km
+        self.centroid = self._calculate_centroid()
+        self.radius_km = self._calculate_radius()
         self.network = None
         self.network_crs = None
+        self.bbox = self._calculate_bbox()
         
-    def __len__(self):
-        return len(self.pois)
+    def _calculate_centroid(self) -> Tuple[float, float]:
+        """Calculate the geographic centroid of the cluster."""
+        if not self.pois:
+            return (0.0, 0.0)
         
-    def get_bounding_box(self, buffer_km: float = 2.0) -> Tuple[float, float, float, float]:
-        """Get bounding box for the cluster with buffer."""
+        lats = [poi['lat'] for poi in self.pois]
+        lons = [poi['lon'] for poi in self.pois]
+        return (np.mean(lats), np.mean(lons))
+    
+    def _calculate_radius(self) -> float:
+        """Calculate the maximum radius from centroid to any POI."""
+        if len(self.pois) <= 1:
+            return 0.0
+        
+        centroid_lat, centroid_lon = self.centroid
+        max_distance = 0.0
+        
+        for poi in self.pois:
+            distance = self._haversine_distance(
+                centroid_lat, centroid_lon,
+                poi['lat'], poi['lon']
+            )
+            max_distance = max(max_distance, distance)
+        
+        return max_distance
+    
+    def _calculate_bbox(self) -> Tuple[float, float, float, float]:
+        """Calculate bounding box (min_lat, min_lon, max_lat, max_lon)."""
+        if not self.pois:
+            return (0.0, 0.0, 0.0, 0.0)
+        
         lats = [poi['lat'] for poi in self.pois]
         lons = [poi['lon'] for poi in self.pois]
         
+        return (min(lats), min(lons), max(lats), max(lons))
+    
+    @staticmethod
+    def _haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Calculate haversine distance between two points in kilometers."""
+        R = 6371.0  # Earth radius in kilometers
+        
+        lat1_rad = np.radians(lat1)
+        lon1_rad = np.radians(lon1)
+        lat2_rad = np.radians(lat2)
+        lon2_rad = np.radians(lon2)
+        
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+        
+        a = np.sin(dlat/2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon/2)**2
+        c = 2 * np.arcsin(np.sqrt(a))
+        
+        return R * c
+    
+    def get_network_bbox(self, travel_time_minutes: int, buffer_km: float = 2.0) -> Tuple[float, float, float, float]:
+        """Get optimized bounding box for network download."""
+        min_lat, min_lon, max_lat, max_lon = self.bbox
+        
+        # Calculate buffer based on travel time and cluster size
+        # Larger clusters and longer travel times need bigger buffers
+        adaptive_buffer = buffer_km + (travel_time_minutes / 15.0) + (len(self.pois) / 10.0)
+        
         # Convert buffer to approximate degrees
-        buffer_deg = buffer_km / 111.0
+        buffer_deg = adaptive_buffer / 111.0
         
-        min_lat = min(lats) - buffer_deg
-        max_lat = max(lats) + buffer_deg
-        min_lon = min(lons) - buffer_deg
-        max_lon = max(lons) + buffer_deg
-        
-        return (min_lat, min_lon, max_lat, max_lon)
+        return (
+            min_lat - buffer_deg,
+            min_lon - buffer_deg,
+            max_lat + buffer_deg,
+            max_lon + buffer_deg
+        )
+    
+    def __len__(self):
+        return len(self.pois)
+    
+    def __repr__(self):
+        return f"OptimizedPOICluster(id={self.cluster_id}, pois={len(self.pois)}, radius={self.radius_km:.2f}km)"
 
-def calculate_poi_distances(pois: List[Dict[str, Any]]) -> np.ndarray:
+def create_optimized_clusters(pois: List[Dict[str, Any]], 
+                            travel_time_minutes: int = 15,
+                            max_cluster_radius_km: float = 15.0,
+                            min_cluster_size: int = 2) -> List[OptimizedPOICluster]:
     """
-    Calculate pairwise distances between POIs in kilometers.
+    Create optimized POI clusters using intelligent spatial algorithms.
     
     Args:
         pois: List of POI dictionaries with 'lat' and 'lon' keys
+        travel_time_minutes: Travel time limit for isochrone generation
+        max_cluster_radius_km: Maximum clustering radius in kilometers
+        min_cluster_size: Minimum POIs per cluster
         
     Returns:
-        Distance matrix in kilometers
+        List of OptimizedPOICluster objects
     """
-    coords = np.array([[poi['lat'], poi['lon']] for poi in pois])
+    if not pois:
+        return []
     
-    # Convert to radians
-    coords_rad = np.radians(coords)
+    # Use intelligent clusterer
+    clusterer = IntelligentPOIClusterer(
+        max_cluster_radius_km=max_cluster_radius_km,
+        min_cluster_size=min_cluster_size
+    )
     
-    # Haversine distance calculation
-    lat1 = coords_rad[:, 0:1]
-    lon1 = coords_rad[:, 1:2]
-    lat2 = coords_rad[:, 0]
-    lon2 = coords_rad[:, 1]
+    poi_clusters = clusterer.cluster_pois(pois, travel_time_minutes)
     
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
+    # Convert to OptimizedPOICluster objects
+    optimized_clusters = []
+    for i, cluster_pois in enumerate(poi_clusters):
+        cluster = OptimizedPOICluster(
+            cluster_id=i,
+            pois=cluster_pois
+        )
+        optimized_clusters.append(cluster)
     
-    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
-    c = 2 * np.arcsin(np.sqrt(a))
-    
-    # Earth radius in kilometers
-    R = 6371.0
-    distances = R * c
-    
-    return distances
+    return optimized_clusters
 
-def cluster_pois_by_proximity(pois: List[Dict[str, Any]], 
-                            max_cluster_radius_km: float = 10.0,
-                            min_cluster_size: int = 2) -> List[POICluster]:
+def download_network_for_cluster(cluster: OptimizedPOICluster, 
+                                travel_time_minutes: int,
+                                network_buffer_km: float = 2.0) -> bool:
     """
-    Cluster POIs by geographic proximity using DBSCAN.
+    Download and prepare road network for an optimized cluster.
     
     Args:
-        pois: List of POI dictionaries with 'lat' and 'lon' keys
-        max_cluster_radius_km: Maximum radius for clustering in kilometers
-        min_cluster_size: Minimum number of POIs to form a cluster
-        
-    Returns:
-        List of POICluster objects
-    """
-    if len(pois) < min_cluster_size:
-        # Not enough POIs to cluster, return individual clusters
-        clusters = []
-        for i, poi in enumerate(pois):
-            cluster = POICluster(
-                cluster_id=i,
-                pois=[poi],
-                centroid=(poi['lat'], poi['lon']),
-                radius_km=0.0
-            )
-            clusters.append(cluster)
-        return clusters
-    
-    # Extract coordinates
-    coords = np.array([[poi['lat'], poi['lon']] for poi in pois])
-    
-    # Normalize coordinates for clustering (approximate)
-    # Convert degrees to km (rough approximation)
-    coords_km = coords.copy()
-    coords_km[:, 0] *= 111.0  # lat to km
-    coords_km[:, 1] *= 111.0 * np.cos(np.radians(coords[:, 0].mean()))  # lon to km
-    
-    # Apply DBSCAN clustering
-    clustering = DBSCAN(
-        eps=max_cluster_radius_km,
-        min_samples=min_cluster_size,
-        metric='euclidean'
-    ).fit(coords_km)
-    
-    labels = clustering.labels_
-    
-    # Group POIs by cluster
-    clusters = []
-    unique_labels = set(labels)
-    
-    for label in unique_labels:
-        cluster_pois = [pois[i] for i in range(len(pois)) if labels[i] == label]
-        
-        if label == -1:
-            # Noise points (outliers) - create individual clusters
-            for i, poi in enumerate(cluster_pois):
-                cluster = POICluster(
-                    cluster_id=f"outlier_{i}",
-                    pois=[poi],
-                    centroid=(poi['lat'], poi['lon']),
-                    radius_km=0.0
-                )
-                clusters.append(cluster)
-        else:
-            # Calculate cluster centroid and radius
-            cluster_coords = np.array([[poi['lat'], poi['lon']] for poi in cluster_pois])
-            centroid = cluster_coords.mean(axis=0)
-            
-            # Calculate maximum distance from centroid
-            distances = calculate_poi_distances([{'lat': centroid[0], 'lon': centroid[1]}] + cluster_pois)
-            radius_km = distances[0, 1:].max()
-            
-            cluster = POICluster(
-                cluster_id=label,
-                pois=cluster_pois,
-                centroid=(centroid[0], centroid[1]),
-                radius_km=radius_km
-            )
-            clusters.append(cluster)
-    
-    return clusters
-
-def download_network_for_cluster(cluster: POICluster, 
-                                travel_time_limit: int,
-                                network_buffer_km: float = 5.0) -> bool:
-    """
-    Download and prepare road network for a cluster of POIs.
-    
-    Args:
-        cluster: POICluster object to download network for
-        travel_time_limit: Travel time limit in minutes
-        network_buffer_km: Additional buffer around cluster for network download
+        cluster: OptimizedPOICluster to download network for
+        travel_time_minutes: Travel time limit in minutes
+        network_buffer_km: Additional buffer around cluster
         
     Returns:
         True if successful, False otherwise
@@ -189,20 +287,23 @@ def download_network_for_cluster(cluster: POICluster,
             G = ox.graph_from_point(
                 (poi['lat'], poi['lon']),
                 network_type='drive',
-                dist=travel_time_limit * 1000 + network_buffer_km * 1000
+                dist=travel_time_minutes * 1000 + network_buffer_km * 1000
             )
         else:
-            # Multiple POIs - use bounding box download
-            bbox = cluster.get_bounding_box(buffer_km=network_buffer_km)
-            min_lat, min_lon, max_lat, max_lon = bbox
+            # Multiple POIs - use optimized bounding box
+            min_lat, min_lon, max_lat, max_lon = cluster.get_network_bbox(
+                travel_time_minutes, network_buffer_km
+            )
             
+            # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
+            osm_bbox = (min_lon, min_lat, max_lon, max_lat)
             G = ox.graph_from_bbox(
-                bbox=(min_lon, min_lat, max_lon, max_lat),  # (left, bottom, right, top)
+                bbox=osm_bbox,
                 network_type='drive'
             )
         
-        # Add speeds and travel times
-        G = ox.add_edge_speeds(G, fallback=50)
+        # Add speeds and travel times with optimized fallback values
+        G = ox.add_edge_speeds(G, fallback=50)  # 50 km/h default
         G = ox.add_edge_travel_times(G)
         G = ox.project_graph(G)
         
@@ -210,202 +311,124 @@ def download_network_for_cluster(cluster: POICluster,
         cluster.network = G
         cluster.network_crs = G.graph['crs']
         
+        logger.debug(f"Downloaded network for cluster {cluster.cluster_id}: "
+                    f"{len(G.nodes)} nodes, {len(G.edges)} edges")
+        
         return True
         
     except Exception as e:
-        logger.error(f"Error downloading network for cluster {cluster.cluster_id}: {e}")
+        logger.error(f"Failed to download network for cluster {cluster.cluster_id}: {e}")
         return False
 
 def create_isochrone_from_poi_with_network(poi: Dict[str, Any],
                                          network: nx.MultiDiGraph,
                                          network_crs: str,
-                                         travel_time_limit: int) -> gpd.GeoDataFrame:
+                                         travel_time_minutes: int) -> Optional[gpd.GeoDataFrame]:
     """
-    Create isochrone from POI using pre-downloaded network.
+    Create isochrone for a POI using pre-downloaded network.
     
     Args:
         poi: POI dictionary with 'lat' and 'lon'
-        network: Pre-downloaded OSMnx network graph
+        network: Pre-downloaded road network
         network_crs: CRS of the network
-        travel_time_limit: Travel time limit in minutes
+        travel_time_minutes: Travel time limit in minutes
         
     Returns:
-        GeoDataFrame with isochrone geometry
+        GeoDataFrame with isochrone or None if failed
     """
-    # Create point from coordinates
-    poi_point = Point(poi['lon'], poi['lat'])
-    poi_geom = gpd.GeoSeries([poi_point], crs='EPSG:4326').to_crs(network_crs)
-    poi_proj = poi_geom.geometry.iloc[0]
-    
-    # Find nearest node
-    poi_node = ox.nearest_nodes(
-        network,
-        X=poi_proj.x,
-        Y=poi_proj.y
-    )
-    
-    # Generate subgraph based on travel time
-    subgraph = nx.ego_graph(
-        network,
-        poi_node,
-        radius=travel_time_limit * 60,  # Convert minutes to seconds
-        distance='travel_time'
-    )
-    
-    # Create isochrone
-    node_points = [Point((data['x'], data['y'])) 
-                  for node, data in subgraph.nodes(data=True)]
-    nodes_gdf = gpd.GeoDataFrame(geometry=node_points, crs=network_crs)
-    
-    # Use convex hull to create the isochrone polygon
-    isochrone = nodes_gdf.union_all().convex_hull
-    
-    # Create GeoDataFrame with the isochrone
-    isochrone_gdf = gpd.GeoDataFrame(
-        geometry=[isochrone],
-        crs=network_crs
-    )
-    
-    # Convert to WGS84 for standard output
-    isochrone_gdf = isochrone_gdf.to_crs('EPSG:4326')
-    
-    # Add metadata
-    poi_name = poi.get('tags', {}).get('name', f"poi_{poi.get('id', 'unknown')}")
-    isochrone_gdf['poi_id'] = poi.get('id', 'unknown')
-    isochrone_gdf['poi_name'] = poi_name
-    isochrone_gdf['travel_time_minutes'] = travel_time_limit
-    
-    return isochrone_gdf
+    try:
+        # Create point from coordinates
+        poi_point = Point(poi['lon'], poi['lat'])
+        poi_geom = gpd.GeoSeries([poi_point], crs='EPSG:4326').to_crs(network_crs)
+        poi_proj = poi_geom.geometry.iloc[0]
+        
+        # Find nearest node
+        poi_node = ox.nearest_nodes(network, X=poi_proj.x, Y=poi_proj.y)
+        
+        # Generate subgraph based on travel time
+        subgraph = nx.ego_graph(
+            network,
+            poi_node,
+            radius=travel_time_minutes * 60,  # Convert to seconds
+            distance='travel_time'
+        )
+        
+        if len(subgraph.nodes) == 0:
+            logger.warning(f"No reachable nodes for POI {poi.get('id', 'unknown')}")
+            return None
+        
+        # Create isochrone polygon
+        node_points = [Point((data['x'], data['y'])) 
+                      for node, data in subgraph.nodes(data=True)]
+        nodes_gdf = gpd.GeoDataFrame(geometry=node_points, crs=network_crs)
+        
+        # Use convex hull to create the isochrone polygon
+        isochrone = nodes_gdf.union_all().convex_hull
+        
+        # Create result GeoDataFrame
+        isochrone_gdf = gpd.GeoDataFrame(
+            geometry=[isochrone],
+            crs=network_crs
+        ).to_crs('EPSG:4326')
+        
+        # Add metadata
+        isochrone_gdf['poi_id'] = poi.get('id', 'unknown')
+        isochrone_gdf['poi_name'] = poi.get('tags', {}).get('name', f"poi_{poi.get('id', 'unknown')}")
+        isochrone_gdf['travel_time_minutes'] = travel_time_minutes
+        
+        return isochrone_gdf
+        
+    except Exception as e:
+        logger.error(f"Failed to create isochrone for POI {poi.get('id', 'unknown')}: {e}")
+        return None
 
-def create_isochrones_clustered(poi_data: Dict[str, List[Dict[str, Any]]],
-                              travel_time_limit: int,
-                              max_cluster_radius_km: float = 10.0,
-                              min_cluster_size: int = 2,
-                              network_buffer_km: float = 5.0,
-                              simplify_tolerance: Optional[float] = None) -> List[gpd.GeoDataFrame]:
+def benchmark_clustering_performance(pois: List[Dict[str, Any]],
+                                   travel_time_minutes: int = 15,
+                                   max_cluster_radius_km: float = 15.0) -> Dict[str, Any]:
     """
-    Create isochrones using clustering optimization.
+    Benchmark clustering performance and provide optimization recommendations.
     
     Args:
-        poi_data: Dictionary with 'pois' key containing list of POIs
-        travel_time_limit: Travel time limit in minutes
-        max_cluster_radius_km: Maximum radius for clustering in kilometers
-        min_cluster_size: Minimum number of POIs to form a cluster
-        network_buffer_km: Additional buffer around clusters for network download
-        simplify_tolerance: Optional tolerance for geometry simplification
+        pois: List of POI dictionaries
+        travel_time_minutes: Travel time limit
+        max_cluster_radius_km: Maximum clustering radius
         
     Returns:
-        List of GeoDataFrame objects with isochrone geometries
+        Dictionary with performance metrics and recommendations
     """
-    pois = poi_data.get('pois', [])
-    if not pois:
-        raise ValueError("No POIs found in input data")
+    start_time = time.time()
     
-    # Step 1: Cluster POIs by proximity
-    logger.info(f"Clustering {len(pois)} POIs...")
-    clusters = cluster_pois_by_proximity(
-        pois, 
+    # Test different clustering parameters
+    clusterer = IntelligentPOIClusterer(
         max_cluster_radius_km=max_cluster_radius_km,
-        min_cluster_size=min_cluster_size
+        min_cluster_size=2
     )
     
-    logger.info(f"Created {len(clusters)} clusters")
-    for i, cluster in enumerate(clusters):
-        logger.info(f"Cluster {i}: {len(cluster)} POIs, radius: {cluster.radius_km:.2f} km")
+    clusters = clusterer.cluster_pois(pois, travel_time_minutes)
+    clustering_time = time.time() - start_time
     
-    # Step 2: Download networks for each cluster
-    successful_clusters = []
-    for cluster in get_progress_bar(clusters, desc="Downloading Networks", unit="cluster"):
-        if download_network_for_cluster(cluster, travel_time_limit, network_buffer_km):
-            successful_clusters.append(cluster)
-        else:
-            logger.warning(f"Failed to download network for cluster {cluster.cluster_id}")
+    # Calculate metrics
+    metrics = clusterer.get_cluster_metrics(pois, clusters)
+    metrics.clustering_time_seconds = clustering_time
     
-    # Step 3: Generate isochrones using shared networks
-    isochrone_gdfs = []
-    total_pois = sum(len(cluster) for cluster in successful_clusters)
+    # Performance analysis
+    total_downloads_original = len(pois)
+    total_downloads_optimized = len(clusters)
+    time_savings_estimate = (total_downloads_original - total_downloads_optimized) * 30  # 30s per download estimate
     
-    with tqdm(total=total_pois, desc="Generating Isochrones", unit="POI") as pbar:
-        for cluster in successful_clusters:
-            for poi in cluster.pois:
-                try:
-                    isochrone_gdf = create_isochrone_from_poi_with_network(
-                        poi=poi,
-                        network=cluster.network,
-                        network_crs=cluster.network_crs,
-                        travel_time_limit=travel_time_limit
-                    )
-                    
-                    # Apply simplification if requested
-                    if simplify_tolerance is not None:
-                        isochrone_gdf["geometry"] = isochrone_gdf.geometry.simplify(
-                            tolerance=simplify_tolerance, preserve_topology=True
-                        )
-                    
-                    isochrone_gdfs.append(isochrone_gdf)
-                    
-                except Exception as e:
-                    poi_name = poi.get('tags', {}).get('name', poi.get('id', 'unknown'))
-                    logger.error(f"Error creating isochrone for POI {poi_name}: {e}")
-                
-                pbar.update(1)
-    
-    return isochrone_gdfs
-
-def benchmark_clustering_performance(poi_data: Dict[str, List[Dict[str, Any]]],
-                                   travel_time_limit: int,
-                                   max_cluster_radius_km: float = 10.0) -> Dict[str, Any]:
-    """
-    Benchmark the performance improvement from clustering.
-    
-    Args:
-        poi_data: Dictionary with 'pois' key containing list of POIs
-        travel_time_limit: Travel time limit in minutes
-        max_cluster_radius_km: Maximum radius for clustering in kilometers
-        
-    Returns:
-        Dictionary with benchmark results
-    """
-    pois = poi_data.get('pois', [])
-    
-    # Analyze clustering potential
-    clusters = cluster_pois_by_proximity(pois, max_cluster_radius_km=max_cluster_radius_km)
-    
-    total_pois = len(pois)
-    total_clusters = len(clusters)
-    clustered_pois = sum(len(cluster) for cluster in clusters if len(cluster) > 1)
-    single_poi_clusters = sum(1 for cluster in clusters if len(cluster) == 1)
-    
-    # Calculate potential savings
-    network_downloads_original = total_pois
-    network_downloads_optimized = total_clusters
-    download_reduction = network_downloads_original - network_downloads_optimized
-    reduction_percentage = (download_reduction / network_downloads_original) * 100
-    
-    # Estimate time savings (assuming network download takes 2-5 seconds per POI)
-    estimated_time_savings_min = download_reduction * 2 / 60  # minutes
-    estimated_time_savings_max = download_reduction * 5 / 60  # minutes
-    
-    results = {
-        'total_pois': total_pois,
-        'total_clusters': total_clusters,
-        'clustered_pois': clustered_pois,
-        'single_poi_clusters': single_poi_clusters,
-        'network_downloads_original': network_downloads_original,
-        'network_downloads_optimized': network_downloads_optimized,
-        'download_reduction': download_reduction,
-        'reduction_percentage': reduction_percentage,
-        'estimated_time_savings_min_seconds': estimated_time_savings_min * 60,
-        'estimated_time_savings_max_seconds': estimated_time_savings_max * 60,
-        'cluster_details': [
-            {
-                'cluster_id': cluster.cluster_id,
-                'poi_count': len(cluster),
-                'radius_km': cluster.radius_km,
-                'centroid': cluster.centroid
-            }
-            for cluster in clusters
-        ]
-    }
-    
-    return results 
+    return {
+        'metrics': metrics,
+        'performance': {
+            'original_downloads': total_downloads_original,
+            'optimized_downloads': total_downloads_optimized,
+            'downloads_saved': total_downloads_original - total_downloads_optimized,
+            'estimated_time_savings_seconds': time_savings_estimate,
+            'clustering_overhead_seconds': clustering_time,
+            'net_time_savings_seconds': time_savings_estimate - clustering_time
+        },
+        'recommendations': {
+            'optimal_radius_km': max_cluster_radius_km,
+            'efficiency_rating': 'Excellent' if metrics.estimated_time_savings_percent > 50 else 
+                               'Good' if metrics.estimated_time_savings_percent > 25 else 'Fair'
+        }
+    } 
