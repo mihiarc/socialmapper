@@ -93,16 +93,6 @@ def run_app():
         help="Generate map visualizations for each census variable"
     )
     
-    # POI limit (moved from advanced options to prevent NameError)
-    max_poi_count = st.sidebar.slider(
-        "Maximum POIs to analyze",
-        min_value=1,
-        max_value=50,
-        value=10,
-        step=1,
-        help="Limit the number of POIs to analyze to prevent performance issues"
-    )
-
     # Map type selection
     if export_maps:
         st.sidebar.info("Note: For performance reasons, maps will only be generated for the first POI found.\n\nIf you want to generate a map for a specific POI, use the Advanced Query Options.")
@@ -455,7 +445,6 @@ def run_app():
                         export_csv=export_csv,
                         export_maps=export_maps,
                         use_interactive_maps=use_interactive_maps,
-                        max_poi_count=max_poi_count
                     )
                 else:
                     # Custom coordinate workflows
@@ -480,7 +469,6 @@ def run_app():
                             use_interactive_maps=use_interactive_maps,
                             name_field=name_field,
                             type_field=type_field,
-                            max_poi_count=max_poi_count
                         )
                     elif (
                         upload_method == "Manual Entry"
@@ -495,7 +483,6 @@ def run_app():
                             export_csv=export_csv,
                             export_maps=export_maps,
                             use_interactive_maps=use_interactive_maps,
-                            max_poi_count=max_poi_count
                         )
                     else:
                         raise ValueError("No valid coordinates provided – please upload or enter coordinates first.")
@@ -544,12 +531,6 @@ def run_app():
         if results:
             st.header("Results")
 
-            # Check if POIs were sampled and show a notification
-            if results.get("sampled_pois", False):
-                original_count = results.get("original_poi_count", 0)
-                sampled_count = results.get("sampled_poi_count", 0)
-                st.warning(f"⚠️ Found {original_count} locations, but only using {sampled_count} to avoid performance issues. Results are based on a random sample of POIs.")
-            
             # ---- POIs tab ---------------------------------------------------
             poi_data = results.get("poi_data")
             if poi_data:
