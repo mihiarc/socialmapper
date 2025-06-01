@@ -27,9 +27,14 @@ def get_progress_bar(iterable=None, **kwargs):
         **kwargs: Additional arguments to pass to the progress bar
         
     Returns:
-        A progress bar function (stqdm if in Streamlit context, tqdm otherwise)
+        A progress bar instance that can be used as a context manager
     """
     # Use the environment detection done at import time
-    progress_bar = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
     
-    return progress_bar(iterable, **kwargs) if iterable is not None else progress_bar 
+    # Always return an instance, not a class
+    if iterable is not None:
+        return progress_bar_class(iterable, **kwargs)
+    else:
+        # Create an instance with the provided kwargs
+        return progress_bar_class(**kwargs) 
