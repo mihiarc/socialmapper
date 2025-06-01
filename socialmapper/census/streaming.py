@@ -63,9 +63,8 @@ class StreamingCensusManager:
         
         if self.cache_census_data:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-            get_progress_bar().write(f"Initialized streaming census with data caching at {self.cache_dir}")
         else:
-            get_progress_bar().write("Initialized pure streaming census (no caching)")
+            self.cache_dir = None
     
     def get_block_groups(
         self, 
@@ -98,11 +97,13 @@ class StreamingCensusManager:
         all_gdfs = []
         
         for fips in normalized_fips:
-            get_progress_bar().write(f"Streaming block groups for state {fips}")
-            
-            gdf = self._stream_block_groups_from_api(fips, api_key)
-            if gdf is not None and not gdf.empty:
-                all_gdfs.append(gdf)
+            try:
+                gdf = self._stream_block_groups_from_api(fips, api_key)
+                if gdf is not None and not gdf.empty:
+                    all_gdfs.append(gdf)
+            except Exception as e:
+                logger.error(f"Failed to stream block groups for state {fips}: {e}")
+                continue
         
         if not all_gdfs:
             raise ValueError(f"No block groups found for states: {normalized_fips}")
@@ -130,7 +131,6 @@ class StreamingCensusManager:
                 raise ValueError("Census API key required for streaming boundary data")
         
         state_name = state_fips_to_name(state_fips) or state_fips
-        get_progress_bar().write(f"Streaming block groups for {state_name} ({state_fips})")
         
         # Try multiple approaches in order of preference
         gdf = None
@@ -139,25 +139,22 @@ class StreamingCensusManager:
         try:
             gdf = self._fetch_from_cartographic_files(state_fips)
             if gdf is not None and not gdf.empty:
-                get_progress_bar().write(f"Streamed {len(gdf)} block groups from cartographic files")
                 return gdf
         except Exception as e:
-            get_progress_bar().write(f"Cartographic files failed: {e}, trying TIGER API")
+            logger.error(f"Cartographic files failed: {e}, trying TIGER API")
         
         # Method 2: TIGER/Web API with GeoJSON format (fallback)
         try:
             gdf = self._fetch_from_tiger_geojson(state_fips)
             if gdf is not None and not gdf.empty:
-                get_progress_bar().write(f"Streamed {len(gdf)} block groups from TIGER GeoJSON API")
                 return gdf
         except Exception as e:
-            get_progress_bar().write(f"TIGER GeoJSON API failed: {e}, trying ESRI JSON")
+            logger.error(f"TIGER GeoJSON API failed: {e}, trying ESRI JSON")
         
         # Method 3: TIGER/Web API with ESRI JSON format (last resort)
         try:
             gdf = self._fetch_from_tiger_esri_json(state_fips)
             if gdf is not None and not gdf.empty:
-                get_progress_bar().write(f"Streamed {len(gdf)} block groups from TIGER ESRI JSON API")
                 return gdf
         except Exception as e:
             logger.error(f"All streaming methods failed for state {state_fips}: {e}")
@@ -364,7 +361,7 @@ class StreamingCensusManager:
                 combined = data
             
             combined.to_parquet(cache_file, compression='snappy')
-            get_progress_bar().write(f"Cached {len(data)} census records to {cache_file}")
+            # Removed noisy logging: get_progress_bar().write(f"Cached {len(data)} census records to {cache_file}")
             
         except Exception as e:
             logger.warning(f"Error caching census data: {e}")
@@ -396,7 +393,6 @@ class StreamingCensusManager:
         
         for state_fips, state_geoids_list in state_geoids.items():
             state_name = state_fips_to_name(state_fips) or state_fips
-            get_progress_bar().write(f"Fetching census data for {state_name} ({len(state_geoids_list)} block groups)")
             
             try:
                 state_data = self._fetch_state_census_data(
