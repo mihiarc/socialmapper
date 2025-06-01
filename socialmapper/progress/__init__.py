@@ -183,7 +183,11 @@ class ModernProgressTracker:
             substage: Optional substage description
             memory_usage_mb: Optional memory usage in MB
         """
-        if not self.current_stage or not self.current_pbar:
+        if not self.current_stage:
+            return
+        
+        # Check if progress bar exists more safely
+        if self.current_pbar is None:
             return
         
         with self._lock:
