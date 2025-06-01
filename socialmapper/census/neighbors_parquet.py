@@ -273,7 +273,6 @@ class NeighborManager:
         if not force_refresh and self.data_manager.state_neighbors_path.exists():
             df = self.data_manager._load_state_neighbors()
             if len(df) > 0:
-                get_progress_bar().write(f"State neighbors already initialized ({len(df)} relationships)")
                 return len(df)
         
         # State adjacency data
@@ -347,7 +346,6 @@ class NeighborManager:
             self.data_manager.save_state_neighbors(df)
         
         count = len(df)
-        get_progress_bar().write(f"Initialized {count} state neighbor relationships")
         
         # Update metadata
         metadata_df = pd.DataFrame([{
@@ -528,8 +526,6 @@ class NeighborManager:
                         if block_geoid and len(block_geoid) >= 12:
                             # Block group is first 12 characters of block GEOID
                             block_group_geoid = block_geoid[:12]
-                    
-                    logger.info(f"Geocoded ({lat}, {lon}) -> State: {state_fips}, County: {county_fips}")
                     
                     return {
                         'state_fips': state_fips,
