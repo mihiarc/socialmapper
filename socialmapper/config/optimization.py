@@ -92,6 +92,7 @@ class MemoryConfig:
     aggressive_cleanup: bool = True
     enable_memory_monitoring: bool = True
     memory_warning_threshold: float = 0.85  # Warn at 85% memory usage
+    cleanup_threshold_mb: float = 1024.0  # Trigger cleanup at 1GB memory usage
     
     def __post_init__(self):
         """Validate and adjust settings based on system memory."""
@@ -105,6 +106,12 @@ class MemoryConfig:
         # Adjust batch size based on available memory
         if total_memory_gb < 8.0:
             self.streaming_batch_size = min(500, self.streaming_batch_size)
+        
+        # Adjust cleanup threshold based on system memory
+        if total_memory_gb < 4.0:
+            self.cleanup_threshold_mb = min(512.0, self.cleanup_threshold_mb)
+        elif total_memory_gb > 16.0:
+            self.cleanup_threshold_mb = max(2048.0, self.cleanup_threshold_mb)
 
 @dataclass
 class IOConfig:
