@@ -307,10 +307,6 @@ class StreamingDataPipeline:
                         )
                 
                 total_rows += len(chunk_df)
-                
-                # Progress update
-                if self.config.enable_progress:
-                    get_progress_bar().write(f"Processed {total_rows:,} rows...")
         
         return total_rows
     
@@ -406,7 +402,7 @@ class StreamingDataPipeline:
             # Progress update
             if self.config.enable_progress:
                 progress = (batch_num / total_batches) * 100
-                get_progress_bar().write(f"Batch {batch_num}/{total_batches} ({progress:.1f}%)")
+                # Removed noisy logging: get_progress_bar().write(f"Batch {batch_num}/{total_batches} ({progress:.1f}%)")
     
     def _optimize_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
         """Optimize DataFrame dtypes for better compression and performance."""
