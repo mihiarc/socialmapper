@@ -337,13 +337,35 @@ def create_isochrone_from_poi_with_network(poi: Dict[str, Any],
         GeoDataFrame with isochrone or None if failed
     """
     try:
-        # Create point from coordinates
-        poi_point = Point(poi['lon'], poi['lat'])
-        poi_geom = gpd.GeoSeries([poi_point], crs='EPSG:4326').to_crs(network_crs)
-        poi_proj = poi_geom.geometry.iloc[0]
+        # Import validation utilities
+        from ..util.coordinate_validation import validate_coordinate_point, safe_coordinate_transform
         
-        # Find nearest node
-        poi_node = ox.nearest_nodes(network, X=poi_proj.x, Y=poi_proj.y)
+        # Validate POI coordinates using Pydantic
+        lat = poi.get('lat')
+        lon = poi.get('lon')
+        
+        if lat is None or lon is None:
+            logger.error(f"POI {poi.get('id', 'unknown')} missing lat/lon coordinates")
+            return None
+        
+        validated_coord = validate_coordinate_point(lat, lon, f"poi_{poi.get('id', 'unknown')}")
+        if not validated_coord:
+            logger.error(f"POI {poi.get('id', 'unknown')} has invalid coordinates: lat={lat}, lon={lon}")
+            return None
+        
+        # Create point from validated coordinates
+        poi_point = validated_coord.to_point()
+        
+        # Use PyProj transformer directly to avoid single-point GeoSeries transformation
+        # This bypasses the problematic GeoPandas to_crs() call that triggers the NumPy warning
+        import pyproj
+        transformer = pyproj.Transformer.from_crs("EPSG:4326", network_crs, always_xy=True)
+        
+        # Transform the single point directly using PyProj (avoiding NumPy array operations)
+        poi_x_proj, poi_y_proj = transformer.transform(poi_point.x, poi_point.y)
+        
+        # Find nearest node using the transformed coordinates
+        poi_node = ox.nearest_nodes(network, X=poi_x_proj, Y=poi_y_proj)
         
         # Generate subgraph based on travel time
         subgraph = nx.ego_graph(
@@ -357,9 +379,15 @@ def create_isochrone_from_poi_with_network(poi: Dict[str, Any],
             logger.warning(f"No reachable nodes for POI {poi.get('id', 'unknown')}")
             return None
         
-        # Create isochrone polygon
+        # Create isochrone polygon from reachable nodes
         node_points = [Point((data['x'], data['y'])) 
                       for node, data in subgraph.nodes(data=True)]
+        
+        if len(node_points) < 3:
+            logger.warning(f"Insufficient nodes ({len(node_points)}) to create polygon for POI {poi.get('id', 'unknown')}")
+            return None
+        
+        # Create GeoDataFrame from node points
         nodes_gdf = gpd.GeoDataFrame(geometry=node_points, crs=network_crs)
         
         # Use convex hull to create the isochrone polygon
