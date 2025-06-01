@@ -187,7 +187,6 @@ class MemoryMonitor:
     def _trigger_warning(self, memory_info: Dict[str, Any]):
         """Trigger memory warning."""
         logger.warning(f"High memory usage: {memory_info.get('system_used_percent', 0):.1f}%")
-        get_progress_bar().write(f"⚠️  Memory usage: {memory_info.get('system_used_percent', 0):.1f}%")
     
     def _trigger_cleanup(self):
         """Trigger memory cleanup."""
@@ -367,10 +366,6 @@ class MemoryEfficientDataProcessor:
                 # Clean up batch memory
                 del batch_df
                 gc.collect()
-            
-            # Progress update
-            progress = (batch_num / total_batches) * 100
-            get_progress_bar().write(f"Batch {batch_num}/{total_batches} ({progress:.1f}%)")
         
         # Combine results
         logger.info("Combining batch results...")
