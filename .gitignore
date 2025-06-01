@@ -128,3 +128,4 @@ dev_scripts/verify_release.py
 .cursor/rules/legacy.mdc
 test_cache/97bae4c2daca999f.pkl.gz
 test_cache/cache_index.db
+.cursor/rules/explain.mdc
