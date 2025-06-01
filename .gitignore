@@ -122,15 +122,12 @@ scripts/convert_geojson_to_json.py
 docs/RELEASE_NOTES_v0.4.2.md
 docs/RELEASE_STRATEGY_v0.4.2.md
 docs/RELEASE_SUMMARY_v0.4.2.md
-dev_scripts/verify_release.py
 .cursor/rules/cache.mdc
 .cursor/rules/document.mdc
 .cursor/rules/legacy.mdc
-test_cache/97bae4c2daca999f.pkl.gz
-test_cache/cache_index.db
 .cursor/rules/explain.mdc
-uv.lock
 PROGRESS_MODERNIZATION_SUMMARY.md
 OPTIMIZATION_PLAN.md
 OPTIMIZATION_PLAN.md
 .cursor/rules/workspace.mdc
+uv.lock
