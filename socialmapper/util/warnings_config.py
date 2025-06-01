@@ -36,30 +36,6 @@ def configure_geospatial_warnings(verbose: bool = False):
             "reason": "OSMnx pandas compatibility - known issue, no functional impact"
         },
         
-        # PyProj NumPy 2.0+ compatibility warnings
-        {
-            "category": DeprecationWarning,
-            "module": "pyproj",
-            "message": ".*Conversion of an array with ndim > 0 to a scalar is deprecated.*",
-            "reason": "PyProj internal NumPy operations - fixed in NumPy 2.0, no functional impact"
-        },
-        
-        # PyProj NumPy 2.0+ array conversion warnings
-        {
-            "category": DeprecationWarning,
-            "module": "pyproj",
-            "message": ".*numpy.ndarray size changed.*",
-            "reason": "PyProj NumPy 2.0 compatibility - internal array handling"
-        },
-        
-        # General PyProj deprecation warnings
-        {
-            "category": DeprecationWarning,
-            "module": "pyproj",
-            "message": None,
-            "reason": "PyProj internal operations - upstream library responsibility"
-        },
-        
         # Shapely/GeoPandas deprecation warnings
         {
             "category": DeprecationWarning,
@@ -92,15 +68,7 @@ def configure_geospatial_warnings(verbose: bool = False):
             "reason": "Pydantic V2 config migration warnings - functionality unchanged"
         },
         
-        # General NumPy 2.0+ array conversion warnings from geospatial libraries
-        {
-            "category": DeprecationWarning,
-            "message": ".*Conversion of an array.*",
-            "module": None,
-            "reason": "NumPy 2.0+ array conversion warnings from geospatial libraries"
-        },
-        
-        # NumPy 2.0+ dtype warnings
+        # NumPy 2.0+ dtype warnings (general library compatibility)
         {
             "category": DeprecationWarning,
             "message": ".*numpy.ndarray size changed.*",
@@ -146,27 +114,14 @@ def configure_numpy2_compatibility(verbose: bool = False):
     This function addresses warnings that appear when using NumPy 2.0+
     with libraries that haven't fully updated their compatibility.
     
+    Note: PyProj NumPy array-to-scalar warnings are now prevented at the source
+    via Pydantic validation, so those filters have been removed.
+    
     Args:
         verbose: If True, print information about NumPy 2 compatibility setup
     """
     
     numpy2_configs = [
-        # PyProj specific NumPy 2 warnings
-        {
-            "category": DeprecationWarning,
-            "module": "pyproj",
-            "message": ".*array with ndim > 0.*scalar.*deprecated.*",
-            "reason": "PyProj NumPy 2.0 array scalar conversion"
-        },
-        
-        # General NumPy 2 array conversion warnings
-        {
-            "category": DeprecationWarning,
-            "message": ".*array with ndim > 0.*scalar.*deprecated.*",
-            "module": None,
-            "reason": "NumPy 2.0 array to scalar conversion deprecation"
-        },
-        
         # NumPy 2 dtype size warnings
         {
             "category": RuntimeWarning,
@@ -186,6 +141,7 @@ def configure_numpy2_compatibility(verbose: bool = False):
     
     if verbose:
         print("🔢 Configuring NumPy 2.0+ compatibility filters:")
+        print("   Note: PyProj array-to-scalar warnings prevented via Pydantic validation")
     
     for config in numpy2_configs:
         filter_args = {"category": config["category"]}
@@ -320,13 +276,8 @@ def setup_development_environment(verbose: bool = True):
         print("🛠️ Setting up development environment:")
     
     # Only suppress the most problematic warnings, keep others for development awareness
+    # Note: PyProj NumPy warnings are now prevented at source via Pydantic validation
     warning_configs = [
-        # PyProj NumPy 2 deprecation warnings (these are just noise)
-        {
-            "category": DeprecationWarning,
-            "module": "pyproj",
-            "message": ".*Conversion of an array with ndim > 0 to a scalar is deprecated.*",
-        },
         # OSMnx pandas warnings (also just noise)
         {
             "category": FutureWarning,
@@ -364,6 +315,7 @@ def setup_development_environment(verbose: bool = True):
     
     if verbose:
         print("   ✓ Critical warnings suppressed (keeping others for development)")
+        print("   ✓ PyProj warnings prevented via Pydantic validation")
         if osmnx_configured:
             print("   ✓ OSMnx configured for development")
         print("   ✓ Development environment ready")
