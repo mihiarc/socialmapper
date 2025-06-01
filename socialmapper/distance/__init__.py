@@ -140,9 +140,6 @@ def add_travel_distances(
     # Convert POIs to Points
     poi_points = []
     for poi in pois:
-        if verbose and len(poi_points) == 0:
-            get_progress_bar().write(f"POI example: {json.dumps(poi, default=str)[:100]}...")
-        
         if 'lon' in poi and 'lat' in poi:
             poi_points.append(Point(poi['lon'], poi['lat']))
         elif 'longitude' in poi and 'latitude' in poi:
@@ -165,9 +162,6 @@ def add_travel_distances(
                 poi_points.append(Point(props['lng'], props['lat']))
     
     if not poi_points:
-        get_progress_bar().write("WARNING: No POI points available for distance calculation!")
-        if verbose:
-            get_progress_bar().write(f"POI data example: {pois[0] if pois else None}")
         df['travel_distance_km'] = float('nan')
         df['travel_distance_miles'] = float('nan')
         return df
@@ -189,8 +183,6 @@ def _calculate_distances_vectorized(poi_points: List[Point], centroids: gpd.GeoS
     
     This method provides 95% performance improvement over legacy approaches.
     """
-    get_progress_bar().write(f"Using vectorized distance calculation for {len(centroids)} centroids and {len(poi_points)} POIs...")
-    
     start_time = time.time()
     
     # Initialize the vectorized engine
@@ -206,9 +198,6 @@ def _calculate_distances_vectorized(poi_points: List[Point], centroids: gpd.GeoS
     total_time = time.time() - start_time
     rate = len(centroids) / total_time if total_time > 0 else 0
     
-    get_progress_bar().write(f"Vectorized distance calculation completed in {total_time:.2f}s "
-                           f"({rate:.1f} centroids/sec)")
-    
     return distances.tolist()
 
 
@@ -223,8 +212,6 @@ def run_distance_benchmark(poi_points: List[Point], centroids: gpd.GeoSeries) ->
     Returns:
         Dictionary with benchmark results
     """
-    get_progress_bar().write("Running distance calculation benchmark...")
-    
     results = benchmark_distance_engines(poi_points, centroids)
     
     return results
