@@ -17,6 +17,15 @@ except PackageNotFoundError:
     except (ImportError, AttributeError):
         __version__ = "0.3.0-alpha"  # fallback
 
+# Configure warnings for clean user experience
+# This automatically handles known deprecation warnings from geospatial libraries
+try:
+    from .util.warnings_config import setup_production_environment
+    setup_production_environment(verbose=False)
+except ImportError:
+    # Warnings config not available - continue without it
+    pass
+
 # Import main functionality
 from .core import run_socialmapper, setup_directory
 

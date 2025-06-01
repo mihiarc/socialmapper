@@ -535,8 +535,7 @@ def run_socialmapper(
     # Calculate travel distances in memory
     block_groups_with_distances = add_travel_distances(
         block_groups_gdf=block_groups_gdf,
-        poi_data=poi_data,
-        output_path=None  # No file output
+        poi_data=poi_data
     )
     
     print(f"Calculated travel distances for {len(block_groups_with_distances)} block groups")
