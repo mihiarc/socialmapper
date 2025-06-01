@@ -130,7 +130,6 @@ test_cache/97bae4c2daca999f.pkl.gz
 test_cache/cache_index.db
 .cursor/rules/explain.mdc
 uv.lock
-RELEASE_ANNOUNCEMENT_v0.5.0.md
 PROGRESS_MODERNIZATION_SUMMARY.md
 OPTIMIZATION_PLAN.md
 OPTIMIZATION_PLAN.md
