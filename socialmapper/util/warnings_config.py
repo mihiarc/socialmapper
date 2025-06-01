@@ -36,12 +36,20 @@ def configure_geospatial_warnings(verbose: bool = False):
             "reason": "OSMnx pandas compatibility - known issue, no functional impact"
         },
         
-        # PyProj NumPy 1.25+ deprecation warnings
+        # PyProj NumPy 2.0+ compatibility warnings
         {
             "category": DeprecationWarning,
             "module": "pyproj",
             "message": ".*Conversion of an array with ndim > 0 to a scalar is deprecated.*",
             "reason": "PyProj internal NumPy operations - fixed in NumPy 2.0, no functional impact"
+        },
+        
+        # PyProj NumPy 2.0+ array conversion warnings
+        {
+            "category": DeprecationWarning,
+            "module": "pyproj",
+            "message": ".*numpy.ndarray size changed.*",
+            "reason": "PyProj NumPy 2.0 compatibility - internal array handling"
         },
         
         # General PyProj deprecation warnings
@@ -52,12 +60,60 @@ def configure_geospatial_warnings(verbose: bool = False):
             "reason": "PyProj internal operations - upstream library responsibility"
         },
         
-        # General array conversion warnings
+        # Shapely/GeoPandas deprecation warnings
+        {
+            "category": DeprecationWarning,
+            "module": "geopandas._compat",
+            "message": ".*shapely.geos.*module is deprecated.*",
+            "reason": "GeoPandas internal shapely compatibility - will be fixed in future versions"
+        },
+        
+        # Shapely geos module deprecation (broader catch)
+        {
+            "category": DeprecationWarning,
+            "message": ".*shapely.geos.*module is deprecated.*",
+            "module": None,
+            "reason": "Shapely geos module deprecation - affects GeoPandas and other libraries"
+        },
+        
+        # Pydantic V1 style validator warnings
+        {
+            "category": DeprecationWarning,
+            "message": ".*Pydantic V1 style.*@validator.*validators are deprecated.*",
+            "module": None,
+            "reason": "Pydantic V1 to V2 migration warnings - functionality unchanged"
+        },
+        
+        # Pydantic class-based config warnings
+        {
+            "category": DeprecationWarning,
+            "message": ".*class-based.*config.*is deprecated.*",
+            "module": None,
+            "reason": "Pydantic V2 config migration warnings - functionality unchanged"
+        },
+        
+        # General NumPy 2.0+ array conversion warnings from geospatial libraries
         {
             "category": DeprecationWarning,
             "message": ".*Conversion of an array.*",
             "module": None,
-            "reason": "NumPy 1.25+ array conversion warnings from geospatial libraries"
+            "reason": "NumPy 2.0+ array conversion warnings from geospatial libraries"
+        },
+        
+        # NumPy 2.0+ dtype warnings
+        {
+            "category": DeprecationWarning,
+            "message": ".*numpy.ndarray size changed.*",
+            "module": None,
+            "reason": "NumPy 2.0+ internal array size changes - affects compiled extensions"
+        },
+        
+        # Streamlit context warnings (common in non-streamlit environments)
+        {
+            "category": UserWarning,
+            "module": "streamlit.runtime.scriptrunner_utils.script_run_context",
+            "message": ".*missing ScriptRunContext.*",
+            "reason": "Streamlit context warnings when running outside Streamlit - safe to ignore"
         }
     ]
     
@@ -75,6 +131,71 @@ def configure_geospatial_warnings(verbose: bool = False):
             filter_args["message"] = config["message"]
         
         # Apply filter
+        warnings.filterwarnings("ignore", **filter_args)
+        
+        if verbose:
+            module_str = f" (module: {config.get('module', 'any')})"
+            print(f"   ✓ {config['category'].__name__}{module_str}")
+            print(f"     Reason: {config['reason']}")
+
+
+def configure_numpy2_compatibility(verbose: bool = False):
+    """
+    Specific configuration for NumPy 2.0+ compatibility warnings.
+    
+    This function addresses warnings that appear when using NumPy 2.0+
+    with libraries that haven't fully updated their compatibility.
+    
+    Args:
+        verbose: If True, print information about NumPy 2 compatibility setup
+    """
+    
+    numpy2_configs = [
+        # PyProj specific NumPy 2 warnings
+        {
+            "category": DeprecationWarning,
+            "module": "pyproj",
+            "message": ".*array with ndim > 0.*scalar.*deprecated.*",
+            "reason": "PyProj NumPy 2.0 array scalar conversion"
+        },
+        
+        # General NumPy 2 array conversion warnings
+        {
+            "category": DeprecationWarning,
+            "message": ".*array with ndim > 0.*scalar.*deprecated.*",
+            "module": None,
+            "reason": "NumPy 2.0 array to scalar conversion deprecation"
+        },
+        
+        # NumPy 2 dtype size warnings
+        {
+            "category": RuntimeWarning,
+            "message": ".*numpy.ndarray size changed.*",
+            "module": None,
+            "reason": "NumPy 2.0 internal array size changes"
+        },
+        
+        # NumPy 2 C extension warnings
+        {
+            "category": RuntimeWarning,
+            "message": ".*numpy.ufunc size changed.*",
+            "module": None,
+            "reason": "NumPy 2.0 ufunc size changes in C extensions"
+        }
+    ]
+    
+    if verbose:
+        print("🔢 Configuring NumPy 2.0+ compatibility filters:")
+    
+    for config in numpy2_configs:
+        filter_args = {"category": config["category"]}
+        
+        if config.get("module"):
+            filter_args["module"] = config["module"]
+        
+        if config.get("message"):
+            filter_args["message"] = config["message"]
+        
         warnings.filterwarnings("ignore", **filter_args)
         
         if verbose:
@@ -134,6 +255,9 @@ def setup_production_environment(verbose: bool = False):
     # Configure warning filters
     configure_geospatial_warnings(verbose=verbose)
     
+    # Configure NumPy 2 compatibility
+    configure_numpy2_compatibility(verbose=verbose)
+    
     # Configure OSMnx (only for production, not as aggressive as benchmarking)
     osmnx_configured = configure_osmnx_settings(
         max_query_area_size=10000000000,  # 10B sq meters (more conservative)
@@ -149,6 +273,7 @@ def setup_production_environment(verbose: bool = False):
             print("   ⚠ OSMnx not available")
         
         print("   ✓ Warning filters applied")
+        print("   ✓ NumPy 2 compatibility configured")
         print("🎯 Environment ready for optimal performance!")
 
 
@@ -165,6 +290,9 @@ def setup_benchmark_environment(verbose: bool = True):
     # Apply all warning filters
     configure_geospatial_warnings(verbose=False)
     
+    # Configure NumPy 2 compatibility
+    configure_numpy2_compatibility(verbose=False)
+    
     # Configure OSMnx for benchmarking (more aggressive settings)
     osmnx_configured = configure_osmnx_settings(
         max_query_area_size=50000000000,  # 50B sq meters
@@ -175,6 +303,7 @@ def setup_benchmark_environment(verbose: bool = True):
     
     if verbose:
         print("   ✓ All deprecation warnings suppressed")
+        print("   ✓ NumPy 2 compatibility warnings suppressed")
         if osmnx_configured:
             print("   ✓ OSMnx optimized for large datasets")
         print("   ✓ Benchmark environment ready")
@@ -192,7 +321,7 @@ def setup_development_environment(verbose: bool = True):
     
     # Only suppress the most problematic warnings, keep others for development awareness
     warning_configs = [
-        # PyProj NumPy 1.25+ deprecation warnings (these are just noise)
+        # PyProj NumPy 2 deprecation warnings (these are just noise)
         {
             "category": DeprecationWarning,
             "module": "pyproj",
@@ -203,6 +332,17 @@ def setup_development_environment(verbose: bool = True):
             "category": FutureWarning,
             "module": "osmnx",
             "message": ".*Downcasting object dtype arrays.*",
+        },
+        # Shapely geos warnings (upstream issue)
+        {
+            "category": DeprecationWarning,
+            "message": ".*shapely.geos.*module is deprecated.*",
+        },
+        # Streamlit context warnings
+        {
+            "category": UserWarning,
+            "module": "streamlit.runtime.scriptrunner_utils.script_run_context",
+            "message": ".*missing ScriptRunContext.*",
         }
     ]
     
