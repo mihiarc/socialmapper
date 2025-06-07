@@ -48,8 +48,7 @@ dependencies = [
     "httpx>=0.27.0",
     "streamlit>=1.31",
     "stqdm>=0.0.5, <0.0.6; python_version >= '3.11' and python_version < '4.0'",
-    "folium",
-    "streamlit-folium",
+    # Folium dependencies removed - migrated to Plotly
     "ratelimit",
     "psutil>=5.8.0",
     "scikit-learn>=1.0.0",
