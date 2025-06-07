@@ -292,7 +292,7 @@ def run_socialmapper(
         export_maps: Boolean to control generation of maps
         export_isochrones: Boolean to control export of isochrones
         use_interactive_maps: Boolean to control whether to use interactive maps (Streamlit)
-        map_backend: Which map backend to use ('plotly', 'folium', 'both')
+        map_backend: Which map backend to use ('plotly')
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
         max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
@@ -315,17 +315,7 @@ def run_socialmapper(
         get_progress_tracker
     )
 
-    # Initialize streamlit_folium_available flag
-    streamlit_folium_available = False
-    if _IN_STREAMLIT and use_interactive_maps:
-        try:
-            import folium
-            from streamlit_folium import folium_static
-            streamlit_folium_available = True
-            print("Using interactive Folium maps for Streamlit")
-        except ImportError:
-            streamlit_folium_available = False
-            print("Warning: streamlit-folium package not available, falling back to static maps")
+    # Folium support removed - using Plotly for interactive maps
 
     # Start modern progress tracking
     tracker = get_progress_tracker()
@@ -695,10 +685,9 @@ def run_socialmapper(
 
         # Determine which map backend to use
         use_plotly_maps = (map_backend in ['plotly', 'both'] and use_interactive_maps)
-        use_folium_maps = (map_backend in ['folium', 'both'] and streamlit_folium_available and use_interactive_maps)
         
         # Default to Plotly if no specific backend chosen and in interactive mode
-        if not use_plotly_maps and not use_folium_maps and use_interactive_maps:
+        if not use_plotly_maps and use_interactive_maps:
             use_plotly_maps = True
         
         # Generate maps for each census variable
@@ -710,15 +699,11 @@ def run_socialmapper(
             isochrone_path=isochrone_gdf,  # Always pass the GeoDataFrame directly
             poi_df=poi_data_for_map,
             use_panels=False,
-            use_folium=use_folium_maps,
             use_plotly=use_plotly_maps
         )
         result_files["maps"] = map_files
         
-        # Flag to indicate if folium maps are available and being displayed
-        result_files["folium_maps_available"] = streamlit_folium_available and use_interactive_maps
-        
-        if streamlit_folium_available and use_interactive_maps:
+        if use_interactive_maps:
             print("Interactive maps displayed in Streamlit")
         else:
             print(f"Generated {len(map_files)} static maps")
@@ -763,7 +748,7 @@ def run_socialmapper(
         "block_groups": block_groups_gdf,
         "census_data": census_data_gdf,
         "maps": map_files if export_maps else [],
-        "folium_maps_available": streamlit_folium_available and use_interactive_maps
+        "interactive_maps_available": use_interactive_maps
     }
     
     # Add CSV path if applicable

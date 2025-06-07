@@ -101,7 +101,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--map-backend",
-        choices=["plotly", "folium", "both"],
+        choices=["plotly"],
         default="plotly",
         help="Map visualization backend (default: plotly)"
     )
@@ -214,7 +214,7 @@ def _test_plotly_migration():
     comparison_table = Table(title="🗺️ Map Backend Comparison", box=box.ROUNDED)
     comparison_table.add_column("Feature", style="cyan")
     comparison_table.add_column("Plotly", style="green")
-    comparison_table.add_column("Folium", style="yellow")
+    comparison_table.add_column("Previous (Folium)", style="dim")
     
     comparison_data = [
         ("Performance", "⭐⭐⭐⭐⭐", "⭐⭐⭐"),
@@ -248,7 +248,7 @@ def _test_plotly_migration():
             f"[bold yellow]⚠️ {tests_passed}/{total_tests} tests passed, {failed_tests} failed[/bold yellow]\n"
             "[yellow]Some migration components may need attention.[/yellow]\n\n"
             "[bold]Fallback usage:[/bold]\n"
-            "[cyan]socialmapper --poi --geocode-area 'Fuquay-Varina' --poi-type amenity --poi-name library --export-maps --map-backend folium[/cyan]",
+            "[cyan]socialmapper --poi --geocode-area 'Fuquay-Varina' --poi-type amenity --poi-name library --export-maps --map-backend plotly[/cyan]",
             title="⚠️ Migration Test Results",
             box=box.ROUNDED,
             border_style="yellow"

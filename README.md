@@ -29,7 +29,7 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 We're excited to announce our beta release with these new features:
 
 - **Live Streamlit App** - Now available at [socialmapper.streamlit.app](https://socialmapper.streamlit.app)
-- **Interactive Maps** - Explore data with interactive Folium maps in the Streamlit app
+- **Interactive Maps** - Explore data with interactive Plotly+Mapbox maps in the Streamlit app
 - **Distance Data Export** - Export travel distance data for deeper analysis
 - **CSV Export** - Easily share and analyze your data in spreadsheet applications
 - **Runtime Optimizations** - Significantly improved performance for faster analysis

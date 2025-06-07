@@ -98,11 +98,11 @@ def run_app():
         st.sidebar.info("Note: For performance reasons, maps will only be generated for the first POI found.\n\nIf you want to generate a map for a specific POI, use the Advanced Query Options.")
         map_type = st.sidebar.radio(
             "Map Type:",
-            ["Interactive (Folium)", "Static"],
+            ["Interactive (Plotly)", "Static"],
             index=0,
             help="Interactive maps can be explored in the browser. Static maps can be downloaded."
         )
-        use_interactive_maps = map_type == "Interactive (Folium)"
+        use_interactive_maps = map_type == "Interactive (Plotly)"
     else:
         use_interactive_maps = False
 
@@ -553,13 +553,13 @@ def run_app():
                     else:
                         st.warning("POI data not found in the expected format.")
 
-            # ---- Interactive Folium Maps (if available) ---------------------
-            folium_maps_available = results.get("folium_maps_available", False)
-            if folium_maps_available:
+            # ---- Interactive Maps (if available) ---------------------
+            interactive_maps_available = results.get("interactive_maps_available", False)
+            if interactive_maps_available:
                 st.subheader("Interactive Maps")
                 st.info("Explore these interactive maps - you can zoom, pan, and click on features to see more information.")
                 
-                # The actual folium maps will be displayed by the map_coordinator directly
+                # The actual interactive maps will be displayed by the map_coordinator directly
                 # So we don't need to do anything more here
             
             # ---- Static Maps grid (if available) ----------------------------
