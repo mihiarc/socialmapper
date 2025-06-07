@@ -53,9 +53,20 @@ def _detect_neighbor_system() -> str:
 # Detect the available neighbor system
 NEIGHBOR_SYSTEM = _detect_neighbor_system()
 
-if NEIGHBOR_SYSTEM == 'parquet':
+# Use try-except pattern for conditional import to always define ParquetNeighborManager
+try:
     from .neighbors_parquet import NeighborManager as ParquetNeighborManager
+    PARQUET_AVAILABLE = True
+    logger.info("Parquet neighbor system available")
+except ImportError as e:
+    ParquetNeighborManager = None
+    PARQUET_AVAILABLE = False
+    logger.warning(f"Parquet neighbor system not available: {e}")
+
+if NEIGHBOR_SYSTEM == 'parquet' and PARQUET_AVAILABLE:
     logger.info("Using Parquet neighbor system")
+elif NEIGHBOR_SYSTEM == 'parquet' and not PARQUET_AVAILABLE:
+    logger.warning("Parquet neighbor system detected but import failed")
 else:
     logger.warning("No neighbor system detected")
 
@@ -81,13 +92,19 @@ class NeighborManager:
             self.system_type = self._detect_system_type()
         else:
             self.system_type = NEIGHBOR_SYSTEM
-            if self.system_type == 'parquet':
+            if self.system_type == 'parquet' and PARQUET_AVAILABLE:
                 self.data_path = _get_parquet_path()
+            elif self.system_type == 'parquet' and not PARQUET_AVAILABLE:
+                # Parquet system detected but not available, fall back to 'none'
+                self.system_type = 'none'
+                self.data_path = None
             else:
                 self.data_path = None
         
         # Initialize the appropriate manager
         if self.system_type == 'parquet':
+            if ParquetNeighborManager is None:
+                raise RuntimeError(f"Parquet neighbor system detected but ParquetNeighborManager class not available. Check if neighbors_parquet module can be imported.")
             self._manager = ParquetNeighborManager(self.data_path)
         else:
             raise RuntimeError(f"No neighbor system available. System detected: {self.system_type}")
@@ -100,14 +117,14 @@ class NeighborManager:
             return 'none'
         
         # Check for Parquet files
-        if any(self.data_path.glob("*.parquet")):
+        if any(self.data_path.glob("*.parquet")) and PARQUET_AVAILABLE:
             return 'parquet'
         
         # Check if it's a directory with Parquet files
-        if self.data_path.is_dir() and any(self.data_path.glob("*.parquet")):
+        if self.data_path.is_dir() and any(self.data_path.glob("*.parquet")) and PARQUET_AVAILABLE:
             return 'parquet'
         
-        if NEIGHBOR_SYSTEM == 'parquet':
+        if NEIGHBOR_SYSTEM == 'parquet' and PARQUET_AVAILABLE:
             return 'parquet'
         
         return 'none'
