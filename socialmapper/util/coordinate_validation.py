@@ -8,7 +8,7 @@ to ensure data quality and prevent issues with PyProj transformations.
 
 import logging
 from typing import List, Dict, Any, Optional, Union, Tuple
-from pydantic import BaseModel, Field, validator, ValidationError
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from shapely.geometry import Point
 import geopandas as gpd
 import pandas as pd
@@ -23,7 +23,8 @@ class CoordinatePoint(BaseModel):
     lat: float = Field(..., ge=-90, le=90, description="Latitude in decimal degrees")
     lon: float = Field(..., ge=-180, le=180, description="Longitude in decimal degrees")
     
-    @validator('lat')
+    @field_validator('lat')
+    @classmethod
     def validate_latitude(cls, v):
         if not isinstance(v, (int, float)):
             raise ValueError("Latitude must be a number")
@@ -31,7 +32,8 @@ class CoordinatePoint(BaseModel):
             raise ValueError("Latitude must be between -90 and 90 degrees")
         return float(v)
     
-    @validator('lon')
+    @field_validator('lon')
+    @classmethod
     def validate_longitude(cls, v):
         if not isinstance(v, (int, float)):
             raise ValueError("Longitude must be a number")
@@ -58,7 +60,8 @@ class POICoordinate(BaseModel):
     name: Optional[str] = None
     tags: Optional[Dict[str, Any]] = None
     
-    @validator('lat')
+    @field_validator('lat')
+    @classmethod
     def validate_latitude(cls, v):
         if not isinstance(v, (int, float)):
             raise ValueError("Latitude must be a number")
@@ -66,7 +69,8 @@ class POICoordinate(BaseModel):
             raise ValueError("Latitude must be between -90 and 90 degrees")
         return float(v)
     
-    @validator('lon')
+    @field_validator('lon')
+    @classmethod
     def validate_longitude(cls, v):
         if not isinstance(v, (int, float)):
             raise ValueError("Longitude must be a number")
@@ -100,7 +104,8 @@ class CoordinateCluster(BaseModel):
     points: List[CoordinatePoint] = Field(..., min_items=2, description="At least 2 points required for clustering")
     cluster_id: Optional[Union[str, int]] = None
     
-    @validator('points')
+    @field_validator('points')
+    @classmethod
     def validate_minimum_points(cls, v):
         if len(v) < 2:
             raise ValueError("Coordinate clusters must contain at least 2 points for meaningful distance calculations")
