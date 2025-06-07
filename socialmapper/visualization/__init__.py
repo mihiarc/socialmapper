@@ -15,6 +15,11 @@ from .folium_map import (
     generate_folium_map_for_streamlit,
     generate_folium_panel_map
 )
+from .plotly_map import (
+    create_plotly_map,
+    create_plotly_map_for_streamlit,
+    generate_plotly_maps_for_variables
+)
 
 __all__ = [
     'get_variable_label',
@@ -26,5 +31,8 @@ __all__ = [
     'generate_folium_map',
     'generate_folium_isochrone_map',
     'generate_folium_map_for_streamlit',
-    'generate_folium_panel_map'
+    'generate_folium_panel_map',
+    'create_plotly_map',
+    'create_plotly_map_for_streamlit',
+    'generate_plotly_maps_for_variables'
 ] 

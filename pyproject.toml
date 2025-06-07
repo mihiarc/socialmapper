@@ -59,6 +59,8 @@ dependencies = [
     "branca>=0.6.0",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
+    "plotly>=6.1.0",
+    "streamlit-plotly-mapbox-events>=0.2.0",
 ]
 
 [project.optional-dependencies]

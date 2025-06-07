@@ -82,6 +82,48 @@ def print_banner(title: str, subtitle: Optional[str] = None, version: Optional[s
     console.print(panel)
 
 
+def create_streamlit_banner(title: str, subtitle: Optional[str] = None, version: Optional[str] = None) -> str:
+    """
+    Create a markdown banner for Streamlit apps.
+    
+    Args:
+        title: Main title text
+        subtitle: Optional subtitle
+        version: Optional version string
+        
+    Returns:
+        Markdown formatted banner string
+    """
+    if subtitle and version:
+        return f"""
+# 🏘️ {title}
+### {subtitle}
+*Version {version}*
+
+---
+"""
+    elif subtitle:
+        return f"""
+# 🏘️ {title}
+### {subtitle}
+
+---
+"""
+    elif version:
+        return f"""
+# 🏘️ {title}
+*Version {version}*
+
+---
+"""
+    else:
+        return f"""
+# 🏘️ {title}
+
+---
+"""
+
+
 def print_success(message: str, title: str = "Success"):
     """Print a success message in a green panel."""
     panel = Panel(
@@ -319,17 +361,90 @@ def log_export_start(formats: List[str]):
     formats_str = ", ".join(formats)
     print_info(f"Exporting results in formats: {formats_str}", "Data Export")
 
+def create_rich_panel(content: str, title: str = "", style: str = "cyan") -> str:
+    """
+    Create a rich-styled panel for Streamlit (returns markdown).
+    
+    Args:
+        content: Panel content
+        title: Panel title
+        style: Panel style/color
+        
+    Returns:
+        Markdown formatted panel
+    """
+    emoji_map = {
+        "cyan": "💎",
+        "green": "✅",
+        "red": "❌",
+        "yellow": "⚠️",
+        "blue": "ℹ️"
+    }
+    
+    emoji = emoji_map.get(style, "📋")
+    
+    if title:
+        return f"""
+> {emoji} **{title}**
+> 
+> {content}
+"""
+    else:
+        return f"""
+> {emoji} {content}
+"""
+
+
+def create_performance_table(data: Dict[str, Any]) -> str:
+    """
+    Create a performance comparison table for Streamlit (returns markdown).
+    
+    Args:
+        data: Performance data dictionary
+        
+    Returns:
+        Markdown formatted table
+    """
+    if not data:
+        return "No performance data available."
+    
+    # Create markdown table
+    table_lines = [
+        "| Metric | Value |",
+        "|--------|-------|"
+    ]
+    
+    for key, value in data.items():
+        formatted_key = key.replace('_', ' ').title()
+        if isinstance(value, (int, float)):
+            if 'time' in key.lower():
+                formatted_value = f"{value:.2f}s"
+            elif 'count' in key.lower():
+                formatted_value = f"{value:,}"
+            else:
+                formatted_value = str(value)
+        else:
+            formatted_value = str(value)
+        
+        table_lines.append(f"| {formatted_key} | {formatted_value} |")
+    
+    return "\n".join(table_lines)
+
+
 # Export the main console for direct use
 __all__ = [
     'console',
     'setup_rich_logging',
     'print_banner',
+    'create_streamlit_banner',
     'print_success',
     'print_error', 
     'print_warning',
     'print_info',
     'status_spinner',
     'create_data_table',
+    'create_rich_panel',
+    'create_performance_table',
     'print_census_variables_table',
     'print_poi_summary_table',
     'print_performance_summary',

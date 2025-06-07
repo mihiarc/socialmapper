@@ -27,6 +27,7 @@ from socialmapper.util import CENSUS_VARIABLE_MAPPING
 from .single_map import generate_map, generate_isochrone_map
 from .panel_map import generate_paneled_isochrone_map, generate_paneled_census_map
 from .folium_map import generate_folium_map_for_streamlit, generate_folium_panel_map, generate_folium_isochrone_map
+from .plotly_map import create_plotly_map_for_streamlit, generate_plotly_maps_for_variables
 
 def generate_maps_for_variables(
     census_data_path: Union[str, gpd.GeoDataFrame, List[str], List[gpd.GeoDataFrame]],
@@ -38,6 +39,7 @@ def generate_maps_for_variables(
     poi_df: Optional[Union[gpd.GeoDataFrame, List[gpd.GeoDataFrame]]] = None,
     use_panels: bool = False,
     use_folium: bool = False,
+    use_plotly: bool = True,
     **kwargs
 ) -> List[str]:
     """
@@ -53,14 +55,29 @@ def generate_maps_for_variables(
         poi_df: Optional GeoDataFrame containing POI data
         use_panels: Whether to generate paneled maps (requires list inputs)
         use_folium: Whether to generate interactive Folium maps (for Streamlit) instead of static maps
+        use_plotly: Whether to generate interactive Plotly maps (for Streamlit) instead of static maps
         **kwargs: Additional keyword arguments to pass to the map generation functions
         
     Returns:
         List of paths to the saved maps (only for static maps, not for Folium maps in Streamlit)
     """
+    # If we're using plotly in Streamlit, use the modern Plotly backend
+    if use_plotly and _IN_STREAMLIT:
+        # For Plotly maps, use the new dedicated function
+        return generate_plotly_maps_for_variables(
+            census_data=census_data_path,
+            variables=variables,
+            isochrone_data=isochrone_path,
+            poi_data=poi_df,
+            use_streamlit=True,
+            **{k: v for k, v in kwargs.items() if k in [
+                'colorscale', 'height', 'width', 'show_legend', 'map_style'
+            ]}
+        )
+    
     # If we're using folium in Streamlit, we'll just generate interactive maps
     # and won't return output paths as the maps are displayed directly
-    if use_folium and _IN_STREAMLIT:
+    elif use_folium and _IN_STREAMLIT:
         if use_panels:
             # Ensure inputs are lists for paneled maps
             if not isinstance(census_data_path, list):
