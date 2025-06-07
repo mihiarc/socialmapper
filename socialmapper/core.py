@@ -661,11 +661,12 @@ def export_pipeline_outputs(
     base_filename: str,
     travel_time: int,
     directories: Dict[str, str],
-    export_csv: bool,
-    export_maps: bool,
-    use_interactive_maps: bool,
-    census_codes: List[str]
-) -> Dict[str, Any]:
+            export_csv: bool,
+        export_maps: bool,
+        use_interactive_maps: bool,
+        census_codes: List[str],
+        geographic_level: str = "block-group"
+    ) -> Dict[str, Any]:
     """
     Export pipeline outputs (CSV, maps, etc.).
     
@@ -680,6 +681,7 @@ def export_pipeline_outputs(
         export_maps: Whether to export maps
         use_interactive_maps: Whether to use interactive maps
         census_codes: List of census codes
+        geographic_level: Geographic unit type ('block-group' or 'zcta')
         
     Returns:
         Dictionary of result files and metadata
@@ -752,7 +754,8 @@ def export_pipeline_outputs(
             isochrone_path=isochrone_gdf,
             poi_df=poi_data_for_map,
             use_panels=False,
-            use_plotly=use_plotly_maps
+            use_plotly=use_plotly_maps,
+            geographic_level=geographic_level
         )
         result_files["maps"] = map_files
         
@@ -973,7 +976,8 @@ def run_socialmapper(
         export_csv=export_csv,
         export_maps=export_maps,
         use_interactive_maps=use_interactive_maps,
-        census_codes=census_codes
+        census_codes=census_codes,
+        geographic_level=geographic_level
     )
     
     # Phase 7: Generate Final Report and Return Results

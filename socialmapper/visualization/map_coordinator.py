@@ -39,13 +39,14 @@ def generate_maps_for_variables(
     poi_df: Optional[Union[gpd.GeoDataFrame, List[gpd.GeoDataFrame]]] = None,
     use_panels: bool = False,
     use_plotly: bool = True,
+    geographic_level: str = "block-group",
     **kwargs
 ) -> List[str]:
     """
     Generate multiple maps for different census variables from the same data.
     
     Args:
-        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for block groups
+        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for geographic units
         variables: List of Census API variables to visualize
         output_dir: Directory to save maps (default: output/maps)
         basename: Base filename to use for output files (default: derived from input file)
@@ -54,6 +55,7 @@ def generate_maps_for_variables(
         poi_df: Optional GeoDataFrame containing POI data
         use_panels: Whether to generate paneled maps (requires list inputs)
         use_plotly: Whether to generate interactive Plotly maps (for Streamlit) instead of static maps
+        geographic_level: Geographic unit type ('block-group' or 'zcta')
         **kwargs: Additional keyword arguments to pass to the map generation functions
         
     Returns:
@@ -170,6 +172,7 @@ def generate_maps_for_variables(
                 output_path=output_path,
                 isochrone_path=isochrone_path_for_map,
                 poi_df=poi_df_for_map,
+                geographic_level=geographic_level,
                 **{k: v for k, v in kwargs.items() if k in [
                     'title', 'colormap', 'basemap_provider', 'figsize', 'dpi', 'show_isochrone'
                 ]}
