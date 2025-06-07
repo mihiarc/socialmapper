@@ -132,7 +132,8 @@ class FileNeighborManager:
                             'state_fips': closest['state_fips'],
                             'county_fips': closest['county_fips'],
                             'tract_geoid': closest.get('tract_geoid'),
-                            'block_group_geoid': closest.get('block_group_geoid')
+                            'block_group_geoid': closest.get('block_group_geoid'),
+                            'zcta_geoid': closest.get('zcta_geoid')
                         }
             except Exception as e:
                 logger.warning(f"Error checking cache for point ({lat}, {lon}): {e}")
@@ -186,6 +187,7 @@ class FileNeighborManager:
             county_fips = None
             tract_geoid = None
             block_group_geoid = None
+            zcta_geoid = None
             
             # Get state
             if 'States' in geographies and geographies['States']:
@@ -198,6 +200,14 @@ class FileNeighborManager:
             # Get tract
             if 'Census Tracts' in geographies and geographies['Census Tracts']:
                 tract_geoid = geographies['Census Tracts'][0].get('GEOID')
+            
+            # Get ZCTA (ZIP Code Tabulation Area)
+            if '2020 ZIP Code Tabulation Areas' in geographies and geographies['2020 ZIP Code Tabulation Areas']:
+                zcta_info = geographies['2020 ZIP Code Tabulation Areas'][0]
+                zcta_geoid = zcta_info.get('GEOID')
+            elif 'ZIP Code Tabulation Areas' in geographies and geographies['ZIP Code Tabulation Areas']:
+                zcta_info = geographies['ZIP Code Tabulation Areas'][0]
+                zcta_geoid = zcta_info.get('GEOID')
             
             # Get block group from 2020 Census Blocks data
             if '2020 Census Blocks' in geographies and geographies['2020 Census Blocks']:
@@ -217,10 +227,11 @@ class FileNeighborManager:
                 'state_fips': state_fips,
                 'county_fips': county_fips,
                 'tract_geoid': tract_geoid,
-                'block_group_geoid': block_group_geoid
+                'block_group_geoid': block_group_geoid,
+                'zcta_geoid': zcta_geoid
             }
             
-            logger.debug(f"Geocoded ({lat}, {lon}): State {state_fips}, County {county_fips}, BG {block_group_geoid}")
+            logger.debug(f"Geocoded ({lat}, {lon}): State {state_fips}, County {county_fips}, BG {block_group_geoid}, ZCTA {zcta_geoid}")
             return result
             
         except Exception as e:
@@ -251,6 +262,7 @@ class FileNeighborManager:
                 'county_fips': geo_info.get('county_fips'),
                 'tract_geoid': geo_info.get('tract_geoid'),
                 'block_group_geoid': geo_info.get('block_group_geoid'),
+                'zcta_geoid': geo_info.get('zcta_geoid'),
                 'cached_at': datetime.now().isoformat()
             }
             

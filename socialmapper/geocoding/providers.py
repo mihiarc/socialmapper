@@ -203,6 +203,7 @@ class NominatimProvider(GeocodingProvider):
                 result.county_fips = geo_info.get('county_fips')
                 result.tract_geoid = geo_info.get('tract_geoid')
                 result.block_group_geoid = geo_info.get('block_group_geoid')
+                result.zcta_geoid = geo_info.get('zcta_geoid')
                 
         except Exception as e:
             logger.warning(f"Failed to get geographic context: {e}")
@@ -312,6 +313,7 @@ class CensusProvider(GeocodingProvider):
                 result.county_fips = geo_info.get('county_fips')
                 result.tract_geoid = geo_info.get('tract_geoid')
                 result.block_group_geoid = geo_info.get('block_group_geoid')
+                result.zcta_geoid = geo_info.get('zcta_geoid')
                 
         except Exception as e:
             logger.warning(f"Failed to get geographic context: {e}") 

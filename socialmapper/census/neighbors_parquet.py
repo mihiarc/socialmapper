@@ -127,6 +127,7 @@ class NeighborDataManager:
                     'county_fips': pd.Series(dtype='string'),
                     'tract_geoid': pd.Series(dtype='string'),
                     'block_group_geoid': pd.Series(dtype='string'),
+                    'zcta_geoid': pd.Series(dtype='string'),
                     'cached_at': pd.Series(dtype='datetime64[ns]')
                 })
         return self._point_cache_df
@@ -192,7 +193,8 @@ class NeighborDataManager:
             'state_fips': 'string',
             'county_fips': 'string',
             'tract_geoid': 'string',
-            'block_group_geoid': 'string'
+            'block_group_geoid': 'string',
+            'zcta_geoid': 'string'
         })
         
         # Add timestamp if not present
@@ -443,7 +445,8 @@ class NeighborManager:
                     'state_fips': None if pd.isna(row['state_fips']) else str(row['state_fips']),
                     'county_fips': None if pd.isna(row['county_fips']) else str(row['county_fips']),
                     'tract_geoid': None if pd.isna(row['tract_geoid']) else str(row['tract_geoid']),
-                    'block_group_geoid': None if pd.isna(row['block_group_geoid']) else str(row['block_group_geoid'])
+                    'block_group_geoid': None if pd.isna(row['block_group_geoid']) else str(row['block_group_geoid']),
+                    'zcta_geoid': None if pd.isna(row['zcta_geoid']) else str(row['zcta_geoid'])
                 }
         
         # Geocode the point using Census Bureau API
@@ -459,6 +462,7 @@ class NeighborManager:
                 'county_fips': result['county_fips'],
                 'tract_geoid': result['tract_geoid'],
                 'block_group_geoid': result['block_group_geoid'],
+                'zcta_geoid': result.get('zcta_geoid'),
                 'cached_at': pd.Timestamp.now()
             }])
             
@@ -503,6 +507,7 @@ class NeighborManager:
                     county_fips = None
                     tract_geoid = None
                     block_group_geoid = None
+                    zcta_geoid = None
                     
                     # Get state and county from Counties layer
                     if 'Counties' in geographies and geographies['Counties']:
@@ -514,6 +519,14 @@ class NeighborManager:
                     if 'Census Tracts' in geographies and geographies['Census Tracts']:
                         tract_info = geographies['Census Tracts'][0]
                         tract_geoid = tract_info.get('GEOID')
+                    
+                    # Get ZCTA (ZIP Code Tabulation Area)
+                    if '2020 ZIP Code Tabulation Areas' in geographies and geographies['2020 ZIP Code Tabulation Areas']:
+                        zcta_info = geographies['2020 ZIP Code Tabulation Areas'][0]
+                        zcta_geoid = zcta_info.get('GEOID')
+                    elif 'ZIP Code Tabulation Areas' in geographies and geographies['ZIP Code Tabulation Areas']:
+                        zcta_info = geographies['ZIP Code Tabulation Areas'][0]
+                        zcta_geoid = zcta_info.get('GEOID')
                     
                     # Get block group from Census Block Groups layer (if available)
                     if 'Census Block Groups' in geographies and geographies['Census Block Groups']:
@@ -531,7 +544,8 @@ class NeighborManager:
                         'state_fips': state_fips,
                         'county_fips': county_fips,
                         'tract_geoid': tract_geoid,
-                        'block_group_geoid': block_group_geoid
+                        'block_group_geoid': block_group_geoid,
+                        'zcta_geoid': zcta_geoid
                     }
             
             # If geocoding failed, log the issue
@@ -545,7 +559,8 @@ class NeighborManager:
             'state_fips': None,
             'county_fips': None,
             'tract_geoid': None,
-            'block_group_geoid': None
+            'block_group_geoid': None,
+            'zcta_geoid': None
         }
     
     def get_counties_from_pois(

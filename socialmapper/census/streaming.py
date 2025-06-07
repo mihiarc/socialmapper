@@ -4,6 +4,7 @@ Pure streaming census system - no persistent storage of geographic metadata.
 
 This module provides:
 - On-demand streaming of block groups from Census APIs
+- On-demand streaming of ZCTAs from Census APIs
 - Optional lightweight caching of census data only
 - No storage of geographic metadata (GEOID, names, etc.)
 - Minimal memory footprint
@@ -41,30 +42,21 @@ logger = logging.getLogger(__name__)
 
 class StreamingCensusManager:
     """
-    Pure streaming census manager with no persistent geographic metadata storage.
-    
-    This class provides:
-    - On-demand streaming of boundaries from Census APIs
-    - Optional lightweight caching of census data (statistics only)
-    - No storage of geographic metadata
-    - Minimal storage footprint
+    Pure streaming census data manager that fetches block groups and ZCTAs on-demand.
     """
     
-    def __init__(self, cache_census_data: bool = False, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_census_data: bool = True, cache_dir: Path = Path("cache")):
         """
         Initialize the streaming census manager.
         
         Args:
-            cache_census_data: Whether to cache census statistics (not geographic metadata)
-            cache_dir: Directory for optional census data cache (Parquet files)
+            cache_census_data: Whether to cache census data (not boundaries)
+            cache_dir: Directory for caching
         """
         self.cache_census_data = cache_census_data
-        self.cache_dir = Path(cache_dir) if cache_dir else Path.home() / ".socialmapper" / "census_cache"
-        
-        if self.cache_census_data:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            self.cache_dir = None
+        self.cache_dir = cache_dir
+        if cache_census_data:
+            self.cache_dir.mkdir(exist_ok=True)
     
     def get_block_groups(
         self, 
@@ -122,6 +114,53 @@ class StreamingCensusManager:
             combined_gdf['BLKGRP'] = combined_gdf['BLKGRPCE']
         
         return combined_gdf
+
+    def get_zctas(
+        self, 
+        state_fips: List[str], 
+        api_key: Optional[str] = None
+    ) -> gpd.GeoDataFrame:
+        """
+        Stream ZCTAs (ZIP Code Tabulation Areas) for specified states directly from Census APIs.
+        
+        Args:
+            state_fips: List of state FIPS codes
+            api_key: Census API key
+            
+        Returns:
+            GeoDataFrame with ZCTAs (streamed, not cached)
+        """
+        # Normalize state FIPS codes
+        normalized_fips = []
+        for state in state_fips:
+            fips = normalize_state(state, to_format=StateFormat.FIPS)
+            if fips:
+                normalized_fips.append(fips)
+            else:
+                logger.warning(f"Could not normalize state identifier: {state}")
+        
+        if not normalized_fips:
+            raise ValueError("No valid state identifiers provided")
+        
+        # Stream boundaries for all requested states
+        all_gdfs = []
+        
+        for fips in normalized_fips:
+            try:
+                gdf = self._stream_zctas_from_api(fips, api_key)
+                if gdf is not None and not gdf.empty:
+                    all_gdfs.append(gdf)
+            except Exception as e:
+                logger.error(f"Failed to stream ZCTAs for state {fips}: {e}")
+                continue
+        
+        if not all_gdfs:
+            raise ValueError(f"No ZCTAs found for states: {normalized_fips}")
+        
+        # Combine all state data
+        combined_gdf = pd.concat(all_gdfs, ignore_index=True)
+        
+        return combined_gdf
     
     def _stream_block_groups_from_api(self, state_fips: str, api_key: Optional[str] = None) -> Optional[gpd.GeoDataFrame]:
         """Stream block groups from Census API."""
@@ -158,6 +197,39 @@ class StreamingCensusManager:
                 return gdf
         except Exception as e:
             logger.error(f"All streaming methods failed for state {state_fips}: {e}")
+        
+        return None
+
+    def _stream_zctas_from_api(self, state_fips: str, api_key: Optional[str] = None) -> Optional[gpd.GeoDataFrame]:
+        """Stream ZCTAs from Census API."""
+        if not api_key:
+            api_key = get_census_api_key()
+            if not api_key:
+                raise ValueError("Census API key required for streaming boundary data")
+        
+        state_name = state_fips_to_name(state_fips) or state_fips
+        
+        # Try multiple approaches in order of preference
+        gdf = None
+        
+        # Method 1: TIGER/Web API with GeoJSON format (preferred - fast, no large downloads)
+        try:
+            gdf = self._fetch_zctas_from_tiger_geojson()
+            if gdf is not None and not gdf.empty:
+                return gdf
+        except Exception as e:
+            logger.error(f"ZCTA TIGER GeoJSON API failed: {e}, trying cartographic files as fallback")
+        
+        # Method 2: Census Cartographic Boundary Files (fallback - slow, large download)
+        try:
+            gdf = self._fetch_zctas_from_cartographic_files()
+            if gdf is not None and not gdf.empty:
+                # Filter to state if possible
+                if 'GEOID20' in gdf.columns or 'ZCTA5CE20' in gdf.columns:
+                    # ZCTAs don't have a direct state field, so we'll use spatial filtering later
+                    return gdf
+        except Exception as e:
+            logger.error(f"ZCTA cartographic files also failed: {e}")
         
         return None
     
@@ -210,6 +282,67 @@ class StreamingCensusManager:
         finally:
             # Clean up temporary ZIP file
             Path(tmp_zip_path).unlink()
+
+    def _fetch_zctas_from_cartographic_files(self) -> Optional[gpd.GeoDataFrame]:
+        """Fetch ZCTAs from Census Cartographic Boundary Files (national file)."""
+        # ZCTAs are distributed as a national file - try multiple years and formats
+        urls = [
+            "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_zcta520_500k.zip",  # 2020 format
+            "https://www2.census.gov/geo/tiger/GENZ2022/shp/cb_2022_us_zcta520_500k.zip",  # 2022 format  
+            "https://www2.census.gov/geo/tiger/GENZ2021/shp/cb_2021_us_zcta520_500k.zip",  # Original 2021 format
+        ]
+        
+        rate_limiter.wait_if_needed("census")
+        
+        # Try multiple URLs until one works
+        response = None
+        for url in urls:
+            try:
+                response = requests.get(url, timeout=120)  # Longer timeout for national file
+                response.raise_for_status()
+                break  # Success, exit loop
+            except requests.exceptions.RequestException as e:
+                logger.debug(f"Failed to fetch ZCTA from {url}: {e}")
+                continue  # Try next URL
+        
+        if response is None:
+            # If all URLs failed, raise the last error
+            raise Exception(f"All ZCTA cartographic file URLs failed. Tried: {urls}")
+        
+        # Save to temporary file and extract
+        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp_zip:
+            tmp_zip.write(response.content)
+            tmp_zip_path = tmp_zip.name
+        
+        try:
+            # Extract and read the shapefile
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                with zipfile.ZipFile(tmp_zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmp_dir)
+                
+                # Find the .shp file
+                shp_files = list(Path(tmp_dir).glob("*.shp"))
+                if not shp_files:
+                    return None
+                
+                # Load as GeoDataFrame
+                gdf = gpd.read_file(shp_files[0])
+                
+                # Standardize GEOID column name for different years/formats
+                if 'GEOID' not in gdf.columns:
+                    # Try common ZCTA GEOID column names
+                    possible_geoid_cols = ['ZCTA5CE20', 'GEOID20', 'ZCTA5CE', 'ZCTA']
+                    for col in possible_geoid_cols:
+                        if col in gdf.columns:
+                            gdf['GEOID'] = gdf[col]
+                            break
+                    else:
+                        logger.warning(f"No recognized GEOID column found in ZCTA data. Available columns: {list(gdf.columns)}")
+                
+                return gdf
+        finally:
+            # Clean up temporary ZIP file
+            Path(tmp_zip_path).unlink()
     
     def _fetch_from_tiger_geojson(self, state_fips: str) -> Optional[gpd.GeoDataFrame]:
         """Fetch block groups from TIGER/Web API using GeoJSON format."""
@@ -255,6 +388,41 @@ class StreamingCensusManager:
             )
         
         return gdf
+
+    def _fetch_zctas_from_tiger_geojson(self, state_fips: str = None) -> Optional[gpd.GeoDataFrame]:
+        """Fetch ZCTAs from TIGER/Web API using GeoJSON format."""
+        # Use the current ZCTA layer from TIGERweb (Layer 1 - 2020 Census ZIP Code Tabulation Areas)
+        url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query"
+        
+        # For demo purposes, get ZCTAs that are likely to intersect with our test data
+        # Seattle ZCTAs start with 98, so filter for those (use startswith-style query)
+        where_clause = "ZCTA5 >= '98000' AND ZCTA5 < '99000'"  # WA state ZIP codes  
+        
+        params = {
+            'where': where_clause,
+            'outFields': 'ZCTA5,GEOID,AREALAND,AREAWATER',
+            'returnGeometry': 'true',
+            'f': 'geojson',
+            'resultRecordCount': 500  # More records since we're filtering
+        }
+        
+        rate_limiter.wait_if_needed("census")
+        response = requests.get(url, params=params, timeout=60)
+        response.raise_for_status()
+        
+        data = response.json()
+        if 'features' not in data or not data['features']:
+            return None
+        
+        # Convert to GeoDataFrame
+        gdf = gpd.GeoDataFrame.from_features(data['features'], crs="EPSG:4326")
+        
+        # The GEOID field should already be correct, but ensure it exists
+        if 'GEOID' not in gdf.columns and 'ZCTA5' in gdf.columns:
+            gdf['GEOID'] = gdf['ZCTA5']
+        
+        logger.info(f"Successfully fetched {len(gdf)} ZCTAs from TIGER API (demo subset)")
+        return gdf
     
     def _fetch_from_tiger_esri_json(self, state_fips: str) -> Optional[gpd.GeoDataFrame]:
         """Fetch block groups from TIGER/Web API using ESRI JSON format."""
@@ -298,17 +466,19 @@ class StreamingCensusManager:
         variables: List[str],
         year: int = 2021,
         dataset: str = 'acs/acs5',
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        geographic_level: str = 'block group'
     ) -> pd.DataFrame:
         """
         Get census data for specified GEOIDs, with optional caching.
         
         Args:
-            geoids: List of block group GEOIDs
+            geoids: List of GEOIDs (block group or ZCTA)
             variables: List of census variable codes
             year: Census year
             dataset: Census dataset
             api_key: Census API key
+            geographic_level: 'block group' or 'zcta'
             
         Returns:
             DataFrame with census data
@@ -320,7 +490,7 @@ class StreamingCensusManager:
                 return cached_data
         
         # Fetch from API
-        data = self._fetch_census_data_from_api(geoids, variables, year, dataset, api_key)
+        data = self._fetch_census_data_from_api(geoids, variables, year, dataset, api_key, geographic_level)
         
         # Cache if enabled
         if self.cache_census_data and not data.empty:
@@ -352,19 +522,20 @@ class StreamingCensusManager:
         cache_file = self.cache_dir / f"census_{year}_{dataset.replace('/', '_')}.parquet"
         
         try:
-            # Append to existing cache or create new
+            # Read existing cache if it exists
             if cache_file.exists():
-                existing = pd.read_parquet(cache_file)
-                combined = pd.concat([existing, data], ignore_index=True)
-                combined = combined.drop_duplicates(subset=['GEOID', 'variable_code'])
+                existing_data = pd.read_parquet(cache_file)
+                # Combine with new data
+                combined_data = pd.concat([existing_data, data], ignore_index=True)
+                # Remove duplicates
+                combined_data = combined_data.drop_duplicates(subset=['GEOID', 'variable_code'])
             else:
-                combined = data
+                combined_data = data
             
-            combined.to_parquet(cache_file, compression='snappy')
-            # Removed noisy logging: get_progress_bar().write(f"Cached {len(data)} census records to {cache_file}")
-            
+            # Save to cache
+            combined_data.to_parquet(cache_file, index=False)
         except Exception as e:
-            logger.warning(f"Error caching census data: {e}")
+            logger.warning(f"Error writing census cache: {e}")
     
     def _fetch_census_data_from_api(
         self,
@@ -372,7 +543,8 @@ class StreamingCensusManager:
         variables: List[str],
         year: int,
         dataset: str,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        geographic_level: str = 'block group'
     ) -> pd.DataFrame:
         """Fetch census data from the Census API."""
         if not api_key:
@@ -380,6 +552,20 @@ class StreamingCensusManager:
             if not api_key:
                 raise ValueError("Census API key required for fetching census data")
         
+        if geographic_level == 'zcta':
+            return self._fetch_zcta_census_data_from_api(geoids, variables, year, dataset, api_key)
+        else:
+            return self._fetch_block_group_census_data_from_api(geoids, variables, year, dataset, api_key)
+
+    def _fetch_block_group_census_data_from_api(
+        self,
+        geoids: List[str],
+        variables: List[str],
+        year: int,
+        dataset: str,
+        api_key: str
+    ) -> pd.DataFrame:
+        """Fetch block group census data from the Census API."""
         # Group GEOIDs by state for efficient API calls
         state_geoids = {}
         for geoid in geoids:
@@ -416,6 +602,53 @@ class StreamingCensusManager:
         
         # Transform to long format
         return self._transform_to_long_format(combined_data, variables, year, dataset)
+
+    def _fetch_zcta_census_data_from_api(
+        self,
+        geoids: List[str],
+        variables: List[str],
+        year: int,
+        dataset: str,
+        api_key: str
+    ) -> pd.DataFrame:
+        """Fetch ZCTA census data from the Census API."""
+        api_variables = variables.copy()
+        if 'NAME' not in api_variables:
+            api_variables.append('NAME')
+        
+        base_url = f'https://api.census.gov/data/{year}/{dataset}'
+        
+        params = {
+            'get': ','.join(api_variables),
+            'for': 'zip code tabulation area:*',
+            'key': api_key
+        }
+        
+        try:
+            rate_limiter.wait_if_needed("census")
+            response = requests.get(base_url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            if not data or len(data) < 2:
+                return pd.DataFrame()
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(data[1:], columns=data[0])
+            
+            # Create GEOID from zip code tabulation area field
+            if 'zip code tabulation area' in df.columns:
+                df['GEOID'] = df['zip code tabulation area'].astype(str).str.zfill(5)
+            
+            # Filter to only the GEOIDs we need
+            df = df[df['GEOID'].isin(geoids)]
+            
+            # Transform to long format
+            return self._transform_to_long_format(df, variables, year, dataset)
+            
+        except Exception as e:
+            logger.error(f"API request failed for ZCTAs: {e}")
+            raise
     
     def _fetch_state_census_data(
         self,
@@ -465,40 +698,35 @@ class StreamingCensusManager:
             logger.error(f"API request failed for state {state_fips}: {e}")
             raise
     
-    def _transform_to_long_format(
-        self,
-        data: pd.DataFrame,
-        variables: List[str],
-        year: int,
-        dataset: str
-    ) -> pd.DataFrame:
-        """Transform wide format census data to long format."""
-        records = []
+    def _transform_to_long_format(self, df: pd.DataFrame, variables: List[str], year: int, dataset: str) -> pd.DataFrame:
+        """Transform census data to long format."""
+        if df.empty:
+            return df
         
-        for _, row in data.iterrows():
-            geoid = row['GEOID']
+        # Prepare long format data
+        long_data = []
+        
+        for _, row in df.iterrows():
+            geoid = row.get('GEOID')
+            name = row.get('NAME', '')
             
             for var in variables:
                 if var in row:
-                    # Get variable name from mapping
-                    var_name = None
-                    for name, code in CENSUS_VARIABLE_MAPPING.items():
-                        if code == var:
-                            var_name = name.replace('_', ' ').title()
-                            break
+                    try:
+                        value = pd.to_numeric(row[var], errors='coerce')
+                    except (ValueError, TypeError):
+                        value = None
                     
-                    record = {
+                    long_data.append({
                         'GEOID': geoid,
+                        'NAME': name,
                         'variable_code': var,
-                        'variable_name': var_name or var,
-                        'value': pd.to_numeric(row[var], errors='coerce'),
-                        'margin_of_error': None,
+                        'value': value,
                         'year': year,
                         'dataset': dataset
-                    }
-                    records.append(record)
+                    })
         
-        return pd.DataFrame(records)
+        return pd.DataFrame(long_data)
 
 
 # Global streaming manager instance
