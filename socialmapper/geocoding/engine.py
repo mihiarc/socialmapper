@@ -163,7 +163,7 @@ class AddressGeocodingEngine:
         # Process in batches with progress tracking
         if progress:
             progress_bar = get_progress_bar(
-                len(address_inputs),
+                total=len(address_inputs),
                 desc="Geocoding addresses"
             )
         

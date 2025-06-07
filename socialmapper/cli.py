@@ -22,6 +22,7 @@ from .ui.rich_console import (
     print_panel,
     print_table
 )
+from .progress import get_progress_tracker
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
@@ -120,8 +121,12 @@ def parse_arguments():
     
     # If not testing migration and not listing variables, require input method
     if not args.test_migration and not args.list_variables and not args.dry_run:
-        if not args.custom_coords and not args.poi:
-            parser.error("one of the arguments --custom-coords --poi is required (unless using --test-migration, --list-variables, or --dry-run)")
+        if not args.custom_coords and not args.poi and not args.addresses:
+            parser.error("one of the arguments --custom-coords --poi --addresses is required (unless using --test-migration, --list-variables, or --dry-run)")
+        
+        # Validate address arguments if --addresses is specified
+        if args.addresses and not args.address_file:
+            parser.error("When using --addresses, you must specify --address-file")
     
     # Validate POI arguments if --poi is specified for querying OSM
     if args.poi:
@@ -277,11 +282,12 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     
     # Print beautiful banner using Rich
-    tracker = get_rich_tracker()
-    tracker.print_banner(
-        "End-to-end tool for mapping community resources",
-        "Analyzing community connections through demographics and points of interest"
-    )
+    tracker = get_progress_tracker()
+    
+    # Print banner info using Rich console
+    console.print("\n[bold cyan]🌍 SocialMapper[/bold cyan]")
+    console.print("[dim]End-to-end tool for mapping community resources[/dim]")
+    console.print("[dim]Analyzing community connections through demographics and points of interest[/dim]\n")
     
     # If dry-run, just print what would be done and exit
     if args.dry_run:
@@ -373,7 +379,6 @@ def main():
             
             # Create a temporary file for the geocoded coordinates
             import tempfile
-            import os
             
             temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
             
