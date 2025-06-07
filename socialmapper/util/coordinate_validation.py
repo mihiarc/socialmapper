@@ -345,9 +345,8 @@ def safe_coordinate_transform(points: List[Point], target_crs: str, source_crs: 
         logger.warning("No points provided for coordinate transformation")
         return None
     
-    if len(points) == 1:
-        logger.warning("Single point transformations are not supported for distance calculations")
-        return None
+    # Note: Single point transformations are actually fine for distance calculations
+    # We can calculate distances from many centroids to 1 POI
     
     try:
         # Create GeoDataFrame with multiple points
@@ -381,15 +380,14 @@ def prevalidate_for_pyproj(data: Union[List[Dict], gpd.GeoDataFrame, List[Point]
                 errors.append("Empty data list provided")
                 return False, errors
             
-            if len(data) == 1:
-                errors.append("Single point data is not supported for distance calculations")
-                return False, errors
+            # Note: Single POI is valid - we can calculate distances from many centroids to 1 POI
+            # Only reject if we have zero POIs
             
             # Check if it's a list of dictionaries (POI data)
             if isinstance(data[0], dict):
                 validation_result = validate_poi_coordinates(data)
-                if validation_result.total_valid < 2:
-                    errors.append(f"Insufficient valid coordinates: {validation_result.total_valid} valid out of {validation_result.total_input}")
+                if validation_result.total_valid < 1:
+                    errors.append(f"No valid coordinates found: {validation_result.total_valid} valid out of {validation_result.total_input}")
                     errors.extend(validation_result.validation_errors)
                     return False, errors
             
@@ -402,8 +400,8 @@ def prevalidate_for_pyproj(data: Union[List[Dict], gpd.GeoDataFrame, List[Point]
         
         elif isinstance(data, gpd.GeoDataFrame):
             validation_result = validate_geodataframe_coordinates(data)
-            if validation_result.total_valid < 2:
-                errors.append(f"Insufficient valid coordinates in GeoDataFrame: {validation_result.total_valid} valid out of {validation_result.total_input}")
+            if validation_result.total_valid < 1:
+                errors.append(f"No valid coordinates found in GeoDataFrame: {validation_result.total_valid} valid out of {validation_result.total_input}")
                 errors.extend(validation_result.validation_errors)
                 return False, errors
         

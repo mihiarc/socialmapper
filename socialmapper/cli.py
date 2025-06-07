@@ -69,6 +69,8 @@ def parse_arguments():
     
     # General parameters
     parser.add_argument("--travel-time", type=int, default=15, help="Travel time in minutes")
+    parser.add_argument("--geographic-level", choices=["block-group", "zcta"], default="block-group",
+                        help="Geographic unit for analysis: 'block-group' (default) or 'zcta' (ZIP Code Tabulation Areas)")
     parser.add_argument(
         "--census-variables", 
         nargs="+", 
@@ -344,6 +346,7 @@ def main():
                 poi_type=args.poi_type,
                 poi_name=args.poi_name,
                 travel_time=args.travel_time,
+                geographic_level=args.geographic_level,
                 census_variables=args.census_variables,
                 api_key=args.api_key,
                 output_dir=args.output_dir,
@@ -381,49 +384,44 @@ def main():
             import tempfile
             
             temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
+            os.makedirs(args.output_dir, exist_ok=True)
             
-            # Convert POIs to CSV format
-            if poi_data['pois']:
-                geocoded_df = pd.DataFrame([
-                    {
-                        'name': poi['name'],
-                        'latitude': poi['lat'],
-                        'longitude': poi['lon'],
-                        'type': poi['type'],
-                        'provider': poi['tags'].get('geocoding:provider'),
-                        'quality': poi['tags'].get('geocoding:quality'),
-                        'confidence': poi['tags'].get('geocoding:confidence')
-                    }
-                    for poi in poi_data['pois']
-                ])
-                geocoded_df.to_csv(temp_file, index=False)
-                
-                console.print(f"[green]✅ Successfully geocoded {len(poi_data['pois'])} addresses[/green]")
-                console.print(f"[dim]Geocoded coordinates saved to: {temp_file}[/dim]")
-                
-                # Run SocialMapper with geocoded addresses
-                run_socialmapper(
-                    travel_time=args.travel_time,
-                    census_variables=args.census_variables,
-                    api_key=args.api_key,
-                    custom_coords_path=temp_file,
-                    output_dir=args.output_dir,
-                    export_csv=args.export_csv,
-                    export_maps=args.export_maps,
-                    map_backend=args.map_backend,
-                    name_field='name',
-                    type_field='type'
-                )
-            else:
-                raise ValueError("No addresses could be successfully geocoded")
-                
-        else:
-            # Use custom coordinates
+            # Convert to CSV format for SocialMapper
+            poi_csv_data = []
+            for poi in poi_data:
+                poi_csv_data.append({
+                    'name': poi['name'],
+                    'lat': poi['lat'],
+                    'lon': poi['lon'],
+                    'type': poi.get('type', 'address')
+                })
+            
+            import pandas as pd
+            df = pd.DataFrame(poi_csv_data)
+            df.to_csv(temp_file, index=False)
+            
+            console.print(f"[bold green]✅ Saved geocoded addresses to {temp_file}[/bold green]")
+            
+            # Run SocialMapper with the geocoded coordinates
             run_socialmapper(
+                custom_coords=temp_file,
                 travel_time=args.travel_time,
+                geographic_level=args.geographic_level,
                 census_variables=args.census_variables,
                 api_key=args.api_key,
-                custom_coords_path=args.custom_coords,
+                output_dir=args.output_dir,
+                export_csv=args.export_csv,
+                export_maps=args.export_maps,
+                map_backend=args.map_backend
+            )
+        else:
+            # Use custom coordinates file
+            run_socialmapper(
+                custom_coords=args.custom_coords,
+                travel_time=args.travel_time,
+                geographic_level=args.geographic_level,
+                census_variables=args.census_variables,
+                api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
                 export_maps=args.export_maps,

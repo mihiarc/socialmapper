@@ -78,8 +78,16 @@ class RichProgressWrapper:
             refresh_per_second=10,
         )
         
-        self.progress_instance.start()
-        self.task_id = self.progress_instance.add_task(desc, total=self.total)
+        # Use try-except to handle Rich live display conflicts
+        try:
+            self.progress_instance.start()
+            self.task_id = self.progress_instance.add_task(desc, total=self.total)
+        except Exception as e:
+            # If we can't start the progress display (e.g., another is active), 
+            # fallback to simple print statements
+            console.print(f"🔄 {desc}")
+            self.progress_instance = None
+            self.task_id = None
     
     def __iter__(self):
         if self.iterable:
@@ -95,8 +103,17 @@ class RichProgressWrapper:
     
     def update(self, n=1):
         if self.progress_instance and self.task_id is not None:
-            self.progress_instance.update(self.task_id, advance=n)
-            self.position += n
+            try:
+                self.progress_instance.update(self.task_id, advance=n)
+            except Exception:
+                # If progress update fails, just track position
+                pass
+        self.position += n
+        
+        # If no progress display, show periodic updates
+        if self.progress_instance is None and self.total and self.position % max(1, self.total // 10) == 0:
+            percentage = (self.position / self.total) * 100
+            console.print(f"  Progress: {self.position}/{self.total} ({percentage:.1f}%)")
     
     def set_description(self, desc):
         if self.progress_instance and self.task_id is not None:
@@ -104,7 +121,14 @@ class RichProgressWrapper:
     
     def close(self):
         if self.progress_instance:
-            self.progress_instance.stop()
+            try:
+                self.progress_instance.stop()
+            except Exception:
+                # Ignore errors during cleanup
+                pass
+            finally:
+                self.progress_instance = None
+                self.task_id = None
     
     def write(self, message):
         console.print(message)
@@ -113,6 +137,17 @@ class RichProgressWrapper:
 def rich_tqdm(*args, **kwargs):
     """Drop-in replacement for tqdm using Rich."""
     return RichProgressWrapper(*args, **kwargs)
+
+
+def clear_console_state():
+    """Clear any active Rich console state to prevent conflicts."""
+    try:
+        # Clear any active live displays
+        if hasattr(console, '_live') and console._live is not None:
+            console.clear_live()
+    except Exception:
+        # Ignore errors during cleanup
+        pass
 
 
 @contextmanager

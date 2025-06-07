@@ -530,7 +530,8 @@ def integrate_census_data(
     isochrone_gdf: gpd.GeoDataFrame,
     census_variables: List[str],
     api_key: Optional[str],
-    poi_data: Dict[str, Any]
+    poi_data: Dict[str, Any],
+    geographic_level: str = "block-group"
 ) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, List[str]]:
     """
     Integrate census data with isochrones.
@@ -540,9 +541,10 @@ def integrate_census_data(
         census_variables: List of census variables
         api_key: Census API key
         poi_data: POI data for distance calculations
+        geographic_level: Geographic unit ('block-group' or 'zcta')
         
     Returns:
-        Tuple of (block_groups_gdf, census_data_gdf, census_codes)
+        Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
     """
     from .census import get_streaming_census_manager, get_counties_from_pois
     from .util import census_code_to_name
@@ -557,6 +559,7 @@ def integrate_census_data(
     # Display human-readable names for requested census variables
     readable_names = get_readable_census_variables(census_codes)
     print(f"Requesting census data for: {', '.join(readable_names)}")
+    print(f"Geographic level: {geographic_level}")
     
     # Get census manager
     census_manager = get_streaming_census_manager()
@@ -565,45 +568,65 @@ def integrate_census_data(
     counties = get_counties_from_pois(poi_data['pois'], include_neighbors=False)
     state_fips = list(set([county[:2] for county in counties]))
     
-    # Get block groups and filter to intersecting ones
-    with get_progress_bar(total=len(state_fips), desc="🏛️ Finding Census Block Groups", unit="state") as pbar:
-        block_groups_gdf = census_manager.get_block_groups(state_fips)
-        pbar.update(len(state_fips))
+    # Get geographic units based on level
+    if geographic_level == "zcta":
+        # Get ZCTAs and filter to intersecting ones
+        with get_progress_bar(total=len(state_fips), desc="🏛️ Finding ZIP Code Tabulation Areas", unit="state") as pbar:
+            geographic_units_gdf = census_manager.get_zctas(state_fips)
+            pbar.update(len(state_fips))
+            
+            # Filter to intersecting ZCTAs
+            isochrone_union = isochrone_gdf.geometry.union_all()
+            intersecting_mask = geographic_units_gdf.geometry.intersects(isochrone_union)
+            geographic_units_gdf = geographic_units_gdf[intersecting_mask]
         
-        # Filter to intersecting block groups
-        isochrone_union = isochrone_gdf.geometry.union_all()
-        intersecting_mask = block_groups_gdf.geometry.intersects(isochrone_union)
-        block_groups_gdf = block_groups_gdf[intersecting_mask]
-    
-    if block_groups_gdf is None or block_groups_gdf.empty:
-        raise ValueError("No census block groups found intersecting with isochrones.")
-    
-    print(f"Found {len(block_groups_gdf)} intersecting census block groups")
+        if geographic_units_gdf is None or geographic_units_gdf.empty:
+            raise ValueError("No ZIP Code Tabulation Areas found intersecting with isochrones.")
+        
+        print(f"Found {len(geographic_units_gdf)} intersecting ZIP Code Tabulation Areas")
+    else:
+        # Get block groups and filter to intersecting ones
+        with get_progress_bar(total=len(state_fips), desc="🏛️ Finding Census Block Groups", unit="state") as pbar:
+            geographic_units_gdf = census_manager.get_block_groups(state_fips)
+            pbar.update(len(state_fips))
+            
+            # Filter to intersecting block groups
+            isochrone_union = isochrone_gdf.geometry.union_all()
+            intersecting_mask = geographic_units_gdf.geometry.intersects(isochrone_union)
+            geographic_units_gdf = geographic_units_gdf[intersecting_mask]
+        
+        if geographic_units_gdf is None or geographic_units_gdf.empty:
+            raise ValueError("No census block groups found intersecting with isochrones.")
+        
+        print(f"Found {len(geographic_units_gdf)} intersecting census block groups")
     
     # Calculate travel distances in memory
-    block_groups_with_distances = add_travel_distances(
-        block_groups_gdf=block_groups_gdf,
+    units_with_distances = add_travel_distances(
+        block_groups_gdf=geographic_units_gdf,
         poi_data=poi_data
     )
     
-    print(f"Calculated travel distances for {len(block_groups_with_distances)} block groups")
+    units_label = "ZIP Code Tabulation Areas" if geographic_level == "zcta" else "block groups"
+    print(f"Calculated travel distances for {len(units_with_distances)} {units_label}")
     
     # Create variable mapping for human-readable names
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
     
     # Fetch census data using streaming
-    geoids = block_groups_with_distances['GEOID'].tolist()
+    geoids = units_with_distances['GEOID'].tolist()
     
-    with get_progress_bar(total=len(geoids), desc="📊 Integrating Census Data", unit="block") as pbar:
+    unit_desc = "ZCTA" if geographic_level == "zcta" else "block"
+    with get_progress_bar(total=len(geoids), desc="📊 Integrating Census Data", unit=unit_desc) as pbar:
         census_data = census_manager.get_census_data(
             geoids=geoids,
             variables=census_codes,
-            api_key=api_key
+            api_key=api_key,
+            geographic_level=geographic_level
         )
         pbar.update(len(geoids) // 2)
         
-        # Merge census data with block groups
-        census_data_gdf = block_groups_with_distances.copy()
+        # Merge census data with geographic units
+        census_data_gdf = units_with_distances.copy()
         
         # Add census variables to the GeoDataFrame
         for _, row in census_data.iterrows():
@@ -611,7 +634,7 @@ def integrate_census_data(
             var_code = row['variable_code']
             value = row['value']
             
-            # Find matching block group and add the variable
+            # Find matching geographic unit and add the variable
             mask = census_data_gdf['GEOID'] == geoid
             if mask.any():
                 census_data_gdf.loc[mask, var_code] = value
@@ -626,9 +649,9 @@ def integrate_census_data(
     variables_for_viz = [var for var in census_codes if var != 'NAME']
     census_data_gdf.attrs['variables_for_visualization'] = variables_for_viz
     
-    print(f"Retrieved census data for {len(census_data_gdf)} block groups")
+    print(f"Retrieved census data for {len(census_data_gdf)} {units_label}")
     
-    return block_groups_gdf, census_data_gdf, census_codes
+    return geographic_units_gdf, census_data_gdf, census_codes
 
 
 def export_pipeline_outputs(
@@ -839,6 +862,7 @@ def run_socialmapper(
     poi_name: Optional[str] = None,
     additional_tags: Optional[Dict] = None,
     travel_time: int = 15,
+    geographic_level: str = "block-group",
     census_variables: List[str] | None = None,
     api_key: Optional[str] = None,
     output_dir: str = "output",
@@ -867,6 +891,7 @@ def run_socialmapper(
         poi_name: Name of POI (e.g., 'library', 'park') 
         additional_tags: Dictionary of additional tags to filter by
         travel_time: Travel time limit in minutes
+        geographic_level: Geographic unit for analysis: 'block-group' or 'zcta'
         census_variables: List of census variables to retrieve
         api_key: Census API key
         output_dir: Output directory for all files
@@ -929,11 +954,12 @@ def run_socialmapper(
     )
     
     # Phase 5: Integrate Census Data
-    block_groups_gdf, census_data_gdf, census_codes = integrate_census_data(
+    geographic_units_gdf, census_data_gdf, census_codes = integrate_census_data(
         isochrone_gdf=isochrone_gdf,
         census_variables=census_variables,
         api_key=api_key,
-        poi_data=poi_data
+        poi_data=poi_data,
+        geographic_level=geographic_level
     )
     
     # Phase 6: Export Pipeline Outputs
@@ -962,7 +988,8 @@ def run_socialmapper(
     # Add the processed data to the result for backward compatibility
     result.update({
         "isochrones": isochrone_gdf,
-        "block_groups": block_groups_gdf,
+        "geographic_units": geographic_units_gdf,
+        "block_groups": geographic_units_gdf,  # Keep for backward compatibility
         "census_data": census_data_gdf
     })
     
