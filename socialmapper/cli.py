@@ -2,7 +2,6 @@
 """Command-line interface for SocialMapper."""
 
 import argparse
-import logging
 import sys
 import time
 import traceback
@@ -12,20 +11,24 @@ from . import __version__
 from .core import run_socialmapper, setup_directory
 from .util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .states import normalize_state, StateFormat
-from .ui.rich_progress import get_rich_tracker, console
+from .ui.rich_console import (
+    console,
+    setup_rich_logging,
+    get_logger,
+    print_info,
+    print_success,
+    print_warning,
+    print_error,
+    print_panel,
+    print_table
+)
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
-from rich.traceback import install as install_rich_traceback
 
-# Install Rich traceback handling
-install_rich_traceback(show_locals=True)
-
-# Configure basic logging with Rich integration
-logging.basicConfig(
-    level=logging.WARNING,  # Reduce noise, Rich will handle user feedback
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Setup Rich logging for the entire application
+setup_rich_logging(level="INFO", show_time=True, show_path=False)
+logger = get_logger(__name__)
 
 def parse_arguments():
     """

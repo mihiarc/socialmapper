@@ -14,7 +14,17 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from rich.status import Status
-from rich.progress import Progress
+from rich.progress import (
+    Progress, 
+    BarColumn, 
+    TextColumn, 
+    TimeElapsedColumn, 
+    TimeRemainingColumn,
+    MofNCompleteColumn,
+    SpinnerColumn,
+    ProgressColumn,
+    Task
+)
 from rich import box
 from rich.pretty import pprint
 from rich.syntax import Syntax
@@ -23,6 +33,141 @@ from contextlib import contextmanager
 
 # Install Rich tracebacks globally for the package
 install_rich_traceback(show_locals=True)
+
+
+class RichProgressColumn(ProgressColumn):
+    """Custom progress column showing items per second."""
+    
+    def render(self, task: "Task") -> Text:
+        """Render the progress column."""
+        if task.speed is None:
+            return Text("", style="progress.percentage")
+        
+        if task.speed >= 1:
+            return Text(f"{task.speed:.1f} items/sec", style="progress.percentage")
+        else:
+            return Text(f"{1/task.speed:.1f} sec/item", style="progress.percentage")
+
+
+# Compatibility class for existing tqdm usage
+class RichProgressWrapper:
+    """Wrapper to make Rich Progress compatible with existing tqdm usage."""
+    
+    def __init__(self, iterable=None, desc="", total=None, unit="it", **kwargs):
+        self.iterable = iterable
+        self.desc = desc
+        self.total = total or (len(iterable) if iterable else None)
+        self.unit = unit
+        self.position = 0
+        self.task_id = None
+        self.progress_instance = None
+        
+        # Create progress instance
+        self.progress_instance = Progress(
+            SpinnerColumn(),
+            TextColumn(f"[progress.description]{desc}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            TextColumn("•"),
+            TimeRemainingColumn(),
+            TextColumn("•"),
+            RichProgressColumn(),
+            console=console,
+            refresh_per_second=10,
+        )
+        
+        self.progress_instance.start()
+        self.task_id = self.progress_instance.add_task(desc, total=self.total)
+    
+    def __iter__(self):
+        if self.iterable:
+            for item in self.iterable:
+                yield item
+                self.update(1)
+        
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args):
+        self.close()
+    
+    def update(self, n=1):
+        if self.progress_instance and self.task_id is not None:
+            self.progress_instance.update(self.task_id, advance=n)
+            self.position += n
+    
+    def set_description(self, desc):
+        if self.progress_instance and self.task_id is not None:
+            self.progress_instance.update(self.task_id, description=desc)
+    
+    def close(self):
+        if self.progress_instance:
+            self.progress_instance.stop()
+    
+    def write(self, message):
+        console.print(message)
+
+
+def rich_tqdm(*args, **kwargs):
+    """Drop-in replacement for tqdm using Rich."""
+    return RichProgressWrapper(*args, **kwargs)
+
+
+@contextmanager
+def progress_bar(
+    description: str,
+    total: Optional[int] = None,
+    transient: bool = False,
+    disable: bool = False
+):
+    """
+    Context manager for Rich progress bars.
+    
+    Args:
+        description: Progress description
+        total: Total number of items (None for indeterminate)
+        transient: Whether to clear progress bar when done
+        disable: Whether to disable progress bar
+        
+    Yields:
+        Progress instance
+    """
+    if disable:
+        # Return a dummy progress instance
+        class DummyProgress:
+            def add_task(self, *args, **kwargs):
+                return 0
+            def update(self, *args, **kwargs):
+                pass
+            def advance(self, *args, **kwargs):
+                pass
+        
+        yield DummyProgress()
+        return
+    
+    # Create custom progress with performance metrics
+    custom_progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TextColumn("•"),
+        TimeElapsedColumn(),
+        TextColumn("•"),
+        TimeRemainingColumn(),
+        TextColumn("•"),
+        RichProgressColumn(),
+        console=console,
+        transient=transient,
+        refresh_per_second=10,
+    )
+    
+    with custom_progress:
+        task_id = custom_progress.add_task(description, total=total)
+        custom_progress.task_id = task_id  # Store for convenience
+        yield custom_progress
 
 # Global console instance for SocialMapper
 console = Console()
@@ -36,13 +181,19 @@ rich_handler = RichHandler(
     rich_tracebacks=True
 )
 
-def setup_rich_logging(level: int = logging.INFO):
+def setup_rich_logging(level: str = "INFO", show_time: bool = True, show_path: bool = False):
     """
     Set up Rich-enhanced logging for SocialMapper.
     
     Args:
-        level: Logging level (default: INFO)
+        level: Logging level (default: "INFO")
+        show_time: Whether to show timestamps
+        show_path: Whether to show file paths
     """
+    # Convert string level to int
+    if isinstance(level, str):
+        level = getattr(logging, level.upper())
+    
     # Configure root logger with Rich handler
     logging.basicConfig(
         level=level,
@@ -55,6 +206,76 @@ def setup_rich_logging(level: int = logging.INFO):
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a Rich-enabled logger.
+    
+    Args:
+        name: Logger name (usually __name__)
+        
+    Returns:
+        Configured logger instance
+    """
+    return logging.getLogger(name)
+
+
+def print_statistics(stats: dict, title: str = "Statistics", **kwargs) -> None:
+    """Print statistics in a formatted table."""
+    table = Table(title=title, show_header=True, **kwargs)
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="cyan")
+    
+    for key, value in stats.items():
+        # Format the key
+        formatted_key = str(key).replace("_", " ").title()
+        
+        # Format the value
+        if isinstance(value, float):
+            if 0 < value < 1:
+                formatted_value = f"{value:.1%}"
+            else:
+                formatted_value = f"{value:.1f}"
+        elif isinstance(value, int):
+            formatted_value = f"{value:,}"
+        else:
+            formatted_value = str(value)
+        
+        table.add_row(formatted_key, formatted_value)
+    
+    console.print(table)
+
+
+def print_panel(content: str, title: Optional[str] = None, subtitle: Optional[str] = None, style: str = "cyan", **kwargs) -> None:
+    """Print content in a styled panel."""
+    panel = Panel(
+        content,
+        title=title,
+        subtitle=subtitle,
+        border_style=style,
+        **kwargs
+    )
+    console.print(panel)
+
+
+def print_table(data: List[Dict[str, Any]], title: Optional[str] = None, show_header: bool = True, **kwargs) -> None:
+    """Print data as a formatted table."""
+    if not data:
+        print_warning("No data to display in table")
+        return
+    
+    table = Table(title=title, show_header=show_header, **kwargs)
+    
+    # Add columns from first row
+    for key in data[0].keys():
+        table.add_column(str(key).replace("_", " ").title())
+    
+    # Add rows
+    for row in data:
+        table.add_row(*[str(value) for value in row.values()])
+    
+    console.print(table)
 
 
 def print_banner(title: str, subtitle: Optional[str] = None, version: Optional[str] = None):
@@ -176,6 +397,13 @@ def status_spinner(message: str, spinner: str = "dots"):
     """Context manager for showing a status spinner."""
     with Status(message, spinner=spinner, console=console) as status:
         yield status
+
+
+@contextmanager
+def status(message: str, spinner: str = "dots"):
+    """Context manager for showing a status spinner (alias for status_spinner)."""
+    with Status(message, spinner=spinner, console=console) as status_obj:
+        yield status_obj
 
 
 def create_data_table(
