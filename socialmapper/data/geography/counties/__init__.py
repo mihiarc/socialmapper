@@ -15,9 +15,9 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, Any
 from tqdm import tqdm
-from ....core.environment import get_progress_bar
+from ....progress import get_progress_bar
 from ..states import normalize_state, StateFormat, state_fips_to_name
-from ....utils.helpers import get_census_api_key
+from ....util import get_census_api_key
 
 # Set up logging
 logger = logging.getLogger(__name__)

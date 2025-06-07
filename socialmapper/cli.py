@@ -51,6 +51,18 @@ def parse_arguments():
     poi_group.add_argument("--poi-name", help="Name of POI (e.g., 'library', 'park')")
     poi_group.add_argument("--state", help="State name or abbreviation")
     
+    # Address Lookup Options
+    parser.add_argument("--addresses", action="store_true",
+                        help="Enable address-based analysis using geocoding")
+    parser.add_argument("--address-file", type=str,
+                        help="CSV file containing addresses to geocode")
+    parser.add_argument("--address-column", type=str, default="address",
+                        help="Column name containing addresses (default: 'address')")
+    parser.add_argument("--geocoding-provider", choices=["nominatim", "census", "auto"], 
+                        default="auto", help="Geocoding provider preference")
+    parser.add_argument("--geocoding-quality", choices=["exact", "interpolated", "centroid", "approximate"],
+                        default="centroid", help="Minimum geocoding quality threshold")
+    
     # General parameters
     parser.add_argument("--travel-time", type=int, default=15, help="Travel time in minutes")
     parser.add_argument(
@@ -282,6 +294,12 @@ def main():
             table.add_row("POI Name", args.poi_name)
             if args.state:
                 table.add_row("State", args.state)
+        elif args.addresses:
+            table.add_row("Mode", "Address Geocoding")
+            table.add_row("Address File", args.address_file)
+            table.add_row("Address Column", args.address_column)
+            table.add_row("Geocoding Provider", args.geocoding_provider)
+            table.add_row("Quality Threshold", args.geocoding_quality)
         else:
             table.add_row("Mode", "Custom Coordinates")
             table.add_row("Coordinates File", args.custom_coords)
@@ -324,6 +342,73 @@ def main():
                 export_maps=args.export_maps,
                 map_backend=args.map_backend
             )
+        elif args.addresses:
+            # Handle address-based analysis
+            from .geocoding import addresses_to_poi_format, GeocodingConfig, AddressProvider, AddressQuality
+            import pandas as pd
+            
+            console.print(f"[bold cyan]📍 Processing addresses from {args.address_file}[/bold cyan]")
+            
+            # Load addresses from CSV
+            df = pd.read_csv(args.address_file)
+            if args.address_column not in df.columns:
+                raise ValueError(f"Column '{args.address_column}' not found in {args.address_file}")
+            
+            addresses = df[args.address_column].tolist()
+            
+            # Configure geocoding
+            config = GeocodingConfig(
+                primary_provider=AddressProvider.NOMINATIM if args.geocoding_provider == "nominatim" else 
+                               AddressProvider.CENSUS if args.geocoding_provider == "census" else
+                               AddressProvider.NOMINATIM,  # auto defaults to Nominatim
+                min_quality_threshold=AddressQuality(args.geocoding_quality)
+            )
+            
+            # Geocode addresses to POI format
+            console.print(f"[bold yellow]🔍 Geocoding {len(addresses)} addresses...[/bold yellow]")
+            poi_data = addresses_to_poi_format(addresses, config)
+            
+            # Create a temporary file for the geocoded coordinates
+            import tempfile
+            import os
+            
+            temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
+            
+            # Convert POIs to CSV format
+            if poi_data['pois']:
+                geocoded_df = pd.DataFrame([
+                    {
+                        'name': poi['name'],
+                        'latitude': poi['lat'],
+                        'longitude': poi['lon'],
+                        'type': poi['type'],
+                        'provider': poi['tags'].get('geocoding:provider'),
+                        'quality': poi['tags'].get('geocoding:quality'),
+                        'confidence': poi['tags'].get('geocoding:confidence')
+                    }
+                    for poi in poi_data['pois']
+                ])
+                geocoded_df.to_csv(temp_file, index=False)
+                
+                console.print(f"[green]✅ Successfully geocoded {len(poi_data['pois'])} addresses[/green]")
+                console.print(f"[dim]Geocoded coordinates saved to: {temp_file}[/dim]")
+                
+                # Run SocialMapper with geocoded addresses
+                run_socialmapper(
+                    travel_time=args.travel_time,
+                    census_variables=args.census_variables,
+                    api_key=args.api_key,
+                    custom_coords_path=temp_file,
+                    output_dir=args.output_dir,
+                    export_csv=args.export_csv,
+                    export_maps=args.export_maps,
+                    map_backend=args.map_backend,
+                    name_field='name',
+                    type_field='type'
+                )
+            else:
+                raise ValueError("No addresses could be successfully geocoded")
+                
         else:
             # Use custom coordinates
             run_socialmapper(

@@ -16,8 +16,8 @@ import geopandas as gpd
 from datetime import datetime
 import requests
 
-from ...core.environment import get_progress_bar
-from ...utils.helpers import rate_limiter
+from ...progress import get_progress_bar
+from ...util.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
