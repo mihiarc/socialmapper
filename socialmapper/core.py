@@ -15,8 +15,17 @@ from shapely.geometry import Point
 import random
 from urllib.error import URLError
 
-# Configure basic logging
-logging.basicConfig(level=logging.CRITICAL, format="%(asctime)s - %(levelname)s - %(message)s")
+# Import Rich console and progress tracking
+from .ui.rich_console import (
+    console, setup_rich_logging, print_banner, print_success, print_error, 
+    print_warning, print_info, status_spinner, print_poi_summary_table,
+    print_performance_summary, print_file_summary, log_poi_processing_start,
+    log_isochrone_generation_start, log_census_integration_start, log_export_start
+)
+from .ui.rich_progress import get_rich_tracker, ProcessingStage, track_stage
+
+# Setup Rich logging
+setup_rich_logging(level=logging.WARNING)  # Reduce noise, Rich handles user feedback
 
 # Check if PyArrow is available
 try:

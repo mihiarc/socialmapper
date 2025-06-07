@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from stqdm import stqdm
 
 # Import the socialmapper modules
-from socialmapper import run_socialmapper
+from socialmapper.core import run_socialmapper
 from socialmapper.states import state_name_to_abbreviation
 
 # Get the Census API key from secrets

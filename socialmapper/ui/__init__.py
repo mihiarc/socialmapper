@@ -1,5 +1,6 @@
 """UI module for SocialMapper."""
 
-from .app import run_app
+# Note: app.py is not imported here to avoid circular imports
+# Import run_app directly from socialmapper.ui.app when needed
 
-__all__ = ["run_app"] 
+__all__ = [] 
