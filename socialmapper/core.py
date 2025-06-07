@@ -267,6 +267,7 @@ def run_socialmapper(
     export_maps: bool = False,
     export_isochrones: bool = False,
     use_interactive_maps: bool = True,
+    map_backend: str = "plotly",
     name_field: Optional[str] = None,
     type_field: Optional[str] = None,
     max_poi_count: Optional[int] = None
@@ -290,7 +291,8 @@ def run_socialmapper(
         export_csv: Boolean to control export of census data to CSV
         export_maps: Boolean to control generation of maps
         export_isochrones: Boolean to control export of isochrones
-        use_interactive_maps: Boolean to control whether to use interactive folium maps (Streamlit)
+        use_interactive_maps: Boolean to control whether to use interactive maps (Streamlit)
+        map_backend: Which map backend to use ('plotly', 'folium', 'both')
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
         max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
@@ -691,6 +693,14 @@ def run_socialmapper(
             else:
                 poi_data_for_map = None
 
+        # Determine which map backend to use
+        use_plotly_maps = (map_backend in ['plotly', 'both'] and use_interactive_maps)
+        use_folium_maps = (map_backend in ['folium', 'both'] and streamlit_folium_available and use_interactive_maps)
+        
+        # Default to Plotly if no specific backend chosen and in interactive mode
+        if not use_plotly_maps and not use_folium_maps and use_interactive_maps:
+            use_plotly_maps = True
+        
         # Generate maps for each census variable
         map_files = generate_maps_for_variables(
             census_data_path=census_data_gdf,  # Always pass the GeoDataFrame directly
@@ -700,7 +710,8 @@ def run_socialmapper(
             isochrone_path=isochrone_gdf,  # Always pass the GeoDataFrame directly
             poi_df=poi_data_for_map,
             use_panels=False,
-            use_folium=streamlit_folium_available and use_interactive_maps
+            use_folium=use_folium_maps,
+            use_plotly=use_plotly_maps
         )
         result_files["maps"] = map_files
         
