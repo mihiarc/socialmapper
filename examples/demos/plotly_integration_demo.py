@@ -193,7 +193,7 @@ def create_advanced_plotly_map(
               for _, row in census_df.iterrows()],
         hovertemplate='%{text}<extra></extra>',
         name='Demographics',
-        customdata=census_df.to_dict('records')
+        customdata=census_df.drop(columns=['geometry'], errors='ignore').to_dict('records')
     ))
     
     # Add POIs with custom icons and styling
@@ -223,7 +223,7 @@ def create_advanced_plotly_map(
                   for _, row in poi_subset.iterrows()],
             hovertemplate='%{text}<extra></extra>',
             name=f"{config['emoji']} {poi_type.title()}s",
-            customdata=poi_subset.to_dict('records')
+            customdata=poi_subset.drop(columns=['geometry'], errors='ignore').to_dict('records')
         ))
     
     # Update layout with better styling
