@@ -1,0 +1,21 @@
+address,type,description
+"1600 Pennsylvania Avenue NW, Washington, DC 20500",government,The White House
+"350 Fifth Avenue, New York, NY 10118",landmark,Empire State Building
+"900 S Main St, Fuquay-Varina, NC 27526",library,Fuquay-Varina Library
+"1 Dr Carlton B Goodlett Pl, San Francisco, CA 94102",government,San Francisco City Hall
+"1200 Getty Center Dr, Los Angeles, CA 90049",museum,Getty Center
+"1313 Disneyland Dr, Anaheim, CA 92802",entertainment,Disneyland
+"1000 Vin Scully Ave, Los Angeles, CA 90012",sports,Dodger Stadium
+"1 E 161st St, Bronx, NY 10451",sports,Yankee Stadium
+"4 Yawkey Way, Boston, MA 02215",sports,Fenway Park
+"2001 Blake St, Denver, CO 80205",sports,Coors Field
+"100 Universal City Plaza, Universal City, CA 91608",entertainment,Universal Studios
+"1111 S Figueroa St, Los Angeles, CA 90015",sports,Crypto.com Arena
+"1 Infinite Loop, Cupertino, CA 95014",corporate,Apple Park
+"1600 Amphitheatre Parkway, Mountain View, CA 94043",corporate,Google Headquarters
+"410 Terry Avenue North, Seattle, WA 98109",corporate,Amazon Headquarters
+"Fuquay-Varina, NC",city,City Center
+"Durham, NC",city,Durham City
+"Raleigh, NC",city,Raleigh City
+"Seattle, WA",city,Seattle City
+"Portland, OR",city,Portland City 

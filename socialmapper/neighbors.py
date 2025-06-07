@@ -76,7 +76,19 @@ def get_neighboring_counties(
         >>> get_neighboring_counties('06', '037')  # Los Angeles County, CA
         [('06', '059'), ('06', '065'), ('06', '071'), ...]
     """
-    return _get_neighboring_counties(state_fips, county_fips, include_cross_state)
+    # Combine state and county FIPS for the census module function
+    full_county_fips = f"{state_fips}{county_fips}"
+    neighbor_fips_list = _get_neighboring_counties(full_county_fips)
+    
+    # Convert back to (state, county) tuples
+    neighbor_tuples = []
+    for neighbor_fips in neighbor_fips_list:
+        if len(neighbor_fips) >= 5:  # Valid county FIPS should be 5 digits
+            neighbor_state = neighbor_fips[:2]
+            neighbor_county = neighbor_fips[2:]
+            neighbor_tuples.append((neighbor_state, neighbor_county))
+    
+    return neighbor_tuples
 
 
 def get_geography_from_point(lat: float, lon: float) -> Dict[str, Optional[str]]:
@@ -132,9 +144,18 @@ def get_counties_from_pois(
         >>> counties = get_counties_from_pois(pois, include_neighbors=False)
         [('37', '183'), ('37', '119')]  # Just Wake and Mecklenburg
     """
-    # Get the manager and call the method with all parameters
-    manager = _get_neighbor_manager()
-    return manager.get_counties_from_pois(pois, include_neighbors, neighbor_distance)
+    # The census module function has a different signature
+    county_fips_list = _get_counties_from_pois(pois, include_neighbors)
+    
+    # Convert to (state, county) tuples
+    county_tuples = []
+    for county_fips in county_fips_list:
+        if len(county_fips) >= 5:  # Valid county FIPS should be 5 digits
+            state = county_fips[:2]
+            county = county_fips[2:]
+            county_tuples.append((state, county))
+    
+    return county_tuples
 
 
 def get_neighbor_manager(db_path: Optional[str] = None):
@@ -173,7 +194,7 @@ def get_statistics() -> Dict[str, Any]:
         Database contains 18,560 county relationships
     """
     manager = _get_neighbor_manager()
-    return manager.get_neighbor_statistics()
+    return manager.get_statistics()
 
 
 # State FIPS code reference for convenience

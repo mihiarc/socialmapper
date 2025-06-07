@@ -14,7 +14,7 @@ import geopandas as gpd
 import requests
 from shapely.geometry import Point, Polygon, MultiPolygon
 
-from socialmapper.utils.helpers import (
+from socialmapper.util import (
     normalize_census_variable,
     get_census_api_key,
     get_readable_census_variables,
