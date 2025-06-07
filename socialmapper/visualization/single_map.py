@@ -36,6 +36,15 @@ from matplotlib.colors import LinearSegmentedColormap
 # Add the parent directory to sys.path to ensure imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
+def get_geographic_label(geographic_level: str) -> str:
+    """Convert geographic level to human-readable label."""
+    if geographic_level == "zcta":
+        return "ZIP Code Tabulation Areas"
+    elif geographic_level == "block-group":
+        return "Census Block Groups"
+    else:
+        return f"Census {geographic_level.replace('-', ' ').title()}s"
+
 def generate_map(
     census_data_path: Union[str, gpd.GeoDataFrame],
     variable: str,
@@ -49,13 +58,14 @@ def generate_map(
     isochrone_path: Optional[Union[str, gpd.GeoDataFrame]] = None,
     isochrone_only: bool = False,  # Parameter to indicate isochrone-only maps
     poi_df: Optional[gpd.GeoDataFrame] = None,
-    show_isochrone: bool = False
+    show_isochrone: bool = False,
+    geographic_level: str = "block-group"
 ) -> str:
     """
-    Generate a choropleth map for census data in block groups.
+    Generate a choropleth map for census data in geographic units.
     
     Args:
-        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for block groups
+        census_data_path: Path to the GeoJSON file or GeoDataFrame with census data for geographic units
         output_path: Path to save the output map (if not provided, will use output_dir)
         variable: Census variable to visualize
         title: Map title (defaults to a readable version of the variable name)
@@ -68,6 +78,7 @@ def generate_map(
         isochrone_only: If True, generate a map showing only isochrones without census data
         poi_df: Optional GeoDataFrame containing POI data
         show_isochrone: Whether to display the isochrone boundary on the map
+        geographic_level: Geographic unit type ('block-group' or 'zcta')
         
     Returns:
         Path to the saved map
@@ -220,7 +231,7 @@ def generate_map(
             else:
                 display_title = f"{variable_label} Within Accessible Area"
         else:
-            display_title = f"{variable_label} by Census Block Group"
+            display_title = f"{variable_label} by {get_geographic_label(geographic_level)}"
     
     # Choose appropriate colormap for the variable
     if variable in VARIABLE_COLORMAPS:
@@ -361,7 +372,7 @@ def generate_map(
         loc='lower center',
         bbox_to_anchor=(0.5, -0.05),
         ncol=min(len(labels), 5),
-        title=f"{variable_label} by Block Group",
+        title=f"{variable_label} by {get_geographic_label(geographic_level)}",
         frameon=True,
         fontsize=14,                  
         title_fontsize=16,
@@ -430,7 +441,7 @@ def generate_map(
             else:
                 display_title = f"{variable_label} Within Accessible Area"
         else:
-            display_title = f"{variable_label} by Census Block Group"
+            display_title = f"{variable_label} by {get_geographic_label(geographic_level)}"
     else:
         display_title = title
         
