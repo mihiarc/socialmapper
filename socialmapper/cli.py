@@ -12,10 +12,18 @@ from . import __version__
 from .core import run_socialmapper, setup_directory
 from .util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .states import normalize_state, StateFormat
+from .ui.rich_progress import get_rich_tracker, console
+from rich.table import Table
+from rich.panel import Panel
+from rich import box
+from rich.traceback import install as install_rich_traceback
 
-# Configure basic logging
+# Install Rich traceback handling
+install_rich_traceback(show_locals=True)
+
+# Configure basic logging with Rich integration
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # Reduce noise, Rich will handle user feedback
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
@@ -101,39 +109,58 @@ def main():
     
     # If user just wants to list available variables
     if args.list_variables:
-        print("\nAvailable Census Variables:")
-        print("=" * 50)
+        table = Table(title="📊 Available Census Variables", box=box.ROUNDED)
+        table.add_column("Variable Name", style="cyan", no_wrap=True)
+        table.add_column("Census Code", style="green")
+        
         for code, name in sorted(CENSUS_VARIABLE_MAPPING.items()):
-            print(f"{name:<25} {code}")
-        print("\nUsage example: --census-variables total_population median_household_income")
+            table.add_row(name, code)
+        
+        console.print(table)
+        console.print("\n[bold]Usage example:[/bold] --census-variables total_population median_household_income")
         sys.exit(0)
         
     # Create the output directory
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # Print banner
-    print("=" * 80)
-    print(f"SocialMapper v{__version__}: End-to-end tool for mapping community resources")
-    print("=" * 80)
+    # Print beautiful banner using Rich
+    tracker = get_rich_tracker()
+    tracker.print_banner(
+        "End-to-end tool for mapping community resources",
+        "Analyzing community connections through demographics and points of interest"
+    )
     
     # If dry-run, just print what would be done and exit
     if args.dry_run:
-        print("\n=== DRY RUN - SHOWING PLANNED STEPS ===")
+        # Create dry run information table
+        table = Table(title="🔍 Dry Run - Planned Operations", box=box.ROUNDED)
+        table.add_column("Parameter", style="cyan", no_wrap=True)
+        table.add_column("Value", style="yellow")
+        
         if args.poi:
-            print(f"POI Query: {args.geocode_area} - {args.poi_type} - {args.poi_name}")
+            table.add_row("Mode", "POI Query")
+            table.add_row("Area", args.geocode_area)
+            table.add_row("POI Type", args.poi_type)
+            table.add_row("POI Name", args.poi_name)
+            if args.state:
+                table.add_row("State", args.state)
         else:
-            print(f"Custom coordinates: {args.custom_coords}")
-        print(f"Travel time limit: {args.travel_time} minutes")
-        print(f"Census variables: {', '.join(args.census_variables)}")
-        print(f"Output directory: {args.output_dir}")
-        print("\nOutput types to be generated:")
-        print(f"  - CSV: {'Yes' if args.export_csv else 'No'}")
-        print(f"  - Maps: {'Yes' if args.export_maps else 'No'}")
-        print("\nNo operations will be performed.")
+            table.add_row("Mode", "Custom Coordinates")
+            table.add_row("Coordinates File", args.custom_coords)
+        
+        table.add_row("Travel Time", f"{args.travel_time} minutes")
+        table.add_row("Census Variables", ", ".join(args.census_variables))
+        table.add_row("Output Directory", args.output_dir)
+        table.add_section()
+        table.add_row("Export CSV", "✅ Yes" if args.export_csv else "❌ No")
+        table.add_row("Export Maps", "✅ Yes" if args.export_maps else "❌ No")
+        
+        console.print(table)
+        console.print("\n[bold red]Note:[/bold red] This is a dry run - no operations will be performed.")
         sys.exit(0)
     
     # Execute the full process
-    print("\n=== Starting SocialMapper ===")
+    console.print("\n[bold green]🚀 Starting SocialMapper Analysis[/bold green]")
     start_time = time.time()
     
     try:
@@ -170,11 +197,29 @@ def main():
         
         end_time = time.time()
         elapsed = end_time - start_time
-        print(f"\n=== SocialMapper Completed in {elapsed:.1f} seconds ===")
+        
+        # Show final summary
+        tracker.print_summary()
+        
+        # Success message
+        success_panel = Panel(
+            f"[bold green]✅ SocialMapper completed successfully in {elapsed:.1f} seconds[/bold green]\n"
+            f"[dim]Results available in: {args.output_dir}/[/dim]",
+            title="🎉 Analysis Complete",
+            box=box.ROUNDED,
+            border_style="green"
+        )
+        console.print(success_panel)
         
     except Exception as e:
-        print(f"\n=== Error: {str(e)} ===")
-        traceback.print_exc()
+        # Rich will automatically handle the traceback beautifully
+        error_panel = Panel(
+            f"[bold red]❌ SocialMapper encountered an error:[/bold red]\n[red]{str(e)}[/red]",
+            title="💥 Error",
+            box=box.ROUNDED,
+            border_style="red"
+        )
+        console.print(error_panel)
         sys.exit(1)
 
 if __name__ == "__main__":
