@@ -13,6 +13,7 @@ import numpy as np
 import streamlit as st
 from pathlib import Path
 import os
+import json
 
 # Import SocialMapper utilities
 try:
@@ -34,6 +35,52 @@ try:
     PLOTLY_EVENTS_AVAILABLE = True
 except ImportError:
     PLOTLY_EVENTS_AVAILABLE = False
+
+def sanitize_dataframe_for_json(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove all non-JSON-serializable columns and objects from DataFrame.
+    
+    Args:
+        df: DataFrame to sanitize
+        
+    Returns:
+        DataFrame with only JSON-serializable data
+    """
+    # Create a copy to avoid modifying the original
+    sanitized = df.copy()
+    
+    # Remove known geometric columns and any columns with Point objects
+    columns_to_drop = ['geometry']
+    for col in columns_to_drop:
+        if col in sanitized.columns:
+            sanitized = sanitized.drop(columns=[col])
+    
+    # More aggressive check for Point objects and other non-serializable data
+    for col in sanitized.columns:
+        if sanitized[col].dtype == 'object':
+            try:
+                # Test if the column can be JSON serialized
+                sample_data = sanitized[col].dropna().head(5).tolist()
+                if sample_data:
+                    json.dumps(sample_data)  # Test JSON serialization
+            except (TypeError, ValueError):
+                # If serialization fails, convert to string
+                sanitized[col] = sanitized[col].astype(str)
+    
+    # Additional check: ensure lat/lon are plain float64, not objects
+    for coord_col in ['lat', 'lon']:
+        if coord_col in sanitized.columns:
+            # Force conversion to float64 and handle any potential Point objects
+            try:
+                sanitized[coord_col] = pd.to_numeric(sanitized[coord_col], errors='coerce').astype(float)
+            except:
+                # If conversion fails, drop the problematic column
+                sanitized = sanitized.drop(columns=[coord_col], errors='ignore')
+    
+    # Reset index to avoid any potential Point objects in index
+    sanitized = sanitized.reset_index(drop=True)
+    
+    return sanitized
 
 def create_plotly_map(
     census_data: Union[str, gpd.GeoDataFrame],
@@ -89,12 +136,15 @@ def create_plotly_map(
         # Use a suitable projected CRS for centroid calculation (Web Mercator)
         census_projected = census_gdf.to_crs("EPSG:3857")
         centroids = census_projected.geometry.centroid.to_crs("EPSG:4326")
-        census_df['lat'] = centroids.y
-        census_df['lon'] = centroids.x
+        census_df['lat'] = centroids.y.astype(float)
+        census_df['lon'] = centroids.x.astype(float)
     else:
         # Already projected or no CRS specified
-        census_df['lat'] = census_gdf.geometry.centroid.y
-        census_df['lon'] = census_gdf.geometry.centroid.x
+        census_df['lat'] = census_gdf.geometry.centroid.y.astype(float)
+        census_df['lon'] = census_gdf.geometry.centroid.x.astype(float)
+    
+    # Remove geometry column to prevent any potential Point objects from being serialized
+    census_df = census_df.drop(columns=['geometry'], errors='ignore')
     
     # Check if variable is a common name and convert to Census API code if needed
     if variable.lower() in CENSUS_VARIABLE_MAPPING:
@@ -119,7 +169,9 @@ def create_plotly_map(
     else:
         normalized_sizes = pd.Series([12] * len(census_df), index=census_df.index)
     
-    # Add census data layer
+    # Add census data layer with sanitized customdata
+    census_custom_data = sanitize_dataframe_for_json(census_df).to_dict('records')
+    
     fig.add_trace(go.Scattermap(
         lat=census_df['lat'],
         lon=census_df['lon'],
@@ -143,7 +195,7 @@ def create_plotly_map(
               for _, row in census_df.iterrows()],
         hovertemplate='%{text}<extra></extra>',
         name='Census Data',
-        customdata=census_df.to_dict('records')
+        customdata=census_custom_data
     ))
     
     # Add isochrone data if provided
@@ -201,8 +253,12 @@ def create_plotly_map(
         if poi_df.crs != "EPSG:4326":
             poi_df = poi_df.to_crs("EPSG:4326")
         
-        poi_df['lat'] = poi_df.geometry.y
-        poi_df['lon'] = poi_df.geometry.x
+        # Extract coordinates as plain floats, not Point objects
+        poi_df['lat'] = poi_df.geometry.y.astype(float)
+        poi_df['lon'] = poi_df.geometry.x.astype(float)
+        
+        # Remove the geometry column to prevent Point objects from being serialized
+        poi_df = poi_df.drop(columns=['geometry'], errors='ignore')
         
         # POI styling configuration
         poi_configs = {
@@ -219,6 +275,9 @@ def create_plotly_map(
                 poi_subset = poi_df[poi_df['type'] == poi_type]
                 config = poi_configs.get(poi_type, {'color': '#F39C12', 'emoji': '📍', 'size': 12})
                 
+                # Sanitize POI subset data for JSON serialization
+                poi_custom_data = sanitize_dataframe_for_json(poi_subset).to_dict('records')
+                
                 fig.add_trace(go.Scattermap(
                     lat=poi_subset['lat'],
                     lon=poi_subset['lon'],
@@ -234,10 +293,12 @@ def create_plotly_map(
                           for _, row in poi_subset.iterrows()],
                     hovertemplate='%{text}<extra></extra>',
                     name=f"{config['emoji']} {poi_type.title()}",
-                    customdata=poi_subset.to_dict('records')
+                    customdata=poi_custom_data
                 ))
         else:
             # Single POI group if no type column
+            poi_custom_data = sanitize_dataframe_for_json(poi_df).to_dict('records')
+            
             fig.add_trace(go.Scattermap(
                 lat=poi_df['lat'],
                 lon=poi_df['lon'],
@@ -252,7 +313,7 @@ def create_plotly_map(
                       for _, row in poi_df.iterrows()],
                 hovertemplate='%{text}<extra></extra>',
                 name="Points of Interest",
-                customdata=poi_df.to_dict('records')
+                customdata=poi_custom_data
             ))
     
     # Update layout
@@ -319,18 +380,47 @@ def create_plotly_map_for_streamlit(
     )
     
     if enable_events and PLOTLY_EVENTS_AVAILABLE:
-        # Use interactive events
-        selected_data = plotly_mapbox_events(
-            fig,
-            click_event=True,
-            hover_event=True,
-            select_event=True,
-            key=f"plotly_map_{variable}"
-        )
-        return selected_data
+        try:
+            # Use interactive events with error handling
+            selected_data = plotly_mapbox_events(
+                fig,
+                click_event=True,
+                hover_event=True,
+                select_event=True,
+                key=f"plotly_map_{variable}"
+            )
+            return selected_data
+        except (TypeError, ValueError) as e:
+            if "JSON serializable" in str(e):
+                st.warning("⚠️ Interactive events disabled due to data serialization issues. Displaying static map.")
+                st.error("**Error Details:**")
+                st.code(str(e))
+                
+                # Try to display a static chart - but even this might fail if there are serialization issues
+                try:
+                    st.plotly_chart(fig, use_container_width=True)
+                except (TypeError, ValueError) as chart_e:
+                    if "JSON serializable" in str(chart_e):
+                        st.error("❌ Unable to display map due to persistent data serialization issues.")
+                        st.error("**Chart Error Details:**")
+                        st.code(str(chart_e))
+                        return None
+                    else:
+                        raise chart_e
+                return None
+            else:
+                raise e
     else:
-        # Standard Plotly chart
-        st.plotly_chart(fig, use_container_width=True)
+        # Standard Plotly chart with error handling
+        try:
+            st.plotly_chart(fig, use_container_width=True)
+        except (TypeError, ValueError) as e:
+            if "JSON serializable" in str(e):
+                st.error("❌ Unable to display map due to data serialization issues.")
+                st.error("**Error Details:**")
+                st.code(str(e))
+            else:
+                raise e
         return None
 
 def generate_plotly_maps_for_variables(
