@@ -29,8 +29,17 @@ from contextlib import contextmanager
 from enum import Enum
 import logging
 
-# Import progress bar libraries
-from tqdm import tqdm
+# Import Rich progress bar libraries
+from ..ui.rich_console import (
+    console, 
+    progress_bar, 
+    rich_tqdm, 
+    RichProgressWrapper,
+    print_info,
+    print_success,
+    print_warning,
+    print_error
+)
 
 # Streamlit detection and import
 _IN_STREAMLIT = False
@@ -102,7 +111,7 @@ class ModernProgressTracker:
         self.enable_performance_metrics = enable_performance_metrics
         self.current_stage: Optional[ProcessingStage] = None
         self.stage_metrics: Dict[ProcessingStage, ProgressMetrics] = {}
-        self.current_pbar: Optional[Union[tqdm, 'stqdm']] = None
+        self.current_pbar: Optional[Union[RichProgressWrapper, 'stqdm']] = None
         self._lock = threading.Lock()
         
         # Stage descriptions for user-friendly output
@@ -153,18 +162,12 @@ class ModernProgressTracker:
             description = self.stage_descriptions.get(stage, str(stage))
             
             # Create new progress bar
-            progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
-            
-            # Configure progress bar with performance metrics
-            bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
+            progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
             
             self.current_pbar = progress_bar_class(
                 total=total_items,
                 desc=f"🚀 {description}",
-                unit="items",
-                bar_format=bar_format,
-                dynamic_ncols=True,
-                leave=True
+                unit="items"
             )
             
             logger.info(f"Starting stage: {description}")
@@ -284,9 +287,9 @@ class ModernProgressTracker:
         
         total_time = self.get_total_elapsed_time()
         
-        # Use tqdm.write to avoid interfering with progress bars
-        tqdm.write("\n📊 Processing Summary:")
-        tqdm.write(f"   Total time: {total_time:.1f}s")
+        # Use Rich console to print summary
+        console.print("\n📊 Processing Summary:")
+        console.print(f"   Total time: {total_time:.1f}s")
         
         for stage in ProcessingStage:
             metrics = self.stage_metrics.get(stage)
@@ -303,7 +306,7 @@ class ModernProgressTracker:
                 else:
                     rate_str = ""
                 
-                tqdm.write(f"   {description}: {elapsed:.1f}s{rate_str}")
+                console.print(f"   {description}: {elapsed:.1f}s{rate_str}")
 
 
 # Global progress tracker instance
@@ -342,7 +345,7 @@ def get_progress_bar(iterable=None, **kwargs):
         A progress bar instance that can be used as a context manager
     """
     # Use the environment detection done at import time
-    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     
     # Always return an instance, not a class
     if iterable is not None:
@@ -395,49 +398,41 @@ def track_export_visualization(total_outputs: Optional[int] = None):
 
 
 # Enhanced progress bar creation functions for specific use cases
-def create_poi_progress_bar(total_pois: int, desc: str = "Processing POIs") -> Union[tqdm, 'stqdm']:
+def create_poi_progress_bar(total_pois: int, desc: str = "Processing POIs") -> Union[RichProgressWrapper, 'stqdm']:
     """Create a progress bar specifically for POI processing."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(
         total=total_pois,
         desc=f"🎯 {desc}",
-        unit="POI",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} POIs [{elapsed}<{remaining}, {rate_fmt}]",
-        dynamic_ncols=True
+        unit="POI"
     )
 
 
-def create_isochrone_progress_bar(total_isochrones: int, desc: str = "Generating Isochrones") -> Union[tqdm, 'stqdm']:
+def create_isochrone_progress_bar(total_isochrones: int, desc: str = "Generating Isochrones") -> Union[RichProgressWrapper, 'stqdm']:
     """Create a progress bar specifically for isochrone generation."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(
         total=total_isochrones,
         desc=f"🗺️ {desc}",
-        unit="isochrone",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} isochrones [{elapsed}<{remaining}, {rate_fmt}]",
-        dynamic_ncols=True
+        unit="isochrone"
     )
 
 
-def create_census_progress_bar(total_blocks: int, desc: str = "Processing Census Data") -> Union[tqdm, 'stqdm']:
+def create_census_progress_bar(total_blocks: int, desc: str = "Processing Census Data") -> Union[RichProgressWrapper, 'stqdm']:
     """Create a progress bar specifically for census data processing."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(
         total=total_blocks,
         desc=f"📊 {desc}",
-        unit="block",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} blocks [{elapsed}<{remaining}, {rate_fmt}]",
-        dynamic_ncols=True
+        unit="block"
     )
 
 
-def create_network_progress_bar(total_networks: int, desc: str = "Downloading Networks") -> Union[tqdm, 'stqdm']:
+def create_network_progress_bar(total_networks: int, desc: str = "Downloading Networks") -> Union[RichProgressWrapper, 'stqdm']:
     """Create a progress bar specifically for network downloads."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else tqdm
+    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(
         total=total_networks,
         desc=f"🌐 {desc}",
-        unit="network",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} networks [{elapsed}<{remaining}, {rate_fmt}]",
-        dynamic_ncols=True
+        unit="network"
     ) 

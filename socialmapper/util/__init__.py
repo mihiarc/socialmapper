@@ -7,6 +7,7 @@ from typing import List, Optional
 import asyncio
 import logging
 import os
+import sys
 import time
 import re
 from ratelimit import limits, sleep_and_retry
@@ -250,16 +251,23 @@ def get_census_api_key() -> Optional[str]:
     Returns:
         Census API key if found, None otherwise
     """
-    # First try to get from Streamlit secrets
+    # First check environment variable
+    env_key = os.getenv('CENSUS_API_KEY')
+    if env_key:
+        return env_key
+    
+    # Try to get from Streamlit secrets only if running in Streamlit context
     try:
         import streamlit as st
-        if 'census' in st.secrets and 'CENSUS_API_KEY' in st.secrets['census']:
-            return st.secrets['census']['CENSUS_API_KEY']
-    except (ImportError, AttributeError, KeyError):
+        # Only access secrets if we're actually in a Streamlit app context
+        if hasattr(st, '_is_running_with_streamlit') or 'streamlit' in sys.modules:
+            if 'census' in st.secrets and 'CENSUS_API_KEY' in st.secrets['census']:
+                return st.secrets['census']['CENSUS_API_KEY']
+    except (ImportError, AttributeError, KeyError, Exception):
+        # Silently fail for any Streamlit-related errors
         pass
     
-    # Fall back to environment variable
-    return os.getenv('CENSUS_API_KEY')
+    return None
 
 class AsyncRateLimitedClient:
     """Custom async HTTP client with built-in rate limiting.
