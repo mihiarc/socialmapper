@@ -84,6 +84,13 @@ Thumbs.db
 .ipynb_checkpoints/
 output/
 cache/
+site/
+docs/_build/
+examples/demos/cache/
+examples/demos/output/
+
+# Generated analysis images
+*_analysis_results.png
 
 # Ignore Streamlit secrets and config
 .streamlit/

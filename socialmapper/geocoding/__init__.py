@@ -141,7 +141,7 @@ class AddressInput(BaseModel):
     def get_cache_key(self) -> str:
         """Generate a cache key for this address."""
         address_str = self.get_formatted_address().lower()
-        return hashlib.md5(address_str.encode()).hexdigest()
+        return hashlib.sha256(address_str.encode()).hexdigest()
 
 
 class GeocodingResult(BaseModel):

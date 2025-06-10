@@ -20,6 +20,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
 from urllib.error import URLError
+from .util import sanitize_path, safe_join_path, PathSecurityError
 
 # Import Rich console and progress tracking
 from .ui.rich_console import (
@@ -68,13 +69,22 @@ def parse_custom_coordinates(file_path: str, name_field: str = None, type_field:
     Returns:
         Dictionary containing POI data in the format expected by the isochrone generator
     """
-    file_extension = os.path.splitext(file_path)[1].lower()
+    # Sanitize the file path
+    try:
+        safe_file_path = sanitize_path(file_path, allow_absolute=True)
+    except PathSecurityError as e:
+        raise ValueError(f"Invalid file path: {e}")
+    
+    if not safe_file_path.exists():
+        raise FileNotFoundError(f"Custom coordinates file not found: {file_path}")
+    
+    file_extension = safe_file_path.suffix.lower()
     
     pois = []
     states_found = set()
     
     if file_extension == '.json':
-        with open(file_path, 'r') as f:
+        with open(safe_file_path, 'r') as f:
             data = json.load(f)
             
         # Handle different possible JSON formats
@@ -133,7 +143,7 @@ def parse_custom_coordinates(file_path: str, name_field: str = None, type_field:
     
     elif file_extension == '.csv':
         # Use newline="" to ensure correct universal newline handling across platforms
-        with open(file_path, 'r', newline='') as f:
+        with open(safe_file_path, 'r', newline='') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader):
                 # Try to find lat/lon in different possible column names
@@ -208,9 +218,17 @@ def setup_directory(output_dir: str = "output") -> str:
         
     Returns:
         The output directory path
+        
+    Raises:
+        PathSecurityError: If the path is invalid or unsafe
     """
-    os.makedirs(output_dir, exist_ok=True)
-    return output_dir
+    try:
+        # Sanitize the output directory path
+        safe_output_dir = sanitize_path(output_dir, allow_absolute=True)
+        safe_output_dir.mkdir(parents=True, exist_ok=True)
+        return str(safe_output_dir)
+    except PathSecurityError as e:
+        raise PathSecurityError(f"Invalid output directory: {e}")
 
 
 def convert_poi_to_geodataframe(poi_data_list):
@@ -284,19 +302,19 @@ def setup_pipeline_environment(output_dir: str, export_csv: bool, export_maps: b
     
     # Create subdirectories only for enabled outputs
     if export_csv:
-        csv_dir = os.path.join(output_dir, "csv")
-        os.makedirs(csv_dir, exist_ok=True)
-        directories["csv"] = csv_dir
+        csv_dir = safe_join_path(output_dir, "csv")
+        csv_dir.mkdir(exist_ok=True)
+        directories["csv"] = str(csv_dir)
     
     if export_maps:
-        maps_dir = os.path.join(output_dir, "maps")
-        os.makedirs(maps_dir, exist_ok=True)
-        directories["maps"] = maps_dir
+        maps_dir = safe_join_path(output_dir, "maps")
+        maps_dir.mkdir(exist_ok=True)
+        directories["maps"] = str(maps_dir)
     
     if export_isochrones:
-        isochrones_dir = os.path.join(output_dir, "isochrones")
-        os.makedirs(isochrones_dir, exist_ok=True)
-        directories["isochrones"] = isochrones_dir
+        isochrones_dir = safe_join_path(output_dir, "isochrones")
+        isochrones_dir.mkdir(exist_ok=True)
+        directories["isochrones"] = str(isochrones_dir)
     
     # Initialize invalid data tracker for this session
     reset_global_tracker(output_dir)

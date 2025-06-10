@@ -114,7 +114,8 @@ class ModernNetworkCache:
         # Round bbox to reduce cache fragmentation
         rounded_bbox = tuple(round(coord, 4) for coord in bbox)
         key_data = f"{rounded_bbox}_{network_type}_{travel_time_minutes}"
-        return hashlib.sha256(key_data.encode()).hexdigest()[:16]
+        # Use full SHA256 hash for better security and uniqueness
+        return hashlib.sha256(key_data.encode()).hexdigest()
     
     def _get_file_path(self, cache_key: str) -> Path:
         """Get file path for cache key."""

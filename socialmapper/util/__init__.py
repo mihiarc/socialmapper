@@ -174,6 +174,30 @@ from .rate_limiter import (
     AsyncRateLimitedClient
 )
 
+# Import path security utilities
+from .path_security import (
+    sanitize_path,
+    safe_join_path,
+    validate_filename,
+    get_safe_cache_path,
+    PathSecurityError
+)
+
+# Import input validation utilities
+from .input_validation import (
+    sanitize_for_api,
+    validate_address,
+    validate_coordinates,
+    validate_census_variable,
+    validate_state_name,
+    validate_poi_type,
+    validate_url,
+    encode_for_url,
+    validate_api_response,
+    sanitize_filename as sanitize_filename_input,
+    InputValidationError
+)
+
 # Export these symbols at the package level
 __all__ = [
     # Census variable utilities
@@ -194,6 +218,26 @@ __all__ = [
     'with_retry',
     'RateLimitedClient',
     'AsyncRateLimitedClient',
+    
+    # Path security utilities
+    'sanitize_path',
+    'safe_join_path',
+    'validate_filename',
+    'get_safe_cache_path',
+    'PathSecurityError',
+    
+    # Input validation utilities
+    'sanitize_for_api',
+    'validate_address',
+    'validate_coordinates',
+    'validate_census_variable',
+    'validate_state_name',
+    'validate_poi_type',
+    'validate_url',
+    'encode_for_url',
+    'validate_api_response',
+    'sanitize_filename_input',
+    'InputValidationError',
 ]
 
 # Define rate limiters for different services
