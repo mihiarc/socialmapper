@@ -11,41 +11,38 @@ building characteristics, and environmental features.
 - Fallback to simulation when real data unavailable
 """
 
-from .spatial_clustering import (
-    detect_housing_developments,
-    cluster_building_patterns,
-    identify_natural_boundaries
-)
-
-from .computer_vision import (
-    analyze_satellite_imagery,
-    extract_building_features,
-    classify_neighborhood_types
-)
-
 from .boundary_detection import (
     discover_community_boundaries,
+    merge_administrative_and_organic_boundaries,
     validate_boundaries_with_demographics,
-    merge_administrative_and_organic_boundaries
 )
-
+from .computer_vision import (
+    analyze_satellite_imagery,
+    classify_neighborhood_types,
+    extract_building_features,
+)
 from .satellite_data_fetcher import (
     SatelliteDataFetcher,
     fetch_satellite_imagery_for_community_analysis,
-    get_imagery_bounds_info
+    get_imagery_bounds_info,
+)
+from .spatial_clustering import (
+    cluster_building_patterns,
+    detect_housing_developments,
+    identify_natural_boundaries,
 )
 
 __all__ = [
-    'detect_housing_developments',
-    'cluster_building_patterns', 
-    'identify_natural_boundaries',
-    'analyze_satellite_imagery',
-    'extract_building_features',
-    'classify_neighborhood_types',
-    'discover_community_boundaries',
-    'validate_boundaries_with_demographics',
-    'merge_administrative_and_organic_boundaries',
-    'SatelliteDataFetcher',
-    'fetch_satellite_imagery_for_community_analysis',
-    'get_imagery_bounds_info'
-] 
+    "detect_housing_developments",
+    "cluster_building_patterns",
+    "identify_natural_boundaries",
+    "analyze_satellite_imagery",
+    "extract_building_features",
+    "classify_neighborhood_types",
+    "discover_community_boundaries",
+    "validate_boundaries_with_demographics",
+    "merge_administrative_and_organic_boundaries",
+    "SatelliteDataFetcher",
+    "fetch_satellite_imagery_for_community_analysis",
+    "get_imagery_bounds_info",
+]

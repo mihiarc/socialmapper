@@ -6,48 +6,46 @@ to replace standard logging and tqdm throughout the codebase.
 """
 
 import logging
-import sys
-import time
 from contextlib import contextmanager
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Iterator
+from typing import Any, Dict, Iterator, List, Optional
 
+from rich.align import Align
 from rich.console import Console
 from rich.logging import RichHandler
-from rich.progress import (
-    Progress, 
-    BarColumn, 
-    TextColumn, 
-    TimeElapsedColumn, 
-    TimeRemainingColumn,
-    MofNCompleteColumn,
-    SpinnerColumn,
-    ProgressColumn,
-    Task
-)
-from rich.theme import Theme
-from rich.traceback import install as install_rich_traceback
 from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    ProgressColumn,
+    SpinnerColumn,
+    Task,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from rich.table import Table
 from rich.text import Text
-from rich.align import Align
-from rich.columns import Columns
+from rich.theme import Theme
+from rich.traceback import install as install_rich_traceback
 
 # Custom theme for SocialMapper
-SOCIALMAPPER_THEME = Theme({
-    "info": "cyan",
-    "warning": "yellow",
-    "error": "bold red",
-    "success": "bold green",
-    "highlight": "bold blue",
-    "muted": "dim",
-    "progress": "green",
-    "poi": "blue",
-    "census": "purple",
-    "isochrone": "orange",
-    "geocoding": "cyan",
-    "network": "green",
-})
+SOCIALMAPPER_THEME = Theme(
+    {
+        "info": "cyan",
+        "warning": "yellow",
+        "error": "bold red",
+        "success": "bold green",
+        "highlight": "bold blue",
+        "muted": "dim",
+        "progress": "green",
+        "poi": "blue",
+        "census": "purple",
+        "isochrone": "orange",
+        "geocoding": "cyan",
+        "network": "green",
+    }
+)
 
 # Global console instance
 console = Console(
@@ -74,12 +72,12 @@ progress = Progress(
 
 class RichProgressColumn(ProgressColumn):
     """Custom progress column showing items per second."""
-    
+
     def render(self, task: "Task") -> Text:
         """Render the progress column."""
         if task.speed is None:
             return Text("", style="progress")
-        
+
         if task.speed >= 1:
             return Text(f"{task.speed:.1f} items/sec", style="progress")
         else:
@@ -90,11 +88,11 @@ def setup_rich_logging(
     level: str = "INFO",
     show_time: bool = True,
     show_path: bool = False,
-    rich_tracebacks: bool = True
+    rich_tracebacks: bool = True,
 ) -> None:
     """
     Set up Rich-based logging for the entire application.
-    
+
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR)
         show_time: Whether to show timestamps
@@ -111,7 +109,7 @@ def setup_rich_logging(
             word_wrap=True,
             extra_lines=2,
         )
-    
+
     # Configure the root logger
     logging.basicConfig(
         level=getattr(logging, level.upper()),
@@ -128,7 +126,7 @@ def setup_rich_logging(
             )
         ],
     )
-    
+
     # Suppress noisy third-party loggers
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
@@ -139,10 +137,10 @@ def setup_rich_logging(
 def get_logger(name: str) -> logging.Logger:
     """
     Get a Rich-enabled logger.
-    
+
     Args:
         name: Logger name (usually __name__)
-        
+
     Returns:
         Configured logger instance
     """
@@ -153,11 +151,11 @@ def get_logger(name: str) -> logging.Logger:
 def status(message: str, spinner: str = "dots"):
     """
     Context manager for showing a spinner status.
-    
+
     Args:
         message: Status message to show
         spinner: Spinner style
-        
+
     Yields:
         Console instance for additional output
     """
@@ -167,20 +165,17 @@ def status(message: str, spinner: str = "dots"):
 
 @contextmanager
 def progress_bar(
-    description: str,
-    total: Optional[int] = None,
-    transient: bool = False,
-    disable: bool = False
+    description: str, total: Optional[int] = None, transient: bool = False, disable: bool = False
 ) -> Iterator[Progress]:
     """
     Context manager for Rich progress bars.
-    
+
     Args:
         description: Progress description
         total: Total number of items (None for indeterminate)
         transient: Whether to clear progress bar when done
         disable: Whether to disable progress bar
-        
+
     Yields:
         Progress instance
     """
@@ -189,14 +184,16 @@ def progress_bar(
         class DummyProgress:
             def add_task(self, *args, **kwargs):
                 return 0
+
             def update(self, *args, **kwargs):
                 pass
+
             def advance(self, *args, **kwargs):
                 pass
-        
+
         yield DummyProgress()
         return
-    
+
     # Create custom progress with performance metrics
     custom_progress = Progress(
         SpinnerColumn(),
@@ -213,7 +210,7 @@ def progress_bar(
         transient=transient,
         refresh_per_second=10,
     )
-    
+
     with custom_progress:
         task_id = custom_progress.add_task(description, total=total)
         custom_progress.task_id = task_id  # Store for convenience
@@ -245,57 +242,44 @@ def print_panel(
     title: Optional[str] = None,
     subtitle: Optional[str] = None,
     style: str = "info",
-    **kwargs
+    **kwargs,
 ) -> None:
     """Print content in a styled panel."""
-    panel = Panel(
-        content,
-        title=title,
-        subtitle=subtitle,
-        border_style=style,
-        **kwargs
-    )
+    panel = Panel(content, title=title, subtitle=subtitle, border_style=style, **kwargs)
     console.print(panel)
 
 
 def print_table(
-    data: List[Dict[str, Any]],
-    title: Optional[str] = None,
-    show_header: bool = True,
-    **kwargs
+    data: List[Dict[str, Any]], title: Optional[str] = None, show_header: bool = True, **kwargs
 ) -> None:
     """Print data as a formatted table."""
     if not data:
         print_warning("No data to display in table")
         return
-    
+
     table = Table(title=title, show_header=show_header, **kwargs)
-    
+
     # Add columns from first row
     for key in data[0].keys():
         table.add_column(str(key).replace("_", " ").title())
-    
+
     # Add rows
     for row in data:
         table.add_row(*[str(value) for value in row.values()])
-    
+
     console.print(table)
 
 
-def print_statistics(
-    stats: Dict[str, Any],
-    title: str = "Statistics",
-    **kwargs
-) -> None:
+def print_statistics(stats: Dict[str, Any], title: str = "Statistics", **kwargs) -> None:
     """Print statistics in a formatted table."""
     table = Table(title=title, show_header=True, **kwargs)
     table.add_column("Metric", style="bold")
     table.add_column("Value", style="highlight")
-    
+
     for key, value in stats.items():
         # Format the key
         formatted_key = str(key).replace("_", " ").title()
-        
+
         # Format the value
         if isinstance(value, float):
             if 0 < value < 1:
@@ -306,9 +290,9 @@ def print_statistics(
             formatted_value = f"{value:,}"
         else:
             formatted_value = str(value)
-        
+
         table.add_row(formatted_key, formatted_value)
-    
+
     console.print(table)
 
 
@@ -317,31 +301,25 @@ def print_poi_summary(pois: List[Dict[str, Any]], **kwargs) -> None:
     if not pois:
         print_warning("No POIs to display")
         return
-    
-    table = Table(
-        title=f"📍 POI Summary ({len(pois)} locations)",
-        show_header=True,
-        **kwargs
-    )
+
+    table = Table(title=f"📍 POI Summary ({len(pois)} locations)", show_header=True, **kwargs)
     table.add_column("Name", style="poi")
     table.add_column("Coordinates", style="muted")
     table.add_column("Type", style="highlight")
-    
+
     for poi in pois[:10]:  # Show first 10
-        name = poi.get('name', 'Unknown')
-        lat = poi.get('latitude', 0)
-        lon = poi.get('longitude', 0)
-        poi_type = poi.get('type', 'unknown')
-        
+        name = poi.get("name", "Unknown")
+        lat = poi.get("latitude", 0)
+        lon = poi.get("longitude", 0)
+        poi_type = poi.get("type", "unknown")
+
         table.add_row(
-            name[:30] + "..." if len(name) > 30 else name,
-            f"{lat:.4f}, {lon:.4f}",
-            poi_type
+            name[:30] + "..." if len(name) > 30 else name, f"{lat:.4f}, {lon:.4f}", poi_type
         )
-    
+
     if len(pois) > 10:
         table.add_row("...", "...", f"... and {len(pois) - 10} more")
-    
+
     console.print(table)
 
 
@@ -356,7 +334,7 @@ def create_section_header(title: str, emoji: str = "🔧") -> None:
 # Compatibility functions for legacy progress tracking
 class RichProgressWrapper:
     """Wrapper to make Rich Progress compatible with existing tqdm usage."""
-    
+
     def __init__(self, iterable=None, desc="", total=None, unit="it", **kwargs):
         self.iterable = iterable
         self.desc = desc
@@ -365,7 +343,7 @@ class RichProgressWrapper:
         self.position = 0
         self.task_id = None
         self.progress_instance = None
-        
+
         # Create progress instance
         self.progress_instance = Progress(
             SpinnerColumn(),
@@ -379,35 +357,35 @@ class RichProgressWrapper:
             console=console,
             refresh_per_second=10,
         )
-        
+
         self.progress_instance.start()
         self.task_id = self.progress_instance.add_task(desc, total=self.total)
-    
+
     def __iter__(self):
         if self.iterable:
             for item in self.iterable:
                 yield item
                 self.update(1)
-        
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         self.close()
-    
+
     def update(self, n=1):
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, advance=n)
             self.position += n
-    
+
     def set_description(self, desc):
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, description=desc)
-    
+
     def close(self):
         if self.progress_instance:
             self.progress_instance.stop()
-    
+
     def write(self, message):
         console.print(message)
 
@@ -419,21 +397,21 @@ def rich_tqdm(*args, **kwargs):
 
 # Export main interface
 __all__ = [
-    'console',
-    'progress',
-    'setup_rich_logging',
-    'get_logger',
-    'status',
-    'progress_bar',
-    'print_info',
-    'print_success',
-    'print_warning',
-    'print_error',
-    'print_panel',
-    'print_table',
-    'print_statistics',
-    'print_poi_summary',
-    'create_section_header',
-    'rich_tqdm',
-    'RichProgressWrapper',
-] 
+    "console",
+    "progress",
+    "setup_rich_logging",
+    "get_logger",
+    "status",
+    "progress_bar",
+    "print_info",
+    "print_success",
+    "print_warning",
+    "print_error",
+    "print_panel",
+    "print_table",
+    "print_statistics",
+    "print_poi_summary",
+    "create_section_header",
+    "rich_tqdm",
+    "RichProgressWrapper",
+]

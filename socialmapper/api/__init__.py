@@ -7,7 +7,7 @@ engineering best practices.
 Example:
     ```python
     from socialmapper.api import SocialMapperClient, SocialMapperBuilder
-    
+
     # Simple usage
     with SocialMapperClient() as client:
         result = client.analyze(
@@ -15,11 +15,11 @@ Example:
             poi_type="amenity",
             poi_name="library"
         )
-        
+
         if result.is_ok():
             analysis = result.unwrap()
             print(f"Found {analysis.poi_count} libraries")
-    
+
     # Advanced usage with builder
     config = (SocialMapperBuilder()
         .with_location("Chicago", "IL")
@@ -29,7 +29,7 @@ Example:
         .enable_map_export()
         .build()
     )
-    
+
     with SocialMapperClient() as client:
         result = client.run_analysis(config)
     ```
@@ -39,69 +39,65 @@ Example:
 __version__ = "0.5.4"
 
 # Builder pattern for configuration
-from .builder import (
-    SocialMapperBuilder,
-    AnalysisResult,
-    GeographicLevel,
-    MapBackend,
-)
-
-# Result types for error handling
-from .result_types import (
-    Result,
-    Ok,
-    Err,
-    Error,
-    ErrorType,
-    collect_results,
-    try_all,
-    result_handler,
-)
-
-# Main client
-from .client import (
-    SocialMapperClient,
-    ClientConfig,
-    CacheStrategy,
-)
+# Type exports for better IDE support
+from typing import TYPE_CHECKING
 
 # Async support
 from .async_client import (
     AsyncSocialMapper,
-    run_async_analysis,
-    POIResult,
     IsochroneResult,
+    POIResult,
+    run_async_analysis,
+)
+from .builder import (
+    AnalysisResult,
+    GeographicLevel,
+    MapBackend,
+    SocialMapperBuilder,
+)
+
+# Main client
+from .client import (
+    CacheStrategy,
+    ClientConfig,
+    SocialMapperClient,
 )
 
 # Convenience functions
 from .convenience import (
-    quick_analysis,
-    analyze_location,
     analyze_custom_pois,
+    analyze_location,
+    quick_analysis,
 )
 
-# Type exports for better IDE support
-from typing import TYPE_CHECKING
+# Result types for error handling
+from .result_types import (
+    Err,
+    Error,
+    ErrorType,
+    Ok,
+    Result,
+    collect_results,
+    result_handler,
+    try_all,
+)
 
 if TYPE_CHECKING:
-    from typing import Dict, Any, List, Optional
+    from typing import Any, Dict, List, Optional
 
 # Public API
 __all__ = [
     # Version
     "__version__",
-    
     # Builder
     "SocialMapperBuilder",
     "AnalysisResult",
-    "GeographicLevel", 
+    "GeographicLevel",
     "MapBackend",
-    
     # Client
     "SocialMapperClient",
     "ClientConfig",
     "CacheStrategy",
-    
     # Result types
     "Result",
     "Ok",
@@ -111,33 +107,34 @@ __all__ = [
     "collect_results",
     "try_all",
     "result_handler",
-    
     # Async
     "AsyncSocialMapper",
     "run_async_analysis",
     "POIResult",
     "IsochroneResult",
-    
     # Convenience
     "quick_analysis",
     "analyze_location",
     "analyze_custom_pois",
 ]
 
+
 # Deprecation warnings for old API
 def run_socialmapper(*args, **kwargs):
     """
     Deprecated: Use SocialMapperClient instead.
-    
+
     This function is maintained for backward compatibility only.
     """
     import warnings
+
     warnings.warn(
         "run_socialmapper is deprecated. Use SocialMapperClient instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
-    
+
     # Import old function
     from ..core import run_socialmapper as _old_run
+
     return _old_run(*args, **kwargs)

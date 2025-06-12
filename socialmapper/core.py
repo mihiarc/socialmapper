@@ -10,24 +10,15 @@ The pipeline follows ETL best practices with clear separation of concerns:
 - Load: Export to CSV, generate maps, create reports
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 # Import pipeline components
 from .pipeline import (
-    setup_pipeline_environment,
-    extract_poi_data,
-    validate_poi_coordinates,
-    generate_isochrones,
-    integrate_census_data,
-    export_pipeline_outputs,
-    generate_final_report,
+    PipelineConfig,
     PipelineOrchestrator,
-    PipelineConfig
 )
 
 # Import for backward compatibility
-from .pipeline.helpers import convert_poi_to_geodataframe, setup_directory
-from .pipeline.extraction import parse_custom_coordinates
 
 # Check if RunConfig is available
 try:
@@ -58,14 +49,14 @@ def run_socialmapper(
     map_backend: str = "plotly",
     name_field: Optional[str] = None,
     type_field: Optional[str] = None,
-    max_poi_count: Optional[int] = None
+    max_poi_count: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     DEPRECATED: Use SocialMapperClient from socialmapper.api instead.
-    
+
     This function is maintained for backward compatibility only and will be
     removed in version 0.6.0. Please migrate to the new API.
-    
+
     Example migration:
         # Old way (deprecated):
         result = run_socialmapper(
@@ -74,24 +65,24 @@ def run_socialmapper(
             poi_type="amenity",
             poi_name="library"
         )
-        
+
         # New way (recommended):
         from socialmapper.api import SocialMapperClient
-        
+
         with SocialMapperClient() as client:
             result = client.analyze(
                 location="San Francisco, CA",
                 poi_type="amenity",
                 poi_name="library"
             )
-    
+
     Args:
         run_config: Optional RunConfig object (takes precedence over other parameters)
         geocode_area: Area to search within (city/town name)
         state: State name or abbreviation
         city: City name (defaults to geocode_area if not provided)
         poi_type: Type of POI (e.g., 'amenity', 'leisure')
-        poi_name: Name of POI (e.g., 'library', 'park') 
+        poi_name: Name of POI (e.g., 'library', 'park')
         additional_tags: Dictionary of additional tags to filter by
         travel_time: Travel time limit in minutes
         geographic_level: Geographic unit for analysis: 'block-group' or 'zcta'
@@ -107,20 +98,21 @@ def run_socialmapper(
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
         max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
-        
+
     Returns:
         Dictionary of output file paths and metadata
     """
     # Emit deprecation warning
     import warnings
+
     warnings.warn(
         "run_socialmapper is deprecated and will be removed in v0.6.0. "
         "Use SocialMapperClient from socialmapper.api instead. "
         "See the docstring for migration examples.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
-    
+
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
         custom_coords_path = run_config.custom_coords_path or custom_coords_path
@@ -128,12 +120,12 @@ def run_socialmapper(
         census_variables = census_variables or run_config.census_variables
         api_key = run_config.api_key or api_key
         # Use output_dir from run_config if available
-        if hasattr(run_config, 'output_dir') and run_config.output_dir:
+        if hasattr(run_config, "output_dir") and run_config.output_dir:
             output_dir = run_config.output_dir
 
     if census_variables is None:
         census_variables = ["total_population"]
-    
+
     # Option 1: Use the new orchestrator for cleaner code
     # This provides better error handling and stage management
     config = PipelineConfig(
@@ -156,9 +148,9 @@ def run_socialmapper(
         export_maps=export_maps,
         export_isochrones=export_isochrones,
         use_interactive_maps=use_interactive_maps,
-        map_backend=map_backend
+        map_backend=map_backend,
     )
-    
+
     orchestrator = PipelineOrchestrator(config)
     return orchestrator.run()
 
@@ -166,5 +158,5 @@ def run_socialmapper(
 # Export only the main function for backward compatibility
 # Helper functions should be imported from their respective modules
 __all__ = [
-    'run_socialmapper',  # Deprecated - will be removed in v0.6.0
+    "run_socialmapper",  # Deprecated - will be removed in v0.6.0
 ]

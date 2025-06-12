@@ -8,16 +8,6 @@ This module provides access to census data through a simple API that:
 - No persistent storage needed
 """
 
-from .api import (
-    get_block_groups,
-    get_census_data,
-    clear_cache,
-    CensusAPI
-)
+from .api import CensusAPI, clear_cache, get_block_groups, get_census_data
 
-__all__ = [
-    'get_block_groups',
-    'get_census_data',
-    'clear_cache',
-    'CensusAPI'
-] 
+__all__ = ["get_block_groups", "get_census_data", "clear_cache", "CensusAPI"]

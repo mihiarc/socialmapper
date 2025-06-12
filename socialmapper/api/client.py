@@ -5,17 +5,16 @@ Provides a clean, type-safe interface with proper error handling,
 resource management, and extensibility.
 """
 
-from typing import Optional, Dict, Any, List, Protocol, runtime_checkable, Callable
-from pathlib import Path
 import logging
-from contextlib import contextmanager
-from dataclasses import dataclass, field
 import time
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
-from .builder import SocialMapperBuilder, AnalysisResult
-from .result_types import Result, Ok, Err, Error, ErrorType
-from ..pipeline import PipelineOrchestrator, PipelineConfig
-
+from ..pipeline import PipelineConfig, PipelineOrchestrator
+from .builder import AnalysisResult, SocialMapperBuilder
+from .result_types import Err, Error, ErrorType, Ok, Result
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +22,15 @@ logger = logging.getLogger(__name__)
 @runtime_checkable
 class CacheStrategy(Protocol):
     """Protocol for cache strategies."""
-    
+
     def get(self, key: str) -> Optional[Any]:
         """Retrieve item from cache."""
         ...
-    
+
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """Store item in cache."""
         ...
-    
+
     def invalidate(self, key: str) -> None:
         """Remove item from cache."""
         ...
@@ -40,6 +39,7 @@ class CacheStrategy(Protocol):
 @dataclass
 class ClientConfig:
     """Configuration for SocialMapper client."""
+
     api_key: Optional[str] = None
     cache_strategy: Optional[CacheStrategy] = None
     rate_limit: int = 10  # requests per second
@@ -50,12 +50,12 @@ class ClientConfig:
 
 class RateLimiter:
     """Simple rate limiter for API calls."""
-    
+
     def __init__(self, calls_per_second: int):
         self.calls_per_second = calls_per_second
         self.min_interval = 1.0 / calls_per_second
         self.last_call = 0.0
-    
+
     def wait_if_needed(self):
         """Wait if necessary to respect rate limit."""
         now = time.time()
@@ -68,7 +68,7 @@ class RateLimiter:
 class SocialMapperClient:
     """
     Modern client for SocialMapper with improved API design.
-    
+
     Example:
         ```python
         # Simple usage
@@ -78,20 +78,20 @@ class SocialMapperClient:
                 poi_type="amenity",
                 poi_name="library"
             )
-            
+
             match result:
                 case Ok(analysis):
                     print(f"Found {analysis.poi_count} libraries")
                 case Err(error):
                     print(f"Analysis failed: {error}")
-        
+
         # Advanced usage with configuration
         config = ClientConfig(
             api_key="your-census-api-key",
             cache_strategy=RedisCache(),
             rate_limit=5
         )
-        
+
         with SocialMapperClient(config) as client:
             # Create analysis with builder
             analysis = (client.create_analysis()
@@ -101,7 +101,7 @@ class SocialMapperClient:
                 .enable_map_export()
                 .build()
             )
-            
+
             # Run with progress callback
             result = client.run_analysis(
                 analysis,
@@ -109,28 +109,28 @@ class SocialMapperClient:
             )
         ```
     """
-    
+
     def __init__(self, config: Optional[ClientConfig] = None):
         """Initialize client with optional configuration."""
         self.config = config or ClientConfig()
         self.rate_limiter = RateLimiter(self.config.rate_limit)
         self._session_active = False
-    
+
     def __enter__(self):
         """Enter context manager."""
         self._session_active = True
         logger.info("SocialMapper client session started")
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager."""
         self._session_active = False
         logger.info("SocialMapper client session ended")
-    
+
     def create_analysis(self) -> SocialMapperBuilder:
         """
         Create a new analysis configuration builder.
-        
+
         Returns:
             Builder for fluent configuration
         """
@@ -139,7 +139,7 @@ class SocialMapperClient:
         if self.config.api_key:
             builder.with_census_api_key(self.config.api_key)
         return builder
-    
+
     def analyze(
         self,
         location: str,
@@ -147,11 +147,11 @@ class SocialMapperClient:
         poi_name: str,
         travel_time: int = 15,
         census_variables: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> Result[AnalysisResult, Error]:
         """
         Simple analysis method for common use cases.
-        
+
         Args:
             location: City and state (e.g., "San Francisco, CA")
             poi_type: OSM POI type (e.g., "amenity")
@@ -159,7 +159,7 @@ class SocialMapperClient:
             travel_time: Travel time in minutes
             census_variables: List of census variables to analyze
             **kwargs: Additional options
-            
+
         Returns:
             Result with AnalysisResult or Error
         """
@@ -167,67 +167,63 @@ class SocialMapperClient:
             # Parse location
             parts = location.split(",")
             if len(parts) != 2:
-                return Err(Error(
-                    type=ErrorType.VALIDATION,
-                    message="Location must be in format 'City, State'",
-                    context={"location": location}
-                ))
-            
+                return Err(
+                    Error(
+                        type=ErrorType.VALIDATION,
+                        message="Location must be in format 'City, State'",
+                        context={"location": location},
+                    )
+                )
+
             city = parts[0].strip()
             state = parts[1].strip()
-            
+
             # Build configuration
             builder = self.create_analysis()
             builder.with_location(city, state)
             builder.with_osm_pois(poi_type, poi_name)
             builder.with_travel_time(travel_time)
-            
+
             if census_variables:
                 builder.with_census_variables(*census_variables)
-            
+
             # Apply additional options
             if kwargs.get("enable_maps"):
                 builder.enable_map_export()
             if kwargs.get("output_dir"):
                 builder.with_output_directory(kwargs["output_dir"])
-            
+
             config = builder.build()
             return self.run_analysis(config)
-            
+
         except ValueError as e:
-            return Err(Error(
-                type=ErrorType.VALIDATION,
-                message=str(e),
-                cause=e
-            ))
+            return Err(Error(type=ErrorType.VALIDATION, message=str(e), cause=e))
         except Exception as e:
-            return Err(Error(
-                type=ErrorType.UNKNOWN,
-                message=f"Unexpected error: {str(e)}",
-                cause=e
-            ))
-    
+            return Err(
+                Error(type=ErrorType.UNKNOWN, message=f"Unexpected error: {str(e)}", cause=e)
+            )
+
     def run_analysis(
-        self,
-        config: Dict[str, Any],
-        on_progress: Optional[Callable[[float], None]] = None
+        self, config: Dict[str, Any], on_progress: Optional[Callable[[float], None]] = None
     ) -> Result[AnalysisResult, Error]:
         """
         Run analysis with the given configuration.
-        
+
         Args:
             config: Configuration from builder
             on_progress: Optional progress callback (0-100)
-            
+
         Returns:
             Result with AnalysisResult or Error
         """
         if not self._session_active:
-            return Err(Error(
-                type=ErrorType.VALIDATION,
-                message="Client must be used within a context manager"
-            ))
-        
+            return Err(
+                Error(
+                    type=ErrorType.VALIDATION,
+                    message="Client must be used within a context manager",
+                )
+            )
+
         try:
             # Check cache if available
             cache_key = self._generate_cache_key(config)
@@ -236,17 +232,17 @@ class SocialMapperClient:
                 if cached:
                     logger.info("Returning cached analysis result")
                     return Ok(cached)
-            
+
             # Rate limit check
             self.rate_limiter.wait_if_needed()
-            
+
             # Run pipeline
             pipeline_config = PipelineConfig(**config)
             orchestrator = PipelineOrchestrator(pipeline_config)
-            
+
             # Execute with progress tracking
             result_data = orchestrator.run()
-            
+
             # Convert to structured result
             result = AnalysisResult(
                 poi_count=len(result_data.get("pois", [])),
@@ -256,36 +252,31 @@ class SocialMapperClient:
                 metadata={
                     "travel_time": config.get("travel_time"),
                     "geographic_level": config.get("geographic_level"),
-                    "census_variables": config.get("census_variables")
-                }
+                    "census_variables": config.get("census_variables"),
+                },
             )
-            
+
             # Cache result if strategy available
             if self.config.cache_strategy:
                 self.config.cache_strategy.set(cache_key, result, ttl=3600)
-            
+
             return Ok(result)
-            
+
         except Exception as e:
             logger.error(f"Analysis failed: {str(e)}")
-            
+
             # Determine error type based on exception
             error_type = self._classify_error(e)
-            
-            return Err(Error(
-                type=error_type,
-                message=str(e),
-                context={"config": config},
-                cause=e
-            ))
-    
+
+            return Err(Error(type=error_type, message=str(e), context={"config": config}, cause=e))
+
     def validate_configuration(self, config: Dict[str, Any]) -> Result[Dict[str, Any], Error]:
         """
         Validate analysis configuration.
-        
+
         Args:
             config: Configuration to validate
-            
+
         Returns:
             Result with validated config or Error
         """
@@ -294,44 +285,45 @@ class SocialMapperClient:
             builder = SocialMapperBuilder()
             builder._config = config
             errors = builder.validate()
-            
+
             if errors:
-                return Err(Error(
-                    type=ErrorType.VALIDATION,
-                    message="Configuration validation failed",
-                    context={"errors": errors}
-                ))
-            
+                return Err(
+                    Error(
+                        type=ErrorType.VALIDATION,
+                        message="Configuration validation failed",
+                        context={"errors": errors},
+                    )
+                )
+
             return Ok(config)
-            
+
         except Exception as e:
-            return Err(Error(
-                type=ErrorType.VALIDATION,
-                message=f"Validation error: {str(e)}",
-                cause=e
-            ))
-    
+            return Err(
+                Error(type=ErrorType.VALIDATION, message=f"Validation error: {str(e)}", cause=e)
+            )
+
     @contextmanager
     def batch_analyses(self, configs: List[Dict[str, Any]]):
         """
         Context manager for batch processing multiple analyses.
-        
+
         Example:
             ```python
             configs = [config1, config2, config3]
-            
+
             with client.batch_analyses(configs) as batch:
                 results = batch.run_all()
                 for i, result in enumerate(results):
                     print(f"Analysis {i}: {result}")
             ```
         """
+
         class BatchProcessor:
             def __init__(self, client, configs):
                 self.client = client
                 self.configs = configs
                 self.results = []
-            
+
             def run_all(self) -> List[Result[AnalysisResult, Error]]:
                 """Run all analyses in batch."""
                 for i, config in enumerate(self.configs):
@@ -339,10 +331,10 @@ class SocialMapperClient:
                     result = self.client.run_analysis(config)
                     self.results.append(result)
                 return self.results
-        
+
         processor = BatchProcessor(self, configs)
         yield processor
-    
+
     def _generate_cache_key(self, config: Dict[str, Any]) -> str:
         """Generate cache key from configuration."""
         # Simple implementation - in production would use better hashing
@@ -350,27 +342,27 @@ class SocialMapperClient:
             config.get("geocode_area", ""),
             config.get("poi_type", ""),
             config.get("poi_name", ""),
-            str(config.get("travel_time", 15))
+            str(config.get("travel_time", 15)),
         ]
         return ":".join(key_parts)
-    
+
     def _extract_file_paths(self, result_data: Dict[str, Any]) -> Dict[str, Path]:
         """Extract file paths from pipeline results."""
         files = {}
-        
+
         if "csv_file" in result_data:
             files["census_data"] = Path(result_data["csv_file"])
         if "map_file" in result_data:
             files["map"] = Path(result_data["map_file"])
         if "isochrone_file" in result_data:
             files["isochrones"] = Path(result_data["isochrone_file"])
-        
+
         return files
-    
+
     def _classify_error(self, exception: Exception) -> ErrorType:
         """Classify exception into error type."""
         error_msg = str(exception).lower()
-        
+
         if "validation" in error_msg or "invalid" in error_msg:
             return ErrorType.VALIDATION
         elif "network" in error_msg or "connection" in error_msg:
