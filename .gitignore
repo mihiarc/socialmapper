@@ -138,3 +138,4 @@ OPTIMIZATION_PLAN.md
 OPTIMIZATION_PLAN.md
 .cursor/rules/workspace.mdc
 uv.lock
+test_cache/
