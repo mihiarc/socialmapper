@@ -27,7 +27,8 @@ except ImportError:
     pass
 
 # Import main functionality (deprecated - use api module instead)
-from .core import run_socialmapper, setup_directory
+from .core import run_socialmapper
+# Note: setup_directory removed from exports - use internal modules directly
 
 # Import modern API (recommended)
 try:
@@ -59,8 +60,7 @@ try:
     
     # Build __all__ based on available features
     __all__ = [
-        "run_socialmapper",  # Deprecated
-        "setup_directory",
+        "run_socialmapper",  # Deprecated - use SocialMapperClient instead
         # Neighbor functions
         "get_neighboring_states",
         "get_neighboring_counties", 
@@ -88,8 +88,7 @@ except ImportError as e:
     
     # Build __all__ for limited functionality
     __all__ = [
-        "run_socialmapper",  # Deprecated
-        "setup_directory",
+        "run_socialmapper",  # Deprecated - use SocialMapperClient instead
     ]
     
     # Add modern API if available

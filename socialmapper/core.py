@@ -61,10 +61,29 @@ def run_socialmapper(
     max_poi_count: Optional[int] = None
 ) -> Dict[str, Any]:
     """
-    Run the full community mapping process using modular pipeline functions.
+    DEPRECATED: Use SocialMapperClient from socialmapper.api instead.
     
-    This function maintains backward compatibility while using the new
-    modular pipeline architecture internally.
+    This function is maintained for backward compatibility only and will be
+    removed in version 0.6.0. Please migrate to the new API.
+    
+    Example migration:
+        # Old way (deprecated):
+        result = run_socialmapper(
+            geocode_area="San Francisco",
+            state="CA",
+            poi_type="amenity",
+            poi_name="library"
+        )
+        
+        # New way (recommended):
+        from socialmapper.api import SocialMapperClient
+        
+        with SocialMapperClient() as client:
+            result = client.analyze(
+                location="San Francisco, CA",
+                poi_type="amenity",
+                poi_name="library"
+            )
     
     Args:
         run_config: Optional RunConfig object (takes precedence over other parameters)
@@ -92,6 +111,16 @@ def run_socialmapper(
     Returns:
         Dictionary of output file paths and metadata
     """
+    # Emit deprecation warning
+    import warnings
+    warnings.warn(
+        "run_socialmapper is deprecated and will be removed in v0.6.0. "
+        "Use SocialMapperClient from socialmapper.api instead. "
+        "See the docstring for migration examples.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     # Merge values from RunConfig if provided
     if run_config is not None and RunConfig is not None:
         custom_coords_path = run_config.custom_coords_path or custom_coords_path
@@ -132,91 +161,10 @@ def run_socialmapper(
     
     orchestrator = PipelineOrchestrator(config)
     return orchestrator.run()
-    
-    # Option 2: Direct function calls (keeping original flow)
-    # Uncomment below and comment out the orchestrator code above
-    # to use the original sequential approach
-    
-    # # Phase 1: Setup Pipeline Environment
-    # directories = setup_pipeline_environment(
-    #     output_dir=output_dir,
-    #     export_csv=export_csv,
-    #     export_maps=export_maps,
-    #     export_isochrones=export_isochrones
-    # )
-    # 
-    # # Phase 2: Extract POI Data
-    # poi_data, base_filename, state_abbreviations, sampled_pois = extract_poi_data(
-    #     custom_coords_path=custom_coords_path,
-    #     geocode_area=geocode_area,
-    #     state=state,
-    #     city=city,
-    #     poi_type=poi_type,
-    #     poi_name=poi_name,
-    #     additional_tags=additional_tags,
-    #     name_field=name_field,
-    #     type_field=type_field,
-    #     max_poi_count=max_poi_count
-    # )
-    # 
-    # # Phase 3: Validate POI Coordinates
-    # validate_poi_coordinates(poi_data)
-    # 
-    # # Phase 4: Generate Isochrones
-    # isochrone_gdf = generate_isochrones(
-    #     poi_data=poi_data,
-    #     travel_time=travel_time,
-    #     state_abbreviations=state_abbreviations
-    # )
-    # 
-    # # Phase 5: Integrate Census Data
-    # geographic_units_gdf, census_data_gdf, census_codes = integrate_census_data(
-    #     isochrone_gdf=isochrone_gdf,
-    #     census_variables=census_variables,
-    #     api_key=api_key,
-    #     poi_data=poi_data,
-    #     geographic_level=geographic_level
-    # )
-    # 
-    # # Phase 6: Export Pipeline Outputs
-    # result_files = export_pipeline_outputs(
-    #     census_data_gdf=census_data_gdf,
-    #     poi_data=poi_data,
-    #     isochrone_gdf=isochrone_gdf,
-    #     base_filename=base_filename,
-    #     travel_time=travel_time,
-    #     directories=directories,
-    #     export_csv=export_csv,
-    #     export_maps=export_maps,
-    #     use_interactive_maps=use_interactive_maps,
-    #     census_codes=census_codes,
-    #     geographic_level=geographic_level
-    # )
-    # 
-    # # Phase 7: Generate Final Report and Return Results
-    # result = generate_final_report(
-    #     poi_data=poi_data,
-    #     sampled_pois=sampled_pois,
-    #     result_files=result_files,
-    #     base_filename=base_filename,
-    #     travel_time=travel_time
-    # )
-    # 
-    # # Add the processed data to the result for backward compatibility
-    # result.update({
-    #     "isochrones": isochrone_gdf,
-    #     "geographic_units": geographic_units_gdf,
-    #     "block_groups": geographic_units_gdf,  # Keep for backward compatibility
-    #     "census_data": census_data_gdf
-    # })
-    # 
-    # return result
 
 
-# Export the main function and key utilities for backward compatibility
+# Export only the main function for backward compatibility
+# Helper functions should be imported from their respective modules
 __all__ = [
-    'run_socialmapper',
-    'parse_custom_coordinates',
-    'convert_poi_to_geodataframe',
-    'setup_directory'
+    'run_socialmapper',  # Deprecated - will be removed in v0.6.0
 ]
