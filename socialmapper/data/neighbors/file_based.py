@@ -93,7 +93,13 @@ class FileNeighborManager:
             neighbors = df[(df["state_fips"] == state_fips) & (df["county_fips"] == county_fips)]
 
             # Return list of neighbor tuples
-            return list(zip(neighbors["neighbor_state_fips"], neighbors["neighbor_county_fips"], strict=False))
+            return list(
+                zip(
+                    neighbors["neighbor_state_fips"],
+                    neighbors["neighbor_county_fips"],
+                    strict=False,
+                )
+            )
 
         except Exception as e:
             logger.error(f"Error getting neighboring counties: {e}")

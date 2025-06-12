@@ -4,7 +4,6 @@ Helper functions for the SocialMapper pipeline.
 This module contains utility functions used across pipeline modules.
 """
 
-
 import geopandas as gpd
 from shapely.geometry import Point
 

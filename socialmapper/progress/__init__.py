@@ -41,17 +41,8 @@ from ..ui.rich_console import (
     rich_tqdm,
 )
 
-# Streamlit detection and import
+# Streamlit detection removed - always use Rich progress
 _IN_STREAMLIT = False
-try:
-    import streamlit as st
-    from streamlit import runtime
-
-    if runtime.exists():
-        _IN_STREAMLIT = True
-        from stqdm import stqdm
-except (ImportError, ModuleNotFoundError):
-    pass
 
 logger = logging.getLogger(__name__)
 

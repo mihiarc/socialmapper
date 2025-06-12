@@ -18,11 +18,6 @@ class GeographicLevel(Enum):
     ZCTA = "zcta"  # ZIP Code Tabulation Area
 
 
-class MapBackend(Enum):
-    """Supported map visualization backends."""
-
-    PLOTLY = "plotly"
-
 
 @dataclass
 class AnalysisResult:
@@ -52,7 +47,6 @@ class SocialMapperBuilder:
             .with_osm_pois("amenity", "library")
             .with_travel_time(15)
             .with_census_variables("total_population", "median_income")
-            .enable_map_export()
             .build()
         )
         ```
@@ -65,9 +59,7 @@ class SocialMapperBuilder:
             "geographic_level": GeographicLevel.BLOCK_GROUP,
             "census_variables": ["total_population"],
             "export_csv": True,
-            "export_maps": False,
             "export_isochrones": False,
-            "map_backend": MapBackend.PLOTLY,
             "output_dir": Path("output"),
         }
         self._validation_errors = []
@@ -132,12 +124,6 @@ class SocialMapperBuilder:
         if max_count < 1:
             self._validation_errors.append(f"POI limit must be positive, got {max_count}")
         self._config["max_poi_count"] = max_count
-        return self
-
-    def enable_map_export(self, backend: MapBackend = MapBackend.PLOTLY) -> Self:
-        """Enable map visualization export."""
-        self._config["export_maps"] = True
-        self._config["map_backend"] = backend.value
         return self
 
     def enable_isochrone_export(self) -> Self:

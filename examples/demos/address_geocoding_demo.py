@@ -262,7 +262,7 @@ def demo_poi_integration(geocoded_results: List):
         
         # Show how to use with SocialMapper CLI
         console.print("\n[bold]🚀 Usage with SocialMapper CLI:[/bold]")
-        cli_command = f"socialmapper --custom-coords {sample_file} --travel-time 15 --export-maps --map-backend plotly"
+        cli_command = f"socialmapper --custom-coords {sample_file} --travel-time 15"
         console.print(f"[cyan]{cli_command}[/cyan]")
 
 

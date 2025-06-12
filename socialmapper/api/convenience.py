@@ -92,8 +92,7 @@ def analyze_location(
             "TX",
             poi_type="leisure",
             poi_name="park",
-            travel_time=20,
-            enable_maps=True
+            travel_time=20
         )
         ```
     """
@@ -106,9 +105,6 @@ def analyze_location(
 
     if "census_variables" in options:
         config.with_census_variables(*options["census_variables"])
-
-    if options.get("enable_maps"):
-        config.enable_map_export()
 
     if "output_dir" in options:
         config.with_output_directory(options["output_dir"])
@@ -150,8 +146,7 @@ def analyze_custom_pois(
             "my_locations.csv",
             travel_time=20,
             census_variables=["total_population", "median_age"],
-            name_field="location_name",
-            enable_maps=True
+            name_field="location_name"
         )
         ```
     """
@@ -169,8 +164,6 @@ def analyze_custom_pois(
         config.with_census_variables("total_population")
 
     # Apply additional options
-    if options.get("enable_maps"):
-        config.enable_map_export()
 
     if options.get("enable_isochrones"):
         config.enable_isochrone_export()
@@ -229,7 +222,6 @@ def analyze_dataframe(
     """
     # Save DataFrame to temporary file
     import tempfile
-
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         df.to_csv(f, index=False)

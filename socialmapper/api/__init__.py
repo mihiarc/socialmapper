@@ -26,7 +26,6 @@ Example:
         .with_osm_pois("leisure", "park")
         .with_travel_time(20)
         .with_census_variables("total_population", "median_income")
-        .enable_map_export()
         .build()
     )
 
@@ -52,7 +51,6 @@ from .async_client import (
 from .builder import (
     AnalysisResult,
     GeographicLevel,
-    MapBackend,
     SocialMapperBuilder,
 )
 
@@ -93,7 +91,6 @@ __all__ = [
     "SocialMapperBuilder",
     "AnalysisResult",
     "GeographicLevel",
-    "MapBackend",
     # Client
     "SocialMapperClient",
     "ClientConfig",

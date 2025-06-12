@@ -207,7 +207,7 @@ def demo_neighbor_system() -> bool:
         print(f"      • Fetch census demographics for all {len(all_neighbors)} counties")
         print(f"      • Calculate travel time isochrones")
         print(f"      • Analyze demographic accessibility patterns")
-        print(f"      • Generate interactive maps and visualizations")
+        print(f"      • Process and analyze geographic data")
         print(f"      • Export results for policy analysis")
         print(f"   ")
         print(f"   The neighbor system optimized steps 1-2, enabling:")

@@ -9,13 +9,13 @@ examples/
 ├── README.md                      # This file
 ├── demos/                         # Interactive demonstrations
 │   ├── rich_ui_demo.py           # Rich terminal UI features
-│   ├── plotly_integration_demo.py # Plotly/Mapbox mapping demo
-│   ├── osmnx_features_demo.py     # OSMnx 2.0+ capabilities
-│   └── fuquay_varina_case_study.py # Complete real-world case study
+│   ├── fuquay_varina_case_study.py # Complete real-world case study
+│   ├── cold_cache_demo.py        # Cache performance demo
+│   └── simple_cold_cache_demo.py  # Simple cache performance demo
 ├── data/                          # Example datasets
 │   ├── trail_heads.csv           # Trail locations dataset (2,661 POIs)
 │   ├── custom_coordinates.csv    # Sample coordinate format
-│   └── streamlit_example.csv     # Streamlit app example data
+│   └── sample_addresses.csv      # Sample address dataset
 └── example_output/               # Sample output files
     └── maps/                     # Example generated maps
 ```
@@ -30,15 +30,10 @@ python examples/demos/fuquay_varina_case_study.py
 # Try the Rich UI features
 python examples/demos/rich_ui_demo.py
 
-# Explore OSMnx 2.0+ capabilities  
-python examples/demos/osmnx_features_demo.py
+# Explore cache performance
+python examples/demos/cold_cache_demo.py
 ```
 
-### Plotly Integration Demo (Streamlit)
-```bash
-# Run the interactive Plotly demo
-streamlit run examples/demos/plotly_integration_demo.py
-```
 
 ## 📋 Demo Descriptions
 
@@ -70,33 +65,20 @@ streamlit run examples/demos/plotly_integration_demo.py
 - Formatted data tables (POIs, census variables)
 - Status spinners and completion summaries
 
-### 🗺️ Plotly Integration Demo (`plotly_integration_demo.py`)
-**Interactive mapping demonstration** comparing Plotly vs Folium approaches:
 
-- **Type**: Streamlit web application
-- **Features**: Interactive maps, event handling, performance comparison
-- **Data**: Sample census and POI data
-- **Duration**: Interactive exploration
+### ⚡ Cache Performance Demo (`cold_cache_demo.py`)
+**Performance analysis** showcasing SocialMapper's caching capabilities:
 
-**What you'll see**:
-- Modern Plotly Scattermap implementation
-- Interactive click/hover events
-- Performance benchmarks
-- Real SocialMapper integration examples
-
-### 🌐 OSMnx Features Demo (`osmnx_features_demo.py`)
-**Advanced geospatial capabilities** showcasing OSMnx 2.0+ features:
-
-- **Location**: Corvallis, Oregon
-- **Features**: Network analysis, geometry handling, routing algorithms
-- **Technical**: Performance benchmarks, centrality calculations
-- **Duration**: ~3-5 minutes
+- **Location**: Various test areas
+- **Features**: Cache initialization, performance metrics, data persistence
+- **Technical**: Before/after performance comparisons
+- **Duration**: ~2-3 minutes
 
 **What you'll see**:
-- Faster graph creation and processing
-- Building footprints and POI downloads
-- Network analysis (betweenness, closeness centrality)
-- Advanced routing and spatial analysis
+- Cache system initialization and optimization
+- Performance metrics for different operations
+- Data persistence and retrieval speed
+- Memory and storage optimization benefits
 
 ## 📊 Example Datasets
 
@@ -112,11 +94,6 @@ streamlit run examples/demos/plotly_integration_demo.py
 - **Use**: Quick testing and format demonstration
 - **Format**: Simple CSV with name, lat, lon
 
-### `streamlit_example.csv` (275B, 6 records)
-**Streamlit demo data** for web application examples:
-- **Content**: Small dataset for web interface testing
-- **Use**: Streamlit app demonstrations
-- **Format**: CSV optimized for web display
 
 ## 🎯 Usage Patterns
 
@@ -141,7 +118,7 @@ import subprocess
 demos = [
     "examples/demos/fuquay_varina_case_study.py",
     "examples/demos/rich_ui_demo.py", 
-    "examples/demos/osmnx_features_demo.py"
+    "examples/demos/cold_cache_demo.py"
 ]
 
 for demo in demos:
@@ -197,8 +174,8 @@ results = run_socialmapper(
 
 1. **Start**: `fuquay_varina_case_study.py` - Complete overview
 2. **UI**: `rich_ui_demo.py` - Beautiful terminal experience  
-3. **Mapping**: `plotly_integration_demo.py` - Interactive visualization
-4. **Advanced**: `osmnx_features_demo.py` - Technical capabilities
+3. **API**: `modern_api_demo.py` - Modern API usage
+4. **Performance**: `cold_cache_demo.py` - Cache and performance features
 5. **Testing**: `tests/performance/` - Performance validation
 
 ## 🆘 Troubleshooting
@@ -206,7 +183,6 @@ results = run_socialmapper(
 ### Common Issues
 - **Import errors**: Ensure SocialMapper is installed (`pip install socialmapper`)
 - **Missing data**: Check that CSV files exist in `examples/data/`
-- **Streamlit issues**: Install streamlit (`pip install streamlit`)
 - **Performance**: Use smaller datasets for initial testing
 
 ### Getting Help

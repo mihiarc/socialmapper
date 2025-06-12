@@ -43,17 +43,7 @@ from rich.status import Status
 from rich.table import Table
 from rich.traceback import install as install_rich_traceback
 
-# Streamlit detection
-_IN_STREAMLIT = False
-try:
-    import streamlit as st
-    from streamlit import runtime
-
-    if runtime.exists():
-        _IN_STREAMLIT = True
-        from stqdm import stqdm
-except (ImportError, ModuleNotFoundError):
-    pass
+# Always use Rich console output
 
 # Install Rich tracebacks globally
 install_rich_traceback(show_locals=True)
@@ -169,25 +159,19 @@ class RichProgressTracker:
 
     def print_banner(self, title: str, subtitle: Optional[str] = None):
         """Print a beautiful banner using Rich."""
-        if not _IN_STREAMLIT:
-            if subtitle:
-                banner_text = f"[bold cyan]{title}[/bold cyan]\n[dim]{subtitle}[/dim]"
-            else:
-                banner_text = f"[bold cyan]{title}[/bold cyan]"
-
-            panel = Panel(
-                banner_text,
-                title="🏘️ SocialMapper",
-                subtitle=f"v{self._get_version()}",
-                box=box.DOUBLE,
-                padding=(1, 2),
-            )
-            self.console.print(panel)
+        if subtitle:
+            banner_text = f"[bold cyan]{title}[/bold cyan]\n[dim]{subtitle}[/dim]"
         else:
-            # Simple output for Streamlit
-            st.write(f"## {title}")
-            if subtitle:
-                st.write(subtitle)
+            banner_text = f"[bold cyan]{title}[/bold cyan]"
+
+        panel = Panel(
+            banner_text,
+            title="🏘️ SocialMapper",
+            subtitle=f"v{self._get_version()}",
+            box=box.DOUBLE,
+            padding=(1, 2),
+        )
+        self.console.print(panel)
 
     def _get_version(self) -> str:
         """Get SocialMapper version."""
@@ -226,31 +210,27 @@ class RichProgressTracker:
                 stage, {"emoji": "🔄", "description": str(stage), "color": "white"}
             )
 
-            if not _IN_STREAMLIT:
-                # Create Rich progress bar
-                self.progress = Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(),
-                    MofNCompleteColumn(),
-                    TaskProgressColumn(),
-                    TimeRemainingColumn(),
-                    console=self.console,
-                    transient=False,
-                )
+            # Create Rich progress bar
+            self.progress = Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TaskProgressColumn(),
+                TimeRemainingColumn(),
+                console=self.console,
+                transient=False,
+            )
 
-                task_description = f"{config['emoji']} {config['description']}"
-                self.current_task_id = self.progress.add_task(task_description, total=total_items)
+            task_description = f"{config['emoji']} {config['description']}"
+            self.current_task_id = self.progress.add_task(task_description, total=total_items)
 
-                self.progress.start()
+            self.progress.start()
 
-                # Print stage start message
-                self.console.print(
-                    f"\n[{config['color']}]Starting: {config['description']}[/{config['color']}]"
-                )
-            else:
-                # Use stqdm for Streamlit
-                st.write(f"{config['emoji']} {config['description']}")
+            # Print stage start message
+            self.console.print(
+                f"\n[{config['color']}]Starting: {config['description']}[/{config['color']}]"
+            )
 
             return metrics
 
@@ -280,7 +260,7 @@ class RichProgressTracker:
                 metrics.update_throughput()
 
             # Update progress display
-            if not _IN_STREAMLIT and self.progress and self.current_task_id is not None:
+            if self.progress and self.current_task_id is not None:
                 # Build description with substage if provided
                 task_description = description
                 if not task_description and substage:
@@ -306,94 +286,77 @@ class RichProgressTracker:
             stage, {"emoji": "✅", "description": str(stage), "color": "green"}
         )
 
-        if not _IN_STREAMLIT:
-            # Stop progress
-            if self.progress:
-                self.progress.stop()
-                self.progress = None
+        # Stop progress
+        if self.progress:
+            self.progress.stop()
+            self.progress = None
 
-            # Show completion message
-            if self.enable_performance_metrics and metrics.throughput_per_second > 0:
-                self.console.print(
-                    f"[green]✅ Completed: {config['description']} "
-                    f"({elapsed:.1f}s, {metrics.throughput_per_second:.1f} items/s)[/green]"
-                )
-            else:
-                self.console.print(
-                    f"[green]✅ Completed: {config['description']} ({elapsed:.1f}s)[/green]"
-                )
+        # Show completion message
+        if self.enable_performance_metrics and metrics.throughput_per_second > 0:
+            self.console.print(
+                f"[green]✅ Completed: {config['description']} "
+                f"({elapsed:.1f}s, {metrics.throughput_per_second:.1f} items/s)[/green]"
+            )
         else:
-            st.success(f"✅ Completed: {config['description']} ({elapsed:.1f}s)")
+            self.console.print(
+                f"[green]✅ Completed: {config['description']} ({elapsed:.1f}s)[/green]"
+            )
 
     @contextmanager
     def status(self, message: str, spinner: str = "dots"):
         """Context manager for showing a status spinner."""
-        if not _IN_STREAMLIT:
-            with Status(message, spinner=spinner, console=self.console) as status:
-                yield status
-        else:
-            with st.spinner(message):
-                yield None
+        with Status(message, spinner=spinner, console=self.console) as status:
+            yield status
 
     def print_summary(self) -> None:
         """Print a beautiful summary table of all stages."""
         if not self.stage_metrics:
             return
 
-        if not _IN_STREAMLIT:
-            # Create summary table
-            table = Table(title="🏘️ SocialMapper Pipeline Summary", box=box.ROUNDED)
-            table.add_column("Stage", style="cyan", no_wrap=True)
-            table.add_column("Items", justify="right", style="green")
-            table.add_column("Duration", justify="right", style="blue")
-            table.add_column("Throughput", justify="right", style="yellow")
-            table.add_column("Memory", justify="right", style="magenta")
+        # Create summary table
+        table = Table(title="🏘️ SocialMapper Pipeline Summary", box=box.ROUNDED)
+        table.add_column("Stage", style="cyan", no_wrap=True)
+        table.add_column("Items", justify="right", style="green")
+        table.add_column("Duration", justify="right", style="blue")
+        table.add_column("Throughput", justify="right", style="yellow")
+        table.add_column("Memory", justify="right", style="magenta")
 
-            total_time = 0
-            total_items = 0
+        total_time = 0
+        total_items = 0
 
-            for stage, metrics in self.stage_metrics.items():
-                config = self.stage_configs.get(stage, {"emoji": "🔄", "description": str(stage)})
-                elapsed = metrics.get_elapsed_time()
-                total_time += elapsed
-                total_items += metrics.items_processed
+        for stage, metrics in self.stage_metrics.items():
+            config = self.stage_configs.get(stage, {"emoji": "🔄", "description": str(stage)})
+            elapsed = metrics.get_elapsed_time()
+            total_time += elapsed
+            total_items += metrics.items_processed
 
-                table.add_row(
-                    f"{config['emoji']} {config['description']}",
-                    f"{metrics.items_processed:,}",
-                    f"{elapsed:.1f}s",
-                    (
-                        f"{metrics.throughput_per_second:.1f}/s"
-                        if metrics.throughput_per_second > 0
-                        else "-"
-                    ),
-                    f"{metrics.memory_usage_mb:.1f}MB" if metrics.memory_usage_mb > 0 else "-",
-                )
-
-            # Add total row
-            table.add_section()
             table.add_row(
-                "[bold]Total Pipeline[/bold]",
-                f"[bold]{total_items:,}[/bold]",
-                f"[bold]{total_time:.1f}s[/bold]",
+                f"{config['emoji']} {config['description']}",
+                f"{metrics.items_processed:,}",
+                f"{elapsed:.1f}s",
                 (
-                    f"[bold]{total_items/total_time:.1f}/s[/bold]"
-                    if total_time > 0
-                    else "[bold]-[/bold]"
+                    f"{metrics.throughput_per_second:.1f}/s"
+                    if metrics.throughput_per_second > 0
+                    else "-"
                 ),
-                "[bold]-[/bold]",
+                f"{metrics.memory_usage_mb:.1f}MB" if metrics.memory_usage_mb > 0 else "-",
             )
 
-            self.console.print(table)
-        else:
-            # Simple summary for Streamlit
-            st.write("### Pipeline Summary")
-            for stage, metrics in self.stage_metrics.items():
-                config = self.stage_configs.get(stage, {"emoji": "🔄", "description": str(stage)})
-                elapsed = metrics.get_elapsed_time()
-                st.write(
-                    f"{config['emoji']} {config['description']}: {metrics.items_processed:,} items in {elapsed:.1f}s"
-                )
+        # Add total row
+        table.add_section()
+        table.add_row(
+            "[bold]Total Pipeline[/bold]",
+            f"[bold]{total_items:,}[/bold]",
+            f"[bold]{total_time:.1f}s[/bold]",
+            (
+                f"[bold]{total_items/total_time:.1f}/s[/bold]"
+                if total_time > 0
+                else "[bold]-[/bold]"
+            ),
+            "[bold]-[/bold]",
+        )
+
+        self.console.print(table)
 
 
 # Global tracker instance

@@ -109,7 +109,6 @@ def run_comparison_analysis(coord_file: Path, output_base: str) -> Dict[str, Any
         "travel_time": 15,
         "census_variables": ["total_population", "median_household_income", "median_age"],
         "export_csv": True,
-        "export_maps": False,  # Focus on ZCTA feature testing, not map generation
         "output_dir": f"demo_output_{output_base}"
     }
     

@@ -45,10 +45,7 @@ class PipelineConfig:
     # Output configuration
     output_dir: str = "output"
     export_csv: bool = True
-    export_maps: bool = False
     export_isochrones: bool = False
-    use_interactive_maps: bool = True
-    map_backend: str = "plotly"
 
 
 class PipelineStage:
@@ -178,8 +175,6 @@ class PipelineOrchestrator:
             travel_time=self.config.travel_time,
             directories=directories,
             export_csv=self.config.export_csv,
-            export_maps=self.config.export_maps,
-            use_interactive_maps=self.config.use_interactive_maps,
             census_codes=census_codes,
             geographic_level=self.config.geographic_level,
         )

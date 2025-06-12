@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Multi-Scale Community Detection Demo
+Multi-Scale Community Detection Demo (Modified)
 
-This demonstrates the advanced multi-scale analysis capabilities of the
-AI-powered community detection system.
+This script has been modified to remove dependencies on the removed community module.
+Note: Multi-scale community detection features have been removed.
+
+This demo now shows a simple building analysis instead.
 """
 
 import sys
@@ -16,8 +18,6 @@ import matplotlib.pyplot as plt
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from socialmapper.community.multiscale_analysis import analyze_communities_multiscale
 
 
 def generate_complex_urban_area(n_buildings: int = 500) -> gpd.GeoDataFrame:
@@ -101,103 +101,101 @@ def generate_complex_urban_area(n_buildings: int = 500) -> gpd.GeoDataFrame:
     return buildings_gdf
 
 
+def visualize_building_types(buildings_gdf):
+    """Create visualization of building types."""
+    print("\n📊 Creating building type visualization...")
+    
+    fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+    fig.suptitle('Urban Area Building Analysis', fontsize=16, fontweight='bold')
+    
+    # Define colors for each building type
+    colors = {
+        'dense_urban': '#FF6B6B',
+        'suburban_neighborhood_1': '#4ECDC4',
+        'suburban_neighborhood_2': '#45B7D1',
+        'rural_scattered': '#96CEB4',
+        'industrial': '#9C88FF'
+    }
+    
+    # Plot each building type with its color
+    for building_type, color in colors.items():
+        buildings = buildings_gdf[buildings_gdf['building_type'] == building_type]
+        if len(buildings) > 0:
+            buildings.plot(ax=ax, color=color, alpha=0.8, label=building_type.replace('_', ' ').title())
+    
+    ax.set_title('Building Distribution by Type', fontweight='bold')
+    ax.set_axis_off()
+    ax.legend()
+    
+    plt.tight_layout()
+    plt.savefig('building_type_analysis.png', dpi=300, bbox_inches='tight')
+    print("💾 Saved building type visualization to building_type_analysis.png")
+    
+    return fig
+
+
+def analyze_building_statistics(buildings_gdf):
+    """Analyze and display building statistics."""
+    print("\n📊 Building Statistics:")
+    print("=" * 40)
+    
+    # Group by building type
+    stats = buildings_gdf.groupby('building_type').agg({
+        'area': ['count', 'mean', 'std', 'min', 'max']
+    }).round(2)
+    
+    print(stats)
+    
+    # Overall statistics
+    print(f"\n🏢 Total Buildings: {len(buildings_gdf)}")
+    print(f"📐 Total Area: {buildings_gdf['area'].sum():,.0f} sq units")
+    print(f"📏 Average Building Size: {buildings_gdf['area'].mean():.2f} sq units")
+    
+    # Building type distribution
+    print("\n🏘️ Building Type Distribution:")
+    type_counts = buildings_gdf['building_type'].value_counts()
+    for building_type, count in type_counts.items():
+        percentage = (count / len(buildings_gdf)) * 100
+        print(f"   • {building_type.replace('_', ' ').title()}: {count} ({percentage:.1f}%)")
+
+
 def main():
     """
-    Demonstrate multi-scale community detection.
+    Demonstrate building analysis without community detection.
     """
-    print("🔬 Multi-Scale AI Community Detection Demo")
+    print("🔬 Urban Building Analysis Demo")
     print("=" * 45)
+    print("⚠️  Note: Multi-scale community detection features have been removed.")
+    print("    This demo now shows building type analysis instead.\n")
     
     # Generate complex urban data
     buildings_gdf = generate_complex_urban_area()
     
-    # Perform multi-scale analysis
-    print("\n🤖 Performing multi-scale analysis...")
-    multiscale_results = analyze_communities_multiscale(
-        buildings_gdf,
-        method='hierarchical',
-        include_gnn=False  # Disable GNN for this demo
-    )
-    
-    # Display results for each scale
-    print("\n📊 Multi-Scale Analysis Results:")
-    print("=" * 40)
-    
-    for scale_name, communities in multiscale_results.items():
-        unique_communities = len(communities['cluster_id'].unique()) - 1  # Exclude noise
-        outliers = len(communities[communities['cluster_id'] == -1])
-        avg_size = communities.groupby('cluster_id').size().mean() if unique_communities > 0 else 0
-        
-        print(f"\n🔍 {scale_name.upper()} Scale:")
-        print(f"   • Communities detected: {unique_communities}")
-        print(f"   • Average community size: {avg_size:.1f} buildings")
-        print(f"   • Outlier buildings: {outliers}")
-        
-        if 'scale_compactness' in communities.columns:
-            avg_compactness = communities['scale_compactness'].mean()
-            print(f"   • Average compactness: {avg_compactness:.2f}")
+    # Analyze building statistics
+    analyze_building_statistics(buildings_gdf)
     
     # Create visualization
-    print("\n📊 Creating multi-scale visualization...")
+    visualize_building_types(buildings_gdf)
     
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('Multi-Scale Community Detection Results', fontsize=16, fontweight='bold')
+    # Export results
+    print("\n💾 Exporting results...")
+    buildings_gdf.to_file("output/buildings_by_type.geojson", driver="GeoJSON")
+    print("   • Buildings saved to: output/buildings_by_type.geojson")
     
-    scale_names = list(multiscale_results.keys())
-    
-    for i, (scale_name, communities) in enumerate(multiscale_results.items()):
-        if i >= 4:  # Only show first 4 scales
-            break
-            
-        ax = axes[i // 2, i % 2]
-        
-        # Get unique clusters (excluding noise)
-        unique_clusters = communities['cluster_id'].unique()
-        unique_clusters = unique_clusters[unique_clusters != -1]
-        
-        if len(unique_clusters) > 0:
-            # Create colormap
-            colors = plt.cm.Set3(np.linspace(0, 1, len(unique_clusters)))
-            color_map = dict(zip(unique_clusters, colors))
-            color_map[-1] = 'lightgray'  # Noise points
-            
-            for cluster_id in unique_clusters:
-                cluster_buildings = communities[communities['cluster_id'] == cluster_id]
-                cluster_buildings.plot(ax=ax, color=color_map[cluster_id], alpha=0.8)
-            
-            # Plot noise points
-            noise_buildings = communities[communities['cluster_id'] == -1]
-            if len(noise_buildings) > 0:
-                noise_buildings.plot(ax=ax, color='lightgray', alpha=0.5)
-        else:
-            # No clusters found
-            communities.plot(ax=ax, color='lightgray', alpha=0.5)
-        
-        ax.set_title(f'{scale_name.title()} Scale\n({len(unique_clusters)} communities)', 
-                    fontweight='bold')
-        ax.set_axis_off()
-    
-    plt.tight_layout()
-    plt.savefig('multiscale_analysis_results.png', dpi=300, bbox_inches='tight')
-    print("💾 Saved multi-scale visualization to multiscale_analysis_results.png")
-    
-    # Export scale-specific results
-    print("\n💾 Exporting scale-specific results...")
-    for scale_name, communities in multiscale_results.items():
-        filename = f"output/communities_{scale_name}_scale.geojson"
-        communities.to_file(filename, driver="GeoJSON")
-        print(f"   • {scale_name} scale: {filename}")
-    
-    print("\n🎉 Multi-Scale Analysis Complete!")
+    print("\n🎉 Analysis Complete!")
     print("\n🔗 Key Insights:")
-    print("   • Different scales reveal different community patterns")
-    print("   • Hierarchical analysis shows nested community structures")
-    print("   • Each scale is useful for different planning applications:")
-    print("     - Micro: Building-level interventions")
-    print("     - Neighborhood: Local service planning") 
-    print("     - District: Infrastructure development")
-    print("     - Macro: Regional policy decisions")
+    print("   • Different building types show different spatial patterns")
+    print("   • Dense urban areas have smaller, closely packed buildings")
+    print("   • Suburban areas show regular grid patterns")
+    print("   • Rural areas have larger, scattered buildings")
+    print("   • Industrial areas cluster together")
+    
+    print("\n💡 Alternative Approaches for Community Detection:")
+    print("   • Use external clustering libraries (scikit-learn, HDBSCAN)")
+    print("   • Apply graph-based community detection algorithms")
+    print("   • Use QGIS or ArcGIS for spatial analysis")
+    print("   • Implement custom clustering based on your specific needs")
 
 
 if __name__ == "__main__":
-    main() 
+    main()

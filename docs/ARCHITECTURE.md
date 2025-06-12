@@ -7,7 +7,7 @@
 socialmapper/
 ├── data/              # Data management (streaming, memory)
 ├── visualization/     # Plotting and mapping
-├── ui/               # User interfaces (CLI, Streamlit)
+├── ui/               # User interfaces (CLI, Rich terminal)
 ├── config/           # Configuration management
 └── progress/         # Progress tracking
 ```
@@ -49,7 +49,7 @@ socialmapper/
 ├── interfaces/       # User-facing components
 │   ├── api/          # Python API (core.py)
 │   ├── cli/          # Command-line interface
-│   └── web/          # Streamlit application
+│   └── terminal/     # Rich terminal interface
 └── common/           # Shared utilities
     ├── config/       # Configuration
     ├── types/        # Type definitions

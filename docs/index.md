@@ -4,7 +4,6 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/socialmapper.svg)](https://pypi.org/project/socialmapper/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://socialmapper.streamlit.app)
 
 SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
 
@@ -14,7 +13,6 @@ Whether you're looking at bustling city neighborhoods or more spread-out rural a
 
 ## 🚀 Quick Start
 
-**[Try the Interactive Web App](https://socialmapper.streamlit.app)** - Explore community connections with our Streamlit app - no coding required!
 
 **Install with pip:**
 ```bash
@@ -38,21 +36,16 @@ results = run_socialmapper(
 
 ## 🎯 Key Features
 
-### 🗺️ **Advanced Mapping & Visualization**
+### 🗺️ **Core Analysis**
 - **[Address Geocoding System](ADDRESS_GEOCODING.md)** - Production-ready address lookup with multiple providers
-- **[Plotly Integration](PLOTLY_INTEGRATION.md)** - Interactive maps with modern visualization
-- **[AI Community Detection](features/ai-community-detection.md)** - Discover organic community boundaries
-
-### 🏘️ **Community Analysis**
 - **Travel Time Analysis** - Generate isochrones showing reachable areas
 - **Demographic Integration** - Census data analysis for community characteristics  
 - **Point of Interest Discovery** - Find libraries, schools, healthcare facilities
-- **[Satellite Imagery Integration](examples/satellite_imagery_integration.md)** - Computer vision for land use analysis
+- **Static Map Generation** - Create publication-ready visualizations
 
 ### 🛠️ **Developer Tools**
 - **Python API** - Full programmatic access
 - **Command Line Interface** - Easy scripting and automation
-- **Streamlit App** - Interactive web interface
 - **[OSMnx Integration](OSMNX_FEATURES.md)** - Advanced network analysis
 
 ## 📚 Documentation Sections
@@ -69,8 +62,7 @@ results = run_socialmapper(
 
 ### 🎯 Features in Detail
 - **[Address Geocoding](ADDRESS_GEOCODING.md)** - Modern address lookup system
-- **[AI Community Detection](features/ai-community-detection.md)** - Machine learning for boundaries
-- **[Plotly Visualization](PLOTLY_INTEGRATION.md)** - Interactive mapping
+- **[OSMnx Integration](OSMNX_FEATURES.md)** - Advanced network analysis capabilities
 
 ### 🔧 Development
 - **[Contributing Guide](development/contributing.md)** - Join the project
@@ -80,11 +72,11 @@ results = run_socialmapper(
 ## 🌟 What's New
 
 ### Latest Release Features
-- **🛰️ Satellite Imagery Integration** - Real imagery analysis with geoai
-- **🤖 AI Community Detection** - Machine learning boundary discovery  
+- **🏗️ Streamlined Architecture** - Focused on core demographic analysis
 - **📍 Enhanced Geocoding** - Production-ready address system
-- **⚡ Performance Improvements** - 17x faster processing
+- **⚡ Performance Improvements** - 17x faster processing with optimized neighbor system
 - **🎨 Modern UI** - Rich terminal output and better visualization
+- **📊 Enhanced Data Export** - Improved CSV and GeoJSON output formats
 
 See the **[Changelog](CHANGELOG.md)** for complete release history.
 
@@ -102,19 +94,10 @@ See the **[Changelog](CHANGELOG.md)** for complete release history.
 
 ### Research & Analysis
 - **Demographic Studies** - Population characteristics analysis
-- **Community Mapping** - Discover organic neighborhoods
+- **Accessibility Analysis** - Measure access to community resources
 - **Social Equity** - Identify service gaps and opportunities
 
 ## 🚀 Try It Now
-
-=== "Web App (No Installation)"
-
-    **[Launch SocialMapper Web App](https://socialmapper.streamlit.app)**
-    
-    - Interactive interface
-    - No coding required  
-    - Instant results
-    - Export capabilities
 
 === "Command Line"
 
@@ -142,22 +125,31 @@ See the **[Changelog](CHANGELOG.md)** for complete release history.
     )
     ```
 
+=== "Data Export"
+
+    ```bash
+    # Export results to CSV and maps
+    socialmapper --poi --geocode-area "Seattle" --state "WA" \
+      --poi-type "amenity" --poi-name "library" --travel-time 15 \
+      --export-csv --export-maps
+    ```
+
 ## 🤝 Community & Support
 
 - **[GitHub Repository](https://github.com/mihiarc/socialmapper)** - Source code and issues
 - **[PyPI Package](https://pypi.org/project/socialmapper/)** - Package downloads
 - **[Documentation](https://mihiarc.github.io/socialmapper)** - This site
-- **[Live Demo](https://socialmapper.streamlit.app)** - Try it online
+- **[Examples](examples/)** - Sample workflows and use cases
 
 ## 🔮 Future Vision
 
-SocialMapper is evolving toward comprehensive community analysis with plans for:
+SocialMapper is focused on becoming the premier tool for demographic accessibility analysis with plans for:
 
 - **🌍 Environmental Integration** - Natural area accessibility
-- **🚊 Multi-modal Transportation** - Transit, walking, cycling analysis  
-- **📊 Real-time Data** - Dynamic community monitoring
-- **🌐 Global Expansion** - International data sources
+- **🚊 Multi-modal Transportation** - Enhanced transit, walking, cycling analysis  
+- **📊 Enhanced Analytics** - More sophisticated demographic analysis
+- **🌐 Global Expansion** - International data sources and census systems
 
 ---
 
-**Ready to explore your community?** Start with our **[Getting Started Guide](getting-started/installation.md)** or jump right in with the **[Interactive Web App](https://socialmapper.streamlit.app)**! 
+**Ready to explore your community?** Start with our **[Getting Started Guide](getting-started/installation.md)** or try the **[Command Line Interface](https://github.com/mihiarc/socialmapper#using-the-command-line-interface)**! 

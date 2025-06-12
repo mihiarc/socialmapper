@@ -167,7 +167,6 @@ def run_cold_cache_test() -> Dict[str, Any]:
         "travel_time": 15,
         "census_variables": ["total_population", "median_income"],
         "export_csv": True,
-        "export_maps": False,  # Skip maps for faster testing
         "max_poi_count": 5  # Limit POIs for faster test
     }
     

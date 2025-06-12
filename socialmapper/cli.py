@@ -103,11 +103,6 @@ def parse_arguments():
     parser.add_argument(
         "--dry-run", action="store_true", help="Print what would be done without actually doing it"
     )
-    parser.add_argument(
-        "--test-migration",
-        action="store_true",
-        help="Test Plotly migration and backend compatibility",
-    )
 
     # Output type controls - only CSV enabled by default
     parser.add_argument(
@@ -121,18 +116,6 @@ def parse_arguments():
         action="store_false",
         dest="export_csv",
         help="Disable exporting census data to CSV format",
-    )
-    parser.add_argument(
-        "--export-maps",
-        action="store_true",
-        default=False,
-        help="Generate map visualizations (default: disabled)",
-    )
-    parser.add_argument(
-        "--map-backend",
-        choices=["plotly"],
-        default="plotly",
-        help="Map visualization backend (default: plotly)",
     )
     parser.add_argument(
         "--output-dir",
@@ -169,124 +152,6 @@ def parse_arguments():
     return args
 
 
-def _test_plotly_migration():
-    """Test Plotly migration and backend compatibility."""
-    console.print("\n[bold cyan]🧪 Testing Plotly Migration[/bold cyan]")
-    console.print("=" * 60)
-
-    tests_passed = 0
-    total_tests = 0
-
-    # Test 1: Import tests
-    console.print("\n[bold]📦 Testing imports...[/bold]")
-    total_tests += 1
-
-    try:
-        from socialmapper.visualization.plotly_map import create_plotly_map
-
-        console.print("✅ Plotly modules imported successfully")
-        tests_passed += 1
-    except Exception as e:
-        console.print(f"❌ Import failed: {e}")
-
-    # Test 2: Map creation with sample data
-    console.print("\n[bold]🗺️ Testing map creation...[/bold]")
-    total_tests += 1
-
-    try:
-        import geopandas as gpd
-        import numpy as np
-        from shapely.geometry import Point
-
-        # Create minimal sample data
-        np.random.seed(42)
-        sample_data = {
-            "GEOID": ["370630001", "370630002", "370630003"],
-            "total_population": [1200, 1800, 950],
-            "geometry": [Point(-78.8, 35.55), Point(-78.79, 35.56), Point(-78.81, 35.54)],
-        }
-
-        census_gdf = gpd.GeoDataFrame(sample_data, crs="EPSG:4326")
-
-        fig = create_plotly_map(
-            census_data=census_gdf, variable="total_population", title="Test Map", height=400
-        )
-
-        # Verify modern API usage
-        if fig.data[0].type == "scattermap":
-            console.print("✅ Map created successfully with modern Scattermap API")
-            tests_passed += 1
-        else:
-            console.print(f"⚠️ Unexpected trace type: {fig.data[0].type}")
-
-    except Exception as e:
-        console.print(f"❌ Map creation failed: {e}")
-
-    # Test 3: CLI integration
-    console.print("\n[bold]🔧 Testing CLI integration...[/bold]")
-    total_tests += 1
-
-    try:
-        import inspect
-
-        sig = inspect.signature(run_socialmapper)
-        if "map_backend" in sig.parameters:
-            console.print("✅ map_backend parameter available in CLI")
-            tests_passed += 1
-        else:
-            console.print("❌ map_backend parameter missing from CLI")
-    except Exception as e:
-        console.print(f"❌ CLI integration test failed: {e}")
-
-    # Test 4: Backend comparison
-    console.print("\n[bold]⚖️ Backend comparison...[/bold]")
-
-    # Create comparison table
-    comparison_table = Table(title="🗺️ Map Backend Comparison", box=box.ROUNDED)
-    comparison_table.add_column("Feature", style="cyan")
-    comparison_table.add_column("Plotly", style="green")
-    comparison_table.add_column("Previous (Folium)", style="dim")
-
-    comparison_data = [
-        ("Performance", "⭐⭐⭐⭐⭐", "⭐⭐⭐"),
-        ("Interactivity", "⭐⭐⭐⭐⭐", "⭐⭐⭐"),
-        ("Mobile Support", "⭐⭐⭐⭐⭐", "⭐⭐⭐"),
-        ("Learning Curve", "⭐⭐⭐", "⭐⭐⭐⭐⭐"),
-        ("API Status", "Modern", "Stable"),
-    ]
-
-    for feature, plotly_rating, folium_rating in comparison_data:
-        comparison_table.add_row(feature, plotly_rating, folium_rating)
-
-    console.print(comparison_table)
-
-    # Summary
-    console.print("\n" + "=" * 60)
-
-    if tests_passed == total_tests:
-        success_panel = Panel(
-            f"[bold green]🎉 All {tests_passed}/{total_tests} tests passed![/bold green]\n"
-            "[green]Plotly migration is successful and ready to use.[/green]\n\n"
-            "[bold]Recommended usage:[/bold]\n"
-            "[cyan]socialmapper --poi --geocode-area 'Fuquay-Varina' --poi-type amenity --poi-name library --export-maps --map-backend plotly[/cyan]",
-            title="✅ Migration Test Results",
-            box=box.ROUNDED,
-            border_style="green",
-        )
-    else:
-        failed_tests = total_tests - tests_passed
-        warning_panel = Panel(
-            f"[bold yellow]⚠️ {tests_passed}/{total_tests} tests passed, {failed_tests} failed[/bold yellow]\n"
-            "[yellow]Some migration components may need attention.[/yellow]\n\n"
-            "[bold]Fallback usage:[/bold]\n"
-            "[cyan]socialmapper --poi --geocode-area 'Fuquay-Varina' --poi-type amenity --poi-name library --export-maps --map-backend plotly[/cyan]",
-            title="⚠️ Migration Test Results",
-            box=box.ROUNDED,
-            border_style="yellow",
-        )
-
-    console.print(success_panel if tests_passed == total_tests else warning_panel)
-
 
 def main():
     """Main entry point for the application."""
@@ -307,10 +172,6 @@ def main():
         )
         sys.exit(0)
 
-    # If user wants to test the Plotly migration
-    if args.test_migration:
-        _test_plotly_migration()
-        sys.exit(0)
 
     # Create the output directory
     os.makedirs(args.output_dir, exist_ok=True)
@@ -354,9 +215,6 @@ def main():
         table.add_row("Output Directory", args.output_dir)
         table.add_section()
         table.add_row("Export CSV", "✅ Yes" if args.export_csv else "❌ No")
-        table.add_row("Export Maps", "✅ Yes" if args.export_maps else "❌ No")
-        if args.export_maps:
-            table.add_row("Map Backend", args.map_backend)
 
         console.print(table)
         console.print(
@@ -391,8 +249,6 @@ def main():
                 api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_maps=args.export_maps,
-                map_backend=args.map_backend,
             )
         elif args.addresses:
             # Handle address-based analysis
@@ -467,8 +323,6 @@ def main():
                 api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_maps=args.export_maps,
-                map_backend=args.map_backend,
             )
         else:
             # Use custom coordinates file
@@ -480,8 +334,6 @@ def main():
                 api_key=args.api_key,
                 output_dir=args.output_dir,
                 export_csv=args.export_csv,
-                export_maps=args.export_maps,
-                map_backend=args.map_backend,
             )
 
         end_time = time.time()

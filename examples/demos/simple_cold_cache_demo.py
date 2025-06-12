@@ -72,8 +72,8 @@ def run_test_config() -> Dict[str, Any]:
         "travel_time": 10,
         "census_variables": ["total_population"],
         "export_csv": True,
-        "export_maps": False,
-        "max_poi_count": 3  # Keep small for speed
+        "max_poi_count": 3,  # Keep small for speed
+        "output_dir": "cache_demo_output"  # Use relative path
     }
     
     print("\n📊 Test Configuration:")

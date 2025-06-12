@@ -86,7 +86,7 @@ result = run_socialmapper(
     export_csv=True,
     export_maps=True,
     export_isochrones=True,
-    map_backend="plotly",
+    map_backend="matplotlib",
     output_dir="chicago_parks"
 )
 ```

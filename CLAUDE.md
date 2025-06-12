@@ -10,14 +10,14 @@ Key capabilities:
 - Query OpenStreetMap for POIs (libraries, schools, parks, etc.)
 - Generate travel time isochrones (walk/drive/bike)
 - Integrate US Census demographic data
-- Create both static and interactive maps
-- AI-powered community boundary detection using satellite imagery
+- Create static maps for analysis
+- Export data for further analysis in other tools
 
 ## Common Development Commands
 
 ```bash
 # Install for development with all dependencies
-pip install -e ".[dev,ai]"
+pip install -e ".[dev]"
 
 # Run tests
 pytest
@@ -35,8 +35,6 @@ mypy socialmapper/
 # Build package
 hatch build
 
-# Run Streamlit app locally
-python -m socialmapper.ui.app
 
 # Run CLI
 socialmapper --help
@@ -55,9 +53,8 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 - `socialmapper/core.py`: Main API entry point that delegates to pipeline components
 - `socialmapper/pipeline/`: Modular ETL pipeline implementation with separate extraction, transformation, and loading stages
 - `socialmapper/data/`: Data management layer including census API integration and neighbor system
-- `socialmapper/community/`: AI-powered community detection modules (spatial clustering, computer vision, satellite analysis)
-- `socialmapper/visualization/`: Map generation (static with matplotlib, interactive with Plotly)
-- `socialmapper/ui/`: User interfaces (CLI, Streamlit app, Rich terminal UI)
+- `socialmapper/data/`: Data management layer including census API integration and neighbor system
+- `socialmapper/ui/`: User interfaces (CLI, Rich terminal UI)
 - `socialmapper/isochrone/`: Travel time area generation using OSMnx
 - `socialmapper/geocoding/`: Address geocoding with caching
 
@@ -67,7 +64,7 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 2. **Caching**: Extensive caching for geocoding results and isochrone calculations
 3. **Configuration**: Pydantic-based configuration models for type safety
 4. **Progress Tracking**: Rich terminal UI with real-time progress updates
-5. **Error Handling**: Graceful degradation when dependencies are missing (e.g., AI features)
+5. **Error Handling**: Robust error handling for external API failures
 
 ### Testing Strategy
 
@@ -80,13 +77,12 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 
 - **Census API**: Requires `CENSUS_API_KEY` environment variable
 - **OpenStreetMap**: Uses Overpass API and OSMnx for POI queries
-- **Satellite Imagery**: Optional integration with geoai-py for satellite data
-- **Maps**: Mapbox token optional for enhanced Plotly maps
+- **Maps**: Matplotlib for static map generation
 
-### Recent Changes (v0.5.4)
+### Recent Changes (v0.6.0)
 
-- Added AI-powered community boundary detection
-- Integrated satellite imagery analysis
-- Fixed neighbor system import errors
+- Streamlined codebase by removing experimental features
+- Enhanced core ETL pipeline for better maintainability
+- Improved neighbor system performance
 - Enhanced Rich terminal UI
-- Improved streaming census data system
+- Focused on core demographic and accessibility analysis

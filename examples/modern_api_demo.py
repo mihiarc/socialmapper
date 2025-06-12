@@ -63,7 +63,7 @@ def example_2_builder_pattern():
         .with_geographic_level(GeographicLevel.ZCTA)
         .enable_map_export()
         .enable_isochrone_export()
-        .with_output_directory("sf_hospital_analysis")
+        # .with_output_directory("sf_hospital_analysis")  # Path security issue
         .build()
     )
     

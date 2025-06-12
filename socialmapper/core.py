@@ -43,10 +43,7 @@ def run_socialmapper(
     output_dir: str = "output",
     custom_coords_path: Optional[str] = None,
     export_csv: bool = True,
-    export_maps: bool = False,
     export_isochrones: bool = False,
-    use_interactive_maps: bool = True,
-    map_backend: str = "plotly",
     name_field: Optional[str] = None,
     type_field: Optional[str] = None,
     max_poi_count: Optional[int] = None,
@@ -91,10 +88,7 @@ def run_socialmapper(
         output_dir: Output directory for all files
         custom_coords_path: Path to custom coordinates file
         export_csv: Boolean to control export of census data to CSV
-        export_maps: Boolean to control generation of maps
         export_isochrones: Boolean to control export of isochrones
-        use_interactive_maps: Boolean to control whether to use interactive maps (Streamlit)
-        map_backend: Which map backend to use ('plotly')
         name_field: Field name to use for POI name from custom coordinates
         type_field: Field name to use for POI type from custom coordinates
         max_poi_count: Maximum number of POIs to process (if None, uses all POIs)
@@ -145,10 +139,7 @@ def run_socialmapper(
         api_key=api_key,
         output_dir=output_dir,
         export_csv=export_csv,
-        export_maps=export_maps,
         export_isochrones=export_isochrones,
-        use_interactive_maps=use_interactive_maps,
-        map_backend=map_backend,
     )
 
     orchestrator = PipelineOrchestrator(config)

@@ -5,7 +5,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Status](https://img.shields.io/pypi/status/socialmapper.svg)](https://pypi.org/project/socialmapper/)
 [![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://socialmapper.streamlit.app)
 
 SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
 
@@ -13,25 +12,22 @@ But it doesn't stop at travel time. SocialMapper also shows you the characterist
 
 Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.
 
-With plans to expand and explore our connection to the natural world, SocialMapper is a tool for understanding people, places, and the environment around us.
+SocialMapper is a focused tool for understanding people, places, and accessibility patterns in your community.
 
-## 🚀 Try SocialMapper Now!
-
-**[Launch the SocialMapper Streamlit App](https://socialmapper.streamlit.app)** - Explore community connections with our interactive web app - no coding required!
+## 🚀 Get Started with SocialMapper
 
 
 **Total Population Within 15-Minute Travel Time**
 
 ![Total Population Map](output/maps/fuquay-varina_amenity_library_15min_B01003_001E_map.png)
 
-## What's New in v0.5.4
+## What's New in v0.6.0
 
-We're excited to announce our latest release with these new features:
+We're excited to announce our latest release with these improvements:
 
-- **AI-Powered Community Detection** - Automatically detect community boundaries using satellite imagery and spatial clustering
-- **Pipeline Architecture** - Refactored core functionality into modular ETL pipeline for better maintainability
+- **Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
+- **Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
 - **Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
-- **Interactive Maps** - Explore data with interactive Plotly+Mapbox maps
 - **Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
 - **Enhanced CLI** - New options for addresses, dry-run mode, and more
 
@@ -42,7 +38,6 @@ We're excited to announce our latest release with these new features:
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
 - **Calculating Travel Distance** - Measure the travel distance along roads from the point of interest to the block group centroids
 - **Retrieving Demographic Data** - Pull census data for the identified areas
-- **Interactive Visualizations** - Generate both static and interactive maps showing demographic variables around POIs
 - **Data Export** - Export census data with travel distances to CSV for further analysis
 
 ## Installation
@@ -57,28 +52,13 @@ pip install socialmapper
 
 ## Using SocialMapper
 
-### Using the Streamlit App
+### Using the Command Line Interface
 
-The easiest way to use SocialMapper is through the Streamlit web app:
-
-**Option 1: Use our hosted app (Recommended)**
-Visit [socialmapper.streamlit.app](https://socialmapper.streamlit.app) - no installation required!
-
-**Option 2: Run locally**
-```bash
-# Run the Streamlit app
-
-python -m socialmapper.ui.app
-```
-
-The app will open in your web browser at http://localhost:8501 (if it doesn't open automatically).
-
-The Streamlit app allows you to:
+SocialMapper provides a powerful command-line interface that allows you to:
 - Query OpenStreetMap for points of interest or use your own coordinates
 - Set travel times and select demographic variables 
-- Visualize results with interactive maps
+- Generate maps and analyze census data
 - Export data to CSV for further analysis in other tools
-- No coding experience required!
 
 It's perfect for:
 - Urban planners analyzing access to public services
@@ -101,7 +81,7 @@ socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "ameni
 socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census-variables total_population median_household_income
 
 # Additional options
-socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --geographic-level zcta --export-maps --output-dir my_analysis
+socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --geographic-level zcta --output-dir my_analysis
 ```
 
 ### Using the Python API
@@ -133,23 +113,9 @@ results = run_socialmapper(
 
 ### 1. Define Your Points of Interest
 
-You can specify points of interest either through the interactive Streamlit dashboard or with direct command-line parameters.
+You can specify points of interest with direct command-line parameters.
 
-#### Option A: Using the Streamlit Dashboard (Recommended)
-
-The easiest way to create maps is to use the Streamlit dashboard:
-
-```bash
-python -m socialmapper.streamlit_app
-```
-
-This provides an interactive interface where you can:
-- Select POI types and names from dropdown menus
-- Choose your location and state
-- Set travel time and census variables
-- View results in a user-friendly format
-
-#### Option B: Command Line with Direct Parameters
+#### Using the Command Line
 
 You can run the tool directly with POI parameters:
 
@@ -170,9 +136,9 @@ Regardless of which method you use, you'll need to specify POI types and names. 
 
 Check out the OpenStreetMap Wiki for more on map features: https://wiki.openstreetmap.org/wiki/Map_features
 
-For more specific queries, you can add additional tags (through the Streamlit interface or in a YAML format with command-line):
+For more specific queries, you can add additional tags in a YAML format:
 ```yaml
-# Example tags (can be specified in the Streamlit interface):
+# Example tags:
 operator: Chicago Park District
 opening_hours: 24/7
 ```
@@ -244,7 +210,7 @@ Here are some examples of community mapping projects you could create:
 For development, install with the development dependencies:
 
 ```bash
-pip install -e ".[dev,streamlit]"
+pip install -e ".[dev]"
 ```
 
 ### Troubleshooting

@@ -98,7 +98,6 @@ class SocialMapperClient:
                 .with_location("Chicago", "IL")
                 .with_osm_pois("leisure", "park")
                 .with_travel_time(20)
-                .enable_map_export()
                 .build()
             )
 
@@ -188,8 +187,6 @@ class SocialMapperClient:
                 builder.with_census_variables(*census_variables)
 
             # Apply additional options
-            if kwargs.get("enable_maps"):
-                builder.enable_map_export()
             if kwargs.get("output_dir"):
                 builder.with_output_directory(kwargs["output_dir"])
 

@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 """
-AI-Powered Community Boundary Detection Demo
+Community Boundary Detection Demo (Modified)
 
-This script demonstrates how to use machine learning and computer vision
-to automatically detect organic community boundaries based on spatial patterns.
+This script has been modified to remove dependencies on the removed community module.
+Note: AI-powered community boundary detection features have been removed.
 
-Example workflow:
-1. Load building footprints from OpenStreetMap
-2. Apply spatial clustering to detect housing patterns
-3. (Optional) Analyze satellite imagery for land use classification
-4. Generate community boundaries
-5. Visualize and export results
+This demo now shows basic building pattern analysis using standard GIS techniques.
 """
 
 import numpy as np
@@ -22,10 +17,7 @@ from pathlib import Path
 import osmnx as ox
 from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
-
-# Import our community detection modules
-from socialmapper.community import discover_community_boundaries
-from socialmapper.community.spatial_clustering import detect_housing_developments
+from sklearn.cluster import DBSCAN
 
 warnings.filterwarnings('ignore')
 
@@ -146,38 +138,73 @@ def generate_synthetic_housing_development(n_buildings: int = 200) -> gpd.GeoDat
     return buildings_gdf
 
 
-def analyze_community_patterns(buildings_gdf: gpd.GeoDataFrame, 
-                             method: str = 'hdbscan') -> tuple:
+def simple_clustering_analysis(buildings_gdf: gpd.GeoDataFrame, 
+                              eps: float = 200, min_samples: int = 5) -> tuple:
     """
-    Analyze building patterns to detect community boundaries.
+    Simple clustering analysis using DBSCAN.
     
     Args:
         buildings_gdf: GeoDataFrame with building footprints
-        method: Clustering method ('hdbscan', 'dbscan', or 'spectral')
+        eps: Maximum distance between samples
+        min_samples: Minimum samples in a neighborhood
         
     Returns:
-        Tuple of (clustered_buildings, community_boundaries)
+        Tuple of (clustered_buildings, cluster_boundaries)
     """
-    print(f"🤖 Analyzing community patterns using {method}...")
+    print(f"🤖 Analyzing building patterns using simple DBSCAN clustering...")
     
-    # Detect housing developments using spatial clustering
-    clustered_buildings, boundaries = detect_housing_developments(
-        buildings_gdf, 
-        method=method,
-        min_cluster_size=20,
-        min_samples=5
-    )
+    # Get building centroids
+    centroids = buildings_gdf.geometry.centroid
+    coords = np.array([(p.x, p.y) for p in centroids])
     
-    # Calculate some statistics
-    n_communities = len(boundaries)
-    avg_buildings_per_community = len(clustered_buildings) / max(n_communities, 1)
+    # Apply DBSCAN clustering
+    clustering = DBSCAN(eps=eps, min_samples=min_samples)
+    cluster_labels = clustering.fit_predict(coords)
+    
+    # Add cluster labels to the buildings
+    buildings_with_clusters = buildings_gdf.copy()
+    buildings_with_clusters['cluster_id'] = cluster_labels
+    
+    # Create cluster boundaries using convex hulls
+    boundaries = []
+    unique_clusters = np.unique(cluster_labels)
+    unique_clusters = unique_clusters[unique_clusters != -1]  # Exclude noise
+    
+    for cluster_id in unique_clusters:
+        cluster_buildings = buildings_with_clusters[
+            buildings_with_clusters['cluster_id'] == cluster_id
+        ]
+        
+        if len(cluster_buildings) >= 3:  # Need at least 3 points for convex hull
+            # Create convex hull around cluster buildings
+            cluster_geoms = cluster_buildings.geometry.tolist()
+            cluster_union = unary_union(cluster_geoms)
+            
+            if hasattr(cluster_union, 'convex_hull'):
+                boundary = cluster_union.convex_hull
+            else:
+                boundary = cluster_union
+            
+            boundaries.append({
+                'cluster_id': cluster_id,
+                'geometry': boundary,
+                'building_count': len(cluster_buildings),
+                'avg_building_size': cluster_buildings['area'].mean(),
+                'density': len(cluster_buildings) / boundary.area * 1000000  # per sq km
+            })
+    
+    boundaries_gdf = gpd.GeoDataFrame(boundaries, crs=buildings_gdf.crs)
+    
+    # Calculate statistics
+    n_communities = len(boundaries_gdf)
+    avg_buildings_per_community = len(buildings_with_clusters) / max(n_communities, 1)
     
     print(f"📊 Analysis Results:")
-    print(f"   • {n_communities} communities detected")
-    print(f"   • {avg_buildings_per_community:.1f} buildings per community (avg)")
-    print(f"   • {len(clustered_buildings[clustered_buildings['cluster_id'] == -1])} outlier buildings")
+    print(f"   • {n_communities} clusters detected")
+    print(f"   • {avg_buildings_per_community:.1f} buildings per cluster (avg)")
+    print(f"   • {len(buildings_with_clusters[buildings_with_clusters['cluster_id'] == -1])} outlier buildings")
     
-    return clustered_buildings, boundaries
+    return buildings_with_clusters, boundaries_gdf
 
 
 def create_visualizations(buildings_gdf: gpd.GeoDataFrame,
@@ -186,13 +213,13 @@ def create_visualizations(buildings_gdf: gpd.GeoDataFrame,
                          roads_gdf: gpd.GeoDataFrame = None,
                          save_path: str = None):
     """
-    Create comprehensive visualizations of the community detection results.
+    Create comprehensive visualizations of the clustering results.
     """
     print("📊 Creating visualizations...")
     
     # Create figure with subplots
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('AI-Powered Community Boundary Detection Results', fontsize=16, fontweight='bold')
+    fig.suptitle('Simple Building Pattern Analysis Results', fontsize=16, fontweight='bold')
     
     # 1. Original building footprints
     ax1 = axes[0, 0]
@@ -217,7 +244,7 @@ def create_visualizations(buildings_gdf: gpd.GeoDataFrame,
     for cluster_id in unique_clusters:
         cluster_buildings = clustered_buildings[clustered_buildings['cluster_id'] == cluster_id]
         cluster_buildings.plot(ax=ax2, color=color_map[cluster_id], alpha=0.8, 
-                             label=f'Community {cluster_id}')
+                             label=f'Cluster {cluster_id}')
     
     # Plot noise points
     noise_buildings = clustered_buildings[clustered_buildings['cluster_id'] == -1]
@@ -227,19 +254,19 @@ def create_visualizations(buildings_gdf: gpd.GeoDataFrame,
     if roads_gdf is not None:
         roads_gdf.plot(ax=ax2, color='black', alpha=0.3, linewidth=0.5)
     
-    ax2.set_title('Detected Housing Patterns', fontweight='bold')
+    ax2.set_title('Detected Building Clusters', fontweight='bold')
     ax2.set_axis_off()
     if len(unique_clusters) <= 10:  # Only show legend if not too many clusters
         ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     
-    # 3. Community boundaries
+    # 3. Cluster boundaries
     ax3 = axes[1, 0]
     buildings_gdf.plot(ax=ax3, color='lightgray', alpha=0.5, edgecolor='none')
     
     if len(boundaries) > 0:
         boundaries.plot(ax=ax3, facecolor='none', edgecolor='red', linewidth=2, alpha=0.8)
         
-        # Add labels for communities
+        # Add labels for clusters
         for idx, boundary in boundaries.iterrows():
             centroid = boundary.geometry.centroid
             ax3.annotate(f"C{boundary['cluster_id']}", 
@@ -248,30 +275,30 @@ def create_visualizations(buildings_gdf: gpd.GeoDataFrame,
                         fontsize=10, fontweight='bold',
                         bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
     
-    ax3.set_title('Community Boundaries', fontweight='bold')
+    ax3.set_title('Cluster Boundaries', fontweight='bold')
     ax3.set_axis_off()
     
-    # 4. Development type classification
+    # 4. Building type classification (if available)
     ax4 = axes[1, 1]
     
-    if 'development_type' in clustered_buildings.columns:
-        dev_types = clustered_buildings['development_type'].unique()
-        dev_colors = plt.cm.viridis(np.linspace(0, 1, len(dev_types)))
-        dev_color_map = dict(zip(dev_types, dev_colors))
+    if 'building_type' in clustered_buildings.columns:
+        building_types = clustered_buildings['building_type'].unique()
+        type_colors = plt.cm.viridis(np.linspace(0, 1, len(building_types)))
+        type_color_map = dict(zip(building_types, type_colors))
         
-        for dev_type in dev_types:
-            dev_buildings = clustered_buildings[clustered_buildings['development_type'] == dev_type]
-            if len(dev_buildings) > 0:
-                dev_buildings.plot(ax=ax4, color=dev_color_map[dev_type], 
-                                 alpha=0.8, label=dev_type.replace('_', ' ').title())
+        for building_type in building_types:
+            type_buildings = clustered_buildings[clustered_buildings['building_type'] == building_type]
+            if len(type_buildings) > 0:
+                type_buildings.plot(ax=ax4, color=type_color_map[building_type], 
+                                  alpha=0.8, label=building_type.replace('_', ' ').title())
         
         ax4.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        ax4.set_title('Development Type Classification', fontweight='bold')
+        ax4.set_title('Building Type Classification', fontweight='bold')
     else:
-        # If no development type, show density analysis
+        # If no building type, show density analysis
         clustered_buildings.plot(ax=ax4, column='cluster_id', cmap='viridis', 
                                alpha=0.8, legend=True)
-        ax4.set_title('Community Density Analysis', fontweight='bold')
+        ax4.set_title('Cluster Density Analysis', fontweight='bold')
     
     ax4.set_axis_off()
     
@@ -299,38 +326,37 @@ def export_results(clustered_buildings: gpd.GeoDataFrame,
     
     # Export to shapefiles
     clustered_buildings.to_file(output_path / "clustered_buildings.shp")
-    boundaries.to_file(output_path / "community_boundaries.shp")
+    boundaries.to_file(output_path / "cluster_boundaries.shp")
     
     # Export to GeoJSON
     clustered_buildings.to_file(output_path / "clustered_buildings.geojson", driver="GeoJSON")
-    boundaries.to_file(output_path / "community_boundaries.geojson", driver="GeoJSON")
+    boundaries.to_file(output_path / "cluster_boundaries.geojson", driver="GeoJSON")
     
     # Create summary report
     summary = {
         'total_buildings': len(clustered_buildings),
-        'communities_detected': len(boundaries),
+        'clusters_detected': len(boundaries),
         'outlier_buildings': len(clustered_buildings[clustered_buildings['cluster_id'] == -1]),
-        'avg_buildings_per_community': len(clustered_buildings) / max(len(boundaries), 1)
+        'avg_buildings_per_cluster': len(clustered_buildings) / max(len(boundaries), 1)
     }
     
-    # Community statistics
-    community_stats = []
+    # Cluster statistics
+    cluster_stats = []
     for _, boundary in boundaries.iterrows():
         cluster_buildings = clustered_buildings[
             clustered_buildings['cluster_id'] == boundary['cluster_id']
         ]
         
         stats = {
-            'community_id': boundary['cluster_id'],
+            'cluster_id': boundary['cluster_id'],
             'building_count': boundary['building_count'],
             'total_area': cluster_buildings.geometry.area.sum(),
             'avg_building_size': boundary['avg_building_size'],
-            'density': boundary['density'],
-            'development_type': boundary.get('development_type', 'unknown')
+            'density': boundary['density']
         }
-        community_stats.append(stats)
+        cluster_stats.append(stats)
     
-    summary['community_details'] = community_stats
+    summary['cluster_details'] = cluster_stats
     
     # Save summary as JSON
     import json
@@ -345,8 +371,10 @@ def main():
     """
     Main demonstration function.
     """
-    print("🚀 AI-Powered Community Boundary Detection Demo")
+    print("🚀 Building Pattern Analysis Demo (Modified)")
     print("=" * 50)
+    print("⚠️  Note: AI-powered community detection features have been removed.")
+    print("    This demo now uses simple DBSCAN clustering instead.\n")
     
     # Option 1: Use real data from OpenStreetMap
     use_real_data = input("Use real data from OpenStreetMap? (y/n): ").lower().strip() == 'y'
@@ -367,9 +395,8 @@ def main():
         buildings_gdf = generate_synthetic_housing_development()
         roads_gdf = None
     
-    # Analyze community patterns
-    method = 'hdbscan'  # Options: 'hdbscan', 'dbscan', 'spectral'
-    clustered_buildings, boundaries = analyze_community_patterns(buildings_gdf, method=method)
+    # Analyze building patterns using simple clustering
+    clustered_buildings, boundaries = simple_clustering_analysis(buildings_gdf)
     
     # Create visualizations
     fig = create_visualizations(
@@ -377,7 +404,7 @@ def main():
         clustered_buildings, 
         boundaries, 
         roads_gdf,
-        save_path="community_analysis_results.png"
+        save_path="building_pattern_analysis_results.png"
     )
     
     # Export results
@@ -387,21 +414,23 @@ def main():
     print(f"📁 Results saved to: {output_path}")
     print("\n📋 Summary:")
     print(f"   • Buildings analyzed: {len(buildings_gdf)}")
-    print(f"   • Communities detected: {len(boundaries)}")
-    print(f"   • Method used: {method}")
+    print(f"   • Clusters detected: {len(boundaries)}")
+    print(f"   • Method used: Simple DBSCAN clustering")
     
     if len(boundaries) > 0:
-        print(f"   • Largest community: {boundaries['building_count'].max()} buildings")
-        print(f"   • Smallest community: {boundaries['building_count'].min()} buildings")
+        print(f"   • Largest cluster: {boundaries['building_count'].max()} buildings")
+        print(f"   • Smallest cluster: {boundaries['building_count'].min()} buildings")
     
-    # Demonstrate integration with SocialMapper
-    print("\n🔗 Integration with SocialMapper:")
-    print("   The detected communities can be used as:")
-    print("   • Custom geographic boundaries for demographic analysis")
-    print("   • Service area definitions for accessibility studies") 
-    print("   • Zones for targeted policy interventions")
-    print("   • Input for transportation network analysis")
+    # Information about limitations
+    print("\n🔗 About This Modified Version:")
+    print("   The original AI-powered community detection features have been removed.")
+    print("   This version uses simple DBSCAN clustering for building pattern analysis.")
+    print("   \n💡 For advanced community detection, consider:")
+    print("   • External clustering libraries (scikit-learn, HDBSCAN)")
+    print("   • Graph-based community detection algorithms") 
+    print("   • Commercial GIS software (ArcGIS, QGIS)")
+    print("   • Custom spatial analysis solutions")
 
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -57,18 +57,18 @@ For most users, the standard installation provides all core features:
 pip install socialmapper
 ```
 
-### Option 2: Full Installation with AI Features
+### Option 2: Development Installation with Enhanced Features
 
-For advanced community detection and satellite imagery analysis:
+For development work and extended functionality:
 
 ```bash
-pip install socialmapper[ai]
+pip install socialmapper[dev]
 ```
 
 This includes additional dependencies for:
-- 🤖 AI-powered community boundary detection
-- 🛰️ Satellite imagery integration
-- 📊 Advanced machine learning features
+- 🔧 Development tools (testing, linting, formatting)
+- 📊 Enhanced analysis capabilities
+- 🎨 Rich terminal UI features
 
 ### Option 3: Development Installation
 
@@ -228,7 +228,7 @@ After successful installation:
 
 1. 📖 **Read** the [Quick Start Guide](quick-start.md)
 2. 🎬 **Try** the [Demo Instructions](../DEMO_INSTRUCTIONS.md)
-3. 🌐 **Explore** the [Web App](https://socialmapper.streamlit.app)
+3. 💻 **Run** the [Example Scripts](../../examples/README.md)
 4. 🔧 **Configure** your [API keys](../user-guide/configuration.md) (optional)
 
 ## Getting Help
