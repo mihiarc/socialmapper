@@ -33,8 +33,8 @@ This guide covers multiple ways to install SocialMapper depending on your needs 
 ## System Requirements
 
 ### Python Version
-- **Python 3.8+** (minimum)
-- **Python 3.11+** (recommended for best performance)
+- **Python 3.11+** (minimum required)
+- **Python 3.12** (recommended for best performance)
 - **Python 3.13** (latest, fully supported)
 
 ### Operating Systems
@@ -83,15 +83,9 @@ cd socialmapper
 pip install -e .[dev,ai]
 ```
 
-### Option 4: Lightweight Installation
+### Option 4: Minimal Installation
 
-For environments with limited resources:
-
-```bash
-pip install socialmapper[minimal]
-```
-
-This excludes optional visualization and AI dependencies.
+Note: The `[minimal]` extra is not currently available. The standard installation already provides a lightweight experience with optional AI features available separately via `[ai]`.
 
 ## Dependency Management
 

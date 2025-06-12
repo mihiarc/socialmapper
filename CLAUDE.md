@@ -36,7 +36,7 @@ mypy socialmapper/
 hatch build
 
 # Run Streamlit app locally
-python -m socialmapper.streamlit_app
+python -m socialmapper.ui.app
 
 # Run CLI
 socialmapper --help
@@ -52,7 +52,8 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 
 ### Core Components
 
-- `socialmapper/core.py`: Main orchestrator that coordinates the ETL pipeline
+- `socialmapper/core.py`: Main API entry point that delegates to pipeline components
+- `socialmapper/pipeline/`: Modular ETL pipeline implementation with separate extraction, transformation, and loading stages
 - `socialmapper/data/`: Data management layer including census API integration and neighbor system
 - `socialmapper/community/`: AI-powered community detection modules (spatial clustering, computer vision, satellite analysis)
 - `socialmapper/visualization/`: Map generation (static with matplotlib, interactive with Plotly)

@@ -24,15 +24,16 @@ With plans to expand and explore our connection to the natural world, SocialMapp
 
 ![Total Population Map](output/maps/fuquay-varina_amenity_library_15min_B01003_001E_map.png)
 
-## What's New in v0.4.0-beta
+## What's New in v0.5.4
 
-We're excited to announce our beta release with these new features:
+We're excited to announce our latest release with these new features:
 
-- **Live Streamlit App** - Now available at [socialmapper.streamlit.app](https://socialmapper.streamlit.app)
-- **Interactive Maps** - Explore data with interactive Plotly+Mapbox maps in the Streamlit app
-- **Distance Data Export** - Export travel distance data for deeper analysis
-- **CSV Export** - Easily share and analyze your data in spreadsheet applications
-- **Runtime Optimizations** - Significantly improved performance for faster analysis
+- **AI-Powered Community Detection** - Automatically detect community boundaries using satellite imagery and spatial clustering
+- **Pipeline Architecture** - Refactored core functionality into modular ETL pipeline for better maintainability
+- **Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
+- **Interactive Maps** - Explore data with interactive Plotly+Mapbox maps
+- **Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
+- **Enhanced CLI** - New options for addresses, dry-run mode, and more
 
 ## Features
 
@@ -49,8 +50,10 @@ We're excited to announce our beta release with these new features:
 SocialMapper is available on PyPI. Install it easily with pip:
 
 ```bash
-pip install socialmapper==0.4.0b0
+pip install socialmapper
 ```
+
+**Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
 
 ## Using SocialMapper
 
@@ -65,9 +68,7 @@ Visit [socialmapper.streamlit.app](https://socialmapper.streamlit.app) - no inst
 ```bash
 # Run the Streamlit app
 
-> **🚀 New in v0.4.4**: SocialMapper now uses a lightweight streaming census system that reduces storage from 118.7 MB to ~0.1 MB while maintaining all functionality!
-
-python -m socialmapper.streamlit_app
+python -m socialmapper.ui.app
 ```
 
 The app will open in your web browser at http://localhost:8501 (if it doesn't open automatically).
@@ -98,6 +99,9 @@ socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "ameni
 
 # Run with custom coordinates
 socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census-variables total_population median_household_income
+
+# Additional options
+socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --geographic-level zcta --export-maps --output-dir my_analysis
 ```
 
 ### Using the Python API
