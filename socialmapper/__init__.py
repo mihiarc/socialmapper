@@ -26,8 +26,23 @@ except ImportError:
     # Warnings config not available - continue without it
     pass
 
-# Import main functionality
+# Import main functionality (deprecated - use api module instead)
 from .core import run_socialmapper, setup_directory
+
+# Import modern API (recommended)
+try:
+    from .api import (
+        SocialMapperClient,
+        SocialMapperBuilder,
+        quick_analysis,
+        analyze_location,
+        Result,
+        Ok,
+        Err,
+    )
+    _MODERN_API_AVAILABLE = True
+except ImportError:
+    _MODERN_API_AVAILABLE = False
 
 # Import neighbor functionality for direct access
 try:
@@ -42,8 +57,9 @@ try:
     # Neighbor functionality is available
     _NEIGHBORS_AVAILABLE = True
     
+    # Build __all__ based on available features
     __all__ = [
-        "run_socialmapper",
+        "run_socialmapper",  # Deprecated
         "setup_directory",
         # Neighbor functions
         "get_neighboring_states",
@@ -53,11 +69,38 @@ try:
         "get_neighbor_manager",
     ]
     
+    # Add modern API if available
+    if _MODERN_API_AVAILABLE:
+        __all__.extend([
+            # Modern API (recommended)
+            "SocialMapperClient",
+            "SocialMapperBuilder",
+            "quick_analysis",
+            "analyze_location",
+            "Result",
+            "Ok",
+            "Err",
+        ])
+    
 except ImportError as e:
     # Neighbor functionality not available (optional dependency missing)
     _NEIGHBORS_AVAILABLE = False
     
+    # Build __all__ for limited functionality
     __all__ = [
-        "run_socialmapper",
+        "run_socialmapper",  # Deprecated
         "setup_directory",
-    ] 
+    ]
+    
+    # Add modern API if available
+    if _MODERN_API_AVAILABLE:
+        __all__.extend([
+            # Modern API (recommended)
+            "SocialMapperClient",
+            "SocialMapperBuilder",
+            "quick_analysis",
+            "analyze_location",
+            "Result",
+            "Ok",
+            "Err",
+        ]) 
