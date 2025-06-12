@@ -5,7 +5,7 @@ Implements the Result pattern (similar to Rust's Result<T, E>) for
 better error handling without exceptions.
 """
 
-from typing import TypeVar, Generic, Union, Optional, Callable, Any
+from typing import TypeVar, Generic, Union, Optional, Callable, Any, Dict, List
 from dataclasses import dataclass
 from enum import Enum, auto
 import traceback
@@ -138,7 +138,7 @@ class Result(Generic[T, E]):
             return f(self._value)
         return self
     
-    def __match_args__ = ("_value",)  # Enable pattern matching
+    __match_args__ = ("_value",)  # Enable pattern matching
     
     def __bool__(self):
         """Allow if result: syntax."""

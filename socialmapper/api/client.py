@@ -5,7 +5,7 @@ Provides a clean, type-safe interface with proper error handling,
 resource management, and extensibility.
 """
 
-from typing import Optional, Dict, Any, List, Protocol, runtime_checkable
+from typing import Optional, Dict, Any, List, Protocol, runtime_checkable, Callable
 from pathlib import Path
 import logging
 from contextlib import contextmanager

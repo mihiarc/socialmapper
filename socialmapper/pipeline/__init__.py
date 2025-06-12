@@ -12,7 +12,7 @@ from .isochrone import generate_isochrones
 from .census import integrate_census_data
 from .export import export_pipeline_outputs
 from .reporting import generate_final_report
-from .orchestrator import PipelineOrchestrator
+from .orchestrator import PipelineOrchestrator, PipelineConfig
 from .helpers import convert_poi_to_geodataframe, setup_directory
 
 __all__ = [
@@ -25,6 +25,7 @@ __all__ = [
     'export_pipeline_outputs',
     'generate_final_report',
     'PipelineOrchestrator',
+    'PipelineConfig',
     'convert_poi_to_geodataframe',
     'setup_directory'
 ]
