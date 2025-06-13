@@ -12,7 +12,8 @@ import time
 from typing import List, Optional
 
 import httpx
-from ratelimit import limits, sleep_and_retry
+
+# Note: ratelimit import removed - not currently used
 
 # Mapping of common names to Census API variable codes
 CENSUS_VARIABLE_MAPPING = {
@@ -400,17 +401,7 @@ def get_census_api_key() -> Optional[str]:
     if env_key:
         return env_key
 
-    # Try to get from Streamlit secrets only if running in Streamlit context
-    try:
-        import streamlit as st
-
-        # Only access secrets if we're actually in a Streamlit app context
-        if hasattr(st, "_is_running_with_streamlit") or "streamlit" in sys.modules:
-            if "census" in st.secrets and "CENSUS_API_KEY" in st.secrets["census"]:
-                return st.secrets["census"]["CENSUS_API_KEY"]
-    except (ImportError, AttributeError, KeyError, Exception):
-        # Silently fail for any Streamlit-related errors
-        pass
+    # Streamlit support has been removed from this library
 
     return None
 

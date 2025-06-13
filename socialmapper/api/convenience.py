@@ -5,11 +5,14 @@ These functions provide simple interfaces for the most common operations.
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .client import SocialMapperClient
-from .result_types import Error, Result
+from .result_types import Error, ErrorType, Result
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def quick_analysis(

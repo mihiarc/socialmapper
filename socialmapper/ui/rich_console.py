@@ -337,48 +337,6 @@ def print_banner(title: str, subtitle: Optional[str] = None, version: Optional[s
     console.print(panel)
 
 
-def create_streamlit_banner(
-    title: str, subtitle: Optional[str] = None, version: Optional[str] = None
-) -> str:
-    """
-    Create a markdown banner for Streamlit apps.
-
-    Args:
-        title: Main title text
-        subtitle: Optional subtitle
-        version: Optional version string
-
-    Returns:
-        Markdown formatted banner string
-    """
-    if subtitle and version:
-        return f"""
-# 🏘️ {title}
-### {subtitle}
-*Version {version}*
-
----
-"""
-    elif subtitle:
-        return f"""
-# 🏘️ {title}
-### {subtitle}
-
----
-"""
-    elif version:
-        return f"""
-# 🏘️ {title}
-*Version {version}*
-
----
-"""
-    else:
-        return f"""
-# 🏘️ {title}
-
----
-"""
 
 
 def print_success(message: str, title: str = "Success"):
@@ -699,7 +657,6 @@ __all__ = [
     "console",
     "setup_rich_logging",
     "print_banner",
-    "create_streamlit_banner",
     "print_success",
     "print_error",
     "print_warning",

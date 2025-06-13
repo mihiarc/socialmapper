@@ -121,8 +121,6 @@ extra:
       link: https://github.com/mihiarc/socialmapper
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/socialmapper/
-    - icon: material/web
-      link: https://socialmapper.streamlit.app
   generator: false
   version:
     provider: mike
@@ -151,14 +149,12 @@ nav:
     - Address Geocoding: ADDRESS_GEOCODING.md
     - AI Community Detection: features/ai-community-detection.md
     - OSMnx Integration: OSMNX_FEATURES.md
-    - Plotly Visualization: PLOTLY_INTEGRATION.md
   
   - Tutorials:
     - tutorials/index.md
     - Basic Usage: tutorials/basic-usage.md
     - Advanced Mapping: tutorials/advanced-mapping.md
     - Custom Analysis: tutorials/custom-analysis.md
-    - Streamlit App: tutorials/streamlit-app.md
   
   - Examples:
     - examples/index.md
@@ -168,14 +164,12 @@ nav:
     - integrations/index.md
     - Address Geocoding: integrations/address-geocoding.md
     - OSM Features: integrations/osm-features.md
-    - Plotly Integration: integrations/plotly-integration.md
   
   - API Reference:
     - api/index.md
     - Core: api/core.md
     - Data: api/data.md
     - Utilities: api/utilities.md
-    - Visualization: api/visualization.md
   
   - Development:
     - development/index.md

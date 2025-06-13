@@ -110,7 +110,6 @@ class PipelineOrchestrator:
         return setup_pipeline_environment(
             output_dir=self.config.output_dir,
             export_csv=self.config.export_csv,
-            export_maps=self.config.export_maps,
             export_isochrones=self.config.export_isochrones,
         )
 

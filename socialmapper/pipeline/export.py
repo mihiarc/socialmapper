@@ -9,9 +9,6 @@ from typing import Any, Dict, List
 
 import geopandas as gpd
 
-from ..progress import get_progress_bar
-from .helpers import convert_poi_to_geodataframe
-
 
 def export_pipeline_outputs(
     census_data_gdf: gpd.GeoDataFrame,
@@ -42,7 +39,6 @@ def export_pipeline_outputs(
         Dictionary of result files and metadata
     """
     from ..export import export_census_data_to_csv
-    from ..util import census_code_to_name
 
     result_files = {}
     export_count = 0

@@ -304,8 +304,8 @@ def main():
         
         print(f"\n📚 Related Resources:")
         print(f"   • Rich UI Demo: examples/demos/rich_ui_demo.py")
-        print(f"   • Plotly Integration: examples/demos/plotly_integration_demo.py")
-        print(f"   • OSMnx Features: examples/demos/osmnx_features_demo.py")
+        print(f"   • Modern API Demo: examples/modern_api_demo.py")
+        print(f"   • Address Geocoding: examples/demos/address_geocoding_demo.py")
         print(f"   • Performance Tests: tests/performance/")
     else:
         print(f"\n❌ Demo encountered issues. Check your SocialMapper installation.")

@@ -57,7 +57,7 @@ def generate_final_report(
             print(f"⚠️  Warning: Could not save invalid data report: {e}")
 
     # Build final result dictionary
-    result = {"poi_data": poi_data, "interactive_maps_available": True}  # Always true for Plotly
+    result = {"poi_data": poi_data, "interactive_maps_available": False}  # Visualization modules removed
 
     # Add CSV path if applicable
     if "csv_data" in result_files:

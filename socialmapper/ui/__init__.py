@@ -1,6 +1,6 @@
 """UI module for SocialMapper."""
 
-# Note: app.py is not imported here to avoid circular imports
-# Import run_app directly from socialmapper.ui.app when needed
+# This module now contains only CLI and Rich terminal UI components
+# Streamlit web UI has been removed
 
 __all__ = []
