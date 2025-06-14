@@ -6,7 +6,7 @@
 ```
 socialmapper/
 ├── data/              # Data management (streaming, memory)
-├── visualization/     # Plotting and mapping
+├── export/           # Data export and static maps
 ├── ui/               # User interfaces (CLI, Rich terminal)
 ├── config/           # Configuration management
 └── progress/         # Progress tracking
@@ -41,7 +41,7 @@ socialmapper/
 ├── pipeline/         # Core ETL pipeline
 │   ├── extract/      # Data acquisition (POI, Census)
 │   ├── transform/    # Processing (distance, isochrone)
-│   └── load/         # Output (export, visualization)
+│   └── load/         # Output (export, static maps)
 ├── sources/          # External data adapters
 │   ├── census/       # Census Bureau APIs
 │   ├── osm/          # OpenStreetMap integration

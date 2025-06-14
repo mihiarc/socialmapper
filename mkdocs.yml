@@ -1,5 +1,8 @@
+# SocialMapper Documentation Configuration
+# Docs are automatically deployed to GitHub Pages via .github/workflows/docs.yml
+
 site_name: SocialMapper Documentation
-site_description: Explore Community Connections with Advanced Demographic Mapping
+site_description: Analyze Community Demographics and Accessibility with Python
 site_url: https://mihiarc.github.io/socialmapper
 repo_url: https://github.com/mihiarc/socialmapper
 repo_name: mihiarc/socialmapper
@@ -8,7 +11,6 @@ edit_uri: edit/main/docs/
 # Theme Configuration
 theme:
   name: material
-  custom_dir: docs/_static
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -29,18 +31,13 @@ theme:
     code: Roboto Mono
   features:
     - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
-    - navigation.indexes
     - navigation.top
-    - navigation.tracking
     - search.highlight
-    - search.share
     - search.suggest
     - content.code.annotate
     - content.code.copy
-    - content.tabs.link
     - toc.integrate
   icon:
     logo: material/map
@@ -50,13 +47,6 @@ theme:
 plugins:
   - search:
       lang: en
-  - git-revision-date-localized:
-      type: date
-      fallback_to_build_date: true
-  - minify:
-      minify_html: true
-  - awesome-pages
-  - autorefs
 
 # Markdown Extensions
 markdown_extensions:
@@ -91,9 +81,6 @@ markdown_extensions:
       repo: socialmapper
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      auto_append:
-        - docs/includes/abbreviations/abbreviations.md
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -111,8 +98,6 @@ extra_css:
 
 extra_javascript:
   - assets/js/extra.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 # Social Links
 extra:
@@ -122,61 +107,28 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/socialmapper/
   generator: false
-  version:
-    provider: mike
 
 # Copyright
 copyright: Copyright &copy; 2023-2025 SocialMapper Contributors
 
-# Navigation Structure
+# Navigation Structure - Only existing pages
 nav:
   - Home: index.md
   
   - Getting Started:
-    - getting-started/index.md
+    - Overview: getting-started/index.md
     - Installation: getting-started/installation.md
-    - Quick Start: getting-started/quick-start.md
-    - Demo Instructions: DEMO_INSTRUCTIONS.md
   
-  - User Guide:
-    - user-guide/index.md
-    - Configuration: user-guide/configuration.md
-    - Data Sources: user-guide/data-sources.md
+  - Core Features:
     - Architecture: ARCHITECTURE.md
-    - Features: user-guide/features.md
-  
-  - Features:
     - Address Geocoding: ADDRESS_GEOCODING.md
     - OSMnx Integration: OSMNX_FEATURES.md
   
-  - Tutorials:
-    - tutorials/index.md
-    - Basic Usage: tutorials/basic-usage.md
-    - Advanced Mapping: tutorials/advanced-mapping.md
-    - Custom Analysis: tutorials/custom-analysis.md
-  
-  - Examples:
-    - examples/index.md
-  
-  - Integrations:
-    - integrations/index.md
-    - Address Geocoding: integrations/address-geocoding.md
-    - OSM Features: integrations/osm-features.md
-  
-  - API Reference:
-    - api/index.md
-    - Core: api/core.md
-    - Data: api/data.md
-    - Utilities: api/utilities.md
-  
-  - Development:
-    - development/index.md
-    - Contributing: development/contributing.md
-    - Architecture: development/architecture.md
-    - Refactoring: REFACTORING_SUMMARY.md
-    - Releases: development/releases.md
-  
-  - About:
-    - about/index.md
+  - Reference:
+    - Demo Instructions: DEMO_INSTRUCTIONS.md
+    - Migration Guide: migration-guide.md
     - Changelog: CHANGELOG.md
-    - License: about/license.md 
+  
+  - Release Notes:
+    - v0.5.3: RELEASE_NOTES_v0.5.3.md
+    - v0.5.2: RELEASE_NOTES_v0.5.2.md

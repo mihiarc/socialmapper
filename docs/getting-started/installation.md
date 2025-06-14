@@ -80,12 +80,12 @@ git clone https://github.com/mihiarc/socialmapper.git
 cd socialmapper
 
 # Install in development mode with all dependencies
-pip install -e .[dev,ai]
+pip install -e .[dev]
 ```
 
 ### Option 4: Minimal Installation
 
-Note: The `[minimal]` extra is not currently available. The standard installation already provides a lightweight experience with optional AI features available separately via `[ai]`.
+Note: The `[minimal]` extra is not currently available. The standard installation already provides a lightweight experience.
 
 ## Dependency Management
 
