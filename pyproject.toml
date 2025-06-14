@@ -22,9 +22,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: GIS",
-    "Topic :: Scientific/Engineering :: Visualization",
 ]
-keywords = ["gis", "mapping", "demographics", "census", "community", "OpenStreetMap"]
+keywords = ["gis", "mapping", "demographics", "census", "OpenStreetMap"]
 dependencies = [
     "geopandas>=0.12.0",
     "pandas>=1.5.0",
