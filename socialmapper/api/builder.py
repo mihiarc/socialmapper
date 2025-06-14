@@ -10,6 +10,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Self, Union
 
+# Import census variable validation
+from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable, validate_census_variable
+
 
 class GeographicLevel(Enum):
     """Geographic unit options for census analysis."""
@@ -105,8 +108,21 @@ class SocialMapperBuilder:
         return self
 
     def with_census_variables(self, *variables: str) -> Self:
-        """Add census variables to analyze."""
-        self._config["census_variables"] = list(variables)
+        """Add census variables to analyze with validation."""
+        validated_variables = []
+        for var in variables:
+            try:
+                # Normalize and validate each variable
+                normalized = normalize_census_variable(var)
+                # Additional validation using the existing validator
+                validate_census_variable(normalized)
+                validated_variables.append(normalized)
+            except Exception as e:
+                self._validation_errors.append(
+                    f"Invalid census variable '{var}': {str(e)}"
+                )
+        
+        self._config["census_variables"] = validated_variables
         return self
 
     def with_census_api_key(self, api_key: str) -> Self:
@@ -175,3 +191,7 @@ class SocialMapperBuilder:
             raise ValueError("Invalid configuration:\n" + "\n".join(f"  - {e}" for e in errors))
 
         return self._config.copy()
+
+    def list_available_census_variables(self) -> Dict[str, str]:
+        """List available census variables with their codes."""
+        return CENSUS_VARIABLE_MAPPING.copy()

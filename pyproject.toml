@@ -88,4 +88,33 @@ line_length = 100
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-select = ["E", "F", "B", "I"] 
+select = ["E", "F", "B", "I"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: marks tests as unit tests (fast, isolated)",
+    "integration: marks tests as integration tests (slower, may use external resources)",
+    "slow: marks tests as slow running (may take several seconds)",
+    "api: marks tests for new API components",
+    "async: marks tests that use async/await",
+    "asyncio: marks tests that use asyncio",
+    "performance: marks tests that measure performance",
+    "benchmark: marks tests that measure performance benchmarks",
+    "regression: marks tests that prevent known regressions",
+    "external: marks tests that require external services (network, APIs)",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::FutureWarning:pandas.*",
+    "ignore::UserWarning:geopandas.*",
+] 

@@ -254,3 +254,61 @@ def result_handler(error_type: ErrorType = ErrorType.UNKNOWN):
         return wrapper
 
     return decorator
+
+
+# Test utilities for easier testing
+
+def assert_ok(result: Result[T, E], message: str = "Expected Ok result") -> T:
+    """Assert that result is Ok and return the value."""
+    if result.is_err():
+        raise AssertionError(f"{message}: got {result}")
+    return result.unwrap()
+
+
+def assert_err(result: Result[T, E], message: str = "Expected Err result") -> E:
+    """Assert that result is Err and return the error."""
+    if result.is_ok():
+        raise AssertionError(f"{message}: got {result}")
+    return result.unwrap_err()
+
+
+def assert_err_type(result: Result[T, Error], expected_type: ErrorType, message: str = "Expected specific error type") -> Error:
+    """Assert that result is Err with specific error type and return the error."""
+    error = assert_err(result, message)
+    if error.type != expected_type:
+        raise AssertionError(f"{message}: expected {expected_type}, got {error.type}")
+    return error
+
+
+# Context manager for collecting results
+class ResultCollector:
+    """Helper for collecting and analyzing multiple Results."""
+    
+    def __init__(self):
+        self.results: List[Result[Any, Any]] = []
+    
+    def add(self, result: Result[Any, Any]) -> None:
+        """Add a result to the collection."""
+        self.results.append(result)
+    
+    def success_count(self) -> int:
+        """Count successful results."""
+        return sum(1 for r in self.results if r.is_ok())
+    
+    def error_count(self) -> int:
+        """Count error results."""
+        return sum(1 for r in self.results if r.is_err())
+    
+    def success_rate(self) -> float:
+        """Calculate success rate (0.0 to 1.0)."""
+        if not self.results:
+            return 0.0
+        return self.success_count() / len(self.results)
+    
+    def get_errors(self) -> List[Any]:
+        """Get all errors from failed results."""
+        return [r.unwrap_err() for r in self.results if r.is_err()]
+    
+    def get_values(self) -> List[Any]:
+        """Get all values from successful results."""
+        return [r.unwrap() for r in self.results if r.is_ok()]

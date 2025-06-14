@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
 from ..pipeline import PipelineConfig, PipelineOrchestrator
-from .builder import AnalysisResult, SocialMapperBuilder
+from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
+from .builder import AnalysisResult, SocialMapperBuilder, GeographicLevel
 from .result_types import Err, Error, ErrorType, Ok, Result
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,10 @@ class ClientConfig:
     timeout: int = 300  # seconds
     retry_attempts: int = 3
     user_agent: str = "SocialMapper/0.5.4"
+    # Connection pooling settings
+    max_connections: int = 100
+    max_connections_per_host: int = 30
+    keepalive_timeout: int = 30
 
 
 class RateLimiter:
@@ -269,26 +274,69 @@ class SocialMapperClient:
 
     def validate_configuration(self, config: Dict[str, Any]) -> Result[Dict[str, Any], Error]:
         """
-        Validate analysis configuration.
+        Comprehensive configuration validation with detailed error reporting.
 
         Args:
             config: Configuration to validate
 
         Returns:
-            Result with validated config or Error
+            Result with validated config or detailed Error
         """
         try:
-            # Create a builder and validate
+            validation_errors = []
+            
+            # Validate census variables if provided
+            if "census_variables" in config:
+                invalid_vars = []
+                for var in config["census_variables"]:
+                    normalized = normalize_census_variable(var)
+                    # Check if it's a known variable or valid format
+                    if (normalized not in CENSUS_VARIABLE_MAPPING.values() and 
+                        not normalized.startswith('B') and '_' in normalized and normalized.endswith('E')):
+                        invalid_vars.append(var)
+                
+                if invalid_vars:
+                    validation_errors.append(
+                        f"Invalid census variables: {', '.join(invalid_vars)}. "
+                        f"Available: {', '.join(CENSUS_VARIABLE_MAPPING.keys())}"
+                    )
+            
+            # Validate geographic level
+            if "geographic_level" in config:
+                valid_levels = [level.value for level in GeographicLevel]
+                if config["geographic_level"] not in valid_levels:
+                    validation_errors.append(
+                        f"Invalid geographic level: {config['geographic_level']}. "
+                        f"Must be one of: {', '.join(valid_levels)}"
+                    )
+            
+            # Validate travel time
+            if "travel_time" in config:
+                travel_time = config["travel_time"]
+                if not isinstance(travel_time, int) or not 1 <= travel_time <= 120:
+                    validation_errors.append(
+                        "Travel time must be an integer between 1 and 120 minutes"
+                    )
+            
+            # Validate output directory
+            if "output_dir" in config:
+                try:
+                    Path(config["output_dir"]).resolve()
+                except Exception:
+                    validation_errors.append(f"Invalid output directory: {config['output_dir']}")
+            
+            # Use builder validation for remaining checks
             builder = SocialMapperBuilder()
-            builder._config = config
-            errors = builder.validate()
+            builder._config = config.copy()
+            builder_errors = builder.validate()
+            validation_errors.extend(builder_errors)
 
-            if errors:
+            if validation_errors:
                 return Err(
                     Error(
                         type=ErrorType.VALIDATION,
                         message="Configuration validation failed",
-                        context={"errors": errors},
+                        context={"errors": validation_errors, "config": config},
                     )
                 )
 

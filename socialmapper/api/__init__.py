@@ -1,8 +1,5 @@
 """
-Modern API for SocialMapper.
-
-This module provides a clean, type-safe API following modern software
-engineering best practices.
+API for SocialMapper.
 
 Example:
     ```python
@@ -75,6 +72,10 @@ from .result_types import (
     ErrorType,
     Ok,
     Result,
+    ResultCollector,
+    assert_err,
+    assert_err_type,
+    assert_ok,
     collect_results,
     result_handler,
     try_all,
@@ -104,6 +105,11 @@ __all__ = [
     "collect_results",
     "try_all",
     "result_handler",
+    # Test utilities
+    "assert_ok",
+    "assert_err", 
+    "assert_err_type",
+    "ResultCollector",
     # Async
     "AsyncSocialMapper",
     "run_async_analysis",

@@ -14,13 +14,13 @@ It combines travel time analysis with demographic data to help you understand co
 ## Key Features
 
 ### 🗺️ **Find Places**
-Discover libraries, schools, hospitals, parks, and other community resources from OpenStreetMap.
+Discover libraries, schools, hospitals, parks, and other community resources from OpenStreetMap. Or use the geocoding feature with a street address. 
 
 ### ⏱️ **Calculate Travel Times**
-Generate isochrones (travel time areas) for walking, driving, or biking.
+Generate isochrones (travel time areas) for walking, driving, or biking. [Walking and Biking functionality still under development]
 
 ### 📊 **Analyze Demographics**
-Understand who lives within reach using Census data like population, income, and age.
+Understand who lives within reach of your point of interest using Census data like population, income, and age.
 
 ### 📍 **Use Your Own Locations**
 Analyze accessibility from your organization's facilities or any custom addresses.

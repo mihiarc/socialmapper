@@ -102,7 +102,7 @@ class CoordinateCluster(BaseModel):
     """
 
     points: List[CoordinatePoint] = Field(
-        ..., min_items=2, description="At least 2 points required for clustering"
+        ..., min_length=2, description="At least 2 points required for clustering"
     )
     cluster_id: Optional[Union[str, int]] = None
 
