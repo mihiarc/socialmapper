@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Analyze Community Demographics and Accessibility with Python">
+        <meta name="description" content="Analyze community accessibility with travel times and demographics">
       
       
       
@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="getting-started/">
+        <link rel="next" href="getting-started/installation/">
       
       
       <link rel="icon" href="assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>SocialMapper Documentation</title>
+        <title>SocialMapper</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#socialmapper-explore-community-connections" class="md-skip">
+        <a href="#welcome-to-socialmapper" class="md-skip">
           Skip to content
         </a>
       
@@ -90,7 +90,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="SocialMapper Documentation" class="md-header__button md-logo" aria-label="SocialMapper Documentation" data-md-component="logo">
+    <a href="." title="SocialMapper" class="md-header__button md-logo" aria-label="SocialMapper" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15 19-6-2.11V5l6 2.11M20.5 3h-.16L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5a.5.5 0 0 0 .5.5c.05 0 .11 0 .16-.03L9 18.9l6 2.1 5.64-1.9c.21-.1.36-.25.36-.48V3.5a.5.5 0 0 0-.5-.5"/></svg>
@@ -104,7 +104,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SocialMapper Documentation
+            SocialMapper
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -246,7 +246,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="getting-started/" class="md-tabs__link">
+        <a href="getting-started/installation/" class="md-tabs__link">
           
   
   
@@ -266,11 +266,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="ARCHITECTURE/" class="md-tabs__link">
+        <a href="user-guide/" class="md-tabs__link">
           
   
   
-  Core Features
+  User Guide
 
         </a>
       </li>
@@ -286,11 +286,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="DEMO_INSTRUCTIONS/" class="md-tabs__link">
+        <a href="features/address-geocoding/" class="md-tabs__link">
           
   
   
-  Reference
+  Features
 
         </a>
       </li>
@@ -306,11 +306,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="RELEASE_NOTES_v0.5.3/" class="md-tabs__link">
+        <a href="https://github.com/mihiarc/socialmapper/tree/main/examples" class="md-tabs__link">
           
   
   
-  Release Notes
+  Resources
 
         </a>
       </li>
@@ -338,17 +338,15 @@
   
 
 
-  
-
-<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="SocialMapper Documentation" class="md-nav__button md-logo" aria-label="SocialMapper Documentation" data-md-component="logo">
+    <a href="." title="SocialMapper" class="md-nav__button md-logo" aria-label="SocialMapper" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15 19-6-2.11V5l6 2.11M20.5 3h-.16L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5a.5.5 0 0 0 .5.5c.05 0 .11 0 .16-.03L9 18.9l6 2.1 5.64-1.9c.21-.1.36-.25.36-.48V3.5a.5.5 0 0 0-.5-.5"/></svg>
 
     </a>
-    SocialMapper Documentation
+    SocialMapper
   </label>
   
     <div class="md-nav__source">
@@ -408,9 +406,7 @@
       
         
 
-  
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
   
@@ -419,14 +415,14 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      On this page
+      Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#what-is-socialmapper" class="md-nav__link">
     <span class="md-ellipsis">
-      🚀 Quick Start
+      What is SocialMapper?
     </span>
   </a>
   
@@ -435,26 +431,44 @@
         <li class="md-nav__item">
   <a href="#key-features" class="md-nav__link">
     <span class="md-ellipsis">
-      🎯 Key Features
+      Key Features
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🎯 Key Features">
+    <nav class="md-nav" aria-label="Key Features">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#core-analysis" class="md-nav__link">
+  <a href="#find-places" class="md-nav__link">
     <span class="md-ellipsis">
-      🗺️ Core Analysis
+      🗺️ Find Places
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#developer-tools" class="md-nav__link">
+  <a href="#calculate-travel-times" class="md-nav__link">
     <span class="md-ellipsis">
-      🛠️ Developer Tools
+      ⏱️ Calculate Travel Times
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analyze-demographics" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Analyze Demographics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-your-own-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      📍 Use Your Own Locations
     </span>
   </a>
   
@@ -466,88 +480,31 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation-sections" class="md-nav__link">
+  <a href="#quick-example" class="md-nav__link">
     <span class="md-ellipsis">
-      📚 Documentation Sections
+      Quick Example
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="📚 Documentation Sections">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      🚀 Getting Started
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#user-guide" class="md-nav__link">
-    <span class="md-ellipsis">
-      📖 User Guide
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#features-in-detail" class="md-nav__link">
-    <span class="md-ellipsis">
-      🎯 Features in Detail
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development" class="md-nav__link">
-    <span class="md-ellipsis">
-      🔧 Development
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-new" class="md-nav__link">
+  <a href="#get-started" class="md-nav__link">
     <span class="md-ellipsis">
-      🌟 What's New
+      Get Started
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="🌟 What&#39;s New">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#latest-release-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Latest Release Features
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
+  <a href="#common-use-cases" class="md-nav__link">
     <span class="md-ellipsis">
-      🎯 Use Cases
+      Common Use Cases
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🎯 Use Cases">
+    <nav class="md-nav" aria-label="Common Use Cases">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -560,18 +517,27 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#public-health-policy" class="md-nav__link">
+  <a href="#public-health" class="md-nav__link">
     <span class="md-ellipsis">
-      Public Health &amp; Policy
+      Public Health
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#research-analysis" class="md-nav__link">
+  <a href="#education" class="md-nav__link">
     <span class="md-ellipsis">
-      Research &amp; Analysis
+      Education
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Community Development
     </span>
   </a>
   
@@ -583,27 +549,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#try-it-now" class="md-nav__link">
+  <a href="#why-socialmapper" class="md-nav__link">
     <span class="md-ellipsis">
-      🚀 Try It Now
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#community-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      🤝 Community &amp; Support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#future-vision" class="md-nav__link">
-    <span class="md-ellipsis">
-      🔮 Future Vision
+      Why SocialMapper?
     </span>
   </a>
   
@@ -669,12 +617,12 @@
   
   
     <li class="md-nav__item">
-      <a href="getting-started/" class="md-nav__link">
+      <a href="getting-started/installation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Overview
+    Installation
     
   </span>
   
@@ -692,12 +640,12 @@
   
   
     <li class="md-nav__item">
-      <a href="getting-started/installation/" class="md-nav__link">
+      <a href="getting-started/quick-start/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Installation
+    Quick Start
     
   </span>
   
@@ -745,7 +693,7 @@
   
   
   <span class="md-ellipsis">
-    Core Features
+    User Guide
     
   </span>
   
@@ -756,7 +704,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            Core Features
+            User Guide
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -767,12 +715,12 @@
   
   
     <li class="md-nav__item">
-      <a href="ARCHITECTURE/" class="md-nav__link">
+      <a href="user-guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Architecture
+    Overview
     
   </span>
   
@@ -790,12 +738,12 @@
   
   
     <li class="md-nav__item">
-      <a href="ADDRESS_GEOCODING/" class="md-nav__link">
+      <a href="user-guide/finding-places/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Address Geocoding
+    Finding Places
     
   </span>
   
@@ -813,12 +761,104 @@
   
   
     <li class="md-nav__item">
-      <a href="OSMNX_FEATURES/" class="md-nav__link">
+      <a href="user-guide/custom-locations.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    OSMnx Integration
+    Custom Locations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user-guide/travel-time.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Travel Time Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user-guide/demographics.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Demographics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user-guide/exporting-results.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Exporting Results
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user-guide/cli-usage.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
     
   </span>
   
@@ -866,7 +906,7 @@
   
   
   <span class="md-ellipsis">
-    Reference
+    Features
     
   </span>
   
@@ -877,7 +917,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-            Reference
+            Features
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -888,12 +928,12 @@
   
   
     <li class="md-nav__item">
-      <a href="DEMO_INSTRUCTIONS/" class="md-nav__link">
+      <a href="features/address-geocoding/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Demo Instructions
+    Address Geocoding
     
   </span>
   
@@ -911,35 +951,12 @@
   
   
     <li class="md-nav__item">
-      <a href="migration-guide/" class="md-nav__link">
+      <a href="features/network-analysis/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Migration Guide
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="CHANGELOG/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Changelog
+    Network Analysis
     
   </span>
   
@@ -987,7 +1004,7 @@
   
   
   <span class="md-ellipsis">
-    Release Notes
+    Resources
     
   </span>
   
@@ -998,7 +1015,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
-            Release Notes
+            Resources
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -1009,12 +1026,12 @@
   
   
     <li class="md-nav__item">
-      <a href="RELEASE_NOTES_v0.5.3/" class="md-nav__link">
+      <a href="https://github.com/mihiarc/socialmapper/tree/main/examples" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    v0.5.3
+    Examples
     
   </span>
   
@@ -1032,12 +1049,58 @@
   
   
     <li class="md-nav__item">
-      <a href="RELEASE_NOTES_v0.5.2/" class="md-nav__link">
+      <a href="api-reference.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    v0.5.2
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="troubleshooting.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
     
   </span>
   
@@ -1062,6 +1125,170 @@
               </div>
             
             
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-socialmapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is SocialMapper?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-places" class="md-nav__link">
+    <span class="md-ellipsis">
+      🗺️ Find Places
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calculate-travel-times" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⏱️ Calculate Travel Times
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analyze-demographics" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Analyze Demographics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-your-own-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      📍 Use Your Own Locations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Example
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get Started
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Use Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#urban-planning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Urban Planning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#public-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      Public Health
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#education" class="md-nav__link">
+    <span class="md-ellipsis">
+      Education
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Community Development
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-socialmapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why SocialMapper?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           
             <div class="md-content" data-md-component="content">
@@ -1074,150 +1301,98 @@
   
 
 
-<h1 id="socialmapper-explore-community-connections">SocialMapper: Explore Community Connections<a class="headerlink" href="#socialmapper-explore-community-connections" title="Permanent link">&para;</a></h1>
-<p><a href="https://badge.fury.io/py/socialmapper"><img alt="PyPI version" src="https://badge.fury.io/py/socialmapper.svg" /></a>
-<a href="https://pypi.org/project/socialmapper/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/socialmapper.svg" /></a>
-<a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
-<a href="https://pepy.tech/project/socialmapper"><img alt="Downloads" src="https://static.pepy.tech/badge/socialmapper" /></a></p>
-<p>SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.</p>
-<p>But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.</p>
-<p>Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.</p>
-<h2 id="quick-start">🚀 Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<p><strong>Install with pip:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>socialmapper
-</span></code></pre></div></p>
-<p><strong>Basic usage:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">socialmapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_socialmapper</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Analyze library accessibility in your city</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">geocode_area</span><span class="o">=</span><span class="s2">&quot;Chicago&quot;</span><span class="p">,</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;IL&quot;</span><span class="p">,</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">poi_type</span><span class="o">=</span><span class="s2">&quot;amenity&quot;</span><span class="p">,</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">poi_name</span><span class="o">=</span><span class="s2">&quot;library&quot;</span><span class="p">,</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="s2">&quot;median_household_income&quot;</span><span class="p">]</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">)</span>
-</span></code></pre></div></p>
-<h2 id="key-features">🎯 Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
-<h3 id="core-analysis">🗺️ <strong>Core Analysis</strong><a class="headerlink" href="#core-analysis" title="Permanent link">&para;</a></h3>
+<h1 id="welcome-to-socialmapper">Welcome to SocialMapper<a class="headerlink" href="#welcome-to-socialmapper" title="Permanent link">&para;</a></h1>
+<p>SocialMapper helps you understand how people connect with important places in their community by analyzing travel times and demographics.</p>
+<h2 id="what-is-socialmapper">What is SocialMapper?<a class="headerlink" href="#what-is-socialmapper" title="Permanent link">&para;</a></h2>
+<p>SocialMapper is a Python tool that answers questions like:
+- Who can reach the local library within a 15-minute walk?
+- What areas are within 20 minutes of the nearest hospital?
+- How many seniors live within driving distance of grocery stores?</p>
+<p>It combines travel time analysis with demographic data to help you understand community accessibility.</p>
+<h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+<h3 id="find-places">🗺️ <strong>Find Places</strong><a class="headerlink" href="#find-places" title="Permanent link">&para;</a></h3>
+<p>Discover libraries, schools, hospitals, parks, and other community resources from OpenStreetMap.</p>
+<h3 id="calculate-travel-times">⏱️ <strong>Calculate Travel Times</strong><a class="headerlink" href="#calculate-travel-times" title="Permanent link">&para;</a></h3>
+<p>Generate isochrones (travel time areas) for walking, driving, or biking.</p>
+<h3 id="analyze-demographics">📊 <strong>Analyze Demographics</strong><a class="headerlink" href="#analyze-demographics" title="Permanent link">&para;</a></h3>
+<p>Understand who lives within reach using Census data like population, income, and age.</p>
+<h3 id="use-your-own-locations">📍 <strong>Use Your Own Locations</strong><a class="headerlink" href="#use-your-own-locations" title="Permanent link">&para;</a></h3>
+<p>Analyze accessibility from your organization's facilities or any custom addresses.</p>
+<h2 id="quick-example">Quick Example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">socialmapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_socialmapper</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Find who can reach libraries in 15 minutes</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;North Carolina&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Wake County&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;library&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="s2">&quot;median_income&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+</code></pre></div>
+<h2 id="get-started">Get Started<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
 <ul>
-<li><strong><a href="ADDRESS_GEOCODING/">Address Geocoding System</a></strong> - Production-ready address lookup with multiple providers</li>
-<li><strong>Travel Time Analysis</strong> - Generate isochrones showing reachable areas</li>
-<li><strong>Demographic Integration</strong> - Census data analysis for community characteristics  </li>
-<li><strong>Point of Interest Discovery</strong> - Find libraries, schools, healthcare facilities</li>
-<li><strong>Static Map Generation</strong> - Create publication-ready visualizations</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg></span> <strong>Installation</strong></p>
+<hr />
+<p>Install SocialMapper in minutes</p>
+<p><a href="getting-started/installation/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Installation guide</a></p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m20 22-3.86-1.55c.7-1.53 1.2-3.11 1.51-4.72zM7.86 20.45 4 22l2.35-6.27c.31 1.61.81 3.19 1.51 4.72M12 2s5 2 5 10c0 3.1-.75 5.75-1.67 7.83A2 2 0 0 1 13.5 21h-3a2 2 0 0 1-1.83-1.17C7.76 17.75 7 15.1 7 12c0-8 5-10 5-10m0 10c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2"/></svg></span> <strong>Quick Start</strong></p>
+<hr />
+<p>Your first analysis in 5 minutes</p>
+<p><a href="getting-started/quick-start/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Quick start tutorial</a></p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 11.5A2.5 2.5 0 0 1 9.5 9 2.5 2.5 0 0 1 12 6.5 2.5 2.5 0 0 1 14.5 9a2.5 2.5 0 0 1-2.5 2.5M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7"/></svg></span> <strong>Examples</strong></p>
+<hr />
+<p>Learn from practical examples</p>
+<p><a href="https://github.com/mihiarc/socialmapper/tree/main/examples"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> View examples</a></p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15.07 11.25-.9.92C13.45 12.89 13 13.5 13 15h-2v-.5c0-1.11.45-2.11 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41a2 2 0 0 0-2-2 2 2 0 0 0-2 2H8a4 4 0 0 1 4-4 4 4 0 0 1 4 4 3.2 3.2 0 0 1-.93 2.25M13 19h-2v-2h2M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10c0-5.53-4.5-10-10-10"/></svg></span> <strong>Get Help</strong></p>
+<hr />
+<p>Documentation and support</p>
+<p><a href="user-guide/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> User guide</a></p>
+</li>
 </ul>
-<h3 id="developer-tools">🛠️ <strong>Developer Tools</strong><a class="headerlink" href="#developer-tools" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Python API</strong> - Full programmatic access</li>
-<li><strong>Command Line Interface</strong> - Easy scripting and automation</li>
-<li><strong><a href="OSMNX_FEATURES/">OSMnx Integration</a></strong> - Advanced network analysis</li>
-</ul>
-<h2 id="documentation-sections">📚 Documentation Sections<a class="headerlink" href="#documentation-sections" title="Permanent link">&para;</a></h2>
-<h3 id="getting-started">🚀 Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="getting-started/installation/">Installation Guide</a></strong> - Set up SocialMapper</li>
-<li><strong><a href="getting-started/quick-start/">Quick Start Tutorial</a></strong> - Your first analysis</li>
-<li><strong><a href="DEMO_INSTRUCTIONS/">Demo Instructions</a></strong> - Interactive demonstrations</li>
-</ul>
-<h3 id="user-guide">📖 User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="user-guide/configuration.md">Configuration</a></strong> - Customize your analysis</li>
-<li><strong><a href="user-guide/data-sources.md">Data Sources</a></strong> - Understanding input data</li>
-<li><strong><a href="ARCHITECTURE/">Architecture Overview</a></strong> - System design and components</li>
-</ul>
-<h3 id="features-in-detail">🎯 Features in Detail<a class="headerlink" href="#features-in-detail" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="ADDRESS_GEOCODING/">Address Geocoding</a></strong> - Modern address lookup system</li>
-<li><strong><a href="OSMNX_FEATURES/">OSMnx Integration</a></strong> - Advanced network analysis capabilities</li>
-</ul>
-<h3 id="development">🔧 Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="development/contributing.md">Contributing Guide</a></strong> - Join the project</li>
-<li><strong><a href="development/architecture.md">Architecture Details</a></strong> - Technical design</li>
-<li><strong><a href="api/index.md">API Reference</a></strong> - Complete function documentation</li>
-</ul>
-<h2 id="whats-new">🌟 What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h2>
-<h3 id="latest-release-features">Latest Release Features<a class="headerlink" href="#latest-release-features" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>🏗️ Streamlined Architecture</strong> - Focused on core demographic analysis</li>
-<li><strong>📍 Enhanced Geocoding</strong> - Production-ready address system</li>
-<li><strong>⚡ Performance Improvements</strong> - 17x faster processing with optimized neighbor system</li>
-<li><strong>🎨 Modern UI</strong> - Rich terminal output and better visualization</li>
-<li><strong>📊 Enhanced Data Export</strong> - Improved CSV and GeoJSON output formats</li>
-</ul>
-<p>See the <strong><a href="CHANGELOG/">Changelog</a></strong> for complete release history.</p>
-<h2 id="use-cases">🎯 Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
+</div>
+<h2 id="common-use-cases">Common Use Cases<a class="headerlink" href="#common-use-cases" title="Permanent link">&para;</a></h2>
 <h3 id="urban-planning">Urban Planning<a class="headerlink" href="#urban-planning" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Service Accessibility</strong> - Analyze access to public facilities</li>
-<li><strong>Transportation Planning</strong> - Understand travel patterns</li>
-<li><strong>Community Impact Assessment</strong> - Measure development effects</li>
+<li>Analyze access to public facilities</li>
+<li>Identify underserved areas</li>
+<li>Plan new service locations</li>
 </ul>
-<h3 id="public-health-policy">Public Health &amp; Policy<a class="headerlink" href="#public-health-policy" title="Permanent link">&para;</a></h3>
+<h3 id="public-health">Public Health<a class="headerlink" href="#public-health" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Healthcare Access</strong> - Map medical facility coverage</li>
-<li><strong>Food Security</strong> - Analyze grocery store accessibility  </li>
-<li><strong>Educational Equity</strong> - Study school access patterns</li>
+<li>Map healthcare accessibility</li>
+<li>Study food desert patterns</li>
+<li>Evaluate emergency service coverage</li>
 </ul>
-<h3 id="research-analysis">Research &amp; Analysis<a class="headerlink" href="#research-analysis" title="Permanent link">&para;</a></h3>
+<h3 id="education">Education<a class="headerlink" href="#education" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Demographic Studies</strong> - Population characteristics analysis</li>
-<li><strong>Accessibility Analysis</strong> - Measure access to community resources</li>
-<li><strong>Social Equity</strong> - Identify service gaps and opportunities</li>
+<li>Assess school accessibility</li>
+<li>Plan bus routes</li>
+<li>Identify transportation barriers</li>
 </ul>
-<h2 id="try-it-now">🚀 Try It Now<a class="headerlink" href="#try-it-now" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Command Line</label><label for="__tabbed_1_2">Python API</label><label for="__tabbed_1_3">Data Export</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Install SocialMapper</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span>socialmapper
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Run analysis</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>socialmapper<span class="w"> </span>--poi<span class="w"> </span>--geocode-area<span class="w"> </span><span class="s2">&quot;Seattle&quot;</span><span class="w"> </span>--state<span class="w"> </span><span class="s2">&quot;WA&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--poi-type<span class="w"> </span><span class="s2">&quot;amenity&quot;</span><span class="w"> </span>--poi-name<span class="w"> </span><span class="s2">&quot;library&quot;</span><span class="w"> </span>--travel-time<span class="w"> </span><span class="m">15</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">socialmapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_socialmapper</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Analyze community access</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">geocode_area</span><span class="o">=</span><span class="s2">&quot;Portland&quot;</span><span class="p">,</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;OR&quot;</span><span class="p">,</span> 
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">poi_type</span><span class="o">=</span><span class="s2">&quot;amenity&quot;</span><span class="p">,</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">poi_name</span><span class="o">=</span><span class="s2">&quot;school&quot;</span><span class="p">,</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">20</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="p">)</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Export results to CSV and maps</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>socialmapper<span class="w"> </span>--poi<span class="w"> </span>--geocode-area<span class="w"> </span><span class="s2">&quot;Seattle&quot;</span><span class="w"> </span>--state<span class="w"> </span><span class="s2">&quot;WA&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--poi-type<span class="w"> </span><span class="s2">&quot;amenity&quot;</span><span class="w"> </span>--poi-name<span class="w"> </span><span class="s2">&quot;library&quot;</span><span class="w"> </span>--travel-time<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--export-csv<span class="w"> </span>--export-maps
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<h2 id="community-support">🤝 Community &amp; Support<a class="headerlink" href="#community-support" title="Permanent link">&para;</a></h2>
+<h3 id="community-development">Community Development<a class="headerlink" href="#community-development" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><a href="https://github.com/mihiarc/socialmapper">GitHub Repository</a></strong> - Source code and issues</li>
-<li><strong><a href="https://pypi.org/project/socialmapper/">PyPI Package</a></strong> - Package downloads</li>
-<li><strong><a href="https://mihiarc.github.io/socialmapper">Documentation</a></strong> - This site</li>
-<li><strong><a href="examples/">Examples</a></strong> - Sample workflows and use cases</li>
+<li>Evaluate access to parks and recreation</li>
+<li>Study retail accessibility</li>
+<li>Support grant applications with data</li>
 </ul>
-<h2 id="future-vision">🔮 Future Vision<a class="headerlink" href="#future-vision" title="Permanent link">&para;</a></h2>
-<p>SocialMapper is focused on becoming the premier tool for demographic accessibility analysis with plans for:</p>
+<h2 id="why-socialmapper">Why SocialMapper?<a class="headerlink" href="#why-socialmapper" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>🌍 Environmental Integration</strong> - Natural area accessibility</li>
-<li><strong>🚊 Multi-modal Transportation</strong> - Enhanced transit, walking, cycling analysis  </li>
-<li><strong>📊 Enhanced Analytics</strong> - More sophisticated demographic analysis</li>
-<li><strong>🌐 Global Expansion</strong> - International data sources and census systems</li>
+<li><strong>Free and Open Source</strong> - No licensing fees or restrictions</li>
+<li><strong>Easy to Use</strong> - Simple Python API and command line interface</li>
+<li><strong>Reliable Data</strong> - Uses OpenStreetMap and US Census Bureau</li>
+<li><strong>Fast</strong> - Optimized caching and efficient algorithms</li>
+<li><strong>Flexible</strong> - Analyze any location type at any scale</li>
 </ul>
-<hr />
-<p><strong>Ready to explore your community?</strong> Start with our <strong><a href="getting-started/installation/">Getting Started Guide</a></strong> or try the <strong><a href="https://github.com/mihiarc/socialmapper#using-the-command-line-interface">Command Line Interface</a></strong>! </p>
+<p>Ready to explore your community? <a href="getting-started/installation/">Get started now →</a></p>
 
 
 
@@ -1256,6 +1431,11 @@
       Copyright &copy; 2023-2025 SocialMapper Contributors
     </div>
   
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
   
 </div>
       
@@ -1297,7 +1477,7 @@
     
     
       
-      <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.code.annotate", "content.code.copy", "toc.integrate"], "search": "assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.code.annotate", "content.code.copy"], "search": "assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="assets/javascripts/bundle.13a4f30d.min.js"></script>

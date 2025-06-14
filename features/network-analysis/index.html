@@ -6,32 +6,32 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Analyze Community Demographics and Accessibility with Python">
+        <meta name="description" content="Analyze community accessibility with travel times and demographics">
       
       
       
-        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/DEMO_INSTRUCTIONS/">
+        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/features/network-analysis/">
       
       
-        <link rel="prev" href="../OSMNX_FEATURES/">
+        <link rel="prev" href="../address-geocoding/">
       
       
-        <link rel="next" href="../migration-guide/">
+        <link rel="next" href="../../faq/">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
-        <title>Demo Instructions - SocialMapper Documentation</title>
+        <title>Network Analysis - SocialMapper</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,9 +50,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/css/extra.css">
+      <link rel="stylesheet" href="../../assets/css/extra.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#zcta-demo-quick-start-guide" class="md-skip">
+        <a href="#osmnx-20-features-summary-for-socialmapper" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="SocialMapper Documentation" class="md-header__button md-logo" aria-label="SocialMapper Documentation" data-md-component="logo">
+    <a href="../.." title="SocialMapper" class="md-header__button md-logo" aria-label="SocialMapper" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15 19-6-2.11V5l6 2.11M20.5 3h-.16L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5a.5.5 0 0 0 .5.5c.05 0 .11 0 .16-.03L9 18.9l6 2.1 5.64-1.9c.21-.1.36-.25.36-.48V3.5a.5.5 0 0 0-.5-.5"/></svg>
@@ -106,13 +106,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SocialMapper Documentation
+            SocialMapper
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Demo Instructions
+              Network Analysis
             
           </span>
         </div>
@@ -225,7 +225,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -246,7 +246,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/" class="md-tabs__link">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
           
   
   
@@ -266,11 +266,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../ARCHITECTURE/" class="md-tabs__link">
+        <a href="../../user-guide/" class="md-tabs__link">
           
   
   
-  Core Features
+  User Guide
 
         </a>
       </li>
@@ -288,11 +288,11 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../address-geocoding/" class="md-tabs__link">
           
   
   
-  Reference
+  Features
 
         </a>
       </li>
@@ -308,11 +308,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../RELEASE_NOTES_v0.5.3/" class="md-tabs__link">
+        <a href="https://github.com/mihiarc/socialmapper/tree/main/examples" class="md-tabs__link">
           
   
   
-  Release Notes
+  Resources
 
         </a>
       </li>
@@ -340,17 +340,15 @@
   
 
 
-  
-
-<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="SocialMapper Documentation" class="md-nav__button md-logo" aria-label="SocialMapper Documentation" data-md-component="logo">
+    <a href="../.." title="SocialMapper" class="md-nav__button md-logo" aria-label="SocialMapper" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15 19-6-2.11V5l6 2.11M20.5 3h-.16L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5a.5.5 0 0 0 .5.5c.05 0 .11 0 .16-.03L9 18.9l6 2.1 5.64-1.9c.21-.1.36-.25.36-.48V3.5a.5.5 0 0 0-.5-.5"/></svg>
 
     </a>
-    SocialMapper Documentation
+    SocialMapper
   </label>
   
     <div class="md-nav__source">
@@ -374,7 +372,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -441,12 +439,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Overview
+    Installation
     
   </span>
   
@@ -464,12 +462,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/installation/" class="md-nav__link">
+      <a href="../../getting-started/quick-start/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Installation
+    Quick Start
     
   </span>
   
@@ -517,7 +515,7 @@
   
   
   <span class="md-ellipsis">
-    Core Features
+    User Guide
     
   </span>
   
@@ -528,7 +526,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            Core Features
+            User Guide
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -539,12 +537,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../ARCHITECTURE/" class="md-nav__link">
+      <a href="../../user-guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Architecture
+    Overview
     
   </span>
   
@@ -562,12 +560,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../ADDRESS_GEOCODING/" class="md-nav__link">
+      <a href="../../user-guide/finding-places/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Address Geocoding
+    Finding Places
     
   </span>
   
@@ -585,12 +583,104 @@
   
   
     <li class="md-nav__item">
-      <a href="../OSMNX_FEATURES/" class="md-nav__link">
+      <a href="../../user-guide/custom-locations.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    OSMnx Integration
+    Custom Locations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/travel-time.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Travel Time Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/demographics.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Demographics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/exporting-results.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Exporting Results
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/cli-usage.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
     
   </span>
   
@@ -641,7 +731,7 @@
   
   
   <span class="md-ellipsis">
-    Reference
+    Features
     
   </span>
   
@@ -652,9 +742,32 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-            Reference
+            Features
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../address-geocoding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Address Geocoding
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -677,7 +790,7 @@
   
   
   <span class="md-ellipsis">
-    Demo Instructions
+    Network Analysis
     
   </span>
   
@@ -690,7 +803,7 @@
   
   
   <span class="md-ellipsis">
-    Demo Instructions
+    Network Analysis
     
   </span>
   
@@ -699,9 +812,7 @@
       
         
 
-  
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
   
@@ -710,51 +821,78 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      On this page
+      Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#tldr-run-the-demo-now" class="md-nav__link">
+  <a href="#key-improvements-in-osmnx-20" class="md-nav__link">
     <span class="md-ellipsis">
-      ⚡ TL;DR - Run the Demo Now
+      🚀 Key Improvements in OSMnx 2.0+
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#demo-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      📋 Demo Options
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="📋 Demo Options">
+    <nav class="md-nav" aria-label="🚀 Key Improvements in OSMnx 2.0+">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#option-1-full-interactive-demo-recommended" class="md-nav__link">
+  <a href="#1-performance-memory-efficiency" class="md-nav__link">
     <span class="md-ellipsis">
-      Option 1: 🎬 Full Interactive Demo (Recommended)
+      1. Performance &amp; Memory Efficiency
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-2-quick-cli-tests" class="md-nav__link">
+  <a href="#2-enhanced-geometries-module" class="md-nav__link">
     <span class="md-ellipsis">
-      Option 2: 🧪 Quick CLI Tests
+      2. Enhanced Geometries Module
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-3-manual-cli-testing" class="md-nav__link">
+  <a href="#3-advanced-network-analysis" class="md-nav__link">
     <span class="md-ellipsis">
-      Option 3: 💻 Manual CLI Testing
+      3. Advanced Network Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-enhanced-routing-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Enhanced Routing Features
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-spatial-analysis-isochrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Spatial Analysis &amp; Isochrones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-enhanced-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Enhanced Visualization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-type-annotations-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Type Annotations &amp; Error Handling
     </span>
   </a>
   
@@ -766,37 +904,37 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-to-look-for" class="md-nav__link">
+  <a href="#benefits-for-socialmapper-v050" class="md-nav__link">
     <span class="md-ellipsis">
-      🎯 What to Look For
+      🏘️ Benefits for SocialMapper v0.5.0
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🎯 What to Look For">
+    <nav class="md-nav" aria-label="🏘️ Benefits for SocialMapper v0.5.0">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#success-indicators" class="md-nav__link">
+  <a href="#performance-improvements" class="md-nav__link">
     <span class="md-ellipsis">
-      ✅ Success Indicators
+      Performance Improvements
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#expected-differences" class="md-nav__link">
+  <a href="#enhanced-accuracy" class="md-nav__link">
     <span class="md-ellipsis">
-      📊 Expected Differences
+      Enhanced Accuracy
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#files-to-check" class="md-nav__link">
+  <a href="#new-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
-      🔍 Files to Check
+      New Capabilities
     </span>
   </a>
   
@@ -808,28 +946,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#integration-with-socialmapper" class="md-nav__link">
     <span class="md-ellipsis">
-      🐛 Troubleshooting
+      🛠️ Integration with SocialMapper
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🐛 Troubleshooting">
+    <nav class="md-nav" aria-label="🛠️ Integration with SocialMapper">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#common-issues-solutions" class="md-nav__link">
+  <a href="#immediate-benefits" class="md-nav__link">
     <span class="md-ellipsis">
-      Common Issues &amp; Solutions
+      Immediate Benefits
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#quick-fixes" class="md-nav__link">
+  <a href="#future-opportunities" class="md-nav__link">
     <span class="md-ellipsis">
-      🔧 Quick Fixes
+      Future Opportunities
     </span>
   </a>
   
@@ -841,28 +979,37 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#understanding-the-results" class="md-nav__link">
+  <a href="#performance-metrics-from-demo" class="md-nav__link">
     <span class="md-ellipsis">
-      📚 Understanding the Results
+      ⚡ Performance Metrics from Demo
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="📚 Understanding the Results">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-features-for-community-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Key Features for Community Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 Key Features for Community Analysis">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#geographic-level-comparison" class="md-nav__link">
+  <a href="#what-socialmapper-gains" class="md-nav__link">
     <span class="md-ellipsis">
-      Geographic Level Comparison
+      What SocialMapper Gains
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#census-data-interpretation" class="md-nav__link">
+  <a href="#research-planning-applications" class="md-nav__link">
     <span class="md-ellipsis">
-      Census Data Interpretation
+      Research &amp; Planning Applications
     </span>
   </a>
   
@@ -876,16 +1023,7 @@
         <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      🎉 Next Steps
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#need-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      📞 Need Help?
+      🚀 Next Steps
     </span>
   </a>
   
@@ -895,52 +1033,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migration-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Migration Guide
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../CHANGELOG/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Changelog
-    
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -983,7 +1075,7 @@
   
   
   <span class="md-ellipsis">
-    Release Notes
+    Resources
     
   </span>
   
@@ -994,7 +1086,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
-            Release Notes
+            Resources
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -1005,12 +1097,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../RELEASE_NOTES_v0.5.3/" class="md-nav__link">
+      <a href="https://github.com/mihiarc/socialmapper/tree/main/examples" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    v0.5.3
+    Examples
     
   </span>
   
@@ -1028,12 +1120,58 @@
   
   
     <li class="md-nav__item">
-      <a href="../RELEASE_NOTES_v0.5.2/" class="md-nav__link">
+      <a href="../../api-reference.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    v0.5.2
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
     
   </span>
   
@@ -1058,6 +1196,236 @@
               </div>
             
             
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#key-improvements-in-osmnx-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Key Improvements in OSMnx 2.0+
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Key Improvements in OSMnx 2.0+">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-performance-memory-efficiency" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Performance &amp; Memory Efficiency
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-enhanced-geometries-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Enhanced Geometries Module
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-advanced-network-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Advanced Network Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-enhanced-routing-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Enhanced Routing Features
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-spatial-analysis-isochrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Spatial Analysis &amp; Isochrones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-enhanced-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Enhanced Visualization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-type-annotations-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Type Annotations &amp; Error Handling
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benefits-for-socialmapper-v050" class="md-nav__link">
+    <span class="md-ellipsis">
+      🏘️ Benefits for SocialMapper v0.5.0
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏘️ Benefits for SocialMapper v0.5.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#performance-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Improvements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enhanced-accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enhanced Accuracy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      New Capabilities
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-socialmapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      🛠️ Integration with SocialMapper
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🛠️ Integration with SocialMapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Immediate Benefits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#future-opportunities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Future Opportunities
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-metrics-from-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⚡ Performance Metrics from Demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-features-for-community-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Key Features for Community Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 Key Features for Community Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-socialmapper-gains" class="md-nav__link">
+    <span class="md-ellipsis">
+      What SocialMapper Gains
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-planning-applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Research &amp; Planning Applications
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           
             <div class="md-content" data-md-component="content">
@@ -1070,162 +1438,179 @@
   
 
 
-<h1 id="zcta-demo-quick-start-guide">🚀 ZCTA Demo Quick Start Guide<a class="headerlink" href="#zcta-demo-quick-start-guide" title="Permanent link">&para;</a></h1>
-<p>This guide provides step-by-step instructions for testing the new ZCTA (ZIP Code Tabulation Area) feature in SocialMapper.</p>
-<h2 id="tldr-run-the-demo-now">⚡ TL;DR - Run the Demo Now<a class="headerlink" href="#tldr-run-the-demo-now" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Full interactive demo (recommended)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>demo_zcta_feature.py
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Quick CLI tests</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>python<span class="w"> </span>test_zcta_cli.py
-</span></code></pre></div>
-<h2 id="demo-options">📋 Demo Options<a class="headerlink" href="#demo-options" title="Permanent link">&para;</a></h2>
-<h3 id="option-1-full-interactive-demo-recommended">Option 1: 🎬 Full Interactive Demo (Recommended)<a class="headerlink" href="#option-1-full-interactive-demo-recommended" title="Permanent link">&para;</a></h3>
-<p><strong>What it does</strong>: Side-by-side comparison of block groups vs ZCTAs with real Seattle library data</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>demo_zcta_feature.py
-</span></code></pre></div>
-<p><strong>Expected runtime</strong>: 3-5 minutes<br />
-<strong>Output</strong>: 
-- Rich interactive comparison tables
-- Sample data files created automatically
-- Complete analysis results in separate directories
-- CLI usage examples</p>
-<h3 id="option-2-quick-cli-tests">Option 2: 🧪 Quick CLI Tests<a class="headerlink" href="#option-2-quick-cli-tests" title="Permanent link">&para;</a></h3>
-<p><strong>What it does</strong>: Fast validation that ZCTA commands work properly</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>test_zcta_cli.py
-</span></code></pre></div>
-<p><strong>Expected runtime</strong>: 2-3 minutes<br />
-<strong>Output</strong>: Pass/fail status for each CLI scenario</p>
-<h3 id="option-3-manual-cli-testing">Option 3: 💻 Manual CLI Testing<a class="headerlink" href="#option-3-manual-cli-testing" title="Permanent link">&para;</a></h3>
-<p><strong>Test individual commands manually:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Create test data first</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>mkdir<span class="w"> </span>test_data
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;name,lat,lon,type</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s2">Library 1,47.6062,-122.3321,library</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s2">Library 2,47.6613,-122.3138,library&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>test_data/coords.csv
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Test block groups (baseline)</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>python<span class="w"> </span>-m<span class="w"> </span>socialmapper.cli<span class="w"> </span>--custom-coords<span class="w"> </span>test_data/coords.csv<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--travel-time<span class="w"> </span><span class="m">10</span><span class="w"> </span>--geographic-level<span class="w"> </span>block-group
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># Test ZCTAs (new feature) </span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>python<span class="w"> </span>-m<span class="w"> </span>socialmapper.cli<span class="w"> </span>--custom-coords<span class="w"> </span>test_data/coords.csv<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span>--travel-time<span class="w"> </span><span class="m">10</span><span class="w"> </span>--geographic-level<span class="w"> </span>zcta
-</span></code></pre></div>
-<h2 id="what-to-look-for">🎯 What to Look For<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
-<h3 id="success-indicators">✅ Success Indicators<a class="headerlink" href="#success-indicators" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Processing Messages</strong>: Look for "Finding ZIP Code Tabulation Areas" vs "Finding Census Block Groups"</li>
-<li><strong>Unit Counts</strong>: ZCTAs should show fewer units (larger geographic areas)</li>
-<li><strong>Processing Speed</strong>: ZCTAs may be faster due to fewer units</li>
-<li><strong>Output Files</strong>: Same structure but different data granularity</li>
-</ol>
-<h3 id="expected-differences">📊 Expected Differences<a class="headerlink" href="#expected-differences" title="Permanent link">&para;</a></h3>
+<h1 id="osmnx-20-features-summary-for-socialmapper">OSMnx 2.0+ Features Summary for SocialMapper<a class="headerlink" href="#osmnx-20-features-summary-for-socialmapper" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> June 7, 2025<br />
+<strong>OSMnx Version Tested:</strong> 2.0.3<br />
+<strong>Python Version:</strong> 3.13.3  </p>
+<h2 id="key-improvements-in-osmnx-20">🚀 Key Improvements in OSMnx 2.0+<a class="headerlink" href="#key-improvements-in-osmnx-20" title="Permanent link">&para;</a></h2>
+<h3 id="1-performance-memory-efficiency">1. <strong>Performance &amp; Memory Efficiency</strong><a class="headerlink" href="#1-performance-memory-efficiency" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Faster graph creation</strong>: Network for Corvallis, OR created in ~1 second</li>
+<li>✅ <strong>Improved memory management</strong>: Better handling of large datasets</li>
+<li>✅ <strong>Enhanced caching</strong>: More efficient network requests and data reuse</li>
+<li>✅ <strong>Optimized algorithms</strong>: Better computational efficiency across the board</li>
+</ul>
+<h3 id="2-enhanced-geometries-module">2. <strong>Enhanced Geometries Module</strong><a class="headerlink" href="#2-enhanced-geometries-module" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Multiple geometry types</strong>: Downloaded 102 POIs, 18,752 buildings, 98 parks efficiently</li>
+<li>✅ <strong>Better error handling</strong>: More robust data retrieval from OpenStreetMap</li>
+<li>✅ <strong>Improved integration</strong>: Better compatibility with GeoPandas/Shapely 2.0</li>
+<li>✅ <strong>Faster downloads</strong>: Cached results and optimized queries</li>
+</ul>
+<h3 id="3-advanced-network-analysis">3. <strong>Advanced Network Analysis</strong><a class="headerlink" href="#3-advanced-network-analysis" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Multiple network types</strong>: Walk, drive, bike networks with better type handling</li>
+<li>✅ <strong>Centrality calculations</strong>: Betweenness and closeness centrality analysis</li>
+<li>✅ <strong>Street orientation analysis</strong>: Tools for urban form analysis</li>
+<li>✅ <strong>Large networks</strong>: Processed 15K+ nodes efficiently</li>
+</ul>
+<h3 id="4-enhanced-routing-features">4. <strong>Enhanced Routing Features</strong><a class="headerlink" href="#4-enhanced-routing-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Multiple routing algorithms</strong>: Shortest path, fastest path, Dijkstra</li>
+<li>✅ <strong>Travel time integration</strong>: Easy addition of speed and travel time attributes</li>
+<li>✅ <strong>Sub-millisecond routing</strong>: Very fast path calculations</li>
+<li>✅ <strong>Multiple weight options</strong>: Length, time, or custom weights</li>
+</ul>
+<h3 id="5-spatial-analysis-isochrones">5. <strong>Spatial Analysis &amp; Isochrones</strong><a class="headerlink" href="#5-spatial-analysis-isochrones" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Accessibility analysis</strong>: 15-minute walking isochrones from POIs</li>
+<li>✅ <strong>Network coverage</strong>: Calculate reachable portions of street networks</li>
+<li>✅ <strong>Multi-modal analysis</strong>: Different transport modes supported</li>
+<li>✅ <strong>Geographic accuracy</strong>: Precise spatial calculations</li>
+</ul>
+<h3 id="6-enhanced-visualization">6. <strong>Enhanced Visualization</strong><a class="headerlink" href="#6-enhanced-visualization" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Modern styling</strong>: Beautiful figure-ground network visualizations</li>
+<li>✅ <strong>Customizable plots</strong>: Control over colors, styles, and layouts</li>
+<li>✅ <strong>High-quality outputs</strong>: Vector and raster format support</li>
+<li>✅ <strong>Interactive capabilities</strong>: Better integration with mapping libraries</li>
+</ul>
+<h3 id="7-type-annotations-error-handling">7. <strong>Type Annotations &amp; Error Handling</strong><a class="headerlink" href="#7-type-annotations-error-handling" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>Full type hints</strong>: Better IDE support and code quality</li>
+<li>✅ <strong>Improved validation</strong>: Better input checking and error messages</li>
+<li>✅ <strong>Consistent API</strong>: Streamlined function names and parameters</li>
+<li>✅ <strong>Better debugging</strong>: Enhanced error reporting and logging</li>
+</ul>
+<h2 id="benefits-for-socialmapper-v050">🏘️ Benefits for SocialMapper v0.5.0<a class="headerlink" href="#benefits-for-socialmapper-v050" title="Permanent link">&para;</a></h2>
+<h3 id="performance-improvements"><strong>Performance Improvements</strong><a class="headerlink" href="#performance-improvements" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Aspect</th>
-<th>Block Groups</th>
-<th>ZCTAs</th>
+<th>Metric</th>
+<th>Improvement</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Geographic Units</strong></td>
-<td>50-200 units</td>
-<td>5-20 units</td>
+<td>POI Discovery</td>
+<td>Faster OpenStreetMap queries with better caching</td>
 </tr>
 <tr>
-<td><strong>Processing Time</strong></td>
-<td>Longer</td>
-<td>Shorter</td>
+<td>Network Creation</td>
+<td>~1 second for medium-sized cities</td>
 </tr>
 <tr>
-<td><strong>Data Granularity</strong></td>
-<td>Fine-grained</td>
-<td>Broader patterns</td>
+<td>Memory Usage</td>
+<td>More efficient handling of large datasets</td>
 </tr>
 <tr>
-<td><strong>Use Case</strong></td>
-<td>Neighborhood analysis</td>
-<td>ZIP code regions</td>
+<td>Batch Processing</td>
+<td>Better reliability for multiple locations</td>
 </tr>
 </tbody>
 </table>
-<h3 id="files-to-check">🔍 Files to Check<a class="headerlink" href="#files-to-check" title="Permanent link">&para;</a></h3>
-<p>After running demos, examine these files:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>📁 demo_output_libraries/          # Block group results
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── *_census_data.csv             # Fine-grained data
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>└── maps/                         # Detailed maps
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>📁 demo_output_libraries_zcta/     # ZCTA results  
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>├── *_census_data.csv             # ZIP code level data
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>└── maps/                         # Regional maps
-</span></code></pre></div>
-<h2 id="troubleshooting">🐛 Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="common-issues-solutions">Common Issues &amp; Solutions<a class="headerlink" href="#common-issues-solutions" title="Permanent link">&para;</a></h3>
-<p><strong>"Command not found"</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Ensure SocialMapper is installed</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
-</span></code></pre></div></p>
-<p><strong>"No ZCTAs found"</strong>
-- Use US coordinates only
-- Check lat/lon format (latitude, longitude)
-- Try larger travel times (15+ minutes)</p>
-<p><strong>"Slow performance"</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Optional: Add Census API key for faster performance</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CENSUS_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_key_here&quot;</span>
-</span></code></pre></div></p>
-<p><strong>"Import errors"</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Install demo dependencies</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>pip<span class="w"> </span>install<span class="w"> </span>rich<span class="w"> </span>pandas<span class="w"> </span>geopandas
-</span></code></pre></div></p>
-<h3 id="quick-fixes">🔧 Quick Fixes<a class="headerlink" href="#quick-fixes" title="Permanent link">&para;</a></h3>
-<p><strong>Reset everything:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>rm<span class="w"> </span>-rf<span class="w"> </span>demo_zcta_data/<span class="w"> </span>demo_output_*<span class="w"> </span>test_data/<span class="w"> </span>output/
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python<span class="w"> </span>demo_zcta_feature.py
-</span></code></pre></div></p>
-<p><strong>Test minimal case:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>-m<span class="w"> </span>socialmapper.cli<span class="w"> </span>--poi<span class="w"> </span>--geocode-area<span class="w"> </span><span class="s2">&quot;Seattle&quot;</span><span class="w"> </span>--state<span class="w"> </span><span class="s2">&quot;WA&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--poi-type<span class="w"> </span><span class="s2">&quot;amenity&quot;</span><span class="w"> </span>--poi-name<span class="w"> </span><span class="s2">&quot;library&quot;</span><span class="w"> </span>--geographic-level<span class="w"> </span>zcta<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--travel-time<span class="w"> </span><span class="m">15</span><span class="w"> </span>--export-csv<span class="w"> </span>--no-export-maps
-</span></code></pre></div></p>
-<h2 id="understanding-the-results">📚 Understanding the Results<a class="headerlink" href="#understanding-the-results" title="Permanent link">&para;</a></h2>
-<h3 id="geographic-level-comparison">Geographic Level Comparison<a class="headerlink" href="#geographic-level-comparison" title="Permanent link">&para;</a></h3>
-<p><strong>Block Groups (Traditional)</strong>
-- ~1,500 people per unit
-- Neighborhood-level precision
-- More processing time
-- Better for local community analysis</p>
-<p><strong>ZCTAs (New Feature)</strong><br />
-- ~30,000 people per unit
-- ZIP code-level aggregation
-- Faster processing
-- Better for regional/mailing analysis</p>
-<h3 id="census-data-interpretation">Census Data Interpretation<a class="headerlink" href="#census-data-interpretation" title="Permanent link">&para;</a></h3>
-<p>The census totals will differ between levels because:
-- <strong>Scale</strong>: ZCTAs cover larger areas
-- <strong>Boundaries</strong>: Different aggregation methods
-- <strong>Use Cases</strong>: Choose based on your analysis needs</p>
-<h2 id="next-steps">🎉 Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>After successful demo:</p>
+<h3 id="enhanced-accuracy"><strong>Enhanced Accuracy</strong><a class="headerlink" href="#enhanced-accuracy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Intersection Consolidation</strong>: Better handling of complex intersections</li>
+<li><strong>Network Simplification</strong>: More accurate representation of street networks  </li>
+<li><strong>Geometric Precision</strong>: Improved spatial calculations and projections</li>
+<li><strong>Travel Time Calculation</strong>: More accurate accessibility analysis</li>
+</ul>
+<h3 id="new-capabilities"><strong>New Capabilities</strong><a class="headerlink" href="#new-capabilities" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Building Footprints</strong>: Access to detailed urban morphology data</li>
+<li><strong>Multi-modal Networks</strong>: Walk, drive, bike network analysis</li>
+<li><strong>Advanced Centrality</strong>: Network analysis for community connectivity</li>
+<li><strong>Enhanced Routing</strong>: Multiple pathfinding algorithms</li>
+</ul>
+<h2 id="integration-with-socialmapper">🛠️ Integration with SocialMapper<a class="headerlink" href="#integration-with-socialmapper" title="Permanent link">&para;</a></h2>
+<h3 id="immediate-benefits"><strong>Immediate Benefits</strong><a class="headerlink" href="#immediate-benefits" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Try your own data</strong>: Replace demo coordinates with your POIs</li>
-<li><strong>Experiment with variables</strong>: Add more census variables</li>
-<li><strong>Compare travel times</strong>: Test 10, 15, 30 minute scenarios  </li>
-<li><strong>Integrate workflows</strong>: Use CSV outputs in your analysis tools</li>
+<li><strong>Faster POI Discovery</strong>: Reduced time for finding community resources</li>
+<li><strong>Better Demographics Mapping</strong>: More accurate intersection handling</li>
+<li><strong>Enhanced Visualization</strong>: Better maps and network representations</li>
+<li><strong>Improved Reliability</strong>: Better error handling for production use</li>
 </ol>
-<h2 id="need-help">📞 Need Help?<a class="headerlink" href="#need-help" title="Permanent link">&para;</a></h2>
-<p>If the demo fails:</p>
+<h3 id="future-opportunities"><strong>Future Opportunities</strong><a class="headerlink" href="#future-opportunities" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Check requirements</strong>: Python 3.8+, required packages installed</li>
-<li><strong>Verify installation</strong>: <code>python -c "import socialmapper; print('OK')"</code></li>
-<li><strong>Internet access</strong>: Needed for Census API calls</li>
-<li><strong>Coordinates</strong>: Ensure US locations only</li>
+<li><strong>Multi-modal Analysis</strong>: Walking, driving, cycling accessibility</li>
+<li><strong>Building-level Analysis</strong>: Demographics at building footprint level</li>
+<li><strong>Network Centrality</strong>: Identify key community connection points</li>
+<li><strong>Advanced Isochrones</strong>: More sophisticated accessibility modeling</li>
 </ol>
-<p><strong>Still stuck?</strong> Check the detailed README: <code>ZCTA_DEMO_README.md</code></p>
+<h2 id="performance-metrics-from-demo">⚡ Performance Metrics from Demo<a class="headerlink" href="#performance-metrics-from-demo" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Graph Creation</td>
+<td>1.01s</td>
+<td>Corvallis drive network (1,862 nodes, 4,911 edges)</td>
+</tr>
+<tr>
+<td>Geometry Download</td>
+<td>&lt;1s each</td>
+<td>POIs, buildings, parks</td>
+</tr>
+<tr>
+<td>Betweenness Centrality</td>
+<td>2.43s</td>
+<td>15K+ node pedestrian network</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>&lt;0.002s</td>
+<td>Multiple algorithms</td>
+</tr>
+<tr>
+<td>Visualization</td>
+<td>&lt;5s</td>
+<td>High-quality network plot</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-features-for-community-analysis">🎯 Key Features for Community Analysis<a class="headerlink" href="#key-features-for-community-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="what-socialmapper-gains"><strong>What SocialMapper Gains</strong><a class="headerlink" href="#what-socialmapper-gains" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Speed</strong>: 2-5x faster data processing</li>
+<li><strong>Scale</strong>: Handle larger cities and regions</li>
+<li><strong>Accuracy</strong>: Better geometric and network precision</li>
+<li><strong>Features</strong>: Access to building footprints, multi-modal networks</li>
+<li><strong>Reliability</strong>: Production-ready error handling</li>
+</ul>
+<h3 id="research-planning-applications"><strong>Research &amp; Planning Applications</strong><a class="headerlink" href="#research-planning-applications" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Urban Form Analysis</strong>: Street pattern and orientation studies</li>
+<li><strong>Accessibility Modeling</strong>: Multi-modal community resource access</li>
+<li><strong>Network Analysis</strong>: Identify critical infrastructure connections</li>
+<li><strong>Demographics Mapping</strong>: Building-level population analysis</li>
+</ul>
+<h2 id="next-steps">🚀 Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Integration</strong>: Incorporate OSMnx 2.0+ features into SocialMapper core</li>
+<li><strong>Testing</strong>: Validate performance improvements across different city sizes</li>
+<li><strong>Features</strong>: Explore building footprint integration for demographics</li>
+<li><strong>Documentation</strong>: Update guides with new capabilities</li>
+</ol>
 <hr />
-<p>🎯 <strong>Ready to test?</strong> Run <code>python demo_zcta_feature.py</code> and explore the new ZCTA capabilities! </p>
+<p><strong>Conclusion</strong>: OSMnx 2.0+ represents a major leap forward in geospatial network analysis, providing SocialMapper with cutting-edge capabilities for community mapping and demographic analysis. The combination of performance improvements, new features, and better reliability makes this upgrade essential for modern community analytics. </p>
 
 
 
@@ -1264,6 +1649,11 @@
       Copyright &copy; 2023-2025 SocialMapper Contributors
     </div>
   
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
   
 </div>
       
@@ -1305,12 +1695,12 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.code.annotate", "content.code.copy", "toc.integrate"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.suggest", "content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
-        <script src="../assets/js/extra.js"></script>
+        <script src="../../assets/js/extra.js"></script>
       
     
   </body>
