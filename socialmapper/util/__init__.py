@@ -1,7 +1,29 @@
 #!/usr/bin/env python3
 """
 Utility functions for the socialmapper project.
+
+This module provides various utility functions including census variable handling,
+rate limiting, path security, and input validation.
 """
+
+# Load environment variables from .env file as early as possible
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
+# Import environment loading utilities
+from .env_loader import (
+    ensure_environment_loaded, 
+    get_census_api_key as _get_census_api_key,
+    load_environment_variables,
+    get_env_var
+)
+
+# Ensure environment is loaded
+ensure_environment_loaded()
 
 import asyncio
 import logging
@@ -16,7 +38,7 @@ import httpx
 # Note: ratelimit import removed - not currently used
 
 # Import modern census system for census utilities
-from ..census_modern import get_census_system
+from ..census import get_census_system
 
 # Create a default system instance for utility functions
 _census_system = None
@@ -55,7 +77,7 @@ def validate_census_variable(variable: str) -> bool:
 
 def get_census_api_key() -> Optional[str]:
     """Get the Census API key from environment variable."""
-    return os.getenv("CENSUS_API_KEY")
+    return _get_census_api_key()
 
 # Legacy mappings for backward compatibility
 CENSUS_VARIABLE_MAPPING = _get_census_system()._variable_service.VARIABLE_MAPPING
@@ -159,6 +181,10 @@ __all__ = [
     "get_readable_census_variables",
     "validate_census_variable",
     "get_census_api_key",
+    # Environment utilities
+    "ensure_environment_loaded",
+    "load_environment_variables",
+    "get_env_var",
     # Map utilities
     "add_north_arrow",
     # Rate limiter utilities

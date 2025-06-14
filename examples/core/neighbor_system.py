@@ -15,7 +15,7 @@ sys.path.insert(0, str(project_root))
 
 import socialmapper
 import socialmapper.neighbors as neighbors
-from socialmapper.census import (
+from socialmapper.neighbors import (
     get_neighboring_states,
     get_neighboring_counties,
     get_geography_from_point
@@ -357,7 +357,8 @@ def main():
             "[cyan]1. Package level:[/cyan]     [white]import socialmapper[/white]\n"
             "[cyan]2. Dedicated module:[/cyan]  [white]import socialmapper.neighbors[/white]\n"
             "[cyan]3. Census module:[/cyan]     [white]from socialmapper.census import ...[/white]\n"
-            "[cyan]4. All methods provide the same functionality with different APIs[/cyan]",
+            "[cyan]4. Neighbors module:[/cyan]  [white]from socialmapper.neighbors import ...[/white]\n"
+            "[cyan]5. All methods provide the same functionality with different APIs[/cyan]",
             title="✨ Demo Complete",
             border_style="green"
         )

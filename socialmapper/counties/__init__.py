@@ -12,7 +12,7 @@ and maintainability while preserving the same API.
 """
 
 # Import everything from the modern census system
-from ..census_modern import get_census_system
+from ..census import get_census_system
 
 # Create a default system instance
 _census_system = None

@@ -207,21 +207,23 @@ class CensusGeocoder:
         # Navigate the nested response structure
         result = data.get("result", {})
         
-        # Get address matches (for coordinate geocoding, there should be one)
-        address_matches = result.get("addressMatches", [])
-        if not address_matches:
+        # For coordinate geocoding, geographies are directly under result
+        # For address geocoding, they're under addressMatches[0].geographies
+        geographies = result.get("geographies", {})
+        
+        if not geographies:
+            # Try address match format as fallback
+            address_matches = result.get("addressMatches", [])
+            if address_matches:
+                geographies = address_matches[0].get("geographies", {})
+        
+        if not geographies:
             # Return basic result with just coordinates
             return GeocodeResult(
                 latitude=latitude,
                 longitude=longitude,
                 source="census_geocoder"
             )
-        
-        # Use first match
-        match = address_matches[0]
-        
-        # Extract geographic information
-        geographies = match.get("geographies", {})
         
         # Extract state information
         states = geographies.get("States", [])
@@ -238,12 +240,17 @@ class CensusGeocoder:
             tract = tracts[0]
             tract_geoid = f"{tract.get('STATE', '')}{tract.get('COUNTY', '')}{tract.get('TRACT', '')}"
         
-        # Extract block group information
-        block_groups = geographies.get("Census Block Groups", [])
+        # Extract block group information from census blocks
+        blocks = geographies.get("2020 Census Blocks", [])
         block_group_geoid = None
-        if block_groups:
-            bg = block_groups[0]
-            block_group_geoid = f"{bg.get('STATE', '')}{bg.get('COUNTY', '')}{bg.get('TRACT', '')}{bg.get('BLKGRP', '')}"
+        if blocks:
+            block = blocks[0]
+            state = block.get('STATE', '')
+            county = block.get('COUNTY', '')
+            tract = block.get('TRACT', '')
+            blkgrp = block.get('BLKGRP', '')
+            if all([state, county, tract, blkgrp]):
+                block_group_geoid = f"{state}{county}{tract}{blkgrp}"
         
         # Extract ZCTA (ZIP Code Tabulation Area) information
         zctas = geographies.get("Zip Code Tabulation Areas", [])

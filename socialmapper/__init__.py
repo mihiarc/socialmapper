@@ -5,6 +5,14 @@ An open-source Python toolkit that helps understand
 community connections through mapping demographics and access to points of interest.
 """
 
+# Load environment variables from .env file as early as possible
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:
@@ -49,8 +57,8 @@ try:
 except ImportError:
     _MODERN_API_AVAILABLE = False
 
-# Import modern census system instead of old one
-from .census_modern import (
+# Import modern census system
+from .census import (
     get_census_system,
     get_legacy_adapter,
     CensusSystem,
@@ -63,8 +71,8 @@ from .census_modern import (
 
 # Import neighbor functionality for direct access
 try:
-    from .census_modern.infrastructure.geocoder import CensusGeocoder
-    from .census_modern.services.geography_service import GeographyService
+    from .census.infrastructure.geocoder import CensusGeocoder
+    from .census.services.geography_service import GeographyService
     
     # Create a default geography service for neighbor operations
     def get_geography_from_point(lat: float, lon: float):

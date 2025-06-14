@@ -13,6 +13,14 @@ Prerequisites:
 - Have a CSV file with your POI data
 """
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 import os
 import sys
 from pathlib import Path
@@ -77,7 +85,7 @@ Community Center,35.7754,-78.6434,community_center
             travel_time=travel_time,
             census_variables=census_variables,
             export_csv=True,
-            export_maps=False  # Skip for tutorial speed
+            export_isochrones=False  # Skip for tutorial speed
         )
         
         print("\n✅ Analysis complete!\n")
@@ -85,24 +93,35 @@ Community Center,35.7754,-78.6434,community_center
         # Step 5: Explore results
         print("Step 5: Results summary")
         
-        if results.get("poi_data"):
-            print(f"\n📍 Analyzed {len(results['poi_data'])} custom POIs:")
-            for poi in results["poi_data"]:
+        if results.get("poi_data") and results["poi_data"].get("pois"):
+            pois = results["poi_data"]["pois"]
+            print(f"\n📍 Analyzed {len(pois)} custom POIs:")
+            for poi in pois:
                 name = poi.get("name", "Unknown")
                 poi_type = poi.get("type", "unspecified")
                 print(f"  - {name} ({poi_type})")
         
-        if results.get("census_data"):
+        census_data = results.get("census_data")
+        if census_data is not None and not census_data.empty:
             # Group results by POI
             print(f"\n👥 Population within {travel_time} minutes of each POI:")
             
             # Note: In real implementation, you'd need to track which
             # census blocks belong to which POI's isochrone
-            total_pop = sum(
-                row.get("total_population", 0) 
-                for row in results["census_data"]
-            )
-            avg_pop_per_poi = total_pop / len(results["poi_data"])
+            total_pop = 0
+            if hasattr(census_data, 'iterrows'):
+                # It's a DataFrame/GeoDataFrame
+                for _, row in census_data.iterrows():
+                    total_pop += row.get("total_population", 0) or 0
+            else:
+                # It's a list of dictionaries
+                total_pop = sum(
+                    row.get("total_population", 0) or 0
+                    for row in census_data
+                )
+            
+            poi_count = len(results["poi_data"]["pois"]) if results.get("poi_data") and results["poi_data"].get("pois") else 1
+            avg_pop_per_poi = total_pop / poi_count
             print(f"  Average population reach: {avg_pop_per_poi:,.0f}")
         
         print("\n💡 Tips for custom POI analysis:")

@@ -50,6 +50,22 @@ pip install socialmapper
 
 **Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
 
+### Environment Variables
+
+SocialMapper supports environment variables for configuration. Create a `.env` file in your project directory:
+
+```bash
+# Copy the example file and customize
+cp env.example .env
+```
+
+Key environment variables:
+- `CENSUS_API_KEY`: Your Census Bureau API key (get one free at https://api.census.gov/data/key_signup.html)
+- `CENSUS_CACHE_ENABLED`: Enable/disable caching (default: true)
+- `CENSUS_RATE_LIMIT`: API rate limit in requests per minute (default: 60)
+
+See `env.example` for all available configuration options.
+
 ## Using SocialMapper
 
 ### Using the Command Line Interface

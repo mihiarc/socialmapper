@@ -8,6 +8,14 @@ import os
 from typing import Any, Optional
 from dataclasses import dataclass
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 
 @dataclass(frozen=True)
 class CensusConfig:

@@ -14,8 +14,8 @@ and maintainability while preserving the same API.
 """
 
 # Import everything from the modern census system
-from ..census_modern import get_census_system
-from ..census_modern.services.geography_service import StateFormat
+from ..census import get_census_system
+from ..census.services.geography_service import StateFormat
 
 # Create a default geography service instance
 _geography_service = None

@@ -16,15 +16,18 @@ from ..domain.entities import CensusDataPoint
 
 
 # Global instance for backward compatibility
-_default_manager: Optional[CensusManager] = None
+from ..infrastructure.configuration import CensusConfig
+from .. import get_census_system
+
+_default_system = None
 
 
-def _get_default_manager() -> CensusManager:
-    """Get or create the default census manager."""
-    global _default_manager
-    if _default_manager is None:
-        _default_manager = create_census_manager()
-    return _default_manager
+def _get_default_system():
+    """Get or create the default census system."""
+    global _default_system
+    if _default_system is None:
+        _default_system = get_census_system()
+    return _default_system
 
 
 def _emit_deprecation_warning(old_function: str, new_usage: str):
@@ -46,16 +49,12 @@ def get_streaming_census_manager(cache_census_data: bool = False, cache_dir: Opt
     """
     _emit_deprecation_warning(
         "get_streaming_census_manager()",
-        "from socialmapper.census_modern import create_census_manager; manager = create_census_manager()"
+        "from socialmapper.census import get_census_system; system = get_census_system()"
     )
     
     # Convert legacy parameters to new configuration
-    config = CensusConfig(
-        cache_enabled=cache_census_data,
-        repository_path=cache_dir
-    )
-    
-    return create_census_manager(config)
+    # For now, return the default system (legacy adapter doesn't need full config)
+    return _get_default_system()
 
 
 def get_block_groups_streaming(state_fips: List[str], api_key: Optional[str] = None) -> gpd.GeoDataFrame:
@@ -66,31 +65,18 @@ def get_block_groups_streaming(state_fips: List[str], api_key: Optional[str] = N
     """
     _emit_deprecation_warning(
         "get_block_groups_streaming()",
-        "from socialmapper.census_modern import CensusManager; census = CensusManager(); units = census.get_block_groups(state_fips)"
+        "from socialmapper.census import get_census_system; system = get_census_system(); units = system.get_block_groups_for_counties(counties)"
     )
     
-    # Use new manager but convert output to legacy format
-    config = CensusConfig(census_api_key=api_key) if api_key else None
-    manager = create_census_manager(config)
+    # Use new system but convert output to legacy format
+    system = _get_default_system()
     
-    units = manager.get_block_groups(state_fips)
+    # Convert state FIPS to counties (simplified for legacy compatibility)
+    counties = [(fips, "000") for fips in state_fips]  # Use dummy county for state-level
+    units_gdf = system.get_block_groups_for_counties(counties)
     
-    # Convert to legacy GeoDataFrame format
-    data = []
-    for unit in units:
-        data.append({
-            'GEOID': unit.geoid,
-            'NAME': unit.name,
-            'STATEFP': unit.state_fips,
-            'COUNTYFP': unit.county_fips,
-            'TRACTCE': unit.tract_code,
-            'BLKGRPCE': unit.block_group_code,
-            'geometry': None  # Would need actual geometry data
-        })
-    
-    # Create GeoDataFrame for backward compatibility
-    gdf = gpd.GeoDataFrame(data)
-    return gdf
+    # Return the GeoDataFrame directly (it's already in the right format)
+    return units_gdf
 
 
 def get_census_data_streaming(
@@ -108,14 +94,13 @@ def get_census_data_streaming(
     """
     _emit_deprecation_warning(
         "get_census_data_streaming()",
-        "from socialmapper.census_modern import CensusManager; census = CensusManager(); data = census.get_census_data(geoids, variables)"
+        "from socialmapper.census import get_census_system; system = get_census_system(); data = system.get_census_data(variables, geoids)"
     )
     
-    # Use new manager but convert output to legacy format
-    config = CensusConfig(census_api_key=api_key, cache_enabled=cache) if api_key or cache else None
-    manager = create_census_manager(config)
+    # Use new system but convert output to legacy format
+    system = _get_default_system()
     
-    data_points = manager.get_census_data(geoids, variables, year, dataset, cache)
+    data_points = system.get_census_data(variables, geoids, year)
     
     # Convert to legacy DataFrame format
     rows = []
@@ -125,7 +110,7 @@ def get_census_data_streaming(
             'variable_code': point.variable.code,
             'value': point.value,
             'year': point.year,
-            'dataset': point.dataset,
+            'dataset': 'acs5',  # Default dataset
             'NAME': point.variable.name
         })
     
@@ -141,7 +126,7 @@ def get_block_groups(state: str, refresh: bool = False) -> gpd.GeoDataFrame:
     """
     _emit_deprecation_warning(
         "get_block_groups()",
-        "from socialmapper.census_modern import CensusManager; census = CensusManager(); units = census.get_block_groups([state_fips])"
+        "from socialmapper.census import get_census_system; system = get_census_system(); units = system.get_block_groups_for_counties(counties)"
     )
     
     # Convert state name/abbreviation to FIPS if needed
@@ -151,11 +136,12 @@ def get_block_groups(state: str, refresh: bool = False) -> gpd.GeoDataFrame:
     if not state_fips:
         raise ValueError(f"Could not resolve state: {state}")
     
-    manager = _get_default_manager()
-    units = manager.get_block_groups([state_fips], use_cache=not refresh)
+    system = _get_default_system()
+    counties = [(state_fips, "000")]  # Use dummy county for state-level
+    units_gdf = system.get_block_groups_for_counties(counties)
     
-    # Convert to legacy format
-    return _convert_units_to_geodataframe(units)
+    # Return the GeoDataFrame directly
+    return units_gdf
 
 
 def get_census_data(
@@ -172,7 +158,7 @@ def get_census_data(
     """
     _emit_deprecation_warning(
         "get_census_data()",
-        "from socialmapper.census_modern import CensusManager; census = CensusManager(); data = census.get_census_data(geoids, variables)"
+        "from socialmapper.census import get_census_system; system = get_census_system(); data = system.get_census_data(variables, geoids)"
     )
     
     # Convert state to FIPS and get all block groups
@@ -182,21 +168,15 @@ def get_census_data(
     if not state_fips:
         raise ValueError(f"Could not resolve state: {state}")
     
-    manager = _get_default_manager()
+    system = _get_default_system()
     
     # Get block groups for the state to get GEOIDs
-    units = manager.get_block_groups([state_fips])
-    geoids = [unit.geoid for unit in units]
+    counties = [(state_fips, "000")]  # Use dummy county for state-level
+    units_gdf = system.get_block_groups_for_counties(counties)
+    geoids = units_gdf['GEOID'].tolist()
     
     # Get census data
-    dataset_formatted = f"acs/{dataset}" if not dataset.startswith("acs/") else dataset
-    data_points = manager.get_census_data(
-        geoids=geoids,
-        variable_codes=variables,
-        year=year,
-        dataset=dataset_formatted,
-        use_cache=not refresh
-    )
+    data_points = system.get_census_data(variables, geoids, year)
     
     # Convert to legacy format with additional columns expected by old API
     rows = []
@@ -232,9 +212,9 @@ def clear_cache(state: Optional[str] = None):
         "Cache clearing is handled automatically in the modern API"
     )
     
-    # For backward compatibility, recreate the default manager
-    global _default_manager
-    _default_manager = None
+    # For backward compatibility, recreate the default system
+    global _default_system
+    _default_system = None
 
 
 def _convert_units_to_geodataframe(units) -> gpd.GeoDataFrame:

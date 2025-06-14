@@ -13,6 +13,14 @@ Prerequisites:
 - Census API key (optional): Set CENSUS_API_KEY environment variable
 """
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 import os
 import sys
 from pathlib import Path
@@ -31,13 +39,14 @@ def main():
     
     # Step 1: Define search parameters
     print("Step 1: Defining search parameters...")
+    geocode_area = "Wake County"
     state = "North Carolina"
-    county = "Wake County"
-    place_type = "library"
+    poi_type = "amenity"  # OpenStreetMap category
+    poi_name = "library"  # Specific type within category
     travel_time = 15  # minutes
     
-    print(f"  📍 Location: {county}, {state}")
-    print(f"  🏛️  POI Type: {place_type}")
+    print(f"  📍 Location: {geocode_area}, {state}")
+    print(f"  🏛️  POI Type: {poi_type} - {poi_name}")
     print(f"  ⏱️  Travel Time: {travel_time} minutes\n")
     
     # Step 2: Set census variables to analyze
@@ -57,13 +66,14 @@ def main():
     
     try:
         results = run_socialmapper(
+            geocode_area=geocode_area,
             state=state,
-            county=county,
-            place_type=place_type,
+            poi_type=poi_type,
+            poi_name=poi_name,
             travel_time=travel_time,
             census_variables=census_variables,
             export_csv=True,  # Save results to CSV
-            export_maps=False  # Skip map generation for tutorial
+            export_isochrones=False  # Skip map generation for tutorial
         )
         
         print("\n✅ Analysis complete!\n")
@@ -71,31 +81,40 @@ def main():
         # Step 4: Explore results
         print("Step 4: Results summary:")
         
-        if results.get("poi_data"):
-            poi_count = len(results["poi_data"])
+        if results.get("poi_data") and results["poi_data"].get("pois"):
+            pois = results["poi_data"]["pois"]
+            poi_count = len(pois)
             print(f"  🏛️  Found {poi_count} libraries")
             
             # Show first few POIs
             print("\n  First 3 libraries found:")
-            for i, poi in enumerate(results["poi_data"][:3], 1):
+            for i, poi in enumerate(pois[:3], 1):
                 name = poi.get("name", "Unnamed")
-                lat = poi.get("latitude", 0)
-                lon = poi.get("longitude", 0)
+                lat = poi.get("lat", 0)
+                lon = poi.get("lon", 0)
                 print(f"    {i}. {name} ({lat:.4f}, {lon:.4f})")
         
-        if results.get("census_data"):
-            print(f"\n  📊 Census data collected for {len(results['census_data'])} block groups")
+        census_data = results.get("census_data")
+        if census_data is not None and not census_data.empty:
+            print(f"\n  📊 Census data collected for {len(census_data)} block groups")
             
             # Calculate total population within reach
-            total_pop = sum(
-                row.get("total_population", 0) 
-                for row in results["census_data"]
-            )
+            total_pop = 0
+            if hasattr(census_data, 'iterrows'):
+                # It's a DataFrame/GeoDataFrame
+                for _, row in census_data.iterrows():
+                    total_pop += row.get("total_population", 0) or 0
+            else:
+                # It's a list of dictionaries
+                total_pop = sum(
+                    row.get("total_population", 0) or 0
+                    for row in census_data
+                )
             print(f"  👥 Total population within {travel_time} minutes: {total_pop:,}")
         
         print("\n📁 Results saved to output/ directory")
         print("   - CSV files with detailed data")
-        print("   - Run with export_maps=True to generate visualizations")
+        print("   - Run with export_isochrones=True to generate visualizations")
         
     except Exception as e:
         print(f"\n❌ Error: {str(e)}")
@@ -109,7 +128,7 @@ def main():
     print("- Try different POI types: 'school', 'hospital', 'park'")
     print("- Adjust travel time: 5, 10, 20, 30 minutes")
     print("- Add more census variables")
-    print("- Enable map generation with export_maps=True")
+    print("- Enable map generation with export_isochrones=True")
     
     return 0
 

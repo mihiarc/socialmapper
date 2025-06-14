@@ -6,42 +6,44 @@ This script demonstrates the new modern census module architecture
 with its clean API, dependency injection, and modern Python patterns.
 """
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 import os
 import logging
 from typing import List
 
 # Import the modern census module
-from socialmapper.census_modern import (
-    CensusManager,
-    CensusConfig,
-    create_census_manager,
-    create_dependencies
+from socialmapper.census import (
+    CensusSystem,
+    CensusSystemBuilder,
+    get_census_system,
+    CensusConfig
 )
-from socialmapper.census_modern.domain.entities import CensusDataPoint, GeographicUnit
+from socialmapper.census.domain.entities import CensusDataPoint, GeographicUnit
 
 
 def demo_basic_usage():
     """Demonstrate basic usage of the modern census module."""
     print("=== Basic Usage Demo ===")
     
-    # Create a simple configuration
-    config = CensusConfig(
-        cache_enabled=True,
-        cache_ttl_seconds=300,
-        log_level="INFO"
-    )
+    # Create a census system with default configuration
+    census = get_census_system()
     
-    # Create a census manager
-    manager = create_census_manager(config)
-    
-    print(f"✓ Created census manager with config: cache_enabled={config.cache_enabled}")
+    print("✓ Created census system with default configuration")
     
     # Note: In a real scenario, you would make actual API calls
     # For this demo, we'll show the API structure
-    print("✓ Manager ready for census data operations")
-    print("  - get_census_data(geoids, variable_codes, year, dataset)")
-    print("  - get_block_groups(state_codes)")
-    print("  - geocode_point(latitude, longitude)")
+    print("✓ Census system ready for operations")
+    print("  - get_census_data(variables, geographic_units, year)")
+    print("  - get_block_groups_for_county(state_fips, county_fips)")
+    print("  - get_geography_from_point(lat, lon)")
+    print("  - normalize_variable(variable)")
     print()
 
 
@@ -49,19 +51,18 @@ def demo_dependency_injection():
     """Demonstrate the dependency injection capabilities."""
     print("=== Dependency Injection Demo ===")
     
-    # Create custom dependencies
-    container = create_dependencies()
+    # Create custom census system using builder pattern
+    census = (CensusSystemBuilder()
+              .with_cache_strategy("in_memory")
+              .with_rate_limit(2.0)
+              .build())
     
-    # You can access and configure individual components
-    print(f"✓ Configuration: {type(container.config).__name__}")
-    print(f"✓ Logger: {type(container.logger).__name__}")
-    print(f"✓ API Client: {type(container.api_client).__name__}")
-    print(f"✓ Cache: {type(container.cache).__name__}")
-    print(f"✓ Rate Limiter: {type(container.rate_limiter).__name__}")
-    
-    # Create manager with custom dependencies
-    manager = CensusManager(container)
-    print("✓ Created manager with custom dependency injection")
+    print("✓ Built census system with custom configuration:")
+    print("  - Cache strategy: in_memory")
+    print("  - Rate limit: 2.0 requests/second")
+    print("  - Clean dependency injection architecture")
+    print("  - Protocol-based interfaces")
+    print("✓ Created system with builder pattern")
     print()
 
 
@@ -69,29 +70,33 @@ def demo_configuration_options():
     """Demonstrate different configuration options."""
     print("=== Configuration Options Demo ===")
     
-    # Configuration from explicit values
-    config1 = CensusConfig(
-        census_api_key="your_api_key_here",
-        cache_enabled=True,
-        cache_ttl_seconds=600,
-        rate_limit_requests_per_minute=120,
-        log_level="DEBUG"
+    # Simple configuration with get_census_system
+    census1 = get_census_system(
+        cache_strategy="in_memory"
     )
-    print("✓ Explicit configuration created")
+    print("✓ Simple configuration with get_census_system()")
     
-    # Configuration from environment variables
-    # Set some example environment variables
-    os.environ.update({
-        "CENSUS_API_KEY": "env_api_key",
-        "CENSUS_CACHE_ENABLED": "true",
-        "CENSUS_RATE_LIMIT": "60"
-    })
+    # Advanced configuration with builder
+    census2 = (CensusSystemBuilder()
+               .with_api_key("your_api_key_here")
+               .with_cache_strategy("file")
+               .with_cache_dir("./cache")
+               .with_rate_limit(1.5)
+               .with_api_timeout(30)
+               .with_max_retries(3)
+               .build())
+    print("✓ Advanced configuration with builder pattern:")
+    print("  - Custom API key")
+    print("  - File-based caching")
+    print("  - Custom cache directory")
+    print("  - Rate limiting: 1.5 req/sec")
+    print("  - API timeout: 30 seconds")
+    print("  - Max retries: 3")
     
-    config2 = CensusConfig.from_environment()
-    print("✓ Environment-based configuration created")
-    print(f"  - API Key: {config2.census_api_key}")
-    print(f"  - Cache Enabled: {config2.cache_enabled}")
-    print(f"  - Rate Limit: {config2.rate_limit_requests_per_minute}")
+    # Environment-based configuration
+    print("✓ Environment variables supported:")
+    print("  - CENSUS_API_KEY")
+    print("  - CENSUS_CACHE_DIR")
     print()
 
 
@@ -100,13 +105,12 @@ def demo_modern_patterns():
     print("=== Modern Python Patterns Demo ===")
     
     # Immutable dataclasses
-    from socialmapper.census_modern.domain.entities import CensusVariable, CensusDataPoint
+    from socialmapper.census.domain.entities import CensusVariable, CensusDataPoint
     
     variable = CensusVariable(
         code="B01003_001E",
         name="Total Population",
-        description="Total population in the past 12 months",
-        unit="people"
+        description="Total population in the past 12 months"
     )
     print(f"✓ Immutable entity: {variable.code} - {variable.name}")
     
@@ -124,18 +128,24 @@ def demo_error_handling():
     """Demonstrate error handling capabilities."""
     print("=== Error Handling Demo ===")
     
-    config = CensusConfig(cache_enabled=False)
-    manager = create_census_manager(config)
+    census = get_census_system(cache_strategy="none")
     
     try:
         # This would normally make an API call and handle errors gracefully
-        data = manager.get_census_data(
-            geoids=["invalid_geoid"],
-            variable_codes=["B01003_001E"]
+        data = census.get_census_data(
+            variables=["B01003_001E"],
+            geographic_units=["invalid_geoid"]
         )
         print(f"✓ Error handling: returned {len(data)} results (graceful failure)")
     except Exception as e:
         print(f"✓ Error handling: {type(e).__name__}: {e}")
+    
+    # Demonstrate validation
+    print("✓ Built-in validation:")
+    print(f"  - Valid variable: {census.validate_variable('B01003_001E')}")
+    print(f"  - Invalid variable: {census.validate_variable('INVALID_VAR')}")
+    print(f"  - Valid state: {census.is_valid_state('NC')}")
+    print(f"  - Invalid state: {census.is_valid_state('XX')}")
     
     print()
 
@@ -144,19 +154,20 @@ def demo_backward_compatibility():
     """Demonstrate backward compatibility with legacy APIs."""
     print("=== Backward Compatibility Demo ===")
     
-    # Import legacy adapter functions
-    from socialmapper.census_modern.adapters.legacy_adapter import (
-        get_streaming_census_manager,
-        clear_cache
-    )
+    # The modern system provides backward compatibility through delegation
+    print("✓ Legacy API compatibility maintained:")
+    print("  - run_socialmapper() still works (with deprecation warning)")
+    print("  - Legacy census functions delegated to modern system")
+    print("  - Gradual migration path available")
     
-    print("✓ Legacy functions available with deprecation warnings:")
-    print("  - get_streaming_census_manager()")
-    print("  - get_block_groups()")
-    print("  - get_census_data()")
-    print("  - clear_cache()")
+    # Modern API provides cleaner interface
+    print("✓ Modern API benefits:")
+    print("  - Type-safe interfaces")
+    print("  - Dependency injection")
+    print("  - Clean separation of concerns")
+    print("  - Better error handling")
+    print("  - Immutable data structures")
     
-    # These would emit deprecation warnings when called
     print("✓ Smooth migration path from legacy to modern API")
     print()
 
@@ -166,26 +177,29 @@ def demo_caching_strategies():
     print("=== Caching Strategies Demo ===")
     
     # In-memory caching (default)
-    config1 = CensusConfig(
-        cache_enabled=True,
-        cache_ttl_seconds=300
-    )
-    manager1 = create_census_manager(config1)
+    census1 = get_census_system(cache_strategy="in_memory")
     print("✓ In-memory caching configured (default)")
     
-    # Longer cache TTL
-    config2 = CensusConfig(
-        cache_enabled=True,
-        cache_ttl_seconds=3600,
-        cache_max_size=5000
-    )
-    manager2 = create_census_manager(config2)
-    print("✓ Extended caching configured (1 hour TTL, 5000 items)")
+    # File-based caching
+    census2 = (CensusSystemBuilder()
+               .with_cache_strategy("file")
+               .with_cache_dir("./census_cache")
+               .build())
+    print("✓ File-based caching configured")
+    
+    # Hybrid caching (in-memory + file)
+    census3 = get_census_system(cache_strategy="hybrid")
+    print("✓ Hybrid caching configured (in-memory + file)")
     
     # Disabled caching
-    config3 = CensusConfig(cache_enabled=False)
-    manager3 = create_census_manager(config3)
+    census4 = get_census_system(cache_strategy="none")
     print("✓ Caching disabled")
+    
+    print("✓ Available cache strategies:")
+    print("  - in_memory: Fast, temporary")
+    print("  - file: Persistent across sessions")
+    print("  - hybrid: Best of both worlds")
+    print("  - none: No caching")
     print()
 
 

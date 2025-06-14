@@ -87,7 +87,9 @@ class BlockGroupService:
             if self._rate_limiter:
                 self._rate_limiter.wait_if_needed("census")
             
-            response = self._api_client.get(base_url, params=params)
+            # Use requests directly since we're calling a different API
+            import requests
+            response = requests.get(base_url, params=params, timeout=30)
             
             if response.status_code == 200:
                 # Parse the GeoJSON response

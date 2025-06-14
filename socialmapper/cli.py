@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Command-line interface for SocialMapper."""
 
+# Load environment variables from .env file as early as possible
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available - continue without it
+    pass
+
 import argparse
 import os
 import sys
