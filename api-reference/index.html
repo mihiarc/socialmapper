@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/faq/">
+        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/api-reference/">
       
       
-        <link rel="prev" href="../api-reference/">
+        <link rel="prev" href="../features/network-analysis/">
       
       
-        <link rel="next" href="../troubleshooting/">
+        <link rel="next" href="../faq/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>FAQ - SocialMapper</title>
+        <title>API Reference - SocialMapper</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#frequently-asked-questions" class="md-skip">
+        <a href="#api-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              FAQ
+              API Reference
             
           </span>
         </div>
@@ -894,29 +894,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../api-reference/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    API Reference
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -934,7 +911,7 @@
   
   
   <span class="md-ellipsis">
-    FAQ
+    API Reference
     
   </span>
   
@@ -947,7 +924,7 @@
   
   
   <span class="md-ellipsis">
-    FAQ
+    API Reference
     
   </span>
   
@@ -970,46 +947,85 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#general-questions" class="md-nav__link">
+  <a href="#core-function" class="md-nav__link">
     <span class="md-ellipsis">
-      General Questions
+      Core Function
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="General Questions">
+    <nav class="md-nav" aria-label="Core Function">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-is-socialmapper" class="md-nav__link">
+  <a href="#run_socialmapper" class="md-nav__link">
     <span class="md-ellipsis">
-      What is SocialMapper?
+      run_socialmapper()
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="run_socialmapper()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-data-sources-does-it-use" class="md-nav__link">
+  <a href="#returns" class="md-nav__link">
     <span class="md-ellipsis">
-      What data sources does it use?
+      Returns
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#is-it-free-to-use" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Is it free to use?
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#census-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Census Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Census Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-variable-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Variable Names
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#do-i-need-a-census-api-key" class="md-nav__link">
+  <a href="#using-raw-census-codes" class="md-nav__link">
     <span class="md-ellipsis">
-      Do I need a Census API key?
+      Using Raw Census Codes
     </span>
   </a>
   
@@ -1021,37 +1037,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
-      Installation
+      Error Handling
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installation">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with Results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Working with Results">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-python-version-do-i-need" class="md-nav__link">
+  <a href="#accessing-poi-data" class="md-nav__link">
     <span class="md-ellipsis">
-      What Python version do I need?
+      Accessing POI Data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-is-installation-taking-so-long" class="md-nav__link">
+  <a href="#accessing-census-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Why is installation taking so long?
+      Accessing Census Data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-use-it-on-windowsmaclinux" class="md-nav__link">
+  <a href="#checking-analysis-metadata" class="md-nav__link">
     <span class="md-ellipsis">
-      Can I use it on Windows/Mac/Linux?
+      Checking Analysis Metadata
     </span>
   </a>
   
@@ -1063,263 +1088,20 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage-questions" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage Questions
+      Environment Variables
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Usage Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-do-i-analyze-my-own-addresses" class="md-nav__link">
-    <span class="md-ellipsis">
-      How do I analyze my own addresses?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-census-variables-are-available" class="md-nav__link">
-    <span class="md-ellipsis">
-      What census variables are available?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-analyze-multiple-locations-at-once" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I analyze multiple locations at once?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-accurate-are-the-travel-times" class="md-nav__link">
-    <span class="md-ellipsis">
-      How accurate are the travel times?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#version-information" class="md-nav__link">
     <span class="md-ellipsis">
-      Performance
+      Version Information
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-is-my-first-run-slow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Why is my first run slow?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-can-i-speed-up-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      How can I speed up analysis?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-much-data-will-it-download" class="md-nav__link">
-    <span class="md-ellipsis">
-      How much data will it download?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      Troubleshooting
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-pois-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      "No POIs found"
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#census-data-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      "Census data error"
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#memory-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      "Memory error"
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Questions
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#can-i-use-it-outside-the-us" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I use it outside the US?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-current-is-the-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      How current is the data?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-save-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I save results?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#advanced-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Usage
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#can-i-customize-travel-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I customize travel modes?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-change-travel-speeds" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I change travel speeds?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#is-there-an-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Is there an API?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting Help
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Getting Help">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#where-can-i-report-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      Where can I report bugs?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-can-i-contribute" class="md-nav__link">
-    <span class="md-ellipsis">
-      How can I contribute?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-can-i-find-more-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Where can I find more examples?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1327,6 +1109,29 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1389,46 +1194,85 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#general-questions" class="md-nav__link">
+  <a href="#core-function" class="md-nav__link">
     <span class="md-ellipsis">
-      General Questions
+      Core Function
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="General Questions">
+    <nav class="md-nav" aria-label="Core Function">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-is-socialmapper" class="md-nav__link">
+  <a href="#run_socialmapper" class="md-nav__link">
     <span class="md-ellipsis">
-      What is SocialMapper?
+      run_socialmapper()
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="run_socialmapper()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-data-sources-does-it-use" class="md-nav__link">
+  <a href="#returns" class="md-nav__link">
     <span class="md-ellipsis">
-      What data sources does it use?
+      Returns
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#is-it-free-to-use" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Is it free to use?
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#census-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Census Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Census Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-variable-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Variable Names
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#do-i-need-a-census-api-key" class="md-nav__link">
+  <a href="#using-raw-census-codes" class="md-nav__link">
     <span class="md-ellipsis">
-      Do I need a Census API key?
+      Using Raw Census Codes
     </span>
   </a>
   
@@ -1440,37 +1284,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
-      Installation
+      Error Handling
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installation">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with Results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Working with Results">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-python-version-do-i-need" class="md-nav__link">
+  <a href="#accessing-poi-data" class="md-nav__link">
     <span class="md-ellipsis">
-      What Python version do I need?
+      Accessing POI Data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-is-installation-taking-so-long" class="md-nav__link">
+  <a href="#accessing-census-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Why is installation taking so long?
+      Accessing Census Data
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-use-it-on-windowsmaclinux" class="md-nav__link">
+  <a href="#checking-analysis-metadata" class="md-nav__link">
     <span class="md-ellipsis">
-      Can I use it on Windows/Mac/Linux?
+      Checking Analysis Metadata
     </span>
   </a>
   
@@ -1482,263 +1335,20 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage-questions" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage Questions
+      Environment Variables
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Usage Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-do-i-analyze-my-own-addresses" class="md-nav__link">
-    <span class="md-ellipsis">
-      How do I analyze my own addresses?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-census-variables-are-available" class="md-nav__link">
-    <span class="md-ellipsis">
-      What census variables are available?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-analyze-multiple-locations-at-once" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I analyze multiple locations at once?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-accurate-are-the-travel-times" class="md-nav__link">
-    <span class="md-ellipsis">
-      How accurate are the travel times?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#version-information" class="md-nav__link">
     <span class="md-ellipsis">
-      Performance
+      Version Information
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-is-my-first-run-slow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Why is my first run slow?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-can-i-speed-up-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      How can I speed up analysis?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-much-data-will-it-download" class="md-nav__link">
-    <span class="md-ellipsis">
-      How much data will it download?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      Troubleshooting
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-pois-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      "No POIs found"
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#census-data-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      "Census data error"
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#memory-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      "Memory error"
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Questions
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#can-i-use-it-outside-the-us" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I use it outside the US?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-current-is-the-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      How current is the data?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-save-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I save results?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#advanced-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Usage
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#can-i-customize-travel-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I customize travel modes?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#can-i-change-travel-speeds" class="md-nav__link">
-    <span class="md-ellipsis">
-      Can I change travel speeds?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#is-there-an-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      Is there an API?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting Help
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Getting Help">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#where-can-i-report-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      Where can I report bugs?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-can-i-contribute" class="md-nav__link">
-    <span class="md-ellipsis">
-      How can I contribute?
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#where-can-i-find-more-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Where can I find more examples?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1761,107 +1371,173 @@
   
 
 
-<h1 id="frequently-asked-questions">Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
-<h2 id="general-questions">General Questions<a class="headerlink" href="#general-questions" title="Permanent link">&para;</a></h2>
-<h3 id="what-is-socialmapper">What is SocialMapper?<a class="headerlink" href="#what-is-socialmapper" title="Permanent link">&para;</a></h3>
-<p>SocialMapper is a Python tool that analyzes community accessibility by combining travel time analysis with demographic data. It helps you understand who can reach important places like libraries, schools, and hospitals.</p>
-<h3 id="what-data-sources-does-it-use">What data sources does it use?<a class="headerlink" href="#what-data-sources-does-it-use" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>OpenStreetMap</strong> for finding places (POIs)</li>
-<li><strong>US Census Bureau</strong> for demographic data</li>
-<li><strong>OpenStreetMap road networks</strong> for travel time calculations</li>
-</ul>
-<h3 id="is-it-free-to-use">Is it free to use?<a class="headerlink" href="#is-it-free-to-use" title="Permanent link">&para;</a></h3>
-<p>Yes! SocialMapper is open source and free to use. The data sources (OpenStreetMap and Census) are also free.</p>
-<h3 id="do-i-need-a-census-api-key">Do I need a Census API key?<a class="headerlink" href="#do-i-need-a-census-api-key" title="Permanent link">&para;</a></h3>
-<p>No, but having one improves reliability. Get a free key at <a href="https://www.census.gov/developers/">census.gov/developers</a>.</p>
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<h3 id="what-python-version-do-i-need">What Python version do I need?<a class="headerlink" href="#what-python-version-do-i-need" title="Permanent link">&para;</a></h3>
-<p>Python 3.11 or higher. We recommend Python 3.12 for best performance.</p>
-<h3 id="why-is-installation-taking-so-long">Why is installation taking so long?<a class="headerlink" href="#why-is-installation-taking-so-long" title="Permanent link">&para;</a></h3>
-<p>First installation downloads several dependencies. This is normal and only happens once.</p>
-<h3 id="can-i-use-it-on-windowsmaclinux">Can I use it on Windows/Mac/Linux?<a class="headerlink" href="#can-i-use-it-on-windowsmaclinux" title="Permanent link">&para;</a></h3>
-<p>Yes! SocialMapper works on all major operating systems.</p>
-<h2 id="usage-questions">Usage Questions<a class="headerlink" href="#usage-questions" title="Permanent link">&para;</a></h2>
-<h3 id="how-do-i-analyze-my-own-addresses">How do I analyze my own addresses?<a class="headerlink" href="#how-do-i-analyze-my-own-addresses" title="Permanent link">&para;</a></h3>
-<p>Create a CSV file with columns: name, latitude, longitude. Then:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">run_socialmapper</span><span class="p">(</span><span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;your_file.csv&quot;</span><span class="p">,</span> <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<h2 id="core-function">Core Function<a class="headerlink" href="#core-function" title="Permanent link">&para;</a></h2>
+<h3 id="run_socialmapper"><code>run_socialmapper()</code><a class="headerlink" href="#run_socialmapper" title="Permanent link">&para;</a></h3>
+<p>The main function for running SocialMapper analyses.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">socialmapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_socialmapper</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Location parameters (choose one)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>              <span class="c1"># State name or abbreviation</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">county</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>             <span class="c1"># County name</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">place_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>         <span class="c1"># POI type (e.g., &quot;library&quot;)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="c1"># Path to CSV with custom locations</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="c1"># Analysis parameters</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>          <span class="c1"># Travel time in minutes (1-120)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">geographic_level</span><span class="o">=</span><span class="s2">&quot;block-group&quot;</span><span class="p">,</span>  <span class="c1"># &quot;block-group&quot; or &quot;zcta&quot;</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>   <span class="c1"># List of census variables</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="c1"># Output parameters</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">export_csv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>         <span class="c1"># Export results to CSV</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">export_maps</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>       <span class="c1"># Generate map visualizations</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">export_isochrones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="c1"># Export isochrone geometries</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>     <span class="c1"># Output directory</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="c1"># Optional parameters</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">api_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>           <span class="c1"># Census API key</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">)</span>
+</code></pre></div>
+<h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
+<p><strong>Location Parameters</strong> (mutually exclusive):
+- <code>state</code> (str): State name or two-letter abbreviation
+- <code>county</code> (str): County name (include "County" suffix)
+- <code>place_type</code> (str): OpenStreetMap place type
+- <code>custom_coords_path</code> (str): Path to CSV file with custom coordinates</p>
+<p><strong>Analysis Parameters</strong>:
+- <code>travel_time</code> (int): Travel time in minutes, 1-120 (default: 15)
+- <code>geographic_level</code> (str): Geographic unit - "block-group" or "zcta" (default: "block-group")
+- <code>census_variables</code> (list): List of census variable names (default: ["total_population"])</p>
+<p><strong>Output Parameters</strong>:
+- <code>export_csv</code> (bool): Export results to CSV files (default: True)
+- <code>export_maps</code> (bool): Generate static map images (default: False)
+- <code>export_isochrones</code> (bool): Export isochrone geometries (default: False)
+- <code>output_dir</code> (str): Directory for output files (default: "output")</p>
+<p><strong>Optional Parameters</strong>:
+- <code>api_key</code> (str): Census API key (uses environment variable if not provided)</p>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<p>Dictionary containing:
+- <code>poi_data</code> (list): Points of interest with geographic context
+- <code>census_data</code> (list): Census demographics for areas within travel time
+- Additional metadata about the analysis</p>
+<h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
+<p><strong>Basic POI Search</strong>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;California&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;San Francisco County&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;library&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
 </code></pre></div></p>
-<h3 id="what-census-variables-are-available">What census variables are available?<a class="headerlink" href="#what-census-variables-are-available" title="Permanent link">&para;</a></h3>
-<p>Common ones include:
-- <code>total_population</code> - Total population
-- <code>median_household_income</code> - Median income
-- <code>median_age</code> - Median age
-- <code>percent_poverty</code> - Poverty rate
-- <code>percent_without_vehicle</code> - No vehicle access</p>
-<h3 id="can-i-analyze-multiple-locations-at-once">Can I analyze multiple locations at once?<a class="headerlink" href="#can-i-analyze-multiple-locations-at-once" title="Permanent link">&para;</a></h3>
-<p>Yes! Use a CSV file with multiple locations or loop through different searches.</p>
-<h3 id="how-accurate-are-the-travel-times">How accurate are the travel times?<a class="headerlink" href="#how-accurate-are-the-travel-times" title="Permanent link">&para;</a></h3>
-<p>Travel times use real road networks and are quite accurate. They assume:
-- Normal traffic conditions
-- Standard travel speeds
-- No delays or stops</p>
-<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<h3 id="why-is-my-first-run-slow">Why is my first run slow?<a class="headerlink" href="#why-is-my-first-run-slow" title="Permanent link">&para;</a></h3>
-<p>SocialMapper builds caches on first use. Subsequent runs will be much faster.</p>
-<h3 id="how-can-i-speed-up-analysis">How can I speed up analysis?<a class="headerlink" href="#how-can-i-speed-up-analysis" title="Permanent link">&para;</a></h3>
+<p><strong>Custom Locations</strong>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;my_locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="s2">&quot;median_income&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>Full Analysis with Exports</strong>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Texas&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Harris County&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;hospital&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">geographic_level</span><span class="o">=</span><span class="s2">&quot;zcta&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="s2">&quot;total_population&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="s2">&quot;median_age&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="s2">&quot;percent_poverty&quot;</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="p">],</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">export_csv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">export_maps</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">export_isochrones</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;hospital_analysis&quot;</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="p">)</span>
+</code></pre></div></p>
+<h2 id="census-variables">Census Variables<a class="headerlink" href="#census-variables" title="Permanent link">&para;</a></h2>
+<h3 id="common-variable-names">Common Variable Names<a class="headerlink" href="#common-variable-names" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>total_population</code></td>
+<td>Total population count</td>
+</tr>
+<tr>
+<td><code>median_age</code></td>
+<td>Median age</td>
+</tr>
+<tr>
+<td><code>median_household_income</code></td>
+<td>Median household income</td>
+</tr>
+<tr>
+<td><code>median_income</code></td>
+<td>Alias for median household income</td>
+</tr>
+<tr>
+<td><code>percent_poverty</code></td>
+<td>Percentage below poverty line</td>
+</tr>
+<tr>
+<td><code>percent_without_vehicle</code></td>
+<td>Percentage of households without vehicles</td>
+</tr>
+</tbody>
+</table>
+<h3 id="using-raw-census-codes">Using Raw Census Codes<a class="headerlink" href="#using-raw-census-codes" title="Permanent link">&para;</a></h3>
+<p>You can also use raw Census Bureau variable codes:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">census_variables</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="s2">&quot;B01003_001E&quot;</span><span class="p">,</span>  <span class="c1"># Total population</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="s2">&quot;B19013_001E&quot;</span><span class="p">,</span>  <span class="c1"># Median household income</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="s2">&quot;B25044_003E&quot;</span>   <span class="c1"># No vehicle available</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">]</span>
+</code></pre></div></p>
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">state</span><span class="o">=</span><span class="s2">&quot;California&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Invalid County&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;library&quot;</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="p">)</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="working-with-results">Working with Results<a class="headerlink" href="#working-with-results" title="Permanent link">&para;</a></h2>
+<h3 id="accessing-poi-data">Accessing POI Data<a class="headerlink" href="#accessing-poi-data" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">for</span> <span class="n">poi</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;poi_data&#39;</span><span class="p">]:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Name: </span><span class="si">{</span><span class="n">poi</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location: </span><span class="si">{</span><span class="n">poi</span><span class="p">[</span><span class="s1">&#39;latitude&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">poi</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="accessing-census-data">Accessing Census Data<a class="headerlink" href="#accessing-census-data" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">total_population</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;total_population&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> 
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;census_data&#39;</span><span class="p">]</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total population: </span><span class="si">{</span><span class="n">total_population</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="checking-analysis-metadata">Checking Analysis Metadata<a class="headerlink" href="#checking-analysis-metadata" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">if</span> <span class="s1">&#39;analysis_metadata&#39;</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis completed at: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;analysis_metadata&#39;</span><span class="p">][</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Travel time: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;analysis_metadata&#39;</span><span class="p">][</span><span class="s1">&#39;travel_time&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> minutes&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Use fewer census variables</li>
-<li>Enable caching (default)</li>
-<li>Analyze smaller areas</li>
-<li>Use batch processing</li>
+<li><code>CENSUS_API_KEY</code>: Your Census Bureau API key</li>
+<li><code>SOCIALMAPPER_OUTPUT_DIR</code>: Default output directory</li>
 </ul>
-<h3 id="how-much-data-will-it-download">How much data will it download?<a class="headerlink" href="#how-much-data-will-it-download" title="Permanent link">&para;</a></h3>
-<p>Initial setup may download 100-500MB for caches. After that, minimal data is needed.</p>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="no-pois-found">"No POIs found"<a class="headerlink" href="#no-pois-found" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Check your place_type spelling</li>
-<li>Verify the county name</li>
-<li>Try a different place type</li>
-<li>Check internet connection</li>
-</ul>
-<h3 id="census-data-error">"Census data error"<a class="headerlink" href="#census-data-error" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Verify you're analyzing US locations</li>
-<li>Check coordinate accuracy</li>
-<li>Try without Census API key</li>
-<li>Reduce number of variables</li>
-</ul>
-<h3 id="memory-error">"Memory error"<a class="headerlink" href="#memory-error" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Analyze smaller areas</li>
-<li>Use fewer census variables</li>
-<li>Close other applications</li>
-<li>Increase system swap space</li>
-</ul>
-<h2 id="data-questions">Data Questions<a class="headerlink" href="#data-questions" title="Permanent link">&para;</a></h2>
-<h3 id="can-i-use-it-outside-the-us">Can I use it outside the US?<a class="headerlink" href="#can-i-use-it-outside-the-us" title="Permanent link">&para;</a></h3>
-<p>POI finding works globally, but census data is US-only. For non-US analysis, omit census variables.</p>
-<h3 id="how-current-is-the-data">How current is the data?<a class="headerlink" href="#how-current-is-the-data" title="Permanent link">&para;</a></h3>
-<ul>
-<li>OpenStreetMap: Live data</li>
-<li>Census: Latest American Community Survey (usually 1-2 years old)</li>
-</ul>
-<h3 id="can-i-save-results">Can I save results?<a class="headerlink" href="#can-i-save-results" title="Permanent link">&para;</a></h3>
-<p>Yes! Use <code>export_csv=True</code> for data files and <code>export_maps=True</code> for visualizations.</p>
-<h2 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h2>
-<h3 id="can-i-customize-travel-modes">Can I customize travel modes?<a class="headerlink" href="#can-i-customize-travel-modes" title="Permanent link">&para;</a></h3>
-<p>Yes, options include:
-- <code>walk</code> - Walking (default)
-- <code>drive</code> - Driving
-- <code>bike</code> - Cycling</p>
-<h3 id="can-i-change-travel-speeds">Can I change travel speeds?<a class="headerlink" href="#can-i-change-travel-speeds" title="Permanent link">&para;</a></h3>
-<p>Not directly, but OSMnx uses realistic defaults based on road types and travel modes.</p>
-<h3 id="is-there-an-api">Is there an API?<a class="headerlink" href="#is-there-an-api" title="Permanent link">&para;</a></h3>
-<p>Yes! SocialMapper has a full Python API. See the <a href="../api-reference/">API Reference</a>.</p>
-<h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<h3 id="where-can-i-report-bugs">Where can I report bugs?<a class="headerlink" href="#where-can-i-report-bugs" title="Permanent link">&para;</a></h3>
-<p><a href="https://github.com/mihiarc/socialmapper/issues">GitHub Issues</a></p>
-<h3 id="how-can-i-contribute">How can I contribute?<a class="headerlink" href="#how-can-i-contribute" title="Permanent link">&para;</a></h3>
-<p>See our <a href="https://github.com/mihiarc/socialmapper/blob/main/CONTRIBUTING.md">Contributing Guide</a></p>
-<h3 id="where-can-i-find-more-examples">Where can I find more examples?<a class="headerlink" href="#where-can-i-find-more-examples" title="Permanent link">&para;</a></h3>
-<p>Check the <a href="https://github.com/mihiarc/socialmapper/tree/main/examples">examples directory</a></p>
+<h2 id="version-information">Version Information<a class="headerlink" href="#version-information" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">socialmapper</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">socialmapper</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+</code></pre></div>
 
 
 

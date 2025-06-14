@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/user-guide/finding-places/">
+        <link rel="canonical" href="https://mihiarc.github.io/socialmapper/user-guide/custom-locations/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../finding-places/">
       
       
-        <link rel="next" href="../custom-locations/">
+        <link rel="next" href="../travel-time/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Finding Places - SocialMapper</title>
+        <title>Custom Locations - SocialMapper</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#finding-places" class="md-skip">
+        <a href="#using-custom-locations" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Finding Places
+              Custom Locations
             
           </span>
         </div>
@@ -583,6 +583,29 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../finding-places/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Finding Places
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -600,7 +623,7 @@
   
   
   <span class="md-ellipsis">
-    Finding Places
+    Custom Locations
     
   </span>
   
@@ -613,7 +636,7 @@
   
   
   <span class="md-ellipsis">
-    Finding Places
+    Custom Locations
     
   </span>
   
@@ -636,28 +659,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#common-place-types" class="md-nav__link">
+  <a href="#csv-file-format" class="md-nav__link">
     <span class="md-ellipsis">
-      Common Place Types
+      CSV File Format
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Common Place Types">
+    <nav class="md-nav" aria-label="CSV File Format">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#essential-services" class="md-nav__link">
+  <a href="#example-csv" class="md-nav__link">
     <span class="md-ellipsis">
-      Essential Services
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#community-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      Community Resources
+      Example CSV
     </span>
   </a>
   
@@ -669,37 +683,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#openstreetmap-tags" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
-      OpenStreetMap Tags
+      Basic Usage
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="OpenStreetMap Tags">
+    <nav class="md-nav" aria-label="Basic Usage">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#amenity-tags" class="md-nav__link">
+  <a href="#python-api" class="md-nav__link">
     <span class="md-ellipsis">
-      Amenity Tags
+      Python API
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#shop-tags" class="md-nav__link">
+  <a href="#command-line" class="md-nav__link">
     <span class="md-ellipsis">
-      Shop Tags
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#leisure-tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      Leisure Tags
+      Command Line
     </span>
   </a>
   
@@ -711,28 +716,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#advanced-searches" class="md-nav__link">
+  <a href="#working-with-results" class="md-nav__link">
     <span class="md-ellipsis">
-      Advanced Searches
+      Working with Results
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Advanced Searches">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#travel-time-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Travel Time Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#census-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Census Variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#export-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Export Options">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-poi-type-and-name" class="md-nav__link">
+  <a href="#save-results-as-csv" class="md-nav__link">
     <span class="md-ellipsis">
-      Using POI Type and Name
+      Save Results as CSV
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#multiple-counties" class="md-nav__link">
+  <a href="#generate-maps" class="md-nav__link">
     <span class="md-ellipsis">
-      Multiple Counties
+      Generate Maps
     </span>
   </a>
   
@@ -744,29 +776,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tips-for-finding-places" class="md-nav__link">
+  <a href="#tips-and-best-practices" class="md-nav__link">
     <span class="md-ellipsis">
-      Tips for Finding Places
+      Tips and Best Practices
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tips and Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Preparation
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#command-line-examples" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
     <span class="md-ellipsis">
-      Command Line Examples
+      Performance
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
     <span class="md-ellipsis">
-      Troubleshooting
+      Common Issues
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Use Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#facility-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Facility Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#site-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Site Comparison
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -783,29 +863,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../custom-locations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Custom Locations
-    
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1179,28 +1236,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#common-place-types" class="md-nav__link">
+  <a href="#csv-file-format" class="md-nav__link">
     <span class="md-ellipsis">
-      Common Place Types
+      CSV File Format
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Common Place Types">
+    <nav class="md-nav" aria-label="CSV File Format">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#essential-services" class="md-nav__link">
+  <a href="#example-csv" class="md-nav__link">
     <span class="md-ellipsis">
-      Essential Services
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#community-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      Community Resources
+      Example CSV
     </span>
   </a>
   
@@ -1212,37 +1260,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#openstreetmap-tags" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
-      OpenStreetMap Tags
+      Basic Usage
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="OpenStreetMap Tags">
+    <nav class="md-nav" aria-label="Basic Usage">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#amenity-tags" class="md-nav__link">
+  <a href="#python-api" class="md-nav__link">
     <span class="md-ellipsis">
-      Amenity Tags
+      Python API
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#shop-tags" class="md-nav__link">
+  <a href="#command-line" class="md-nav__link">
     <span class="md-ellipsis">
-      Shop Tags
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#leisure-tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      Leisure Tags
+      Command Line
     </span>
   </a>
   
@@ -1254,28 +1293,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#advanced-searches" class="md-nav__link">
+  <a href="#working-with-results" class="md-nav__link">
     <span class="md-ellipsis">
-      Advanced Searches
+      Working with Results
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Advanced Searches">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#travel-time-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Travel Time Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#census-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Census Variables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#export-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Export Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Export Options">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-poi-type-and-name" class="md-nav__link">
+  <a href="#save-results-as-csv" class="md-nav__link">
     <span class="md-ellipsis">
-      Using POI Type and Name
+      Save Results as CSV
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#multiple-counties" class="md-nav__link">
+  <a href="#generate-maps" class="md-nav__link">
     <span class="md-ellipsis">
-      Multiple Counties
+      Generate Maps
     </span>
   </a>
   
@@ -1287,29 +1353,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tips-for-finding-places" class="md-nav__link">
+  <a href="#tips-and-best-practices" class="md-nav__link">
     <span class="md-ellipsis">
-      Tips for Finding Places
+      Tips and Best Practices
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tips and Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Preparation
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#command-line-examples" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
     <span class="md-ellipsis">
-      Command Line Examples
+      Performance
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
     <span class="md-ellipsis">
-      Troubleshooting
+      Common Issues
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Use Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#facility-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Facility Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#site-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Site Comparison
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1341,142 +1455,142 @@
   
 
 
-<h1 id="finding-places">Finding Places<a class="headerlink" href="#finding-places" title="Permanent link">&para;</a></h1>
-<p>SocialMapper can find various types of community resources using OpenStreetMap data. This guide shows you how to search for different places.</p>
-<h2 id="common-place-types">Common Place Types<a class="headerlink" href="#common-place-types" title="Permanent link">&para;</a></h2>
-<h3 id="essential-services">Essential Services<a class="headerlink" href="#essential-services" title="Permanent link">&para;</a></h3>
-<p><strong>Libraries</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Illinois&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Cook County&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;library&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Schools</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Texas&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Harris County&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;school&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">10</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Hospitals</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;California&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Los Angeles County&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;hospital&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">20</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<h3 id="community-resources">Community Resources<a class="headerlink" href="#community-resources" title="Permanent link">&para;</a></h3>
-<p><strong>Parks</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Colorado&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Denver County&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;park&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Grocery Stores</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Ohio&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Franklin County&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;supermarket&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">10</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Community Centers</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Washington&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;King County&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;community_centre&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">)</span>
-</code></pre></div></p>
-<h2 id="openstreetmap-tags">OpenStreetMap Tags<a class="headerlink" href="#openstreetmap-tags" title="Permanent link">&para;</a></h2>
-<p>SocialMapper uses OpenStreetMap tags to find places. Common tags include:</p>
-<h3 id="amenity-tags">Amenity Tags<a class="headerlink" href="#amenity-tags" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>library</code> - Public libraries</li>
-<li><code>school</code> - Schools (all levels)</li>
-<li><code>hospital</code> - Hospitals</li>
-<li><code>clinic</code> - Medical clinics</li>
-<li><code>pharmacy</code> - Pharmacies</li>
-<li><code>bank</code> - Banks</li>
-<li><code>post_office</code> - Post offices</li>
-<li><code>police</code> - Police stations</li>
-<li><code>fire_station</code> - Fire stations</li>
-<li><code>community_centre</code> - Community centers</li>
-</ul>
-<h3 id="shop-tags">Shop Tags<a class="headerlink" href="#shop-tags" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>supermarket</code> - Grocery stores</li>
-<li><code>convenience</code> - Convenience stores</li>
-<li><code>bakery</code> - Bakeries</li>
-<li><code>butcher</code> - Butcher shops</li>
-</ul>
-<h3 id="leisure-tags">Leisure Tags<a class="headerlink" href="#leisure-tags" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>park</code> - Parks</li>
-<li><code>playground</code> - Playgrounds</li>
-<li><code>sports_centre</code> - Sports facilities</li>
-<li><code>swimming_pool</code> - Public pools</li>
-</ul>
-<h2 id="advanced-searches">Advanced Searches<a class="headerlink" href="#advanced-searches" title="Permanent link">&para;</a></h2>
-<h3 id="using-poi-type-and-name">Using POI Type and Name<a class="headerlink" href="#using-poi-type-and-name" title="Permanent link">&para;</a></h3>
-<p>For more specific searches, combine type and name:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Find all Whole Foods locations</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;California&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">county</span><span class="o">=</span><span class="s2">&quot;Orange County&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">poi_type</span><span class="o">=</span><span class="s2">&quot;shop&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">poi_name</span><span class="o">=</span><span class="s2">&quot;supermarket&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
+<h1 id="using-custom-locations">Using Custom Locations<a class="headerlink" href="#using-custom-locations" title="Permanent link">&para;</a></h1>
+<p>SocialMapper lets you analyze accessibility from your own locations beyond what's available in OpenStreetMap. This is useful for analyzing your organization's facilities, specific addresses, or any custom points of interest.</p>
+<h2 id="csv-file-format">CSV File Format<a class="headerlink" href="#csv-file-format" title="Permanent link">&para;</a></h2>
+<p>Create a CSV file with your locations. The basic format requires:
+- <code>name</code> - Location name<br />
+- <code>latitude</code> - Decimal latitude
+- <code>longitude</code> - Decimal longitude</p>
+<h3 id="example-csv">Example CSV<a class="headerlink" href="#example-csv" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>name,latitude,longitude
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Main Office,35.7796,-78.6382
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Branch Office,35.8934,-78.8637
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Community Center,35.7321,-78.5512
 </code></pre></div>
-<h3 id="multiple-counties">Multiple Counties<a class="headerlink" href="#multiple-counties" title="Permanent link">&para;</a></h3>
-<p>Analyze multiple counties at once:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Analyze libraries across a metro area</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">for</span> <span class="n">county</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Cook County&quot;</span><span class="p">,</span> <span class="s2">&quot;DuPage County&quot;</span><span class="p">,</span> <span class="s2">&quot;Lake County&quot;</span><span class="p">]:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="n">state</span><span class="o">=</span><span class="s2">&quot;Illinois&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="n">county</span><span class="o">=</span><span class="n">county</span><span class="p">,</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">place_type</span><span class="o">=</span><span class="s2">&quot;library&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="p">)</span>
+<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<h3 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">socialmapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_socialmapper</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Analyze custom locations</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;my_locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="s2">&quot;median_household_income&quot;</span><span class="p">]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span>
 </code></pre></div>
-<h2 id="tips-for-finding-places">Tips for Finding Places<a class="headerlink" href="#tips-for-finding-places" title="Permanent link">&para;</a></h2>
+<h3 id="command-line">Command Line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>socialmapper<span class="w"> </span>--custom-coords<span class="w"> </span>my_locations.csv<span class="w"> </span>--travel-time<span class="w"> </span><span class="m">15</span>
+</code></pre></div>
+<h2 id="working-with-results">Working with Results<a class="headerlink" href="#working-with-results" title="Permanent link">&para;</a></h2>
+<p>The results dictionary includes:
+- <code>poi_data</code> - Your input locations with added geographic context
+- <code>census_data</code> - Demographics for areas within travel time
+- Output files in the <code>output/</code> directory</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Check results</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analyzed </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;poi_data&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> locations&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;census_data&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> census block groups&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="travel-time-options">Travel Time Options<a class="headerlink" href="#travel-time-options" title="Permanent link">&para;</a></h2>
+<p>Adjust the travel time to change the analysis area:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># 5-minute walk</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">5</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># 20-minute drive </span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;locations.csv&quot;</span><span class="p">,</span> 
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">20</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="p">)</span>
+</code></pre></div>
+<h2 id="census-variables">Census Variables<a class="headerlink" href="#census-variables" title="Permanent link">&para;</a></h2>
+<p>Add more demographic variables to your analysis:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="s2">&quot;total_population&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="s2">&quot;median_household_income&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="s2">&quot;median_age&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="s2">&quot;percent_poverty&quot;</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="p">]</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
+</code></pre></div>
+<p>See <a href="../demographics/">demographic variables</a> for the full list.</p>
+<h2 id="export-options">Export Options<a class="headerlink" href="#export-options" title="Permanent link">&para;</a></h2>
+<h3 id="save-results-as-csv">Save Results as CSV<a class="headerlink" href="#save-results-as-csv" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">export_csv</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Default</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">)</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Results saved to output/csv/</span>
+</code></pre></div>
+<h3 id="generate-maps">Generate Maps<a class="headerlink" href="#generate-maps" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;locations.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">export_maps</span><span class="o">=</span><span class="kc">True</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># Maps saved to output/maps/</span>
+</code></pre></div>
+<h2 id="tips-and-best-practices">Tips and Best Practices<a class="headerlink" href="#tips-and-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="data-preparation">Data Preparation<a class="headerlink" href="#data-preparation" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Use singular forms</strong> - <code>library</code> not <code>libraries</code></li>
-<li><strong>Check OpenStreetMap</strong> - Visit openstreetmap.org to verify place names</li>
-<li><strong>Try variations</strong> - Some places might be tagged differently</li>
-<li><strong>Be specific</strong> - Use exact county names with "County" suffix</li>
+<li><strong>Verify coordinates</strong> - Ensure latitude/longitude are correct</li>
+<li><strong>Use decimal degrees</strong> - e.g., 35.7796, -78.6382</li>
+<li><strong>Check coordinate order</strong> - Latitude first, then longitude</li>
+<li><strong>Name locations clearly</strong> - Use descriptive names</li>
 </ol>
-<h2 id="command-line-examples">Command Line Examples<a class="headerlink" href="#command-line-examples" title="Permanent link">&para;</a></h2>
-<p>Find libraries:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>socialmapper<span class="w"> </span>analyze<span class="w"> </span>--state<span class="w"> </span><span class="s2">&quot;New York&quot;</span><span class="w"> </span>--county<span class="w"> </span><span class="s2">&quot;New York County&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--place-type<span class="w"> </span><span class="s2">&quot;library&quot;</span><span class="w"> </span>--travel-time<span class="w"> </span><span class="m">15</span>
-</code></pre></div></p>
-<p>Find hospitals with custom output:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>socialmapper<span class="w"> </span>analyze<span class="w"> </span>--state<span class="w"> </span><span class="s2">&quot;Florida&quot;</span><span class="w"> </span>--county<span class="w"> </span><span class="s2">&quot;Miami-Dade County&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--place-type<span class="w"> </span><span class="s2">&quot;hospital&quot;</span><span class="w"> </span>--travel-time<span class="w"> </span><span class="m">20</span><span class="w"> </span>--export-csv<span class="w"> </span>--export-maps
-</code></pre></div></p>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<p><strong>No places found?</strong>
-- Verify the county name is correct
-- Check if the place type exists in that area
-- Try a broader search area
-- Ensure internet connection is active</p>
-<p><strong>Too many results?</strong>
-- Use poi_name to filter further
-- Reduce the geographic area
-- Export to CSV and filter in Excel</p>
+<h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Start small</strong> - Test with a few locations first</li>
+<li><strong>Use appropriate travel times</strong> - Larger areas take longer</li>
+<li><strong>Limit census variables</strong> - Only request what you need</li>
+</ol>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p><strong>"File not found"</strong>
+- Check the file path
+- Use absolute paths if needed</p>
+<p><strong>"Invalid coordinates"</strong>
+- Verify latitude is between -90 and 90
+- Verify longitude is between -180 and 180
+- Check for swapped coordinates</p>
+<p><strong>"No census data"</strong>
+- Ensure locations are in the United States
+- Check coordinate accuracy</p>
+<h2 id="example-use-cases">Example Use Cases<a class="headerlink" href="#example-use-cases" title="Permanent link">&para;</a></h2>
+<h3 id="facility-analysis">Facility Analysis<a class="headerlink" href="#facility-analysis" title="Permanent link">&para;</a></h3>
+<p>Analyze accessibility to your organization's locations:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Load facility locations</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">custom_coords_path</span><span class="o">=</span><span class="s2">&quot;our_facilities.csv&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">travel_time</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="s2">&quot;median_income&quot;</span><span class="p">]</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Review population reach</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">total_pop</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_population&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;census_data&quot;</span><span class="p">])</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total population within 15 minutes: </span><span class="si">{</span><span class="n">total_pop</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="site-comparison">Site Comparison<a class="headerlink" href="#site-comparison" title="Permanent link">&para;</a></h3>
+<p>Compare potential new locations:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Analyze each candidate site</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">for</span> <span class="n">site_file</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;site_a.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;site_b.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;site_c.csv&quot;</span><span class="p">]:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_socialmapper</span><span class="p">(</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">custom_coords_path</span><span class="o">=</span><span class="n">site_file</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">travel_time</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">census_variables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;total_population&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="p">)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">site_file</span><span class="si">}</span><span class="s2">: Population reach = </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;total_population&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;census_data&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Learn about <a href="../travel-time/">analyzing travel times</a></li>
-<li>Add <a href="../demographics/">demographic analysis</a></li>
-<li>Use <a href="../custom-locations/">your own locations</a></li>
+<li>Learn about <a href="../travel-time/">travel time analysis</a></li>
+<li>Add more <a href="../demographics/">demographic variables</a></li>
+<li><a href="../exporting-results/">Export your results</a> in different formats</li>
 </ul>
 
 
