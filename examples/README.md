@@ -22,7 +22,6 @@ examples/
 ├── core/              # Demonstrations of core features
 ├── case_studies/      # Real-world analysis examples
 ├── data/              # Sample datasets
-├── deprecated/        # Outdated examples (reference only)
 └── example_output/    # Sample output files
 ```
 
