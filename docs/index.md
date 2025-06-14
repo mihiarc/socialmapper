@@ -1,155 +1,111 @@
-# SocialMapper: Explore Community Connections
+# Welcome to SocialMapper
 
-[![PyPI version](https://badge.fury.io/py/socialmapper.svg)](https://badge.fury.io/py/socialmapper)
-[![Python Versions](https://img.shields.io/pypi/pyversions/socialmapper.svg)](https://pypi.org/project/socialmapper/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
+SocialMapper helps you understand how people connect with important places in their community by analyzing travel times and demographics.
 
-SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
+## What is SocialMapper?
 
-But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.
+SocialMapper is a Python tool that answers questions like:
+- Who can reach the local library within a 15-minute walk?
+- What areas are within 20 minutes of the nearest hospital?
+- How many seniors live within driving distance of grocery stores?
 
-Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.
+It combines travel time analysis with demographic data to help you understand community accessibility.
 
-## 🚀 Quick Start
+## Key Features
 
+### 🗺️ **Find Places**
+Discover libraries, schools, hospitals, parks, and other community resources from OpenStreetMap.
 
-**Install with pip:**
-```bash
-pip install socialmapper
-```
+### ⏱️ **Calculate Travel Times**
+Generate isochrones (travel time areas) for walking, driving, or biking.
 
-**Basic usage:**
+### 📊 **Analyze Demographics**
+Understand who lives within reach using Census data like population, income, and age.
+
+### 📍 **Use Your Own Locations**
+Analyze accessibility from your organization's facilities or any custom addresses.
+
+## Quick Example
+
 ```python
 from socialmapper import run_socialmapper
 
-# Analyze library accessibility in your city
+# Find who can reach libraries in 15 minutes
 results = run_socialmapper(
-    geocode_area="Chicago",
-    state="IL",
-    poi_type="amenity",
-    poi_name="library",
+    state="North Carolina",
+    county="Wake County",
+    place_type="library",
     travel_time=15,
-    census_variables=["total_population", "median_household_income"]
+    census_variables=["total_population", "median_income"]
 )
 ```
 
-## 🎯 Key Features
+## Get Started
 
-### 🗺️ **Core Analysis**
-- **[Address Geocoding System](ADDRESS_GEOCODING.md)** - Production-ready address lookup with multiple providers
-- **Travel Time Analysis** - Generate isochrones showing reachable areas
-- **Demographic Integration** - Census data analysis for community characteristics  
-- **Point of Interest Discovery** - Find libraries, schools, healthcare facilities
-- **Static Map Generation** - Create publication-ready visualizations
+<div class="grid cards" markdown>
 
-### 🛠️ **Developer Tools**
-- **Python API** - Full programmatic access
-- **Command Line Interface** - Easy scripting and automation
-- **[OSMnx Integration](OSMNX_FEATURES.md)** - Advanced network analysis
+-   :material-download:{ .lg .middle } **Installation**
 
-## 📚 Documentation Sections
+    ---
 
-### 🚀 Getting Started
-- **[Installation Guide](getting-started/installation.md)** - Set up SocialMapper
-- **[Quick Start Tutorial](getting-started/quick-start.md)** - Your first analysis
-- **[Demo Instructions](DEMO_INSTRUCTIONS.md)** - Interactive demonstrations
+    Install SocialMapper in minutes
 
-### 📖 User Guide  
-- **[Configuration](user-guide/configuration.md)** - Customize your analysis
-- **[Data Sources](user-guide/data-sources.md)** - Understanding input data
-- **[Architecture Overview](ARCHITECTURE.md)** - System design and components
+    [:octicons-arrow-right-24: Installation guide](getting-started/installation.md)
 
-### 🎯 Features in Detail
-- **[Address Geocoding](ADDRESS_GEOCODING.md)** - Modern address lookup system
-- **[OSMnx Integration](OSMNX_FEATURES.md)** - Advanced network analysis capabilities
+-   :material-rocket:{ .lg .middle } **Quick Start**
 
-### 🔧 Development
-- **[Contributing Guide](development/contributing.md)** - Join the project
-- **[Architecture Details](development/architecture.md)** - Technical design
-- **[API Reference](api/index.md)** - Complete function documentation
+    ---
 
-## 🌟 What's New
+    Your first analysis in 5 minutes
 
-### Latest Release Features
-- **🏗️ Streamlined Architecture** - Focused on core demographic analysis
-- **📍 Enhanced Geocoding** - Production-ready address system
-- **⚡ Performance Improvements** - 17x faster processing with optimized neighbor system
-- **🎨 Modern UI** - Rich terminal output and better visualization
-- **📊 Enhanced Data Export** - Improved CSV and GeoJSON output formats
+    [:octicons-arrow-right-24: Quick start tutorial](getting-started/quick-start.md)
 
-See the **[Changelog](CHANGELOG.md)** for complete release history.
+-   :material-map-marker:{ .lg .middle } **Examples**
 
-## 🎯 Use Cases
+    ---
+
+    Learn from practical examples
+
+    [:octicons-arrow-right-24: View examples](https://github.com/mihiarc/socialmapper/tree/main/examples)
+
+-   :material-help-circle:{ .lg .middle } **Get Help**
+
+    ---
+
+    Documentation and support
+
+    [:octicons-arrow-right-24: User guide](user-guide/index.md)
+
+</div>
+
+## Common Use Cases
 
 ### Urban Planning
-- **Service Accessibility** - Analyze access to public facilities
-- **Transportation Planning** - Understand travel patterns
-- **Community Impact Assessment** - Measure development effects
+- Analyze access to public facilities
+- Identify underserved areas
+- Plan new service locations
 
-### Public Health & Policy
-- **Healthcare Access** - Map medical facility coverage
-- **Food Security** - Analyze grocery store accessibility  
-- **Educational Equity** - Study school access patterns
+### Public Health
+- Map healthcare accessibility
+- Study food desert patterns
+- Evaluate emergency service coverage
 
-### Research & Analysis
-- **Demographic Studies** - Population characteristics analysis
-- **Accessibility Analysis** - Measure access to community resources
-- **Social Equity** - Identify service gaps and opportunities
+### Education
+- Assess school accessibility
+- Plan bus routes
+- Identify transportation barriers
 
-## 🚀 Try It Now
+### Community Development
+- Evaluate access to parks and recreation
+- Study retail accessibility
+- Support grant applications with data
 
-=== "Command Line"
+## Why SocialMapper?
 
-    ```bash
-    # Install SocialMapper
-    pip install socialmapper
-    
-    # Run analysis
-    socialmapper --poi --geocode-area "Seattle" --state "WA" \
-      --poi-type "amenity" --poi-name "library" --travel-time 15
-    ```
+- **Free and Open Source** - No licensing fees or restrictions
+- **Easy to Use** - Simple Python API and command line interface
+- **Reliable Data** - Uses OpenStreetMap and US Census Bureau
+- **Fast** - Optimized caching and efficient algorithms
+- **Flexible** - Analyze any location type at any scale
 
-=== "Python API"
-
-    ```python
-    from socialmapper import run_socialmapper
-    
-    # Analyze community access
-    results = run_socialmapper(
-        geocode_area="Portland",
-        state="OR", 
-        poi_type="amenity",
-        poi_name="school",
-        travel_time=20
-    )
-    ```
-
-=== "Data Export"
-
-    ```bash
-    # Export results to CSV and maps
-    socialmapper --poi --geocode-area "Seattle" --state "WA" \
-      --poi-type "amenity" --poi-name "library" --travel-time 15 \
-      --export-csv --export-maps
-    ```
-
-## 🤝 Community & Support
-
-- **[GitHub Repository](https://github.com/mihiarc/socialmapper)** - Source code and issues
-- **[PyPI Package](https://pypi.org/project/socialmapper/)** - Package downloads
-- **[Documentation](https://mihiarc.github.io/socialmapper)** - This site
-- **[Examples](examples/)** - Sample workflows and use cases
-
-## 🔮 Future Vision
-
-SocialMapper is focused on becoming the premier tool for demographic accessibility analysis with plans for:
-
-- **🌍 Environmental Integration** - Natural area accessibility
-- **🚊 Multi-modal Transportation** - Enhanced transit, walking, cycling analysis  
-- **📊 Enhanced Analytics** - More sophisticated demographic analysis
-- **🌐 Global Expansion** - International data sources and census systems
-
----
-
-**Ready to explore your community?** Start with our **[Getting Started Guide](getting-started/installation.md)** or try the **[Command Line Interface](https://github.com/mihiarc/socialmapper#using-the-command-line-interface)**! 
+Ready to explore your community? [Get started now →](getting-started/installation.md)

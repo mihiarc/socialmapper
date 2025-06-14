@@ -1,25 +1,24 @@
-# SocialMapper Documentation Configuration
-# Docs are automatically deployed to GitHub Pages via .github/workflows/docs.yml
+# SocialMapper User Documentation
+# Automatically deployed to GitHub Pages via .github/workflows/docs.yml
 
-site_name: SocialMapper Documentation
-site_description: Analyze Community Demographics and Accessibility with Python
+site_name: SocialMapper
+site_description: Analyze community accessibility with travel times and demographics
 site_url: https://mihiarc.github.io/socialmapper
 repo_url: https://github.com/mihiarc/socialmapper
 repo_name: mihiarc/socialmapper
-edit_uri: edit/main/docs/
 
 # Theme Configuration
 theme:
   name: material
   palette:
-    # Palette toggle for light mode
+    # Light mode
     - scheme: default
       primary: blue
       accent: light blue
       toggle:
         icon: material/brightness-7 
         name: Switch to dark mode
-    # Palette toggle for dark mode
+    # Dark mode
     - scheme: slate
       primary: blue
       accent: light blue
@@ -30,6 +29,8 @@ theme:
     text: Roboto
     code: Roboto Mono
   features:
+    - navigation.instant
+    - navigation.tracking
     - navigation.tabs
     - navigation.sections
     - navigation.expand
@@ -38,7 +39,6 @@ theme:
     - search.suggest
     - content.code.annotate
     - content.code.copy
-    - toc.integrate
   icon:
     logo: material/map
     repo: fontawesome/brands/github
@@ -58,7 +58,6 @@ markdown_extensions:
   - md_in_html
   - toc:
       permalink: true
-      title: On this page
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.betterem:
@@ -70,15 +69,8 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
   - pymdownx.highlight:
       anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.keys
-  - pymdownx.magiclink:
-      normalize_issue_symbols: true
-      repo_url_shorthand: true
-      user: mihiarc
-      repo: socialmapper
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.superfences:
@@ -90,12 +82,12 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.tilde
 
-# Extra CSS and JavaScript
+# Extra CSS
 extra_css:
   - assets/css/extra.css
 
+# Extra JavaScript  
 extra_javascript:
   - assets/js/extra.js
 
@@ -106,29 +98,34 @@ extra:
       link: https://github.com/mihiarc/socialmapper
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/socialmapper/
-  generator: false
 
 # Copyright
 copyright: Copyright &copy; 2023-2025 SocialMapper Contributors
 
-# Navigation Structure - Only existing pages
+# Navigation
 nav:
   - Home: index.md
   
   - Getting Started:
     - Overview: getting-started/index.md
     - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
   
-  - Core Features:
-    - Architecture: ARCHITECTURE.md
-    - Address Geocoding: ADDRESS_GEOCODING.md
-    - OSMnx Integration: OSMNX_FEATURES.md
+  - User Guide:
+    - Overview: user-guide/index.md
+    - Finding Places: user-guide/finding-places.md
+    - Custom Locations: user-guide/custom-locations.md  
+    - Travel Time Analysis: user-guide/travel-time.md
+    - Demographics: user-guide/demographics.md
+    - Exporting Results: user-guide/exporting-results.md
+    - Command Line: user-guide/cli-usage.md
   
-  - Reference:
-    - Demo Instructions: DEMO_INSTRUCTIONS.md
-    - Migration Guide: migration-guide.md
-    - Changelog: CHANGELOG.md
+  - Features:
+    - Address Geocoding: features/address-geocoding.md
+    - Network Analysis: features/network-analysis.md
   
-  - Release Notes:
-    - v0.5.3: RELEASE_NOTES_v0.5.3.md
-    - v0.5.2: RELEASE_NOTES_v0.5.2.md
+  - Resources:
+    - Examples: https://github.com/mihiarc/socialmapper/tree/main/examples
+    - API Reference: api-reference.md
+    - FAQ: faq.md
+    - Troubleshooting: troubleshooting.md

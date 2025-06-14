@@ -227,9 +227,9 @@ sudo yum install python3-devel python3-pip gcc
 After successful installation:
 
 1. 📖 **Read** the [Quick Start Guide](quick-start.md)
-2. 🎬 **Try** the [Demo Instructions](../DEMO_INSTRUCTIONS.md)
-3. 💻 **Run** the [Example Scripts](../../examples/README.md)
-4. 🔧 **Configure** your [API keys](../user-guide/configuration.md) (optional)
+2. 🎯 **Explore** the [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples)
+3. 💻 **Learn** about [Finding Places](../user-guide/finding-places.md)
+4. 🔧 **Get** a [Census API key](https://census.gov/developers) (optional)
 
 ## Getting Help
 

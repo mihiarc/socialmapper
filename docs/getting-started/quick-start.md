@@ -174,8 +174,8 @@ for minutes in [5, 10, 15, 20, 30]:
 ## Learn More
 
 - **[Examples Directory](https://github.com/mihiarc/socialmapper/tree/main/examples)** - Complete working examples
-- **[API Documentation](/api/)** - Detailed function reference
-- **[Command Line Guide](/cli/)** - All CLI options
-- **[Data Sources](/user-guide/data-sources/)** - Understanding the data
+- **[API Reference](../api-reference.md)** - Detailed function reference
+- **[Command Line Guide](../user-guide/cli-usage.md)** - All CLI options
+- **[User Guide](../user-guide/index.md)** - Understanding the features
 
 Ready for more? Check out our [tutorials](https://github.com/mihiarc/socialmapper/tree/main/examples/tutorials) for step-by-step guides!
