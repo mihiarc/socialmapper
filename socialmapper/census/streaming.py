@@ -607,7 +607,11 @@ class StreamingCensusManager:
         if "NAME" not in api_variables:
             api_variables.append("NAME")
 
-        base_url = f"https://api.census.gov/data/{year}/{dataset}"
+        # Build API URL - ACS datasets need /acs/ prefix
+        if dataset.startswith("acs"):
+            base_url = f"https://api.census.gov/data/{year}/acs/{dataset}"
+        else:
+            base_url = f"https://api.census.gov/data/{year}/{dataset}"
 
         params = {
             "get": ",".join(api_variables),
@@ -649,7 +653,11 @@ class StreamingCensusManager:
         if "NAME" not in api_variables:
             api_variables.append("NAME")
 
-        base_url = f"https://api.census.gov/data/{year}/{dataset}"
+        # Build API URL - ACS datasets need /acs/ prefix
+        if dataset.startswith("acs"):
+            base_url = f"https://api.census.gov/data/{year}/acs/{dataset}"
+        else:
+            base_url = f"https://api.census.gov/data/{year}/{dataset}"
 
         params = {
             "get": ",".join(api_variables),

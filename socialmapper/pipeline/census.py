@@ -32,7 +32,7 @@ def integrate_census_data(
     Returns:
         Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
     """
-    from ..census import get_counties_from_pois, get_streaming_census_manager
+    from ..census_modern import get_census_system
     from ..distance import add_travel_distances
 
     print("\n=== Integrating Census Data ===")
@@ -45,15 +45,20 @@ def integrate_census_data(
     print(f"Requesting census data for: {', '.join(readable_names)}")
     print(f"Geographic level: {geographic_level}")
 
-    # Get census manager
-    census_manager = get_streaming_census_manager()
+    # Get census system
+    census_system = get_census_system()
 
     # Determine states to search from POI data
-    counties = get_counties_from_pois(poi_data["pois"], include_neighbors=False)
+    counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
     state_fips = list(set([county[:2] for county in counties]))
 
     # Get geographic units based on level
     if geographic_level == "zcta":
+        # TODO: ZCTA functionality not yet implemented in modern census system
+        # For now, fall back to the old streaming system
+        from ..census import get_streaming_census_manager
+        census_manager = get_streaming_census_manager()
+        
         # Get ZCTAs and filter to intersecting ones
         with get_progress_bar(
             total=len(state_fips), desc="🏛️ Finding ZIP Code Tabulation Areas", unit="state"
@@ -71,12 +76,12 @@ def integrate_census_data(
 
         print(f"Found {len(geographic_units_gdf)} intersecting ZIP Code Tabulation Areas")
     else:
-        # Get block groups and filter to intersecting ones
+        # Get block groups using modern census system
         with get_progress_bar(
-            total=len(state_fips), desc="🏛️ Finding Census Block Groups", unit="state"
+            total=len(counties), desc="🏛️ Finding Census Block Groups", unit="county"
         ) as pbar:
-            geographic_units_gdf = census_manager.get_block_groups(state_fips)
-            pbar.update(len(state_fips))
+            geographic_units_gdf = census_system.get_block_groups_for_counties(counties)
+            pbar.update(len(counties))
 
             # Filter to intersecting block groups
             isochrone_union = isochrone_gdf.geometry.union_all()
@@ -99,36 +104,62 @@ def integrate_census_data(
     # Create variable mapping for human-readable names
     variable_mapping = {code: census_code_to_name(code) for code in census_codes}
 
-    # Fetch census data using streaming
+    # Fetch census data
     geoids = units_with_distances["GEOID"].tolist()
 
     unit_desc = "ZCTA" if geographic_level == "zcta" else "block"
     with get_progress_bar(
         total=len(geoids), desc="📊 Integrating Census Data", unit=unit_desc
     ) as pbar:
-        census_data = census_manager.get_census_data(
-            geoids=geoids,
-            variables=census_codes,
-            api_key=api_key,
-            geographic_level=geographic_level,
-        )
-        pbar.update(len(geoids) // 2)
+        if geographic_level == "zcta":
+            # Use old streaming system for ZCTA data
+            census_data = census_manager.get_census_data(
+                geoids=geoids,
+                variables=census_codes,
+                api_key=api_key,
+                geographic_level=geographic_level,
+            )
+            pbar.update(len(geoids) // 2)
 
-        # Merge census data with geographic units
-        census_data_gdf = units_with_distances.copy()
+            # Merge census data with geographic units
+            census_data_gdf = units_with_distances.copy()
 
-        # Add census variables to the GeoDataFrame
-        for _, row in census_data.iterrows():
-            geoid = row["GEOID"]
-            var_code = row["variable_code"]
-            value = row["value"]
+            # Add census variables to the GeoDataFrame
+            for _, row in census_data.iterrows():
+                geoid = row["GEOID"]
+                var_code = row["variable_code"]
+                value = row["value"]
 
-            # Find matching geographic unit and add the variable
-            mask = census_data_gdf["GEOID"] == geoid
-            if mask.any():
-                census_data_gdf.loc[mask, var_code] = value
+                # Find matching geographic unit and add the variable
+                mask = census_data_gdf["GEOID"] == geoid
+                if mask.any():
+                    census_data_gdf.loc[mask, var_code] = value
 
-        pbar.update(len(geoids) // 2)
+            pbar.update(len(geoids) // 2)
+        else:
+            # Use modern census system for block group data
+            census_data_points = census_system.get_census_data(
+                variables=census_codes,
+                geographic_units=geoids,
+                year=2022
+            )
+            pbar.update(len(geoids) // 2)
+
+            # Merge census data with geographic units
+            census_data_gdf = units_with_distances.copy()
+
+            # Add census variables to the GeoDataFrame
+            for data_point in census_data_points:
+                geoid = data_point.geoid
+                var_code = data_point.variable.code
+                value = data_point.value
+
+                # Find matching geographic unit and add the variable
+                mask = census_data_gdf["GEOID"] == geoid
+                if mask.any():
+                    census_data_gdf.loc[mask, var_code] = value
+
+            pbar.update(len(geoids) // 2)
 
     # Apply variable mapping
     if variable_mapping:

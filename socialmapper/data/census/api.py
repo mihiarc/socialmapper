@@ -49,13 +49,14 @@ class CensusAPI:
         if not refresh and cache_key in self._data_cache:
             return self._data_cache[cache_key]
 
-        # Fetch from Census API
-        url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/10/query"
+        # Fetch from Census API - Block Groups are in Tracts_Blocks service, layer 1
+        url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
         params = {
             "where": f"STATE = '{state_fips}'",
             "outFields": "*",
             "outSR": "4326",
             "f": "geojson",
+            "returnGeometry": "true",
         }
 
         response = requests.get(url, params=params)
@@ -99,15 +100,19 @@ class CensusAPI:
 
         # Build API URL
         base_url = "https://api.census.gov/data"
-        url = f"{base_url}/{year}/{dataset}"
+        # For ACS data, the format is /data/YEAR/acs/acs5
+        if dataset.startswith("acs"):
+            url = f"{base_url}/{year}/acs/{dataset}"
+        else:
+            url = f"{base_url}/{year}/{dataset}"
 
-        # Prepare variables
-        get_vars = ["GEO_ID"] + variables
+        # Prepare variables - Census API returns NAME instead of GEO_ID
+        get_vars = ["NAME"] + variables
 
         params = {
             "get": ",".join(get_vars),
             "for": "block group:*",
-            "in": f"state:{state_fips}",
+            "in": f"state:{state_fips} county:* tract:*",
             "key": self._api_key,
         }
 
@@ -117,6 +122,16 @@ class CensusAPI:
         # Convert to DataFrame
         data = response.json()
         df = pd.DataFrame(data[1:], columns=data[0])
+        
+        # Create GEO_ID from components if not present
+        if "GEO_ID" not in df.columns and all(col in df.columns for col in ["state", "county", "tract", "block group"]):
+            df["GEO_ID"] = (
+                "1500000US" +
+                df["state"].str.zfill(2) +
+                df["county"].str.zfill(3) +
+                df["tract"].str.zfill(6) +
+                df["block group"]
+            )
 
         # Cache in memory
         self._data_cache[cache_key] = df

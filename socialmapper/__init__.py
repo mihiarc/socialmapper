@@ -49,65 +49,66 @@ try:
 except ImportError:
     _MODERN_API_AVAILABLE = False
 
+# Import modern census system instead of old one
+from .census_modern import (
+    get_census_system,
+    get_legacy_adapter,
+    CensusSystem,
+    CensusSystemBuilder,
+    StateFormat,
+    VariableFormat,
+    CacheStrategy,
+    RepositoryType
+)
+
 # Import neighbor functionality for direct access
 try:
-    from .census import (
-        get_counties_from_pois,
-        get_geography_from_point,
-        get_neighbor_manager,
-        get_neighboring_counties,
-        get_neighboring_states,
-    )
-
-    # Neighbor functionality is available
-    _NEIGHBORS_AVAILABLE = True
-
-    # Build __all__ based on available features
-    __all__ = [
-        "run_socialmapper",  # Deprecated - use SocialMapperClient instead
-        # Neighbor functions
-        "get_neighboring_states",
-        "get_neighboring_counties",
-        "get_geography_from_point",
-        "get_counties_from_pois",
-        "get_neighbor_manager",
-    ]
-
-    # Add modern API if available
-    if _MODERN_API_AVAILABLE:
-        __all__.extend(
-            [
-                # Modern API (recommended)
-                "SocialMapperClient",
-                "SocialMapperBuilder",
-                "quick_analysis",
-                "analyze_location",
-                "Result",
-                "Ok",
-                "Err",
-            ]
-        )
-
+    from .census_modern.infrastructure.geocoder import CensusGeocoder
+    from .census_modern.services.geography_service import GeographyService
+    
+    # Create a default geography service for neighbor operations
+    def get_geography_from_point(lat: float, lon: float):
+        """Get geographic identifiers for a point using modern system."""
+        census_system = get_census_system()
+        return census_system.get_geography_from_point(lat, lon)
+    
+    def get_counties_from_pois(pois, include_neighbors: bool = True):
+        """Get counties for POIs using modern system."""
+        census_system = get_census_system()
+        return census_system.get_counties_from_pois(pois, include_neighbors)
+    
+    _NEIGHBOR_FUNCTIONS_AVAILABLE = True
 except ImportError:
-    # Neighbor functionality not available (optional dependency missing)
-    _NEIGHBORS_AVAILABLE = False
+    _NEIGHBOR_FUNCTIONS_AVAILABLE = False
 
-    # Build __all__ for limited functionality
-    __all__ = [
-        "run_socialmapper",  # Deprecated - use SocialMapperClient instead
-    ]
+# Build __all__ based on available features
+__all__ = [
+    "run_socialmapper",  # Deprecated - use SocialMapperClient instead
+    # Modern census system
+    "get_census_system",
+    "get_legacy_adapter", 
+    "CensusSystem",
+    "CensusSystemBuilder",
+    "StateFormat",
+    "VariableFormat",
+    "CacheStrategy",
+    "RepositoryType",
+    # Neighbor functions
+    "get_geography_from_point",
+    "get_counties_from_pois",
+]
 
-    # Add modern API if available
-    if _MODERN_API_AVAILABLE:
-        __all__.extend(
-            [
-                # Modern API (recommended)
-                "SocialMapperClient",
-                "SocialMapperBuilder",
-                "quick_analysis",
-                "analyze_location",
-                "Result",
-                "Ok",
-                "Err",
-            ]
-        )
+# Add modern API if available
+if _MODERN_API_AVAILABLE:
+    __all__.extend(
+        [
+            # Modern API (recommended)
+            "SocialMapperClient",
+            "SocialMapperBuilder",
+            "quick_analysis",
+            "analyze_location",
+            "Result",
+            "Ok",
+            "Err",
+        ]
+    )

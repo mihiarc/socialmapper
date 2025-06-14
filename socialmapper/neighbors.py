@@ -22,23 +22,15 @@ Examples:
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from .census import (
-    get_counties_from_pois as _get_counties_from_pois,
-)
-from .census import (
-    get_geography_from_point as _get_geography_from_point,
-)
+# Import neighbor functionality from the census module (database operations)
 from .census import (
     get_neighbor_manager as _get_neighbor_manager,
-)
-from .census import (
     get_neighboring_counties as _get_neighboring_counties,
-)
-
-# Import all neighbor functionality from the census module
-from .census import (
     get_neighboring_states as _get_neighboring_states,
 )
+
+# Import modern census system for geographic operations
+from .census_modern import get_census_system
 
 # Re-export with enhanced documentation
 
@@ -121,7 +113,9 @@ def get_geography_from_point(lat: float, lon: float) -> Dict[str, Optional[str]]
         >>> get_geography_from_point(34.0522, -118.2437)  # Los Angeles, CA
         {'state_fips': '06', 'county_fips': '037', 'tract_geoid': '06037207400', ...}
     """
-    return _get_geography_from_point(lat, lon)
+    # Use modern census system for geographic operations
+    census_system = get_census_system()
+    return census_system.get_geography_from_point(lat, lon)
 
 
 def get_counties_from_pois(
@@ -150,18 +144,9 @@ def get_counties_from_pois(
         >>> counties = get_counties_from_pois(pois, include_neighbors=False)
         [('37', '183'), ('37', '119')]  # Just Wake and Mecklenburg
     """
-    # The census module function has a different signature
-    county_fips_list = _get_counties_from_pois(pois, include_neighbors)
-
-    # Convert to (state, county) tuples
-    county_tuples = []
-    for county_fips in county_fips_list:
-        if len(county_fips) >= 5:  # Valid county FIPS should be 5 digits
-            state = county_fips[:2]
-            county = county_fips[2:]
-            county_tuples.append((state, county))
-
-    return county_tuples
+    # Use modern census system for geographic operations
+    census_system = get_census_system()
+    return census_system.get_counties_from_pois(pois, include_neighbors)
 
 
 def get_neighbor_manager(db_path: Optional[str] = None):
