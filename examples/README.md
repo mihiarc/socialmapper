@@ -71,6 +71,25 @@ Compare block group vs ZIP code level analysis.
 - Trade-offs in geographic resolution
 - Use case examples
 
+### **Cary Police ZCTA Demo** (`core/cary_zcta_demo.py`)
+Real-world ZCTA service demonstration using Cary, NC police station.
+- Municipal planning use case
+- ZCTA census data retrieval
+- Service area analysis
+- Local government applications
+
+**CLI Usage Examples:**
+```bash
+# Run the demo
+python examples/core/cary_zcta_demo.py
+
+# Use the generated coordinates with ZCTA analysis
+socialmapper --custom-coords output/cary_police_coords.csv --geographic-level zcta --travel-time 15
+
+# Compare with block group analysis
+socialmapper --custom-coords output/cary_police_coords.csv --geographic-level block-group --travel-time 15
+```
+
 ### **Cold Cache Test** (`core/cold_cache_test.py`)
 Test SocialMapper with no cached data.
 - Fresh installation simulation

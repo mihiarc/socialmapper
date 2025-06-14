@@ -187,7 +187,7 @@ Streaming architecture implementation:
 
 ```python
 # New data pipeline (experimental)
-from socialmapper.data import StreamingDataPipeline
+from socialmapper.census.infrastructure import StreamingDataPipeline
 
 with StreamingDataPipeline() as pipeline:
     # Memory-efficient processing

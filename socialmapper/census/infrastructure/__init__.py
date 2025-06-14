@@ -11,6 +11,8 @@ from .cache import InMemoryCacheProvider, FileCacheProvider, NoOpCacheProvider, 
 from .rate_limiter import TokenBucketRateLimiter, AdaptiveRateLimiter, NoOpRateLimiter
 from .repository import SQLiteRepository, NoOpRepository, InMemoryRepository, RepositoryError
 from .geocoder import CensusGeocoder, MockGeocoder, NoOpGeocoder, GeocodingError
+from .memory import MemoryMonitor, MemoryEfficientDataProcessor, get_memory_monitor, memory_efficient_processing
+from .streaming import StreamingDataPipeline, ModernDataExporter, get_streaming_pipeline
 
 __all__ = [
     # Configuration
@@ -43,4 +45,15 @@ __all__ = [
     "MockGeocoder",
     "NoOpGeocoder",
     "GeocodingError",
+    
+    # Memory Management
+    "MemoryMonitor",
+    "MemoryEfficientDataProcessor", 
+    "get_memory_monitor",
+    "memory_efficient_processing",
+    
+    # Streaming
+    "StreamingDataPipeline",
+    "ModernDataExporter",
+    "get_streaming_pipeline",
 ] 

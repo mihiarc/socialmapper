@@ -206,8 +206,12 @@ def extract_poi_data(
         Tuple of (poi_data, base_filename, state_abbreviations, sampled_pois)
     """
     from ..query import build_overpass_query, create_poi_config, format_results, query_overpass
-    from ..states import StateFormat, normalize_state, normalize_state_list
+    from ..census.services.geography_service import StateFormat
+    from ..census import get_census_system
 
+    # Get census system for state normalization
+    census_system = get_census_system()
+    
     state_abbreviations = []
     sampled_pois = False
 
@@ -221,7 +225,7 @@ def extract_poi_data(
             and "states" in poi_data["metadata"]
             and poi_data["metadata"]["states"]
         ):
-            state_abbreviations = normalize_state_list(
+            state_abbreviations = census_system.normalize_state_list(
                 poi_data["metadata"]["states"], to_format=StateFormat.ABBREVIATION
             )
 
@@ -258,7 +262,7 @@ def extract_poi_data(
             )
 
         # Normalize state to abbreviation if provided
-        state_abbr = normalize_state(state, to_format=StateFormat.ABBREVIATION) if state else None
+        state_abbr = census_system.normalize_state(state, to_format=StateFormat.ABBREVIATION) if state else None
 
         # Create POI configuration
         config = create_poi_config(
@@ -322,7 +326,7 @@ def extract_poi_data(
         # Extract state from config if available
         state_name = config.get("state")
         if state_name:
-            state_abbr = normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
+            state_abbr = census_system.normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
             if state_abbr and state_abbr not in state_abbreviations:
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from parameters: {state_name} ({state_abbr})")

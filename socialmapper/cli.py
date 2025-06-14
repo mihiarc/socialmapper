@@ -21,7 +21,8 @@ from rich.table import Table
 from . import __version__
 from .core import run_socialmapper
 from .progress import get_progress_tracker
-from .states import StateFormat, normalize_state
+from .census.services.geography_service import StateFormat
+from .census import get_census_system
 from .ui.rich_console import (
     console,
     get_logger,
@@ -238,11 +239,10 @@ def main():
         # Execute the full pipeline
         if args.poi:
             # Normalize state to abbreviation
-            state_abbr = (
-                normalize_state(args.state, to_format=StateFormat.ABBREVIATION)
-                if args.state
-                else None
-            )
+            state_abbr = None
+            if args.state:
+                census_system = get_census_system()
+                state_abbr = census_system.normalize_state(args.state, to_format=StateFormat.ABBREVIATION)
 
             # Use direct POI parameters
             run_socialmapper(

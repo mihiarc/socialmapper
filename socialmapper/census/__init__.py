@@ -53,6 +53,7 @@ from .services.census_service import CensusService
 from .services.variable_service import CensusVariableService, VariableFormat
 from .services.geography_service import GeographyService, StateFormat
 from .services.block_group_service import BlockGroupService
+from .services.zcta_service import ZctaService
 
 # Import infrastructure
 from .infrastructure.configuration import CensusConfig, ConfigurationProvider
@@ -104,12 +105,14 @@ class CensusSystem:
         variable_service: CensusVariableService,
         geography_service: GeographyService,
         block_group_service: BlockGroupService,
+        zcta_service: ZctaService,
         geocoder: CensusGeocoder
     ):
         self._census_service = census_service
         self._variable_service = variable_service
         self._geography_service = geography_service
         self._block_group_service = block_group_service
+        self._zcta_service = zcta_service
         self._geocoder = geocoder
     
     # Census Data Operations
@@ -202,6 +205,97 @@ class CensusSystem:
         """Get TIGER/Line shapefile URLs for block groups."""
         return self._block_group_service.get_block_group_urls(state_fips, year)
     
+    # ZCTA Operations
+    def get_zctas_for_state(self, state_fips: str) -> 'gpd.GeoDataFrame':
+        """Fetch ZCTA boundaries for a state."""
+        return self._zcta_service.get_zctas_for_state(state_fips)
+    
+    def get_zctas_for_states(self, state_fips_list: List[str]) -> 'gpd.GeoDataFrame':
+        """Fetch ZCTAs for multiple states."""
+        return self._zcta_service.get_zctas_for_states(state_fips_list)
+    
+    def get_zctas(self, state_fips_list: List[str]) -> 'gpd.GeoDataFrame':
+        """Legacy compatibility method for get_zctas_for_states."""
+        return self.get_zctas_for_states(state_fips_list)
+    
+    def get_zcta_urls(self, year: int = 2020) -> Dict[str, str]:
+        """Get TIGER/Line shapefile URLs for ZCTAs."""
+        return self._zcta_service.get_zcta_urls(year)
+    
+    # Enhanced ZCTA Operations (New methods to replace legacy adapters)
+    def get_zctas_for_counties(self, counties: List[Tuple[str, str]]) -> 'gpd.GeoDataFrame':
+        """Get ZCTAs that intersect with specific counties."""
+        return self._zcta_service.get_zctas_for_counties(counties)
+    
+    def get_zcta_census_data(
+        self,
+        geoids: List[str],
+        variables: List[str],
+        api_key: Optional[str] = None
+    ) -> 'pd.DataFrame':
+        """Get census data for ZCTA GEOIDs."""
+        return self._zcta_service.get_census_data(geoids, variables, api_key)
+    
+    def get_zcta_census_data_batch(
+        self,
+        state_fips_list: List[str],
+        variables: List[str],
+        batch_size: int = 100
+    ) -> 'pd.DataFrame':
+        """Get census data for ZCTAs across multiple states with efficient batching."""
+        return self._zcta_service.get_zcta_census_data_batch(state_fips_list, variables, batch_size)
+    
+    def batch_get_zctas(
+        self, 
+        state_fips_list: List[str], 
+        batch_size: int = 5,
+        progress_callback: Optional[callable] = None
+    ) -> 'gpd.GeoDataFrame':
+        """Get ZCTAs for multiple states with batching and progress tracking."""
+        return self._zcta_service.batch_get_zctas(state_fips_list, batch_size, progress_callback)
+    
+    def get_zcta_for_point(self, lat: float, lon: float) -> Optional[str]:
+        """Get the ZCTA code for a specific point."""
+        return self._zcta_service.get_zcta_for_point(lat, lon)
+    
+    def create_streaming_manager(self):
+        """
+        Create a streaming manager interface for backward compatibility.
+        
+        This replaces the legacy get_streaming_census_manager() function.
+        
+        Returns:
+            Streaming manager with ZCTA and census data methods
+        """
+        class ModernStreamingManager:
+            def __init__(self, census_system):
+                self._census_system = census_system
+            
+            def get_zctas(self, state_fips_list: List[str]) -> 'gpd.GeoDataFrame':
+                """Get ZCTAs for multiple states."""
+                return self._census_system.get_zctas_for_states(state_fips_list)
+            
+            def get_census_data(
+                self,
+                geoids: List[str],
+                variables: List[str],
+                api_key: Optional[str] = None,
+                geographic_level: str = "zcta"
+            ) -> 'pd.DataFrame':
+                """Get census data for ZCTAs."""
+                return self._census_system.get_zcta_census_data(geoids, variables, api_key)
+            
+            def get_zctas_batch(
+                self,
+                state_fips_list: List[str], 
+                batch_size: int = 5,
+                progress_callback: Optional[callable] = None
+            ) -> 'gpd.GeoDataFrame':
+                """Get ZCTAs with batching support."""
+                return self._census_system.batch_get_zctas(state_fips_list, batch_size, progress_callback)
+        
+        return ModernStreamingManager(self)
+    
     # Geocoding Operations
     def get_geography_from_point(
         self, 
@@ -250,6 +344,69 @@ class CensusSystem:
         
         # TODO: Add neighbor functionality when neighbor system is integrated
         return sorted(list(counties))
+    
+    # Neighbor Operations
+    def get_neighboring_states(self, state_fips: str) -> List[str]:
+        """Get neighboring states for a given state."""
+        # For now, return hardcoded neighbor relationships
+        # TODO: Implement proper neighbor data loading and storage
+        state_neighbors = {
+            '01': ['13', '28', '47'],  # Alabama: GA, MS, TN
+            '04': ['06', '08', '32', '35', '49'],  # Arizona: CA, CO, NV, NM, UT
+            '05': ['22', '28', '29', '40', '47', '48'],  # Arkansas: LA, MS, MO, OK, TN, TX
+            '06': ['04', '32', '41'],  # California: AZ, NV, OR
+            '08': ['04', '20', '31', '35', '49', '56'],  # Colorado: AZ, KS, NE, NM, UT, WY
+            '09': ['25', '36', '44'],  # Connecticut: MA, NY, RI
+            '10': ['24', '34', '42'],  # Delaware: MD, NJ, PA
+            '12': ['01', '13'],  # Florida: AL, GA
+            '13': ['01', '12', '37', '45', '47'],  # Georgia: AL, FL, NC, SC, TN
+            '16': ['30', '32', '41', '49', '53'],  # Idaho: MT, NV, OR, UT, WA
+            '17': ['18', '19', '26', '29', '55'],  # Illinois: IN, IA, MI, MO, WI
+            '18': ['17', '21', '26', '39'],  # Indiana: IL, KY, MI, OH
+            '19': ['17', '20', '27', '29', '31', '46'],  # Iowa: IL, KS, MN, MO, NE, SD
+            '20': ['08', '19', '29', '31', '40'],  # Kansas: CO, IA, MO, NE, OK
+            '21': ['17', '18', '28', '29', '39', '47', '51', '54'],  # Kentucky: IL, IN, MS, MO, OH, TN, VA, WV
+            '22': ['05', '28', '48'],  # Louisiana: AR, MS, TX
+            '23': ['33'],  # Maine: NH
+            '24': ['10', '34', '42', '51', '54'],  # Maryland: DE, NJ, PA, VA, WV
+            '25': ['09', '33', '36', '44', '50'],  # Massachusetts: CT, NH, NY, RI, VT
+            '26': ['17', '18', '39', '55'],  # Michigan: IL, IN, OH, WI
+            '27': ['19', '30', '38', '46', '55'],  # Minnesota: IA, MT, ND, SD, WI
+            '28': ['01', '05', '21', '22', '47'],  # Mississippi: AL, AR, KY, LA, TN
+            '29': ['05', '17', '19', '20', '21', '31', '40', '47'],  # Missouri: AR, IL, IA, KS, KY, NE, OK, TN
+            '30': ['16', '27', '38', '46', '56'],  # Montana: ID, MN, ND, SD, WY
+            '31': ['08', '19', '20', '29', '46', '56'],  # Nebraska: CO, IA, KS, MO, SD, WY
+            '32': ['04', '06', '16', '41', '49'],  # Nevada: AZ, CA, ID, OR, UT
+            '33': ['23', '25', '50'],  # New Hampshire: ME, MA, VT
+            '34': ['10', '24', '36', '42'],  # New Jersey: DE, MD, NY, PA
+            '35': ['04', '08', '40', '48'],  # New Mexico: AZ, CO, OK, TX
+            '36': ['09', '25', '34', '42', '50'],  # New York: CT, MA, NJ, PA, VT
+            '37': ['13', '45', '47', '51'],  # North Carolina: GA, SC, TN, VA
+            '38': ['27', '30', '46'],  # North Dakota: MN, MT, SD
+            '39': ['18', '21', '26', '42', '54'],  # Ohio: IN, KY, MI, PA, WV
+            '40': ['05', '08', '20', '29', '35', '48'],  # Oklahoma: AR, CO, KS, MO, NM, TX
+            '41': ['06', '16', '32', '53'],  # Oregon: CA, ID, NV, WA
+            '42': ['10', '24', '34', '36', '39', '54'],  # Pennsylvania: DE, MD, NJ, NY, OH, WV
+            '44': ['09', '25'],  # Rhode Island: CT, MA
+            '45': ['13', '37'],  # South Carolina: GA, NC
+            '46': ['19', '27', '30', '31', '38', '56'],  # South Dakota: IA, MN, MT, NE, ND, WY
+            '47': ['01', '05', '13', '21', '28', '29', '37', '51'],  # Tennessee: AL, AR, GA, KY, MS, MO, NC, VA
+            '48': ['05', '22', '35', '40'],  # Texas: AR, LA, NM, OK
+            '49': ['04', '08', '16', '32', '56'],  # Utah: AZ, CO, ID, NV, WY
+            '50': ['25', '33', '36'],  # Vermont: MA, NH, NY
+            '51': ['21', '24', '37', '47', '54'],  # Virginia: KY, MD, NC, TN, WV
+            '53': ['16', '41'],  # Washington: ID, OR
+            '54': ['21', '24', '39', '42', '51'],  # West Virginia: KY, MD, OH, PA, VA
+            '55': ['17', '26', '27', '46'],  # Wisconsin: IL, MI, MN, SD
+            '56': ['08', '16', '30', '31', '46', '49'],  # Wyoming: CO, ID, MT, NE, SD, UT
+        }
+        return state_neighbors.get(state_fips, [])
+    
+    def get_neighboring_counties(self, county_fips: str) -> List[str]:
+        """Get neighboring counties for a given county."""
+        # For now, return empty list as county neighbor data is more complex
+        # TODO: Implement proper county neighbor data loading
+        return []
     
     # Utility Methods
     def health_check(self) -> Dict[str, bool]:
@@ -381,12 +538,14 @@ class CensusSystemBuilder:
         variable_service = CensusVariableService(config)
         geography_service = GeographyService(config, geocoder)
         block_group_service = BlockGroupService(config, api_client, cache, rate_limiter)
+        zcta_service = ZctaService(config, api_client, cache, rate_limiter)
         
         return CensusSystem(
             census_service=census_service,
             variable_service=variable_service,
             geography_service=geography_service,
             block_group_service=block_group_service,
+            zcta_service=zcta_service,
             geocoder=geocoder
         )
 
@@ -440,6 +599,37 @@ def get_legacy_adapter(census_system: Optional[CensusSystem] = None):
     return LegacyCensusAdapter(census_system)
 
 
+def get_streaming_census_manager(
+    cache_census_data: bool = False, 
+    cache_dir: Optional[str] = None
+):
+    """
+    Modern replacement for legacy streaming census manager.
+    
+    This function provides the same interface as the legacy version
+    but uses the modern census system underneath.
+    
+    Args:
+        cache_census_data: Whether to enable caching (legacy parameter)
+        cache_dir: Cache directory (legacy parameter)
+        
+    Returns:
+        Modern streaming manager with ZCTA functionality
+    """
+    # Configure cache strategy based on legacy parameters
+    cache_strategy = "file" if cache_dir else "in_memory"
+    
+    # Create modern census system with appropriate caching
+    builder = CensusSystemBuilder()
+    if cache_dir:
+        builder = builder.with_cache_dir(cache_dir)
+    
+    census_system = builder.with_cache_strategy(cache_strategy).build()
+    
+    # Return the modern streaming manager
+    return census_system.create_streaming_manager()
+
+
 # Export main interfaces
 __all__ = [
     # Main system
@@ -447,6 +637,7 @@ __all__ = [
     "CensusSystemBuilder", 
     "get_census_system",
     "get_legacy_adapter",
+    "get_streaming_census_manager",  # Modern replacement for legacy function
     
     # Domain entities
     "CensusDataPoint",
@@ -461,6 +652,7 @@ __all__ = [
     "CensusVariableService",
     "GeographyService", 
     "BlockGroupService",
+    "ZctaService",
     
     # Enums
     "StateFormat",

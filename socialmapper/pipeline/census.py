@@ -51,20 +51,15 @@ def integrate_census_data(
     # Determine states to search from POI data
     counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
     print(f"Found {len(counties)} counties from POIs")
-    state_fips = list(set([county[:2] for county in counties]))
+    state_fips = list(set([county[0] for county in counties]))
 
     # Get geographic units based on level
     if geographic_level == "zcta":
-        # TODO: ZCTA functionality not yet implemented in modern census system
-        # For now, fall back to the legacy adapter
-        from ..census.adapters import get_streaming_census_manager
-        census_manager = get_streaming_census_manager()
-        
-        # Get ZCTAs and filter to intersecting ones
+        # Use modern census system for ZCTA functionality
         with get_progress_bar(
             total=len(state_fips), desc="🏛️ Finding ZIP Code Tabulation Areas", unit="state"
         ) as pbar:
-            geographic_units_gdf = census_manager.get_zctas(state_fips)
+            geographic_units_gdf = census_system.get_zctas(state_fips)
             pbar.update(len(state_fips))
 
             # Filter to intersecting ZCTAs
@@ -113,8 +108,8 @@ def integrate_census_data(
         total=len(geoids), desc="📊 Integrating Census Data", unit=unit_desc
     ) as pbar:
         if geographic_level == "zcta":
-            # Use old streaming system for ZCTA data
-            census_data = census_manager.get_census_data(
+            # Use modern census system for ZCTA data
+            census_data = census_system._zcta_service.get_census_data(
                 geoids=geoids,
                 variables=census_codes,
                 api_key=api_key,

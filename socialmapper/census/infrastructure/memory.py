@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional
 import pandas as pd
 import psutil
 
-from ..config.optimization import MemoryConfig
+from ...config.optimization import MemoryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -471,4 +471,4 @@ def memory_efficient_processing(config: Optional[MemoryConfig] = None):
             f"peak={stats.peak_memory_mb:.1f}MB, "
             f"saved={stats.memory_saved_mb:.1f}MB, "
             f"efficiency={stats.get_memory_efficiency()*100:.1f}%"
-        )
+        ) 
