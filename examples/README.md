@@ -1,197 +1,176 @@
 # SocialMapper Examples
 
-This directory contains demonstrations, case studies, and example datasets for SocialMapper.
+Welcome to the SocialMapper examples! This directory contains tutorials, demos, and real-world case studies to help you get started with SocialMapper.
+
+## 📚 Quick Start
+
+New to SocialMapper? Start here:
+
+```bash
+# Install SocialMapper first
+pip install socialmapper
+
+# Run the getting started tutorial
+python examples/tutorials/01_getting_started.py
+```
 
 ## 📁 Directory Structure
 
 ```
 examples/
-├── README.md                      # This file
-├── demos/                         # Interactive demonstrations
-│   ├── rich_ui_demo.py           # Rich terminal UI features
-│   ├── fuquay_varina_case_study.py # Complete real-world case study
-│   ├── cold_cache_demo.py        # Cache performance demo
-│   └── simple_cold_cache_demo.py  # Simple cache performance demo
-├── data/                          # Example datasets
-│   ├── trail_heads.csv           # Trail locations dataset (2,661 POIs)
-│   ├── custom_coordinates.csv    # Sample coordinate format
-│   └── sample_addresses.csv      # Sample address dataset
-└── example_output/               # Sample output files
-    └── maps/                     # Example generated maps
+├── tutorials/          # Step-by-step tutorials for beginners
+├── core/              # Demonstrations of core features
+├── case_studies/      # Real-world analysis examples
+├── data/              # Sample datasets
+├── deprecated/        # Outdated examples (reference only)
+└── example_output/    # Sample output files
 ```
 
-## 🚀 Getting Started
+## 🎓 Tutorials (Start Here!)
 
-### Quick Demo Run
+Perfect for beginners - learn SocialMapper step by step:
+
+### 1. **Getting Started** (`tutorials/01_getting_started.py`)
+Learn the basics: finding POIs, generating isochrones, and analyzing demographics.
+
 ```bash
-# Run the comprehensive case study
-python examples/demos/fuquay_varina_case_study.py
-
-# Try the Rich UI features
-python examples/demos/rich_ui_demo.py
-
-# Explore cache performance
-python examples/demos/cold_cache_demo.py
+python examples/tutorials/01_getting_started.py
 ```
 
+### 2. **Custom POIs** (`tutorials/02_custom_pois.py`)
+Use your own points of interest from CSV files.
 
-## 📋 Demo Descriptions
+```bash
+python examples/tutorials/02_custom_pois.py
+```
 
-### 🏛️ Fuquay-Varina Case Study (`fuquay_varina_case_study.py`)
-**Complete real-world demonstration** showing SocialMapper's full capabilities:
+## 🔧 Core Feature Demos
 
-- **Location**: Fuquay-Varina Library, NC
-- **Features**: Neighbor system optimization, geographic analysis, performance benchmarking
-- **Use Case**: Community resource accessibility analysis
-- **Duration**: ~2-3 minutes
+Explore specific SocialMapper capabilities:
 
-**What you'll see**:
-- Parquet-based neighbor system performance
-- Geographic context analysis (counties and states)
-- Real-world workflow demonstration
-- Performance metrics and optimization benefits
+### **Address Geocoding** (`core/address_geocoding.py`)
+Convert addresses to coordinates with multiple geocoding providers.
+- Batch geocoding
+- Provider comparison
+- Caching strategies
 
-### 🎨 Rich UI Demo (`rich_ui_demo.py`)
-**Beautiful terminal interface showcase** featuring SocialMapper's enhanced UX:
+### **Neighbor System** (`core/neighbor_system.py`)
+Efficient census block group lookups using the parquet-based system.
+- Performance comparisons
+- API usage examples
+- Memory efficiency
 
-- **Features**: Progress bars, tables, status indicators, formatted output
-- **Interactive**: Real-time progress tracking simulation
-- **Visual**: Color-coded panels and professional formatting
-- **Duration**: ~1-2 minutes
+### **OSMnx Integration** (`core/osmnx_integration.py`)
+Advanced OpenStreetMap queries and network analysis.
+- Custom OSM queries
+- Network statistics
+- Multi-modal routing
 
-**What you'll see**:
-- Beautiful banners and branding
-- Progress bars with performance metrics
-- Formatted data tables (POIs, census variables)
-- Status spinners and completion summaries
+### **ZCTA Analysis** (`core/zcta_analysis.py`)
+Compare block group vs ZIP code level analysis.
+- ZCTA boundaries
+- Trade-offs in geographic resolution
+- Use case examples
 
+### **Cold Cache Test** (`core/cold_cache_test.py`)
+Test SocialMapper with no cached data.
+- Fresh installation simulation
+- Performance benchmarks
+- Cache building strategies
 
-### ⚡ Cache Performance Demo (`cold_cache_demo.py`)
-**Performance analysis** showcasing SocialMapper's caching capabilities:
+### **Rich UI Demo** (`core/rich_ui_demo.py`)
+Beautiful terminal output with progress tracking.
+- Progress bars and spinners
+- Formatted tables
+- Status updates
 
-- **Location**: Various test areas
-- **Features**: Cache initialization, performance metrics, data persistence
-- **Technical**: Before/after performance comparisons
-- **Duration**: ~2-3 minutes
+## 🌍 Case Studies
 
-**What you'll see**:
-- Cache system initialization and optimization
-- Performance metrics for different operations
-- Data persistence and retrieval speed
-- Memory and storage optimization benefits
+Real-world examples with complete workflows:
 
-## 📊 Example Datasets
+### **Fuquay-Varina Library Analysis** (`case_studies/fuquay_varina_library.py`)
+A complete accessibility analysis of a community library in North Carolina.
+- Real location data
+- Multiple census variables
+- Performance optimization techniques
 
-### `trail_heads.csv` (156KB, 2,661 records)
-**Large-scale POI dataset** for performance testing and real-world scenarios:
-- **Content**: Trail locations across multiple states
-- **Use**: Performance benchmarking, batch processing demos
-- **Format**: Standard CSV with lat/lon coordinates
+## 📊 Sample Data
 
-### `custom_coordinates.csv` (83B, 2 records)  
-**Minimal example** showing custom coordinate input format:
-- **Content**: Sample POI locations for testing
-- **Use**: Quick testing and format demonstration
-- **Format**: Simple CSV with name, lat, lon
+Example datasets for testing:
 
+- **`data/custom_coordinates.csv`** - Simple POI format example
+- **`data/sample_addresses.csv`** - Addresses for geocoding demos
+- **`data/trail_heads.csv`** - Large dataset (2,661 trails) for performance testing
 
-## 🎯 Usage Patterns
+## 🚀 Common Usage Patterns
 
-### Basic SocialMapper Workflow
+### Basic Analysis
 ```python
 from socialmapper import run_socialmapper
 
-# Using example data
 results = run_socialmapper(
-    custom_coords_path="examples/data/trail_heads.csv",
+    state="North Carolina",
+    county="Wake County",
+    place_type="library",
     travel_time=15,
-    census_variables=['total_population', 'median_income'],
-    export_maps=True
+    census_variables=['total_population', 'median_income']
 )
 ```
 
-### Interactive Demo Exploration
+### Custom POIs
 ```python
-# Run all demos sequentially
-import subprocess
-
-demos = [
-    "examples/demos/fuquay_varina_case_study.py",
-    "examples/demos/rich_ui_demo.py", 
-    "examples/demos/cold_cache_demo.py"
-]
-
-for demo in demos:
-    print(f"Running {demo}...")
-    subprocess.run(["python", demo])
-```
-
-### Performance Testing with Examples
-```python
-# Use example data for performance testing
-from tests.performance.benchmark_quick import run_performance_test
-
-# Test with trail_heads dataset
-run_performance_test("examples/data/trail_heads.csv")
-```
-
-## 🧪 Integration with Tests
-
-The examples work seamlessly with the testing infrastructure:
-
-```bash
-# Run performance tests using example data
-python tests/performance/benchmark_comprehensive.py
-python tests/performance/benchmark_quick.py
-
-# Both tests can use examples/data/trail_heads.csv
-```
-
-## 🔧 Customizing Examples
-
-### Adding Your Own Data
-1. **Format**: Follow the CSV structure in `custom_coordinates.csv`
-2. **Required columns**: name, latitude, longitude
-3. **Optional columns**: state, type, address
-
-### Running Custom Analysis
-```python
-# Create your own demo based on the examples
-from socialmapper import run_socialmapper
-
 results = run_socialmapper(
-    custom_coords_path="your_data.csv",
-    travel_time=20,  # Adjust as needed
+    custom_coords_path="my_locations.csv",
+    travel_time=10,
     census_variables=['total_population'],
-    export_csv=True,
     export_maps=True
 )
 ```
 
-## 📚 Learning Path
+### Batch Processing
+```python
+# Analyze multiple POI types
+for poi_type in ['library', 'school', 'park']:
+    results = run_socialmapper(
+        state="California",
+        county="Los Angeles County",
+        place_type=poi_type,
+        travel_time=15
+    )
+```
 
-**Recommended order for exploring SocialMapper**:
+## 💡 Tips for Examples
 
-1. **Start**: `fuquay_varina_case_study.py` - Complete overview
-2. **UI**: `rich_ui_demo.py` - Beautiful terminal experience  
-3. **API**: `modern_api_demo.py` - Modern API usage
-4. **Performance**: `cold_cache_demo.py` - Cache and performance features
-5. **Testing**: `tests/performance/` - Performance validation
+1. **Start Simple**: Begin with tutorials before moving to advanced demos
+2. **Check Dependencies**: Ensure SocialMapper is installed: `pip install socialmapper`
+3. **API Keys**: Some features work better with a Census API key (set `CENSUS_API_KEY` environment variable)
+4. **Performance**: First runs may be slower due to cache building
+5. **Visualizations**: Set `export_maps=True` to generate map outputs
 
 ## 🆘 Troubleshooting
 
 ### Common Issues
-- **Import errors**: Ensure SocialMapper is installed (`pip install socialmapper`)
-- **Missing data**: Check that CSV files exist in `examples/data/`
-- **Performance**: Use smaller datasets for initial testing
+
+- **Import Errors**: Make sure SocialMapper is installed
+- **No Results**: Check internet connection and API availability
+- **Slow Performance**: Normal on first run - caches will speed up subsequent runs
+- **Memory Issues**: Use smaller datasets or reduce the number of census variables
 
 ### Getting Help
-- **Documentation**: Check `docs/` directory
-- **Issues**: Create GitHub issues for bugs
-- **Examples**: All demos include error handling and help text
+
+- Check the [main documentation](../docs/)
+- Review error messages - they often suggest solutions
+- Open an issue on GitHub for bugs
+
+## 📈 Next Steps
+
+After exploring these examples:
+
+1. Create your own analysis with local data
+2. Experiment with different travel times and modes
+3. Compare accessibility across different communities
+4. Share your findings!
 
 ---
 
-**Happy mapping!** 🗺️✨
-
-Explore these examples to understand SocialMapper's capabilities and find patterns for your own community analysis projects. 
+Happy mapping! 🗺️✨
