@@ -19,6 +19,7 @@ from ..domain.interfaces import (
     ConfigurationProvider,
     RateLimiter
 )
+from ...progress import get_progress_bar
 
 logger = logging.getLogger(__name__)
 
