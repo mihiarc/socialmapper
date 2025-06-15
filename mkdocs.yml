@@ -111,6 +111,10 @@ nav:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quick-start.md
   
+  - Tutorials:
+    - Overview: tutorials/index.md
+    - Getting Started: tutorials/getting-started-tutorial.md
+  
   - User Guide:
     - Overview: user-guide/index.md
     - Finding Places: user-guide/finding-places.md

@@ -245,6 +245,11 @@ class PipelineOrchestrator:
         # Get the report which contains the main results
         result = self.stage_outputs.get("report", {})
 
+        # Add POI data if available (needed for API client to calculate poi_count)
+        if "extract" in self.stage_outputs:
+            poi_data = self.stage_outputs["extract"][0]
+            result["pois"] = poi_data.get("pois", [])
+
         # Add processed data for backward compatibility
         if "isochrone" in self.stage_outputs:
             result["isochrones"] = self.stage_outputs["isochrone"]
