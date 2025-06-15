@@ -22,46 +22,33 @@ Discover how to work with your own location data instead of OpenStreetMap querie
 - Analyzing accessibility for custom locations
 - Combining custom and OpenStreetMap data
 
-### 3. ZCTA Analysis
-**File:** `02_zcta_analysis.py`
-
-Analyze demographics at the ZIP Code Tabulation Area (ZCTA) level. This tutorial covers:
-- Working with ZCTA boundaries
-- Aggregating demographic data by ZIP code
-- Creating ZCTA-level visualizations
-
-### 4. ZCTA POI Analysis
-**File:** `03_zcta_poi_analysis.py`
-
-Combine ZCTA analysis with POI accessibility. Learn how to:
-- Find POIs within specific ZIP codes
-- Analyze demographic access to services by ZCTA
-- Create comparative analyses across ZIP codes
-
-### 5. Modern ZCTA API
-**File:** `04_modern_zcta_api.py`
-
-Use the latest ZCTA analysis features with the modern API. This tutorial shows:
-- Streamlined ZCTA workflows
-- Advanced demographic queries
-- Performance optimizations for large-scale analysis
-
-### 6. TIGER API and ZCTA Boundaries
-**File:** `05_tiger_api_zcta_boundaries.py`
-
-Work with official Census TIGER boundary data. Learn about:
-- Accessing TIGER/Line shapefiles
-- Working with official ZCTA boundaries
-- Integrating Census geography with analysis
-
-### 7. Travel Modes
-**File:** `05_travel_modes.py`
+### 3. Travel Modes
+**File:** `03_travel_modes.py`
 
 Explore different transportation modes for accessibility analysis. This tutorial covers:
 - Walking, driving, and biking isochrones
 - Comparing accessibility across travel modes
 - Understanding mode-specific network constraints
 - Customizing travel parameters
+
+### 4. ZIP Code (ZCTA) Analysis
+**File:** `04_zipcode_analysis.py`
+
+Analyze demographics at the ZIP Code Tabulation Area (ZCTA) level. This tutorial covers:
+- Understanding ZCTAs vs block groups
+- Fetching ZCTA boundaries and census data
+- Batch processing multiple states
+- Choosing the right geographic unit for your analysis
+
+### 5. Address Geocoding
+**File:** `05_address_geocoding.py`
+
+Convert street addresses into geographic coordinates for analysis. This tutorial demonstrates:
+- Single and batch address geocoding
+- Understanding quality levels and providers
+- Error handling for problematic addresses
+- Creating custom POI datasets from address lists
+- Integration with demographic analysis
 
 ## Running the Tutorials
 
@@ -95,14 +82,12 @@ All tutorials are located in the `examples/tutorials/` directory of the SocialMa
 
 ## Tutorial Data
 
-Some tutorials include sample data files:
-- `custom_pois.csv`: Example custom location data for tutorial 2
-- `README_ZCTA_TUTORIALS.md`: Additional documentation for ZCTA-related tutorials
-
-Output from the tutorials will be saved in:
+The tutorials create their own sample data as needed. Output from the tutorials will be saved in:
 - `output/csv/`: Demographic and analysis results in CSV format
 - `output/isochrones/`: Generated travel time visualizations
 - `cache/`: Cached geocoding and network data for faster re-runs
+
+Each tutorial creates its own subdirectory in the output folder to keep results organized.
 
 ## Tips for Success
 

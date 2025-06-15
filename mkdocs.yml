@@ -117,6 +117,7 @@ nav:
     - Custom POIs: tutorials/custom-pois-tutorial.md
     - Travel Modes: tutorials/travel-modes-tutorial.md
     - ZIP Code Analysis: tutorials/zcta-analysis-tutorial.md
+    - Address Geocoding: tutorials/address-geocoding-tutorial.md
   
   - User Guide:
     - Overview: user-guide/index.md
