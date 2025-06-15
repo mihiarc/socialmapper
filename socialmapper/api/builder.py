@@ -12,6 +12,8 @@ from typing import Dict, List, Optional, Self, Union
 
 # Import census variable validation
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable, validate_census_variable
+# Import travel mode
+from ..isochrone import TravelMode
 
 
 class GeographicLevel(Enum):
@@ -59,6 +61,7 @@ class SocialMapperBuilder:
         """Initialize builder with sensible defaults."""
         self._config = {
             "travel_time": 15,
+            "travel_mode": TravelMode.DRIVE,
             "geographic_level": GeographicLevel.BLOCK_GROUP,
             "census_variables": ["total_population"],
             "export_csv": True,
@@ -105,6 +108,17 @@ class SocialMapperBuilder:
                 f"Travel time must be between 1 and 120 minutes, got {minutes}"
             )
         self._config["travel_time"] = minutes
+        return self
+
+    def with_travel_mode(self, mode: Union[str, TravelMode]) -> Self:
+        """Set the travel mode for isochrone generation (walk, bike, drive)."""
+        if isinstance(mode, str):
+            try:
+                mode = TravelMode.from_string(mode)
+            except ValueError as e:
+                self._validation_errors.append(str(e))
+                return self
+        self._config["travel_mode"] = mode
         return self
 
     def with_census_variables(self, *variables: str) -> Self:

@@ -25,6 +25,7 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 We're excited to announce our latest release with these improvements:
 
+- **Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
 - **Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
 - **Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
 - **Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
@@ -34,7 +35,7 @@ We're excited to announce our latest release with these improvements:
 ## Features
 
 - **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
-- **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time
+- **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time by walking, biking, or driving
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
 - **Calculating Travel Distance** - Measure the travel distance along roads from the point of interest to the block group centroids
 - **Retrieving Demographic Data** - Pull census data for the identified areas
@@ -99,6 +100,7 @@ with SocialMapperClient() as client:
         .with_location("Chicago", "IL")
         .with_osm_pois("leisure", "park")
         .with_travel_time(20)
+        .with_travel_mode("walk")  # Analyze walking access
         .with_census_variables("total_population", "median_income", "percent_poverty")
         .with_geographic_level("zcta")  # Use ZIP codes instead of block groups
         .with_exports(csv=True, isochrones=True)  # Generate maps
@@ -144,6 +146,40 @@ socialmapper --custom-coords "path/to/coordinates.csv" \
 # Use ZIP codes instead of block groups
 socialmapper --poi --geocode-area "Denver" --state "Colorado" \
     --poi-type "amenity" --poi-name "hospital" --geographic-level zcta
+
+# Analyze walking access to parks
+socialmapper --poi --geocode-area "Portland" --state "Oregon" \
+    --poi-type "leisure" --poi-name "park" --travel-time 15 \
+    --travel-mode walk
+```
+
+### Travel Modes
+
+SocialMapper supports three travel modes, each using appropriate road networks and speeds:
+
+- **walk** - Pedestrian paths, sidewalks, crosswalks (default: 5 km/h)
+- **bike** - Bike lanes, shared roads, trails (default: 15 km/h)  
+- **drive** - Roads accessible by cars (default: 50 km/h)
+
+```python
+from socialmapper import SocialMapperBuilder, TravelMode
+
+# Compare walking vs driving access
+walk_config = (SocialMapperBuilder()
+    .with_location("Seattle", "WA")
+    .with_osm_pois("amenity", "grocery_or_supermarket")
+    .with_travel_time(15)
+    .with_travel_mode(TravelMode.WALK)
+    .build()
+)
+
+drive_config = (SocialMapperBuilder()
+    .with_location("Seattle", "WA")
+    .with_osm_pois("amenity", "grocery_or_supermarket")
+    .with_travel_time(15)
+    .with_travel_mode(TravelMode.DRIVE)
+    .build()
+)
 ```
 
 ### Error Handling

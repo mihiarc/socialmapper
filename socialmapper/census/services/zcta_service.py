@@ -5,6 +5,7 @@ Handles ZIP Code Tabulation Area (ZCTA) operations including fetching boundaries
 batch processing, and TIGER/Line shapefile URL generation.
 """
 
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -19,9 +20,8 @@ from ..domain.interfaces import (
     RateLimiter
 )
 from ...progress import get_progress_bar
-from ...ui.rich_console import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ZctaService:
@@ -47,10 +47,7 @@ class ZctaService:
         state_fips: str
     ) -> gpd.GeoDataFrame:
         """
-        Fetch ZCTA boundaries for a specific state using the correct TIGER REST API.
-        
-        Uses the official TIGER REST API endpoint:
-        https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/7
+        Fetch ZCTA boundaries for a specific state.
         
         Args:
             state_fips: State FIPS code
@@ -62,137 +59,114 @@ class ZctaService:
         state_fips = state_fips.zfill(2)
         
         # Check cache first
-        cache_key = f"zctas_{state_fips}_2020"
+        cache_key = f"zctas_{state_fips}"
         if self._cache:
             cached_data = self._cache.get(cache_key)
             if cached_data:
                 logger.info(f"Loaded cached ZCTAs for state {state_fips}")
                 return cached_data
         
-        # Fetch from Census TIGER REST API
-        logger.info(f"Fetching ZCTAs for state {state_fips} from TIGER REST API")
+        # Fetch from Census API
+        logger.info(f"Fetching ZCTAs for state {state_fips}")
         
-        # Use the correct TIGER REST API endpoint for 2020 Census ZIP Code Tabulation Areas
-        # Layer 7: 2020 Census ZIP Code Tabulation Areas
-        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/7/query"
+        # Use the Census 2020 TIGER REST API endpoint for ZCTA boundaries (Layer 2)
+        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/2/query"
         
-        # Build query parameters based on the API documentation
-        params = {
-            "where": "1=1",  # Get all ZCTAs (we'll filter by state if possible)
-            "outFields": "*",  # Get all available fields
-            "returnGeometry": "true",
-            "f": "geojson",  # Use GeoJSON format for easier processing
-            "resultRecordCount": 10000,  # Higher limit for state-level queries
-            "spatialRel": "esriSpatialRelIntersects"
+        # Map state FIPS to common ZCTA prefixes (postal code patterns)
+        state_zcta_prefixes = {
+            "37": ["27", "28"],  # North Carolina: 27xxx, 28xxx
+            "45": ["29"],        # South Carolina: 29xxx
+            "13": ["30", "31"],  # Georgia: 30xxx, 31xxx
+            "51": ["22", "23", "24"],  # Virginia: 22xxx, 23xxx, 24xxx
+            "06": ["90", "91", "92", "93", "94", "95", "96"],  # California
+            "36": ["10", "11", "12", "13", "14"],  # New York
+            "48": ["75", "76", "77", "78", "79"],  # Texas
         }
         
-        try:
-            # Apply rate limiting
-            if self._rate_limiter:
-                self._rate_limiter.wait_if_needed("census")
+        # Get ZCTA prefixes for this state
+        zcta_prefixes = state_zcta_prefixes.get(state_fips, [])
+        
+        if not zcta_prefixes:
+            logger.warning(f"No ZCTA prefix mapping for state {state_fips}")
+            raise ValueError(f"No ZCTA prefix mapping available for state {state_fips}")
+        
+        # Fetch ZCTAs for each prefix separately (API doesn't handle complex OR clauses well)
+        all_zctas = []
+        
+        for prefix in zcta_prefixes:
+            logger.info(f"Fetching ZCTAs with prefix {prefix}")
             
-            # Use requests directly for the TIGER REST API
-            import requests
-            response = requests.get(base_url, params=params, timeout=60)
+            params = {
+                "where": f"GEOID LIKE '{prefix}%'",
+                "outFields": "GEOID,ZCTA5,NAME,POP100,HU100,AREALAND,AREAWATER,CENTLAT,CENTLON",
+                "returnGeometry": "true",
+                "f": "geojson",
+                "resultRecordCount": 2000,
+            }
             
-            if response.status_code == 200:
-                data = response.json()
-                logger.debug(f"TIGER API response keys: {list(data.keys())}")
+            try:
+                # Apply rate limiting
+                if self._rate_limiter:
+                    self._rate_limiter.wait_if_needed("census")
                 
-                # Handle GeoJSON response format
-                if "features" in data and isinstance(data["features"], list):
-                    logger.info(f"Found {len(data['features'])} ZCTA features in response")
+                # Use requests directly since we're calling a different API
+                import requests
+                response = requests.get(base_url, params=params, timeout=60)
+                
+                logger.info(f"API request URL: {response.url}")
+                logger.info(f"Response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    # Parse the GeoJSON response
+                    try:
+                        data = response.json()
+                        logger.info(f"API response keys: {list(data.keys())}")
+                    except Exception as json_error:
+                        logger.error(f"Failed to parse JSON response: {json_error}")
+                        logger.error(f"Raw response: {response.text[:500]}")
+                        continue  # Skip this prefix and try the next one
                     
-                    if not data["features"]:
-                        logger.warning(f"No ZCTA features returned for query")
-                        return gpd.GeoDataFrame()
-                    
-                    # Log sample feature for debugging
-                    sample_feature = data["features"][0]
-                    logger.debug(f"Sample ZCTA feature properties: {list(sample_feature.get('properties', {}).keys())}")
-                    
-                    # Convert GeoJSON to GeoDataFrame
-                    zctas = gpd.GeoDataFrame.from_features(data["features"], crs="EPSG:4326")
-                    logger.info(f"Created GeoDataFrame with {len(zctas)} ZCTAs")
-                    logger.debug(f"ZCTA columns: {list(zctas.columns)}")
-                    
-                    # The TIGER API returns all ZCTAs nationally, so we need to filter by state
-                    # ZCTAs don't have direct state FIPS, so we'll use spatial filtering or GEOID prefix
-                    original_count = len(zctas)
-                    
-                    # Method 1: Try filtering by GEOID prefix (first 2 digits often correspond to state)
-                    # Note: This is approximate since ZCTAs can cross state boundaries
-                    if 'GEOID' in zctas.columns:
-                        # Filter ZCTAs that start with the state FIPS (approximate)
-                        state_mask = zctas['GEOID'].str.startswith(state_fips)
-                        if state_mask.any():
-                            zctas = zctas[state_mask].copy()
-                            logger.info(f"Filtered by GEOID prefix: {len(zctas)} ZCTAs for state {state_fips}")
+                    # Handle GeoJSON format
+                    if "features" in data and isinstance(data["features"], list):
+                        logger.info(f"Found {len(data['features'])} features for prefix {prefix}")
+                        
+                        if data["features"]:
+                            # Create GeoDataFrame directly from GeoJSON
+                            prefix_zctas = gpd.GeoDataFrame.from_features(data["features"], crs="EPSG:4326")
+                            all_zctas.append(prefix_zctas)
+                            logger.info(f"Added {len(prefix_zctas)} ZCTAs for prefix {prefix}")
                         else:
-                            logger.warning(f"No ZCTAs found with GEOID prefix {state_fips}")
-                    
-                    # Method 2: If we still have too many or too few, try spatial filtering
-                    # This would require state boundaries, which we'll skip for now
-                    
-                    if len(zctas) == 0:
-                        logger.warning(f"No ZCTAs found for state {state_fips} after filtering")
-                        return gpd.GeoDataFrame()
-                    
-                    # Standardize column names based on TIGER API field names
-                    # From the API docs: GEOID, ZCTA5, BASENAME, NAME, etc.
-                    column_mapping = {
-                        'ZCTA5': 'ZCTA5CE',  # Map to standard column name
-                        'GEOID': 'GEOID',    # Keep as is
-                        'BASENAME': 'BASENAME',
-                        'NAME': 'NAME'
-                    }
-                    
-                    for old_col, new_col in column_mapping.items():
-                        if old_col in zctas.columns and old_col != new_col:
-                            zctas[new_col] = zctas[old_col]
-                    
-                    # Ensure we have the essential columns
-                    if 'GEOID' not in zctas.columns:
-                        if 'ZCTA5' in zctas.columns:
-                            zctas['GEOID'] = zctas['ZCTA5']
-                        else:
-                            logger.error("No GEOID or ZCTA5 column found in response")
-                            return gpd.GeoDataFrame()
-                    
-                    if 'ZCTA5CE' not in zctas.columns:
-                        if 'ZCTA5' in zctas.columns:
-                            zctas['ZCTA5CE'] = zctas['ZCTA5']
-                        elif 'GEOID' in zctas.columns:
-                            zctas['ZCTA5CE'] = zctas['GEOID']
-                    
-                    # Add state FIPS for consistency (approximate)
-                    zctas['STATEFP'] = state_fips
-                    
-                    # Validate geometries
-                    zctas = zctas[zctas.geometry.is_valid].copy()
-                    
-                    if len(zctas) == 0:
-                        logger.warning(f"No valid ZCTA geometries found for state {state_fips}")
-                        return gpd.GeoDataFrame()
-                    
-                    # Cache the result
-                    if self._cache:
-                        self._cache.set(cache_key, zctas, ttl=86400)  # Cache for 24 hours
-                    
-                    logger.info(f"Successfully retrieved {len(zctas)} ZCTAs for state {state_fips} (filtered from {original_count})")
-                    return zctas
-                    
+                            logger.info(f"No ZCTAs found for prefix {prefix}")
+                    else:
+                        logger.warning(f"Unexpected response format for prefix {prefix}: {list(data.keys())}")
                 else:
-                    logger.error(f"Unexpected TIGER API response format: {list(data.keys())}")
-                    return gpd.GeoDataFrame()
+                    logger.warning(f"API returned status code {response.status_code} for prefix {prefix}")
                     
-            else:
-                logger.error(f"TIGER API returned status code {response.status_code}: {response.text}")
-                return gpd.GeoDataFrame()
-                
-        except Exception as e:
-            logger.error(f"Error fetching ZCTAs for state {state_fips} from TIGER API: {e}")
-            return gpd.GeoDataFrame()
+            except Exception as e:
+                logger.error(f"Error fetching ZCTAs for prefix {prefix}: {e}")
+                continue  # Skip this prefix and try the next one
+        
+        # Combine all ZCTAs
+        if all_zctas:
+            zctas = gpd.pd.concat(all_zctas, ignore_index=True)
+            logger.info(f"Combined {len(zctas)} ZCTAs from {len(all_zctas)} prefixes")
+            
+            # Standardize column names for consistency
+            if "ZCTA5CE" not in zctas.columns and "ZCTA5" in zctas.columns:
+                zctas["ZCTA5CE"] = zctas["ZCTA5"]
+            
+            # Ensure state FIPS is available
+            if "STATEFP" not in zctas.columns:
+                zctas["STATEFP"] = state_fips
+            
+            # Cache the result
+            if self._cache:
+                self._cache.set(cache_key, zctas)
+            
+            logger.info(f"Retrieved {len(zctas)} ZCTAs for state {state_fips}")
+            return zctas
+        else:
+            raise ValueError(f"No ZCTAs found for any prefix in state {state_fips}")
     
     def get_zctas_for_states(
         self, 
@@ -209,26 +183,19 @@ class ZctaService:
         """
         all_zctas = []
         
-        with get_progress_bar(total=len(state_fips_list), desc="Fetching ZCTAs by state", unit="state") as pbar:
-            for state_fips in state_fips_list:
-                pbar.update(1)
+        progress_bar = get_progress_bar()
+        for state_fips in progress_bar(state_fips_list, desc="Fetching ZCTAs by state"):
             try:
                 state_zctas = self.get_zctas_for_state(state_fips)
-                if not state_zctas.empty:
-                    all_zctas.append(state_zctas)
-                else:
-                    logger.warning(f"No ZCTAs retrieved for state {state_fips}")
+                all_zctas.append(state_zctas)
             except Exception as e:
                 logger.warning(f"Error fetching ZCTAs for state {state_fips}: {e}")
         
         if not all_zctas:
-            logger.error("No ZCTA data could be retrieved for any state")
-            return gpd.GeoDataFrame()
+            raise ValueError("No ZCTA data could be retrieved")
         
         # Combine all state ZCTAs
-        combined_zctas = pd.concat(all_zctas, ignore_index=True)
-        logger.info(f"Combined {len(combined_zctas)} ZCTAs from {len(all_zctas)} states")
-        return combined_zctas
+        return pd.concat(all_zctas, ignore_index=True)
     
     def get_zcta_urls(self, year: int = 2020) -> Dict[str, str]:
         """
@@ -340,55 +307,28 @@ class ZctaService:
         
         try:
             # Use the Census Data API for ZCTA data
-            # The API format requires individual calls for each ZCTA due to the 'for' parameter limitation
-            all_responses = []
+            # Build the geography parameter for ZCTAs
+            geography_param = f"zip code tabulation area:{','.join(geoids)}"
             
-            # Process ZCTAs in batches to respect API limits but handle individual geography
-            for i, geoid in enumerate(geoids):
-                if self._rate_limiter:
-                    self._rate_limiter.wait_if_needed("census")
-                
-                # Build the geography parameter for single ZCTA
-                geography_param = f"zip code tabulation area:{geoid}"
-                
-                logger.debug(f"Fetching data for ZCTA {geoid} ({i+1}/{len(geoids)})")
-                
-                try:
-                    # Make the API call using the modern API client
-                    api_response = self._api_client.get_census_data(
-                        variables=variables + ["NAME"],  # Always include NAME
-                        geography=geography_param,
-                        year=2023,  # Use most recent ACS 5-year data
-                        dataset="acs/acs5"
-                    )
-                    
-                    if api_response and len(api_response) >= 2:
-                        all_responses.extend(api_response[1:])  # Skip header for subsequent calls
-                    
-                except Exception as e:
-                    logger.warning(f"Failed to fetch data for ZCTA {geoid}: {e}")
-                    continue
+            # Make the API call using the modern API client
+            api_response = self._api_client.get_census_data(
+                variables=variables,
+                geography=geography_param,
+                year=2023,  # Use most recent ACS 5-year data
+                dataset="acs/acs5"
+            )
             
-            if not all_responses:
-                logger.warning("No data returned from Census API for any ZCTAs")
+            if not api_response or len(api_response) < 2:  # Need header + data rows
+                logger.warning("No data returned from Census API for ZCTAs")
                 return pd.DataFrame()
             
-            # Use headers from the first successful response
-            if geoids:
-                # Get headers by making a sample call
-                try:
-                    sample_response = self._api_client.get_census_data(
-                        variables=variables + ["NAME"],
-                        geography=f"zip code tabulation area:{geoids[0]}",
-                        year=2023,
-                        dataset="acs/acs5"
-                    )
-                    headers = sample_response[0] if sample_response else []
-                except:
-                    headers = variables + ["NAME", "zip code tabulation area"]
+            # Convert API response to DataFrame
+            # First row is headers, rest are data
+            headers = api_response[0]
+            data_rows = api_response[1:]
             
-            # Create DataFrame from collected responses
-            df = pd.DataFrame(all_responses, columns=headers)
+            # Create DataFrame
+            df = pd.DataFrame(data_rows, columns=headers)
             
             # Transform to legacy format expected by the adapters
             legacy_rows = []
@@ -424,199 +364,6 @@ class ZctaService:
             logger.error(f"Error fetching ZCTA census data: {e}")
             # Return empty DataFrame in legacy format on error
             return pd.DataFrame(columns=['GEOID', 'variable_code', 'value', 'year', 'dataset', 'NAME'])
-    
-    def get_census_data_efficient(
-        self,
-        geoids: List[str],
-        variables: List[str],
-        batch_size: int = 50,
-        year: int = 2023,
-        dataset: str = "acs/acs5"
-    ) -> pd.DataFrame:
-        """
-        Efficiently fetch census data for multiple ZCTAs using optimized batching.
-        
-        Based on the Census API format:
-        https://api.census.gov/data/2023/acs/acs5?get=NAME,B01001_001E&for=zip%20code%20tabulation%20area:77494
-        
-        Args:
-            geoids: List of ZCTA geoids (e.g., ['77494', '27601'])
-            variables: List of census variable codes (e.g., ['B01001_001E'])
-            batch_size: Number of ZCTAs to process per batch
-            year: Census year (default: 2023)
-            dataset: Census dataset (default: acs/acs5)
-            
-        Returns:
-            DataFrame with census data in consistent format
-        """
-        import pandas as pd
-        
-        if not geoids or not variables:
-            return pd.DataFrame()
-        
-        # Apply rate limiting
-        if self._rate_limiter:
-            self._rate_limiter.wait_if_needed("census")
-        
-        logger.info(f"Efficiently fetching census data for {len(geoids)} ZCTAs and {len(variables)} variables")
-        
-        # Check cache first
-        cache_key = f"zcta_efficient_{year}_{dataset}_{hash(tuple(sorted(geoids)))}{hash(tuple(sorted(variables)))}"
-        if self._cache:
-            cached_data = self._cache.get(cache_key)
-            if cached_data:
-                logger.info("Loaded cached efficient ZCTA census data")
-                return cached_data
-        
-        all_data = []
-        
-        # Process in smaller batches to respect API limits and improve reliability
-        for i in range(0, len(geoids), batch_size):
-            batch_geoids = geoids[i:i + batch_size]
-            batch_num = (i // batch_size) + 1
-            total_batches = (len(geoids) + batch_size - 1) // batch_size
-            
-            logger.debug(f"Processing efficient batch {batch_num}/{total_batches}: {len(batch_geoids)} ZCTAs")
-            
-            try:
-                batch_data = self._fetch_zcta_batch_data(batch_geoids, variables, year, dataset)
-                if not batch_data.empty:
-                    all_data.append(batch_data)
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching efficient batch {batch_num}: {e}")
-                continue
-        
-        if not all_data:
-            logger.warning("No efficient ZCTA data could be retrieved")
-            return pd.DataFrame()
-        
-        # Combine all batches
-        result_df = pd.concat(all_data, ignore_index=True)
-        
-        # Cache the result
-        if self._cache:
-            self._cache.set(cache_key, result_df, ttl=3600)  # Cache for 1 hour
-        
-        logger.info(f"Successfully retrieved efficient census data for {len(result_df)} ZCTA-variable combinations")
-        return result_df
-    
-    def _fetch_zcta_batch_data(
-        self, 
-        geoids: List[str], 
-        variables: List[str], 
-        year: int, 
-        dataset: str
-    ) -> pd.DataFrame:
-        """
-        Fetch data for a batch of ZCTAs using the proper Census API format.
-        
-        Args:
-            geoids: List of ZCTA geoids for this batch
-            variables: List of census variable codes
-            year: Census year
-            dataset: Census dataset
-            
-        Returns:
-            DataFrame with batch data
-        """
-        import pandas as pd
-        
-        all_rows = []
-        
-        # The Census API requires individual calls for each ZCTA geography
-        for geoid in geoids:
-            try:
-                if self._rate_limiter:
-                    self._rate_limiter.wait_if_needed("census")
-                
-                # Use the exact format from the example: 
-                # https://api.census.gov/data/2023/acs/acs5?get=NAME,B01001_001E&for=zip%20code%20tabulation%20area:77494
-                geography_param = f"zip code tabulation area:{geoid}"
-                
-                api_response = self._api_client.get_census_data(
-                    variables=variables + ["NAME"],
-                    geography=geography_param,
-                    year=year,
-                    dataset=dataset
-                )
-                
-                if api_response and len(api_response) >= 2:
-                    # Response format: [["NAME","B01001_001E","zip code tabulation area"], ["ZCTA5 77494","137213","77494"]]
-                    headers = api_response[0]
-                    data_row = api_response[1]
-                    
-                    # Create a row dictionary
-                    row_dict = dict(zip(headers, data_row))
-                    row_dict['GEOID'] = geoid  # Ensure we have a clean GEOID
-                    all_rows.append(row_dict)
-                    
-                    logger.debug(f"Successfully fetched data for ZCTA {geoid}")
-                else:
-                    logger.warning(f"No data returned for ZCTA {geoid}")
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching data for ZCTA {geoid}: {e}")
-                continue
-        
-        if not all_rows:
-            return pd.DataFrame()
-        
-        # Convert to DataFrame
-        df = pd.DataFrame(all_rows)
-        
-        # Transform to consistent format
-        return self._transform_to_standard_format(df, variables, year, dataset)
-    
-    def _transform_to_standard_format(
-        self, 
-        df: pd.DataFrame, 
-        variables: List[str], 
-        year: int, 
-        dataset: str
-    ) -> pd.DataFrame:
-        """
-        Transform API response DataFrame to standard format for consistency.
-        
-        Args:
-            df: Raw API response DataFrame
-            variables: List of variable codes
-            year: Census year
-            dataset: Census dataset
-            
-        Returns:
-            DataFrame in standard format
-        """
-        import pandas as pd
-        
-        standard_rows = []
-        
-        for _, row in df.iterrows():
-            geoid = row.get('GEOID', row.get('zip code tabulation area', ''))
-            name = row.get('NAME', f"ZCTA5 {geoid}")
-            
-            for variable in variables:
-                if variable in row and row[variable] is not None:
-                    try:
-                        # Handle Census null values and convert to float
-                        raw_value = row[variable]
-                        if raw_value in ['-999999999', '', None]:
-                            value = None
-                        else:
-                            value = float(raw_value)
-                    except (ValueError, TypeError):
-                        value = None
-                    
-                    standard_rows.append({
-                        'GEOID': geoid,
-                        'variable_code': variable,
-                        'value': value,
-                        'year': year,
-                        'dataset': dataset.replace('/', ''),  # Clean dataset name
-                        'NAME': name
-                    })
-        
-        return pd.DataFrame(standard_rows)
     
     def _check_arrow_support(self) -> bool:
         """Check if PyArrow is available for better performance."""

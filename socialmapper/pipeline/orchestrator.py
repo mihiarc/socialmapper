@@ -5,9 +5,10 @@ This module provides a class-based orchestrator that coordinates all pipeline st
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from ..ui.rich_console import print_error, print_info
+from ..isochrone import TravelMode
 from .census import integrate_census_data
 from .environment import setup_pipeline_environment
 from .export import export_pipeline_outputs
@@ -38,6 +39,7 @@ class PipelineConfig:
 
     # Analysis configuration
     travel_time: int = 15
+    travel_mode: Union[str, TravelMode] = TravelMode.DRIVE
     geographic_level: str = "block-group"
     census_variables: List[str] = field(default_factory=lambda: ["total_population"])
     api_key: Optional[str] = None
@@ -138,10 +140,16 @@ class PipelineOrchestrator:
         poi_data = self.stage_outputs["extract"][0]
         state_abbreviations = self.stage_outputs["extract"][2]
 
+        # Convert travel_mode string to TravelMode enum if needed
+        travel_mode = self.config.travel_mode
+        if isinstance(travel_mode, str):
+            travel_mode = TravelMode.from_string(travel_mode)
+
         return generate_isochrones(
             poi_data=poi_data,
             travel_time=self.config.travel_time,
             state_abbreviations=state_abbreviations,
+            travel_mode=travel_mode,
         )
 
     def _integrate_census(self):

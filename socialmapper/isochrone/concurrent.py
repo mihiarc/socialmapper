@@ -30,6 +30,7 @@ from .clustering import (
     create_isochrone_from_poi_with_network,
     create_optimized_clusters,
 )
+from .travel_modes import TravelMode
 
 from ..ui.rich_console import get_logger
 logger = get_logger(__name__)
@@ -133,7 +134,7 @@ class ConcurrentIsochroneProcessor:
         return network_workers, isochrone_workers
 
     def _download_cluster_network(
-        self, cluster: OptimizedPOICluster, travel_time_minutes: int
+        self, cluster: OptimizedPOICluster, travel_time_minutes: int, travel_mode: TravelMode = TravelMode.DRIVE
     ) -> Tuple[str, Optional[Any]]:
         """Download network for a cluster (thread-safe)."""
         try:
@@ -143,6 +144,7 @@ class ConcurrentIsochroneProcessor:
                 travel_time_minutes=travel_time_minutes,
                 cluster_size=len(cluster),
                 cache=self.cache,
+                travel_mode=travel_mode,
             )
 
             if network is not None:
@@ -158,7 +160,7 @@ class ConcurrentIsochroneProcessor:
             return cluster.cluster_id, None
 
     def _generate_cluster_isochrones(
-        self, cluster: OptimizedPOICluster, travel_time_minutes: int
+        self, cluster: OptimizedPOICluster, travel_time_minutes: int, travel_mode: TravelMode = TravelMode.DRIVE
     ) -> List[gpd.GeoDataFrame]:
         """Generate isochrones for all POIs in a cluster."""
         isochrones = []
@@ -174,6 +176,7 @@ class ConcurrentIsochroneProcessor:
                     network=cluster.network,
                     network_crs=cluster.network_crs,
                     travel_time_minutes=travel_time_minutes,
+                    travel_mode=travel_mode,
                 )
 
                 if isochrone_gdf is not None:
@@ -197,6 +200,7 @@ class ConcurrentIsochroneProcessor:
         max_cluster_radius_km: float = 15.0,
         min_cluster_size: int = 2,
         progress_callback: Optional[Callable] = None,
+        travel_mode: TravelMode = TravelMode.DRIVE,
     ) -> List[gpd.GeoDataFrame]:
         """
         Process POIs concurrently to generate isochrones.
@@ -207,6 +211,7 @@ class ConcurrentIsochroneProcessor:
             max_cluster_radius_km: Maximum clustering radius
             min_cluster_size: Minimum POIs per cluster
             progress_callback: Optional callback for progress updates
+            travel_mode: Mode of travel (walk, bike, drive)
 
         Returns:
             List of isochrone GeoDataFrames
@@ -251,7 +256,7 @@ class ConcurrentIsochroneProcessor:
             # Submit all network download tasks
             future_to_cluster = {
                 executor.submit(
-                    self._download_cluster_network, cluster, travel_time_minutes
+                    self._download_cluster_network, cluster, travel_time_minutes, travel_mode
                 ): cluster
                 for cluster in clusters
             }
@@ -305,7 +310,7 @@ class ConcurrentIsochroneProcessor:
             # Submit isochrone generation tasks
             future_to_cluster = {
                 executor.submit(
-                    self._generate_cluster_isochrones, cluster, travel_time_minutes
+                    self._generate_cluster_isochrones, cluster, travel_time_minutes, travel_mode
                 ): cluster
                 for cluster in successful_clusters
             }
@@ -388,6 +393,7 @@ def process_isochrones_concurrent(
     max_isochrone_workers: Optional[int] = None,
     cache: Optional[ModernNetworkCache] = None,
     progress_callback: Optional[Callable] = None,
+    travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> List[gpd.GeoDataFrame]:
     """
     Process isochrones concurrently with optimized settings.
@@ -401,6 +407,7 @@ def process_isochrones_concurrent(
         max_isochrone_workers: Maximum concurrent isochrone calculations
         cache: Network cache instance
         progress_callback: Optional progress callback
+        travel_mode: Mode of travel (walk, bike, drive)
 
     Returns:
         List of isochrone GeoDataFrames
@@ -417,4 +424,5 @@ def process_isochrones_concurrent(
         max_cluster_radius_km=max_cluster_radius_km,
         min_cluster_size=min_cluster_size,
         progress_callback=progress_callback,
+        travel_mode=travel_mode,
     )

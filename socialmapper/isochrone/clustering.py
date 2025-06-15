@@ -24,6 +24,8 @@ import osmnx as ox
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
+from .travel_modes import TravelMode, get_default_speed, get_network_type
+
 # Setup logging
 from ..ui.rich_console import get_logger
 logger = get_logger(__name__)
@@ -266,7 +268,10 @@ def create_optimized_clusters(
 
 
 def download_network_for_cluster(
-    cluster: OptimizedPOICluster, travel_time_minutes: int, network_buffer_km: float = 2.0
+    cluster: OptimizedPOICluster, 
+    travel_time_minutes: int, 
+    network_buffer_km: float = 2.0,
+    travel_mode: TravelMode = TravelMode.DRIVE
 ) -> bool:
     """
     Download and prepare road network for an optimized cluster.
@@ -275,17 +280,22 @@ def download_network_for_cluster(
         cluster: OptimizedPOICluster to download network for
         travel_time_minutes: Travel time limit in minutes
         network_buffer_km: Additional buffer around cluster
+        travel_mode: Mode of travel (walk, bike, drive)
 
     Returns:
         True if successful, False otherwise
     """
     try:
+        # Get network type and default speed for travel mode
+        network_type = get_network_type(travel_mode)
+        default_speed = get_default_speed(travel_mode)
+        
         if len(cluster.pois) == 1:
             # Single POI - use point-based download
             poi = cluster.pois[0]
             G = ox.graph_from_point(
                 (poi["lat"], poi["lon"]),
-                network_type="drive",
+                network_type=network_type,
                 dist=travel_time_minutes * 1000 + network_buffer_km * 1000,
             )
         else:
@@ -296,10 +306,10 @@ def download_network_for_cluster(
 
             # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
             osm_bbox = (min_lon, min_lat, max_lon, max_lat)
-            G = ox.graph_from_bbox(bbox=osm_bbox, network_type="drive")
+            G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
-        # Add speeds and travel times with optimized fallback values
-        G = ox.add_edge_speeds(G, fallback=50)  # 50 km/h default
+        # Add speeds and travel times with mode-specific fallback values
+        G = ox.add_edge_speeds(G, fallback=default_speed)
         G = ox.add_edge_travel_times(G)
         G = ox.project_graph(G)
 
@@ -320,7 +330,11 @@ def download_network_for_cluster(
 
 
 def create_isochrone_from_poi_with_network(
-    poi: Dict[str, Any], network: nx.MultiDiGraph, network_crs: str, travel_time_minutes: int
+    poi: Dict[str, Any], 
+    network: nx.MultiDiGraph, 
+    network_crs: str, 
+    travel_time_minutes: int,
+    travel_mode: TravelMode = TravelMode.DRIVE
 ) -> Optional[gpd.GeoDataFrame]:
     """
     Create isochrone for a POI using pre-downloaded network.
@@ -330,6 +344,7 @@ def create_isochrone_from_poi_with_network(
         network: Pre-downloaded road network
         network_crs: CRS of the network
         travel_time_minutes: Travel time limit in minutes
+        travel_mode: Mode of travel (walk, bike, drive)
 
     Returns:
         GeoDataFrame with isochrone or None if failed
@@ -406,6 +421,7 @@ def create_isochrone_from_poi_with_network(
             "name", f"poi_{poi.get('id', 'unknown')}"
         )
         isochrone_gdf["travel_time_minutes"] = travel_time_minutes
+        isochrone_gdf["travel_mode"] = travel_mode.value
 
         return isochrone_gdf
 

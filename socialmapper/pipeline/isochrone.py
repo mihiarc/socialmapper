@@ -4,13 +4,18 @@ Isochrone generation module for the SocialMapper pipeline.
 This module handles generation of travel time areas (isochrones) for POIs.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import geopandas as gpd
 
+from ..isochrone import TravelMode
+
 
 def generate_isochrones(
-    poi_data: Dict[str, Any], travel_time: int, state_abbreviations: List[str]
+    poi_data: Dict[str, Any], 
+    travel_time: int, 
+    state_abbreviations: List[str],
+    travel_mode: Optional[TravelMode] = None
 ) -> gpd.GeoDataFrame:
     """
     Generate isochrones for the POI data.
@@ -19,17 +24,25 @@ def generate_isochrones(
         poi_data: POI data dictionary
         travel_time: Travel time in minutes
         state_abbreviations: List of state abbreviations
+        travel_mode: Mode of travel (walk, bike, drive)
 
     Returns:
         GeoDataFrame containing isochrones
     """
     from ..isochrone import create_isochrones_from_poi_list
 
-    print(f"\n=== Generating {travel_time}-Minute Isochrones ===")
+    if travel_mode is None:
+        travel_mode = TravelMode.DRIVE
+    
+    print(f"\n=== Generating {travel_time}-Minute Isochrones ({travel_mode.value} mode) ===")
 
     # Generate isochrones - the function handles its own progress tracking
     isochrone_gdf = create_isochrones_from_poi_list(
-        poi_data=poi_data, travel_time_limit=travel_time, combine_results=True, use_parquet=True
+        poi_data=poi_data, 
+        travel_time_limit=travel_time, 
+        combine_results=True, 
+        use_parquet=True,
+        travel_mode=travel_mode
     )
 
     # If the function returned a file path, load the GeoDataFrame from it

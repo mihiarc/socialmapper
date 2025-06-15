@@ -92,6 +92,12 @@ def parse_arguments():
     # General parameters
     parser.add_argument("--travel-time", type=int, default=15, help="Travel time in minutes")
     parser.add_argument(
+        "--travel-mode",
+        choices=["walk", "bike", "drive"],
+        default="drive",
+        help="Travel mode for isochrone generation: 'walk', 'bike', or 'drive' (default: 'drive')",
+    )
+    parser.add_argument(
         "--geographic-level",
         choices=["block-group", "zcta"],
         default="block-group",
@@ -250,6 +256,7 @@ def main():
                     .with_location(args.geocode_area, state_abbr)
                     .with_osm_pois(args.poi_type, args.poi_name)
                     .with_travel_time(args.travel_time)
+                    .with_travel_mode(args.travel_mode)
                     .with_geographic_level(args.geographic_level)
                     .with_census_variables(*args.census_variables)
                     .with_output_directory(args.output_dir)
@@ -332,6 +339,7 @@ def main():
                 builder = (SocialMapperBuilder()
                     .with_custom_pois(temp_file)
                     .with_travel_time(args.travel_time)
+                    .with_travel_mode(args.travel_mode)
                     .with_geographic_level(args.geographic_level)
                     .with_census_variables(*args.census_variables)
                     .with_output_directory(args.output_dir)
@@ -352,6 +360,7 @@ def main():
                 builder = (SocialMapperBuilder()
                     .with_custom_pois(args.custom_coords)
                     .with_travel_time(args.travel_time)
+                    .with_travel_mode(args.travel_mode)
                     .with_geographic_level(args.geographic_level)
                     .with_census_variables(*args.census_variables)
                     .with_output_directory(args.output_dir)
