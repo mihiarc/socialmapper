@@ -7,8 +7,8 @@ This module provides a class-based orchestrator that coordinates all pipeline st
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from ..ui.console import print_error, print_info
 from ..isochrone import TravelMode
+from ..ui.console import get_logger, print_error, print_info
 from .census import integrate_census_data
 from .environment import setup_pipeline_environment
 from .export import export_pipeline_outputs
@@ -17,7 +17,6 @@ from .isochrone import generate_isochrones
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 
@@ -48,6 +47,7 @@ class PipelineConfig:
     output_dir: str = "output"
     export_csv: bool = True
     export_isochrones: bool = False
+    create_maps: bool = True
 
 
 class PipelineStage:
@@ -97,15 +97,22 @@ class PipelineOrchestrator:
 
     def _define_stages(self):
         """Define the pipeline stages."""
-        self.stages = [
+        stages = [
             PipelineStage("setup", self._setup_environment, "Setting up pipeline environment"),
             PipelineStage("extract", self._extract_poi_data, "Extracting POI data"),
             PipelineStage("validate", self._validate_coordinates, "Validating POI coordinates"),
             PipelineStage("isochrone", self._generate_isochrones, "Generating isochrones"),
             PipelineStage("census", self._integrate_census, "Integrating census data"),
             PipelineStage("export", self._export_outputs, "Exporting results"),
-            PipelineStage("report", self._generate_report, "Generating final report"),
         ]
+        
+        # Add mapping stage if enabled
+        if self.config.create_maps:
+            stages.append(PipelineStage("maps", self._generate_maps, "Creating maps"))
+            
+        stages.append(PipelineStage("report", self._generate_report, "Generating final report"))
+        
+        self.stages = stages
 
     def _setup_environment(self) -> Dict[str, str]:
         """Setup pipeline environment."""
@@ -113,6 +120,7 @@ class PipelineOrchestrator:
             output_dir=self.config.output_dir,
             export_csv=self.config.export_csv,
             export_isochrones=self.config.export_isochrones,
+            create_maps=self.config.create_maps,
         )
 
     def _extract_poi_data(self) -> Tuple[Dict[str, Any], str, List[str], bool]:
@@ -182,6 +190,28 @@ class PipelineOrchestrator:
             travel_time=self.config.travel_time,
             directories=directories,
             export_csv=self.config.export_csv,
+            census_codes=census_codes,
+            geographic_level=self.config.geographic_level,
+        )
+
+    def _generate_maps(self):
+        """Generate maps from pipeline outputs."""
+        from .map import generate_pipeline_maps
+        
+        poi_data = self.stage_outputs["extract"][0]
+        base_filename = self.stage_outputs["extract"][1]
+        isochrone_gdf = self.stage_outputs["isochrone"]
+        census_data_gdf = self.stage_outputs["census"][1]
+        census_codes = self.stage_outputs["census"][2]
+        directories = self.stage_outputs["setup"]
+
+        return generate_pipeline_maps(
+            census_data_gdf=census_data_gdf,
+            poi_data=poi_data,
+            isochrone_gdf=isochrone_gdf,
+            directories=directories,
+            base_filename=base_filename,
+            travel_time=self.config.travel_time,
             census_codes=census_codes,
             geographic_level=self.config.geographic_level,
         )
@@ -259,6 +289,10 @@ class PipelineOrchestrator:
             result["geographic_units"] = geographic_units_gdf
             result["block_groups"] = geographic_units_gdf  # Backward compatibility
             result["census_data"] = census_data_gdf
+
+        # Add maps if available
+        if "maps" in self.stage_outputs:
+            result["maps"] = self.stage_outputs["maps"]
 
         return result
 

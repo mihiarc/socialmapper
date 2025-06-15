@@ -12,11 +12,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
 from ..pipeline import PipelineConfig, PipelineOrchestrator
+from ..ui.console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
-from .builder import AnalysisResult, SocialMapperBuilder, GeographicLevel
+from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .result_types import Err, Error, ErrorType, Ok, Result
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

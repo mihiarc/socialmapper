@@ -40,7 +40,7 @@ from .domain import (
 from .logging import get_logger, setup_rich_logging
 
 # Progress tracking
-from .progress import progress_bar, rich_tqdm, RichProgressWrapper
+from .progress import RichProgressWrapper, progress_bar, rich_tqdm
 
 # Table creation utilities
 from .tables import (

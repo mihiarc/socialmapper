@@ -24,6 +24,7 @@ import geopandas as gpd
 import psutil
 
 from ..progress import get_progress_bar
+from ..ui.console import get_logger
 from .cache import ModernNetworkCache, download_and_cache_network
 from .clustering import (
     OptimizedPOICluster,
@@ -32,7 +33,6 @@ from .clustering import (
 )
 from .travel_modes import TravelMode
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

@@ -12,9 +12,9 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import aiohttp
 
 from ..pipeline import PipelineConfig
+from ..ui.console import get_logger
 from .builder import AnalysisResult
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

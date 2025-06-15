@@ -12,7 +12,7 @@ import geopandas as gpd
 import pandas as pd
 
 from ...ui.console import get_logger
-from ..base import BaseExporter, DataPrepConfig, ExportError
+from ..base import BaseExporter, ExportError
 
 logger = get_logger(__name__)
 

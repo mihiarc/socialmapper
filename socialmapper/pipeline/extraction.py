@@ -205,9 +205,9 @@ def extract_poi_data(
     Returns:
         Tuple of (poi_data, base_filename, state_abbreviations, sampled_pois)
     """
-    from ..query import build_overpass_query, create_poi_config, format_results, query_overpass
-    from ..census.services.geography_service import StateFormat
     from ..census import get_census_system
+    from ..census.services.geography_service import StateFormat
+    from ..query import build_overpass_query, create_poi_config, format_results, query_overpass
 
     # Get census system for state normalization
     census_system = get_census_system()

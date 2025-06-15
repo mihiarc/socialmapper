@@ -5,11 +5,10 @@ Provides token bucket algorithm for smooth rate limiting that respects
 Census Bureau API limits while allowing burst traffic when possible.
 """
 
-import time
 import threading
-from typing import Dict, Optional
+import time
 from dataclasses import dataclass
-from collections import defaultdict
+from typing import Dict, Optional
 
 
 @dataclass

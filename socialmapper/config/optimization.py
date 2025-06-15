@@ -6,7 +6,6 @@ This module provides clean dataclass-based configuration schemas for all
 optimization settings, with no utility functions or system detection logic.
 """
 
-import multiprocessing as mp
 import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional

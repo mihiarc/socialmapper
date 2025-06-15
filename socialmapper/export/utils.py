@@ -5,7 +5,6 @@ Common utilities for export operations.
 This module contains utility functions used across export operations.
 """
 
-import os
 from pathlib import Path
 from typing import Optional, Union
 

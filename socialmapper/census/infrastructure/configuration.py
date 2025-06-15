@@ -5,8 +5,8 @@ Provides a clean, testable way to manage configuration without global state.
 """
 
 import os
-from typing import Any, Optional
 from dataclasses import dataclass
+from typing import Any, Optional
 
 # Load environment variables from .env file
 try:

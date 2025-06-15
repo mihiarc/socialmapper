@@ -13,8 +13,6 @@ from .system_detection import (
     get_performance_tier,
     get_recommended_cache_size_gb,
     get_recommended_memory_limit_gb,
-    is_high_performance_system,
-    is_memory_constrained,
 )
 
 if TYPE_CHECKING:

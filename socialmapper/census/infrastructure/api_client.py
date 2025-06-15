@@ -8,11 +8,11 @@ Handles all interactions with the Census Bureau's APIs including:
 - Rate limiting compliance
 """
 
-import requests
-import time
 import logging
-from typing import Dict, List, Optional, Any
-from urllib.parse import urljoin, urlencode
+import time
+from typing import Any, Dict, List, Optional
+
+import requests
 
 from ..domain.interfaces import ConfigurationProvider
 

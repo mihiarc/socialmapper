@@ -1,12 +1,12 @@
 """Utility functions for map visualization."""
 
-from typing import Optional, Tuple, Union
-import matplotlib.pyplot as plt
+from typing import Tuple, Union
+
 import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, Polygon
-from matplotlib.offsetbox import AnchoredOffsetbox, DrawingArea, TextArea, HPacker
-import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.offsetbox import AnchoredOffsetbox, DrawingArea, HPacker, TextArea
+from matplotlib.patches import FancyBboxPatch, Polygon
 
 
 def add_north_arrow(
@@ -86,7 +86,7 @@ def add_north_arrow(
         
         ax.add_artist(anchored_box)
         
-    except Exception as e:
+    except Exception:
         # Fallback: Simple text-based north arrow
         x_pos = 0.95 if "right" in location else 0.05
         y_pos = 0.95 if "upper" in location else 0.05

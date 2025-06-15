@@ -23,6 +23,7 @@ import networkx as nx
 import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
+
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
 from socialmapper.ui.console import get_logger

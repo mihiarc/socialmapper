@@ -6,12 +6,12 @@ This module provides Parquet export functionality for census data.
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 import pandas as pd
 
 from ...ui.console import get_logger
-from ..base import BaseExporter, DataPrepConfig, ExportError
+from ..base import BaseExporter, ExportError
 
 logger = get_logger(__name__)
 

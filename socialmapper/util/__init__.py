@@ -15,12 +15,8 @@ except ImportError:
     pass
 
 # Import environment loading utilities
-from .env_loader import (
-    ensure_environment_loaded, 
-    get_census_api_key as _get_census_api_key,
-    load_environment_variables,
-    get_env_var
-)
+from .env_loader import ensure_environment_loaded, get_env_var, load_environment_variables
+from .env_loader import get_census_api_key as _get_census_api_key
 
 # Ensure environment is loaded
 ensure_environment_loaded()
@@ -36,7 +32,6 @@ from typing import List, Optional
 import httpx
 
 # Note: ratelimit import removed - not currently used
-
 # Import modern census system for census utilities
 from ..census import get_census_system
 
@@ -137,6 +132,27 @@ def add_north_arrow(ax, position="upper right", scale=0.1):
 
 # Import utilities to expose at the module level
 # Import input validation utilities
+from .config_manager import (
+    apply_preset,
+    # Backward compatibility aliases
+    get_config,
+    get_config_summary,
+    get_global_config,
+    optimize_for_current_system,
+    reset_config,
+    reset_global_config,
+    set_global_config,
+    update_config,
+    update_global_config,
+    validate_config,
+)
+from .config_presets import (
+    ConfigPresets,
+    get_auto_config,
+    get_config_for_environment,
+    get_development_config,
+    get_production_config,
+)
 from .input_validation import (
     InputValidationError,
     encode_for_url,
@@ -171,35 +187,14 @@ from .rate_limiter import (
 
 # Import new utility modules
 from .system_detection import (
-    get_system_capabilities,
-    get_optimal_worker_count,
     get_available_memory_gb,
-    get_total_memory_gb,
+    get_optimal_worker_count,
     get_performance_tier,
-    is_memory_constrained,
+    get_system_capabilities,
+    get_total_memory_gb,
     is_high_performance_system,
+    is_memory_constrained,
     validate_system_requirements,
-)
-from .config_presets import (
-    ConfigPresets,
-    get_development_config,
-    get_production_config,
-    get_auto_config,
-    get_config_for_environment,
-)
-from .config_manager import (
-    get_global_config,
-    set_global_config,
-    update_global_config,
-    reset_global_config,
-    apply_preset,
-    get_config_summary,
-    validate_config,
-    optimize_for_current_system,
-    # Backward compatibility aliases
-    get_config,
-    update_config,
-    reset_config,
 )
 
 # Export these symbols at the package level

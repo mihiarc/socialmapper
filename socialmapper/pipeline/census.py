@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import geopandas as gpd
 
 from ..progress import get_progress_bar
-from ..util import census_code_to_name, get_readable_census_variables, normalize_census_variable
 
 
 def integrate_census_data(

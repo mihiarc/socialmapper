@@ -1,7 +1,8 @@
 """Configuration classes for visualization module."""
 
 from enum import Enum
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Tuple, Union
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -141,6 +142,13 @@ class MapConfig(BaseModel):
     # Export settings
     bbox_inches: str = "tight"
     pad_inches: float = 0.1
+    
+    # Basemap settings
+    add_basemap: bool = True
+    basemap_source: str = "OpenStreetMap.Mapnik"
+    basemap_alpha: float = 0.6
+    basemap_attribution: Optional[str] = None
+    basemap_zoom: Union[str, int, None] = "auto"  # Can be "auto", integer zoom level, or None
     
     # Advanced settings
     simplify_tolerance: Optional[float] = 0.01

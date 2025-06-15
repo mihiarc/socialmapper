@@ -7,20 +7,15 @@ Provides multiple storage backends:
 - Future: PostgreSQL, DuckDB, etc.
 """
 
-import sqlite3
 import json
 import logging
-from pathlib import Path
-from typing import List, Optional, Dict, Any
+import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from ..domain.entities import (
-    CensusDataPoint,
-    BoundaryData,
-    NeighborRelationship,
-    CensusVariable
-)
+from ..domain.entities import BoundaryData, CensusDataPoint, CensusVariable, NeighborRelationship
 
 
 class RepositoryError(Exception):

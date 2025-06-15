@@ -24,10 +24,10 @@ import osmnx as ox
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
-from .travel_modes import TravelMode, get_default_speed, get_network_type, get_highway_speeds
-
 # Setup logging
 from ..ui.console import get_logger
+from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
+
 logger = get_logger(__name__)
 
 

@@ -1,13 +1,13 @@
 """Example usage of the visualization module."""
 
 from pathlib import Path
+
 import geopandas as gpd
-import pandas as pd
 import numpy as np
 from shapely.geometry import Point
 
 from .chloropleth import ChoroplethMap, MapType
-from .config import MapConfig, ColorScheme, ClassificationScheme
+from .config import ClassificationScheme, ColorScheme, MapConfig
 from .pipeline_integration import VisualizationPipeline
 
 
@@ -27,7 +27,7 @@ def create_sample_data():
         'B01003_001E': np.random.randint(500, 5000, n_blocks),  # Population
         'B19013_001E': np.random.randint(30000, 120000, n_blocks),  # Income
         'travel_distance_km': np.random.exponential(2.5, n_blocks),  # Distance
-        'geometry': [Point(lon, lat).buffer(0.005) for lon, lat in zip(lons, lats)]
+        'geometry': [Point(lon, lat).buffer(0.005) for lon, lat in zip(lons, lats, strict=False)]
     }
     
     gdf = gpd.GeoDataFrame(data, crs='EPSG:4326')

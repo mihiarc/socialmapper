@@ -5,10 +5,10 @@ Handles state, county, and geographic unit operations including
 FIPS code conversions, format detection, and geographic lookups.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
 from enum import Enum
+from typing import Dict, List, Optional, Union
 
-from ..domain.entities import StateInfo, CountyInfo, BlockGroupInfo
+from ..domain.entities import BlockGroupInfo, CountyInfo, StateInfo
 from ..domain.interfaces import ConfigurationProvider, GeocodeProvider
 
 

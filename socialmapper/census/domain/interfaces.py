@@ -5,16 +5,14 @@ These define the contracts that infrastructure implementations must fulfill.
 Using protocols enables dependency injection and easy testing with mocks.
 """
 
-from typing import Protocol, List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Protocol
+
 from .entities import (
-    GeographicUnit,
-    CensusVariable, 
-    CensusDataPoint,
     BoundaryData,
-    NeighborRelationship,
+    CacheEntry,
+    CensusDataPoint,
     GeocodeResult,
-    CensusRequest,
-    CacheEntry
+    NeighborRelationship,
 )
 
 

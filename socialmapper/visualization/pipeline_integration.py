@@ -1,13 +1,13 @@
 """Integration of visualization module with socialmapper pipeline."""
 
-from typing import Optional, Dict, Any, List, Union
 from pathlib import Path
+from typing import Dict, List, Optional, Union
+
 import geopandas as gpd
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from .chloropleth import ChoroplethMap, MapType
-from .config import MapConfig, ColorScheme, ClassificationScheme
+from .config import ClassificationScheme, ColorScheme, MapConfig
 
 
 class VisualizationPipeline:
@@ -146,7 +146,7 @@ class VisualizationPipeline:
             color_scheme=ColorScheme.YLORD,
             classification_scheme=ClassificationScheme.FISHER_JENKS,
             n_classes=5,
-            title=f"Travel Distance to Nearest POI",
+            title="Travel Distance to Nearest POI",
             legend_config={
                 "title": f"Distance ({units})",
                 "fmt": fmt

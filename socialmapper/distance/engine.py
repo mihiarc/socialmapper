@@ -19,10 +19,10 @@ import pyproj
 from shapely.geometry import Point
 from sklearn.neighbors import BallTree
 
+from ..ui.console import get_logger
 from ..util.coordinate_validation import prevalidate_for_pyproj
 from ..util.invalid_data_tracker import track_invalid_point
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

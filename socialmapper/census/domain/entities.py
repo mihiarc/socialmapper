@@ -5,9 +5,9 @@ These are pure data structures with no external dependencies.
 They represent the core concepts in the census domain.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, List, Optional
 
 
 @dataclass(frozen=True)

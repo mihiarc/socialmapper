@@ -6,20 +6,13 @@ batch processing, and TIGER/Line shapefile URL generation.
 """
 
 import logging
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import pandas as pd
 
-from ..domain.entities import CountyInfo
-from ..domain.interfaces import (
-    CensusAPIClient, 
-    CacheProvider, 
-    ConfigurationProvider,
-    RateLimiter
-)
 from ...progress import get_progress_bar
+from ..domain.interfaces import CacheProvider, CensusAPIClient, ConfigurationProvider, RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -368,8 +361,9 @@ class ZctaService:
     def _check_arrow_support(self) -> bool:
         """Check if PyArrow is available for better performance."""
         try:
-            import pyarrow
             import os
+
+            import pyarrow
             os.environ["PYOGRIO_USE_ARROW"] = "1"
             return True
         except ImportError:

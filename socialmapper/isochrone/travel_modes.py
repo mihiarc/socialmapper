@@ -8,7 +8,7 @@ network types and travel speeds for accurate isochrone calculation.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict
 
 
 class TravelMode(str, Enum):

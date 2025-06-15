@@ -11,10 +11,10 @@ from typing import Any, Dict, Optional
 import overpy
 import yaml
 
-from ..util import with_retry
-
 # Configure logger
 from ..ui.console import get_logger
+from ..util import with_retry
+
 logger = get_logger(__name__)
 
 

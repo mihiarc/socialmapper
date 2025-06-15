@@ -14,6 +14,7 @@ import httpx
 
 # Configure logger
 from ..ui.console import get_logger
+
 logger = get_logger(__name__)
 
 

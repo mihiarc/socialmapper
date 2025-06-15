@@ -10,10 +10,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Self, Union
 
-# Import census variable validation
-from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable, validate_census_variable
 # Import travel mode
 from ..isochrone import TravelMode
+
+# Import census variable validation
+from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable, validate_census_variable
 
 
 class GeographicLevel(Enum):

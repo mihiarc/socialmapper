@@ -6,28 +6,27 @@ that define the census domain without any external dependencies.
 """
 
 from .entities import (
-    GeographicUnit,
-    CensusVariable,
-    CensusDataPoint,
     BoundaryData,
-    NeighborRelationship,
-    GeocodeResult,
+    CacheEntry,
+    CensusDataPoint,
     CensusRequest,
-    CacheEntry
+    CensusVariable,
+    GeocodeResult,
+    GeographicUnit,
+    NeighborRelationship,
 )
-
 from .interfaces import (
-    CensusAPIClient,
-    GeocodeProvider,
     CacheProvider,
-    DataRepository,
-    ConfigurationProvider,
-    RateLimiter,
-    Logger,
-    EventPublisher,
+    CensusAPIClient,
     CensusDataDependencies,
+    ConfigurationProvider,
+    DataRepository,
+    EventPublisher,
+    GeocodeProvider,
     GeographyDependencies,
-    NeighborDependencies
+    Logger,
+    NeighborDependencies,
+    RateLimiter,
 )
 
 __all__ = [

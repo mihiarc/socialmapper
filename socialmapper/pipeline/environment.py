@@ -35,7 +35,7 @@ def setup_directory(output_dir: str = "output") -> str:
 
 
 def setup_pipeline_environment(
-    output_dir: str, export_csv: bool, export_isochrones: bool
+    output_dir: str, export_csv: bool, export_isochrones: bool, create_maps: bool = True
 ) -> Dict[str, str]:
     """
     Set up the pipeline environment and create necessary directories.
@@ -44,6 +44,7 @@ def setup_pipeline_environment(
         output_dir: Base output directory
         export_csv: Whether CSV export is enabled
         export_isochrones: Whether isochrone export is enabled
+        create_maps: Whether map export is enabled
 
     Returns:
         Dictionary of created directory paths
@@ -65,6 +66,12 @@ def setup_pipeline_environment(
         isochrones_path = Path(output_dir) / "isochrones"
         isochrones_path.mkdir(exist_ok=True)
         directories["isochrones"] = str(isochrones_path)
+
+    if create_maps:
+        # Create maps subdirectory directly
+        maps_path = Path(output_dir) / "maps"
+        maps_path.mkdir(exist_ok=True)
+        directories["maps"] = str(maps_path)
 
     # Initialize invalid data tracker for this session
     reset_global_tracker(output_dir)

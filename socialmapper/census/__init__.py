@@ -33,44 +33,40 @@ Usage:
               .build())
 """
 
-from typing import Dict, List, Optional, Any, Tuple, Union
-from enum import Enum
 import os
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Import domain entities
 from .domain.entities import (
-    CensusDataPoint,
-    GeographicUnit, 
-    CensusVariable,
-    StateInfo,
-    CountyInfo,
     BlockGroupInfo,
-    CacheEntry
+    CacheEntry,
+    CensusDataPoint,
+    CensusVariable,
+    CountyInfo,
+    GeographicUnit,
+    StateInfo,
 )
-
-# Import services
-from .services.census_service import CensusService
-from .services.variable_service import CensusVariableService, VariableFormat
-from .services.geography_service import GeographyService, StateFormat
-from .services.block_group_service import BlockGroupService
-from .services.zcta_service import ZctaService
+from .infrastructure.api_client import CensusAPIClientImpl
+from .infrastructure.cache import (
+    FileCacheProvider,
+    HybridCacheProvider,
+    InMemoryCacheProvider,
+    NoOpCacheProvider,
+)
 
 # Import infrastructure
 from .infrastructure.configuration import CensusConfig, ConfigurationProvider
-from .infrastructure.api_client import CensusAPIClientImpl
-from .infrastructure.cache import (
-    InMemoryCacheProvider,
-    FileCacheProvider,
-    HybridCacheProvider,
-    NoOpCacheProvider
-)
-from .infrastructure.rate_limiter import TokenBucketRateLimiter
-from .infrastructure.repository import (
-    InMemoryRepository,
-    SQLiteRepository,
-    NoOpRepository
-)
 from .infrastructure.geocoder import CensusGeocoder
+from .infrastructure.rate_limiter import TokenBucketRateLimiter
+from .infrastructure.repository import InMemoryRepository, NoOpRepository, SQLiteRepository
+from .services.block_group_service import BlockGroupService
+
+# Import services
+from .services.census_service import CensusService
+from .services.geography_service import GeographyService, StateFormat
+from .services.variable_service import CensusVariableService, VariableFormat
+from .services.zcta_service import ZctaService
 
 # Legacy adapters have been removed and integrated into the modern census system
 

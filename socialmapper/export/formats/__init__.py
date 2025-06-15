@@ -2,8 +2,8 @@
 """Export format implementations."""
 
 from .csv import CSVExporter
-from .parquet import ParquetExporter
 from .geoparquet import GeoParquetExporter
+from .parquet import ParquetExporter
 
 __all__ = [
     "CSVExporter",

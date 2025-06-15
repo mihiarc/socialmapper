@@ -27,8 +27,8 @@ from typing import List, Optional, Tuple
 import networkx as nx
 import osmnx as ox
 
-from .travel_modes import TravelMode, get_default_speed, get_network_type, get_highway_speeds
 from ..ui.console import get_logger
+from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
 logger = get_logger(__name__)
 

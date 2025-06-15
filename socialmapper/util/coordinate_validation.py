@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 from shapely.geometry import Point
 
 from ..ui.console import get_logger
+
 logger = get_logger(__name__)
 
 

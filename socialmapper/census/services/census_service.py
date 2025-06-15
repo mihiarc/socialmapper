@@ -5,16 +5,11 @@ This service coordinates between the domain layer and infrastructure layer,
 implementing the core business logic without depending on specific implementations.
 """
 
-from typing import List, Optional, Dict, Any, Tuple
 import hashlib
 import json
+from typing import Any, Dict, List, Optional, Tuple
 
-from ..domain.entities import (
-    GeographicUnit,
-    CensusVariable,
-    CensusDataPoint,
-    CensusRequest
-)
+from ..domain.entities import CensusDataPoint, CensusVariable, GeographicUnit
 from ..domain.interfaces import CensusDataDependencies
 
 
@@ -247,7 +242,7 @@ class CensusService:
         rows = api_response[1:]
         
         for row in rows:
-            row_dict = dict(zip(headers, row))
+            row_dict = dict(zip(headers, row, strict=False))
             
             # Build GEOID from components
             geoid = self._build_geoid_from_components(row_dict)

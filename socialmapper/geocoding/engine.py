@@ -7,13 +7,13 @@ with intelligent fallback, caching, and quality validation.
 """
 
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 from ..progress import get_progress_bar
 from ..ui.console import get_logger
 from .cache import AddressCache
 from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
-from .providers import CensusProvider, GeocodingProvider, NominatimProvider, create_provider
+from .providers import CensusProvider, GeocodingProvider, NominatimProvider
 
 logger = get_logger(__name__)
 

@@ -5,13 +5,13 @@ Data preparation utilities for export operations.
 This module contains common data preparation functions used across different export formats.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import geopandas as gpd
 import pandas as pd
 
 from ..ui.console import get_logger
-from .base import DataPrepConfig, DataPreparationError
+from .base import DataPrepConfig
 
 logger = get_logger(__name__)
 

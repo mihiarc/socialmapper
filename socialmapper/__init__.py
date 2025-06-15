@@ -66,14 +66,14 @@ except ImportError:
 
 # Import modern census system
 from .census import (
-    get_census_system,
-    get_legacy_adapter,
+    CacheStrategy,
     CensusSystem,
     CensusSystemBuilder,
+    RepositoryType,
     StateFormat,
     VariableFormat,
-    CacheStrategy,
-    RepositoryType
+    get_census_system,
+    get_legacy_adapter,
 )
 
 # Import neighbor functionality for direct access
@@ -98,7 +98,7 @@ except ImportError:
 
 # Import visualization module
 try:
-    from .visualization import ChoroplethMap, MapType, MapConfig, ColorScheme
+    from .visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
     _VISUALIZATION_AVAILABLE = True
 except ImportError:
     _VISUALIZATION_AVAILABLE = False

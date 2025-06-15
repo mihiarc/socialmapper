@@ -17,10 +17,11 @@ from shapely.geometry import Point
 
 from socialmapper.progress import get_progress_bar
 
+from ..ui.console import get_logger
+
 # Import the high-performance engine
 from .engine import ParallelDistanceProcessor, VectorizedDistanceEngine, benchmark_distance_engines
 
-from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

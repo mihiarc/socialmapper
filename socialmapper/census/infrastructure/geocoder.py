@@ -5,10 +5,10 @@ Provides geocoding services using Census Bureau APIs to convert
 latitude/longitude coordinates to census geographic identifiers.
 """
 
-import requests
 import logging
-from typing import Optional, Dict, Any
-from urllib.parse import urlencode
+from typing import Any, Dict, Optional
+
+import requests
 
 from ..domain.entities import GeocodeResult
 from ..domain.interfaces import ConfigurationProvider

@@ -5,21 +5,15 @@ Handles census block group operations including fetching boundaries,
 batch processing, and TIGER/Line shapefile URL generation.
 """
 
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import pandas as pd
 
-from ..domain.entities import BlockGroupInfo, CountyInfo
-from ..domain.interfaces import (
-    CensusAPIClient, 
-    CacheProvider, 
-    ConfigurationProvider,
-    RateLimiter
-)
 from ...progress import get_progress_bar
 from ...ui.console import get_logger
+from ..domain.entities import BlockGroupInfo, CountyInfo
+from ..domain.interfaces import CacheProvider, CensusAPIClient, ConfigurationProvider, RateLimiter
 
 logger = get_logger(__name__)
 
@@ -246,8 +240,9 @@ class BlockGroupService:
     def _check_arrow_support(self) -> bool:
         """Check if PyArrow is available for better performance."""
         try:
-            import pyarrow
             import os
+
+            import pyarrow
             os.environ["PYOGRIO_USE_ARROW"] = "1"
             return True
         except ImportError:

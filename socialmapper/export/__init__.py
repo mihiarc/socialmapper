@@ -14,12 +14,11 @@ from typing import Dict, List, Optional, Union
 import geopandas as gpd
 import pandas as pd
 
-from ..config.optimization import OptimizationConfig
 from ..census.infrastructure import ModernDataExporter, get_streaming_pipeline
+from ..config.optimization import OptimizationConfig
 from ..ui.console import get_logger
-
 from .base import DataPrepConfig, ExportError
-from .formats import CSVExporter, ParquetExporter, GeoParquetExporter
+from .formats import CSVExporter, GeoParquetExporter, ParquetExporter
 from .preparation import prepare_census_data
 from .utils import (
     estimate_data_size,

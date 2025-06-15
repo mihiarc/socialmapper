@@ -11,6 +11,7 @@ from .export import export_pipeline_outputs
 from .extraction import extract_poi_data, parse_custom_coordinates
 from .helpers import convert_poi_to_geodataframe, setup_directory
 from .isochrone import generate_isochrones
+from .map import create_pipeline_maps, generate_pipeline_maps
 from .orchestrator import PipelineConfig, PipelineOrchestrator
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
@@ -24,6 +25,8 @@ __all__ = [
     "integrate_census_data",
     "export_pipeline_outputs",
     "generate_final_report",
+    "create_pipeline_maps",
+    "generate_pipeline_maps",
     "PipelineOrchestrator",
     "PipelineConfig",
     "convert_poi_to_geodataframe",

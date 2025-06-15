@@ -1,22 +1,22 @@
 """Chloropleth map creation for socialmapper outputs."""
 
-from enum import Enum
-from typing import Optional, Union, Dict, Any, Tuple, List
-from pathlib import Path
 from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.colorbar import ColorbarBase
-from matplotlib.colors import Normalize
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import geopandas as gpd
-import pandas as pd
-import numpy as np
 import mapclassify
+import matplotlib.pyplot as plt
 
-from .config import MapConfig, ColorScheme, ClassificationScheme, LegendConfig
-from .utils import add_north_arrow, add_scale_bar, format_number
+try:
+    import contextily as ctx
+    CONTEXTILY_AVAILABLE = True
+except ImportError:
+    CONTEXTILY_AVAILABLE = False
+
+from .config import ClassificationScheme, ColorScheme, LegendConfig, MapConfig
+from .utils import add_north_arrow, add_scale_bar
 
 
 class MapType(str, Enum):
@@ -91,7 +91,11 @@ class ChoroplethMap:
         # Remove axes for cleaner look
         self._ax.set_axis_off()
         
-        # Create the base choropleth
+        # Add basemap first (if enabled) - it will go to background with zorder=0
+        if self.config.add_basemap and CONTEXTILY_AVAILABLE:
+            self._add_basemap()
+        
+        # Create the base choropleth on top of basemap
         self._create_choropleth(column)
         
         # Add overlays based on map type
@@ -118,9 +122,18 @@ class ChoroplethMap:
         if column not in self._gdf.columns:
             raise ValueError(f"Column '{column}' not found in GeoDataFrame")
         
-        # Handle missing data
+        # Handle missing data and Census API error codes
         self._gdf = self._gdf.copy()
-        missing_mask = self._gdf[column].isna()
+        
+        # Census API error codes (negative values like -666666666)
+        census_error_codes = [-666666666, -999999999, -888888888, -555555555]
+        error_mask = self._gdf[column].isin(census_error_codes)
+        
+        # Standard missing data
+        missing_mask = self._gdf[column].isna() | error_mask
+        
+        # Replace error codes with NaN for proper handling
+        self._gdf.loc[error_mask, column] = None
         
         # Create classifier for non-missing data
         valid_data = self._gdf[~missing_mask][column]
@@ -140,7 +153,7 @@ class ChoroplethMap:
                     scheme=scheme,
                     k=self.config.n_classes
                 )
-            except Exception as e:
+            except Exception:
                 # Fallback to quantiles if classification fails
                 self._classifier = mapclassify.classify(
                     valid_data,
@@ -167,7 +180,8 @@ class ChoroplethMap:
                     "label": "No data"
                 },
                 legend=True,
-                legend_kwds=legend_kwds
+                legend_kwds=legend_kwds,
+                zorder=2  # Put choropleth above basemap
             )
         else:
             # Plot without legend
@@ -182,7 +196,8 @@ class ChoroplethMap:
                 alpha=self.config.alpha,
                 missing_kwds={
                     "color": self.config.missing_color
-                }
+                },
+                zorder=2  # Put choropleth above basemap
             )
     
     def _create_legend_kwds(self, column: str) -> Dict[str, Any]:
@@ -267,7 +282,8 @@ class ChoroplethMap:
             color="red",
             linewidth=2,
             alpha=0.7,
-            label="Travel time boundary"
+            label="Travel time boundary",
+            zorder=4  # Put isochrones above choropleth
         )
     
     def _add_poi_overlay(self, poi_gdf: gpd.GeoDataFrame) -> None:
@@ -283,7 +299,7 @@ class ChoroplethMap:
                         markersize=100,
                         marker="*",
                         label=amenity_type.title(),
-                        zorder=5
+                        zorder=5  # Put POIs on top
                     )
             else:
                 poi_gdf.plot(
@@ -292,7 +308,7 @@ class ChoroplethMap:
                     markersize=100,
                     marker="*",
                     label="Points of Interest",
-                    zorder=5
+                    zorder=5  # Put POIs on top
                 )
         else:
             poi_gdf.plot(
@@ -301,7 +317,7 @@ class ChoroplethMap:
                 markersize=100,
                 marker="*",
                 label="Points of Interest",
-                zorder=5
+                zorder=5  # Put POIs on top
             )
         
         # Add legend for overlays if any exist
@@ -351,6 +367,61 @@ class ChoroplethMap:
             except Exception:
                 # If scale bar fails, continue without it
                 pass
+    
+    def _add_basemap(self) -> None:
+        """Add contextily basemap to the map."""
+        if not CONTEXTILY_AVAILABLE:
+            return
+        
+        try:
+            # Ensure data is in Web Mercator for contextily
+            if self._gdf.crs != "EPSG:3857":
+                gdf_mercator = self._gdf.to_crs("EPSG:3857")
+            else:
+                gdf_mercator = self._gdf
+            
+            # Prepare zoom parameter
+            zoom_param = {}
+            if self.config.basemap_zoom != "auto":
+                if isinstance(self.config.basemap_zoom, int):
+                    # Cap zoom level to valid range (0-19 for most providers)
+                    zoom_param["zoom"] = min(max(self.config.basemap_zoom, 0), 19)
+                elif self.config.basemap_zoom is not None:
+                    try:
+                        zoom_level = int(self.config.basemap_zoom)
+                        # Cap zoom level to valid range
+                        zoom_param["zoom"] = min(max(zoom_level, 0), 19)
+                    except ValueError:
+                        # Invalid zoom value, let contextily auto-determine
+                        pass
+            
+            # Add basemap with proper z-order (behind everything)
+            ctx.add_basemap(
+                self._ax,
+                crs=gdf_mercator.crs,
+                source=self.config.basemap_source,
+                alpha=self.config.basemap_alpha,
+                attribution=self.config.basemap_attribution,
+                zorder=0,  # Put basemap at the bottom layer
+                **zoom_param  # Only include zoom if not "auto"
+            )
+            
+            print(f"✅ Added {self.config.basemap_source} basemap")
+            
+        except Exception as e:
+            error_msg = f"⚠️ Failed to add basemap: {type(e).__name__}: {e}"
+            
+            # Provide helpful debugging info
+            if "HTTP" in str(e) or "URLError" in str(e):
+                error_msg += "\n   This might be a network connectivity issue. Check your internet connection."
+            elif "zoom" in str(e).lower():
+                error_msg += "\n   Try setting a specific zoom level in MapConfig (e.g., basemap_zoom=12)"
+            elif "CRS" in str(e):
+                error_msg += f"\n   CRS issue detected. Current CRS: {self._gdf.crs}"
+                
+            print(error_msg)
+            # Continue without basemap
+            pass
     
     def _add_attribution(self) -> None:
         """Add attribution text to the map."""

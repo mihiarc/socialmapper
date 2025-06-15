@@ -19,10 +19,10 @@ from rich.panel import Panel
 from rich.table import Table
 
 from . import __version__
-from .api import SocialMapperClient, SocialMapperBuilder
-from .progress import get_progress_tracker
-from .census.services.geography_service import StateFormat
+from .api import SocialMapperBuilder, SocialMapperClient
 from .census import get_census_system
+from .census.services.geography_service import StateFormat
+from .progress import get_progress_tracker
 from .ui.console import (
     console,
     get_logger,

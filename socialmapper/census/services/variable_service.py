@@ -5,8 +5,8 @@ Handles census variable mapping, validation, and conversion between
 human-readable names and census codes.
 """
 
-from typing import Dict, List, Optional, Union
 from enum import Enum
+from typing import Dict, List, Optional, Union
 
 from ..domain.entities import CensusVariable
 from ..domain.interfaces import ConfigurationProvider

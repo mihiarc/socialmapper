@@ -26,8 +26,8 @@ import pandas as pd
 import psutil
 
 from ...config.optimization import MemoryConfig
-
 from ...ui.console import get_logger
+
 logger = get_logger(__name__)
 
 

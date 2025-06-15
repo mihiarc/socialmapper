@@ -32,13 +32,15 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from ..ui.console import (
     RichProgressWrapper,
     console,
+    get_logger,
     print_error,
     print_info,
     print_success,
     print_warning,
-    progress_bar as rich_progress_context,
     rich_tqdm,
-    get_logger,
+)
+from ..ui.console import (
+    progress_bar as rich_progress_context,
 )
 
 # Always use Rich progress for consistent CLI experience
