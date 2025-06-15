@@ -4,7 +4,7 @@ SocialMapper integrates US Census data to help you understand the population cha
 
 ## Available Census Variables
 
-### Basic Demographics
+SocialMapper provides access to a wide range of census variables. The most commonly used variables include:
 
 ```python
 # Common demographic variables
@@ -16,6 +16,8 @@ census_variables = [
     "percent_without_vehicle" # Percentage of households without vehicles
 ]
 ```
+
+For a complete list of all available census variables, see the [Census Variables Reference](../reference/census-variables.md).
 
 ### Using Variables
 
@@ -31,9 +33,9 @@ results = run_socialmapper(
 )
 ```
 
-## Common Variable Names
+## Variable Format
 
-SocialMapper accepts user-friendly names that map to Census codes:
+SocialMapper accepts both user-friendly names and Census Bureau variable codes. Here are some examples:
 
 | Friendly Name | Description | Census Code |
 |--------------|-------------|-------------|
@@ -41,8 +43,10 @@ SocialMapper accepts user-friendly names that map to Census codes:
 | `median_age` | Median age | B01002_001E |
 | `median_household_income` | Median household income | B19013_001E |
 | `median_income` | Same as above | B19013_001E |
-| `percent_poverty` | % below poverty line | (calculated) |
+| `percent_poverty` | % below poverty line | B17001_002E |
 | `percent_without_vehicle` | % households no vehicle | (calculated) |
+
+See the [Census Variables Reference](../reference/census-variables.md) for the complete list of available variables.
 
 ## Working with Results
 

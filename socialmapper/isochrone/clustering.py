@@ -24,7 +24,7 @@ import osmnx as ox
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
-from .travel_modes import TravelMode, get_default_speed, get_network_type
+from .travel_modes import TravelMode, get_default_speed, get_network_type, get_highway_speeds
 
 # Setup logging
 from ..ui.console import get_logger
@@ -286,9 +286,10 @@ def download_network_for_cluster(
         True if successful, False otherwise
     """
     try:
-        # Get network type and default speed for travel mode
+        # Get network type, default speed, and highway speeds for travel mode
         network_type = get_network_type(travel_mode)
         default_speed = get_default_speed(travel_mode)
+        highway_speeds = get_highway_speeds(travel_mode)
         
         if len(cluster.pois) == 1:
             # Single POI - use point-based download
@@ -308,8 +309,13 @@ def download_network_for_cluster(
             osm_bbox = (min_lon, min_lat, max_lon, max_lat)
             G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
-        # Add speeds and travel times with mode-specific fallback values
-        G = ox.add_edge_speeds(G, fallback=default_speed)
+        # Add speeds and travel times with mode-specific defaults
+        # OSMnx will use:
+        # 1. Existing maxspeed tags from OSM data
+        # 2. Highway-type-specific speeds we provide
+        # 3. Mean of observed speeds for unmapped highway types
+        # 4. Fallback speed as last resort
+        G = ox.add_edge_speeds(G, hwy_speeds=highway_speeds, fallback=default_speed)
         G = ox.add_edge_travel_times(G)
         G = ox.project_graph(G)
 

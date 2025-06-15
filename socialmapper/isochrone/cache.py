@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple
 import networkx as nx
 import osmnx as ox
 
-from .travel_modes import TravelMode, get_default_speed, get_network_type
+from .travel_modes import TravelMode, get_default_speed, get_network_type, get_highway_speeds
 from ..ui.console import get_logger
 
 logger = get_logger(__name__)
@@ -542,9 +542,13 @@ def download_and_cache_network(
     if travel_mode is not None:
         network_type = get_network_type(travel_mode)
         default_speed = get_default_speed(travel_mode)
+        highway_speeds = get_highway_speeds(travel_mode)
     else:
         # Legacy support - default to drive mode
+        travel_mode = TravelMode.DRIVE
+        network_type = "drive"
         default_speed = 50.0
+        highway_speeds = get_highway_speeds(TravelMode.DRIVE)
 
     # Try to get from cache first
     network = cache.get_network(bbox, network_type, travel_time_minutes)
@@ -561,7 +565,12 @@ def download_and_cache_network(
         G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
         # Add speeds and travel times with mode-specific defaults
-        G = ox.add_edge_speeds(G, fallback=default_speed)
+        # OSMnx will use:
+        # 1. Existing maxspeed tags from OSM data
+        # 2. Highway-type-specific speeds we provide
+        # 3. Mean of observed speeds for unmapped highway types
+        # 4. Fallback speed as last resort
+        G = ox.add_edge_speeds(G, hwy_speeds=highway_speeds, fallback=default_speed)
         G = ox.add_edge_travel_times(G)
         G = ox.project_graph(G)
 

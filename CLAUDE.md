@@ -86,3 +86,43 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 - Improved neighbor system performance
 - Enhanced Rich terminal UI
 - Focused on core demographic and accessibility analysis
+- Enhanced travel speed handling for more accurate isochrones
+
+## Travel Speed Handling
+
+SocialMapper uses OSMnx 2.0's sophisticated speed assignment system for accurate travel time calculations:
+
+### Speed Assignment Hierarchy
+
+When generating isochrones, OSMnx assigns edge speeds using this priority:
+
+1. **OSM maxspeed tags**: Uses actual speed limits from OpenStreetMap data when available
+2. **Highway-type speeds**: Falls back to our configured speeds for each road type (e.g., motorway: 110 km/h, residential: 30 km/h)
+3. **Statistical imputation**: For unmapped highway types, uses the mean speed of similar roads in the network
+4. **Mode-specific fallback**: As a last resort, uses the travel mode's default speed (walk: 5 km/h, bike: 15 km/h, drive: 50 km/h)
+
+### Highway-Specific Speeds
+
+The system defines realistic speeds for different road types:
+
+**Driving speeds (km/h)**:
+- Motorway: 110 (highways/freeways)
+- Trunk: 90 (major roads)
+- Primary: 65 (primary roads)
+- Secondary: 55 (secondary roads)
+- Residential: 30 (neighborhood streets)
+- Living street: 20 (shared spaces)
+
+**Walking speeds (km/h)**:
+- Footway/sidewalk: 5.0
+- Path: 4.5
+- Steps: 1.5 (stairs)
+- Residential: 4.8
+
+**Biking speeds (km/h)**:
+- Cycleway: 18 (dedicated bike lanes)
+- Primary/secondary: 18-20
+- Residential: 15
+- Footway: 8 (shared with pedestrians)
+
+These speeds ensure more accurate isochrone boundaries that reflect real-world travel times based on road infrastructure.

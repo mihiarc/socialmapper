@@ -86,67 +86,69 @@ def get_default_speed(mode: TravelMode) -> float:
     return TRAVEL_MODE_CONFIGS[mode].default_speed_kmh
 
 
-def adjust_speed_for_road_type(
-    mode: TravelMode, 
-    highway_type: Optional[str] = None,
-    base_speed: Optional[float] = None
-) -> float:
+def get_highway_speeds(mode: TravelMode) -> Dict[str, float]:
     """
-    Adjust speed based on travel mode and road type.
+    Get highway-type-specific speeds for OSMnx routing.
+    
+    These speeds are used by OSMnx's add_edge_speeds function to assign
+    speeds to edges based on their highway type when maxspeed data is missing.
     
     Args:
-        mode: Travel mode
-        highway_type: OSM highway type (e.g., 'residential', 'primary', 'footway')
-        base_speed: Base speed to adjust (uses mode default if None)
+        mode: Travel mode (walk, bike, or drive)
         
     Returns:
-        Adjusted speed in km/h
+        Dictionary mapping highway types to speeds in km/h
     """
-    config = TRAVEL_MODE_CONFIGS[mode]
-    speed = base_speed or config.default_speed_kmh
-    
-    if highway_type is None:
-        return speed
-    
-    # Speed adjustments based on road type
     if mode == TravelMode.WALK:
-        # Walking speeds vary less by road type
-        adjustments = {
-            "footway": 1.0,
-            "path": 0.9,
-            "pedestrian": 1.0,
-            "steps": 0.3,  # Stairs are slow
-            "residential": 0.95,
-            "primary": 0.9,  # Busy roads may slow walking
-            "trunk": 0.8,  # Very busy roads
+        # Walking speeds for different path types
+        return {
+            "footway": 5.0,      # Dedicated pedestrian paths
+            "path": 4.5,         # General paths (may be rougher)
+            "pedestrian": 5.0,   # Pedestrian areas
+            "steps": 1.5,        # Stairs are very slow
+            "sidewalk": 5.0,     # Sidewalks
+            "residential": 4.8,  # Residential streets (may lack sidewalks)
+            "living_street": 4.5,# Shared spaces, need caution
+            "service": 4.5,      # Service roads
+            "primary": 4.5,      # Busy roads may slow walking
+            "secondary": 4.5,    # Busy roads
+            "tertiary": 4.8,     # Less busy roads
+            "trunk": 4.0,        # Very busy roads, often no sidewalk
+            "motorway": 3.0,     # Highways (rarely walkable)
         }
     elif mode == TravelMode.BIKE:
-        # Cycling speeds vary significantly by road type
-        adjustments = {
-            "cycleway": 1.1,  # Dedicated bike lanes
-            "path": 0.8,
-            "footway": 0.6,  # Shared with pedestrians
-            "residential": 1.0,
-            "tertiary": 1.05,
-            "secondary": 1.1,
-            "primary": 1.15,
-            "trunk": 0.9,  # May be dangerous/restricted
+        # Cycling speeds for different road types
+        return {
+            "cycleway": 18.0,    # Dedicated bike lanes
+            "path": 12.0,        # Shared paths
+            "footway": 8.0,      # Shared with pedestrians (slow)
+            "pedestrian": 8.0,   # Pedestrian areas (slow cycling)
+            "residential": 15.0, # Residential streets
+            "living_street": 10.0,# Shared spaces
+            "service": 12.0,     # Service roads
+            "tertiary": 16.0,    # Light traffic
+            "secondary": 18.0,   # Moderate traffic
+            "primary": 20.0,     # Good roads, higher speeds
+            "trunk": 15.0,       # May be dangerous/restricted
+            "motorway": 10.0,    # Highways (if allowed at all)
         }
     else:  # DRIVE
         # Driving speeds based on typical speed limits
-        adjustments = {
-            "motorway": 2.2,  # Highway speeds
-            "trunk": 1.8,
-            "primary": 1.3,
-            "secondary": 1.1,
-            "tertiary": 0.9,
-            "residential": 0.6,
-            "living_street": 0.4,
-            "service": 0.5,
+        # These align with common speed limits in many countries
+        return {
+            "motorway": 110.0,      # Highways/freeways
+            "motorway_link": 70.0,  # Highway ramps
+            "trunk": 90.0,          # Major roads
+            "trunk_link": 50.0,     # Major road ramps
+            "primary": 65.0,        # Primary roads
+            "primary_link": 40.0,   # Primary road connectors
+            "secondary": 55.0,      # Secondary roads
+            "secondary_link": 35.0, # Secondary road connectors
+            "tertiary": 45.0,       # Tertiary roads
+            "tertiary_link": 30.0,  # Tertiary road connectors
+            "residential": 30.0,    # Residential streets
+            "living_street": 20.0,  # Shared residential areas
+            "service": 25.0,        # Service roads
+            "unclassified": 40.0,   # Unclassified roads
+            "road": 40.0,           # Unknown road types
         }
-    
-    adjustment = adjustments.get(highway_type, 1.0)
-    adjusted_speed = speed * adjustment
-    
-    # Ensure speed stays within mode limits
-    return config.validate_speed(adjusted_speed)

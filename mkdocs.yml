@@ -132,8 +132,11 @@ nav:
     - Address Geocoding: features/address-geocoding.md
     - Network Analysis: features/network-analysis.md
   
+  - Reference:
+    - Census Variables: reference/census-variables.md
+    - API Reference: api-reference.md
+  
   - Resources:
     - Examples: https://github.com/mihiarc/socialmapper/tree/main/examples
-    - API Reference: api-reference.md
     - FAQ: faq.md
     - Troubleshooting: troubleshooting.md
