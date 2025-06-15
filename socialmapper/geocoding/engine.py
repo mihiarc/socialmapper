@@ -10,7 +10,6 @@ Author: SocialMapper Team
 Date: June 2025
 """
 
-import logging
 import time
 from typing import Any, Dict, List
 
@@ -19,7 +18,8 @@ from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, Ge
 from .cache import AddressCache
 from .providers import CensusProvider, NominatimProvider
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class AddressGeocodingEngine:

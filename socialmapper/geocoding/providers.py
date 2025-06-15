@@ -10,7 +10,6 @@ Author: SocialMapper Team
 Date: June 2025
 """
 
-import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict
@@ -22,7 +21,8 @@ from urllib3.util.retry import Retry
 from ..neighbors import get_neighbor_manager
 from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class GeocodingProvider(ABC):

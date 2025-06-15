@@ -69,13 +69,6 @@ def configure_geospatial_warnings(verbose: bool = False):
             "module": None,
             "reason": "NumPy 2.0+ internal array size changes - affects compiled extensions",
         },
-        # Streamlit context warnings (common in non-streamlit environments)
-        {
-            "category": UserWarning,
-            "module": "streamlit.runtime.scriptrunner_utils.script_run_context",
-            "message": ".*missing ScriptRunContext.*",
-            "reason": "Streamlit context warnings when running outside Streamlit - safe to ignore",
-        },
     ]
 
     if verbose:
@@ -280,12 +273,6 @@ def setup_development_environment(verbose: bool = True):
         {
             "category": DeprecationWarning,
             "message": ".*shapely.geos.*module is deprecated.*",
-        },
-        # Streamlit context warnings
-        {
-            "category": UserWarning,
-            "module": "streamlit.runtime.scriptrunner_utils.script_run_context",
-            "message": ".*missing ScriptRunContext.*",
         },
     ]
 

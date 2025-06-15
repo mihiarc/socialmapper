@@ -12,7 +12,6 @@ Key Features:
 - Performance monitoring and benchmarking
 """
 
-import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -26,7 +25,8 @@ from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
 # Setup logging
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

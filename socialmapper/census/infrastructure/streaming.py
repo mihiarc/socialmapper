@@ -18,7 +18,6 @@ Key Features:
 """
 
 import gc
-import logging
 import tempfile
 import time
 import warnings
@@ -50,7 +49,8 @@ except ImportError:
     warnings.warn("Polars not available, using pandas for data processing")
 
 
-logger = logging.getLogger(__name__)
+from ...ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

@@ -9,12 +9,12 @@ coordinates, or other data quality issues.
 
 import csv
 import json
-import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class InvalidDataTracker:

@@ -7,7 +7,6 @@ improvement over legacy systems through JIT compilation and modern algorithms.
 """
 
 import json
-import logging
 import time
 from typing import Dict, List, Optional, Union
 
@@ -21,7 +20,8 @@ from socialmapper.progress import get_progress_bar
 # Import the high-performance engine
 from .engine import ParallelDistanceProcessor, VectorizedDistanceEngine, benchmark_distance_engines
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 def preprocess_poi_data(pois):

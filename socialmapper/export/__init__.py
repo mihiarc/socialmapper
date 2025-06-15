@@ -16,7 +16,6 @@ Phase 3 Features:
 - Intelligent batching and format selection
 """
 
-import logging
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -30,7 +29,8 @@ from ..census.infrastructure import MemoryEfficientDataProcessor, memory_efficie
 # Import Phase 3 components
 from ..census.infrastructure import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 def export_census_data_to_csv(

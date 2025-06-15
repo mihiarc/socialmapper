@@ -4,7 +4,6 @@ Script to query OpenStreetMap using Overpass API and output POI data as JSON.
 """
 import argparse
 import json
-import logging
 import os
 import sys
 from typing import Any, Dict, Optional
@@ -15,7 +14,8 @@ import yaml
 from ..util import with_retry
 
 # Configure logger
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):

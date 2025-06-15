@@ -21,7 +21,6 @@ Optimized Pipeline Stages (from OPTIMIZATION_PLAN.md):
 5. Export & Visualization (Modern Formats)
 """
 
-import logging
 import threading
 import time
 from contextlib import contextmanager

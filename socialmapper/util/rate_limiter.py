@@ -5,7 +5,6 @@ This module provides utilities for managing rate limits and implementing
 retry logic when interacting with external APIs like OpenStreetMaps and Census API.
 """
 
-import logging
 import random
 import time
 from functools import wraps
@@ -14,7 +13,8 @@ from typing import Dict, List, Optional, Type
 import httpx
 
 # Configure logger
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class RateLimiter:

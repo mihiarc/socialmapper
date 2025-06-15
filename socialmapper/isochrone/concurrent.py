@@ -14,7 +14,6 @@ Key Features:
 - Progress tracking with detailed statistics
 """
 
-import logging
 import multiprocessing as mp
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -32,7 +31,8 @@ from .clustering import (
     create_optimized_clusters,
 )
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

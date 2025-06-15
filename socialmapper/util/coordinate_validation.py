@@ -6,14 +6,14 @@ This module provides Pydantic-based validation for all coordinate inputs
 to ensure data quality and prevent issues with PyProj transformations.
 """
 
-import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geopandas as gpd
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from shapely.geometry import Point
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class CoordinatePoint(BaseModel):

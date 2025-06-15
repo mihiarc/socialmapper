@@ -21,7 +21,6 @@ Date: June 2025
 import asyncio
 import hashlib
 import json
-import logging
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -46,7 +45,8 @@ from ..progress import get_progress_bar
 # Local imports
 from ..util.coordinate_validation import POICoordinate, validate_coordinate_point
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class AddressProvider(Enum):

@@ -5,7 +5,6 @@ Provides asynchronous operations for network I/O with proper resource management
 """
 
 import asyncio
-import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -15,7 +14,8 @@ import aiohttp
 from ..pipeline import PipelineConfig
 from .builder import AnalysisResult
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

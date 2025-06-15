@@ -16,7 +16,6 @@ Key Features:
 """
 
 import gc
-import logging
 import threading
 import time
 from contextlib import contextmanager
@@ -28,7 +27,8 @@ import psutil
 
 from ...config.optimization import MemoryConfig
 
-logger = logging.getLogger(__name__)
+from ...ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

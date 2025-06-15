@@ -11,7 +11,6 @@ Date: June 2025
 """
 
 import json
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -20,7 +19,8 @@ import pandas as pd
 
 from . import AddressInput, GeocodingConfig, GeocodingResult
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 class AddressCache:

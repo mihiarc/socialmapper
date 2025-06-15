@@ -5,7 +5,6 @@ Provides a clean, type-safe interface with proper error handling,
 resource management, and extensibility.
 """
 
-import logging
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -17,7 +16,8 @@ from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .builder import AnalysisResult, SocialMapperBuilder, GeographicLevel
 from .result_types import Err, Error, ErrorType, Ok, Result
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @runtime_checkable

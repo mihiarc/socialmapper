@@ -4,7 +4,6 @@ Pipeline orchestrator for the SocialMapper pipeline.
 This module provides a class-based orchestrator that coordinates all pipeline stages.
 """
 
-import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -17,7 +16,8 @@ from .isochrone import generate_isochrones
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass

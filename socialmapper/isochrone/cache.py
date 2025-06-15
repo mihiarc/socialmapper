@@ -16,7 +16,6 @@ Key Features:
 
 import gzip
 import hashlib
-import logging
 import pickle
 import sqlite3
 import threading
@@ -28,7 +27,8 @@ from typing import List, Optional, Tuple
 import networkx as nx
 import osmnx as ox
 
-logger = logging.getLogger(__name__)
+from ..ui.rich_console import get_logger
+logger = get_logger(__name__)
 
 
 @dataclass
