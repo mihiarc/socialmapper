@@ -69,15 +69,14 @@ class ZctaService:
         # Fetch from Census API
         logger.info(f"Fetching ZCTAs for state {state_fips}")
         
-        # Use the TIGERweb Current MapServer endpoint for 2020 Census ZIP Code Tabulation Areas (Layer 2)
-        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2/query"
+        # Use the official TIGER REST API endpoint for ZCTA boundaries (Layer 7)
+        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/7/query"
         
         params = {
-            "where": "1=1",  # Get all ZCTAs, filter by state in post-processing
-            "outFields": "ZCTA5,GEOID",  # Get essential fields
+            "where": f"GEOID LIKE '{state_fips}%'",  # Filter by state FIPS prefix
+            "outFields": "*",  # Get all available fields
             "returnGeometry": "true",
-            "f": "json",  # Use JSON format
-            "resultRecordCount": 1000,  # Reasonable limit per state
+            "f": "geojson",  # Use GeoJSON format for easier processing
         }
         
         try:
