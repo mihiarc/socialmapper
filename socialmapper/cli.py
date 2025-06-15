@@ -23,7 +23,7 @@ from .api import SocialMapperClient, SocialMapperBuilder
 from .progress import get_progress_tracker
 from .census.services.geography_service import StateFormat
 from .census import get_census_system
-from .ui.rich_console import (
+from .ui.console import (
     console,
     get_logger,
     setup_rich_logging,

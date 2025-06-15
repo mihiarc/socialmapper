@@ -7,7 +7,7 @@ This module provides a class-based orchestrator that coordinates all pipeline st
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from ..ui.rich_console import print_error, print_info
+from ..ui.console import print_error, print_info
 from ..isochrone import TravelMode
 from .census import integrate_census_data
 from .environment import setup_pipeline_environment
@@ -17,7 +17,7 @@ from .isochrone import generate_isochrones
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

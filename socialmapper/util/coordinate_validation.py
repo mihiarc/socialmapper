@@ -12,7 +12,7 @@ import geopandas as gpd
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from shapely.geometry import Point
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

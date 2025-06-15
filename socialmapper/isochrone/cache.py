@@ -28,7 +28,7 @@ import networkx as nx
 import osmnx as ox
 
 from .travel_modes import TravelMode, get_default_speed, get_network_type
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 
 logger = get_logger(__name__)
 

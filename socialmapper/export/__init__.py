@@ -29,7 +29,7 @@ from ..census.infrastructure import MemoryEfficientDataProcessor, memory_efficie
 # Import Phase 3 components
 from ..census.infrastructure import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

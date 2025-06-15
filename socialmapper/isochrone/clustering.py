@@ -27,7 +27,7 @@ from sklearn.cluster import DBSCAN
 from .travel_modes import TravelMode, get_default_speed, get_network_type
 
 # Setup logging
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

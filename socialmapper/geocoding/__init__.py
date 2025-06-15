@@ -45,7 +45,7 @@ from ..progress import get_progress_bar
 # Local imports
 from ..util.coordinate_validation import POICoordinate, validate_coordinate_point
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

@@ -27,7 +27,7 @@ import psutil
 
 from ...config.optimization import MemoryConfig
 
-from ...ui.rich_console import get_logger
+from ...ui.console import get_logger
 logger = get_logger(__name__)
 
 

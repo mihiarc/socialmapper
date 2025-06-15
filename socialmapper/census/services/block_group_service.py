@@ -19,7 +19,7 @@ from ..domain.interfaces import (
     RateLimiter
 )
 from ...progress import get_progress_bar
-from ...ui.rich_console import get_logger
+from ...ui.console import get_logger
 
 logger = get_logger(__name__)
 

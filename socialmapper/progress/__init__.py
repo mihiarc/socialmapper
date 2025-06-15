@@ -29,7 +29,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 
 # Import Rich progress bar libraries
-from ..ui.rich_console import (
+from ..ui.console import (
     RichProgressWrapper,
     console,
     print_error,

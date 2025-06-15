@@ -14,7 +14,7 @@ import yaml
 from ..util import with_retry
 
 # Configure logger
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

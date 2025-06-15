@@ -21,7 +21,7 @@ from urllib3.util.retry import Retry
 from ..neighbors import get_neighbor_manager
 from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

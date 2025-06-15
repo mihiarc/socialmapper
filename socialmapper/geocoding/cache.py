@@ -19,7 +19,7 @@ import pandas as pd
 
 from . import AddressInput, GeocodingConfig, GeocodingResult
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

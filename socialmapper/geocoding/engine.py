@@ -18,7 +18,7 @@ from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, Ge
 from .cache import AddressCache
 from .providers import CensusProvider, NominatimProvider
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

@@ -32,7 +32,7 @@ from .clustering import (
 )
 from .travel_modes import TravelMode
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

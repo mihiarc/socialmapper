@@ -16,7 +16,7 @@ from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .builder import AnalysisResult, SocialMapperBuilder, GeographicLevel
 from .result_types import Err, Error, ErrorType, Ok, Result
 
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 

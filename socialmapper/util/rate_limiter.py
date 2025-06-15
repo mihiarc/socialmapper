@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Type
 import httpx
 
 # Configure logger
-from ..ui.rich_console import get_logger
+from ..ui.console import get_logger
 logger = get_logger(__name__)
 
 
