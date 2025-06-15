@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import pandas as pd
-from tqdm import tqdm
 
 from ..domain.entities import CountyInfo
 from ..domain.interfaces import (
