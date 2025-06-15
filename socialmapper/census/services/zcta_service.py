@@ -69,112 +69,104 @@ class ZctaService:
         # Fetch from Census API
         logger.info(f"Fetching ZCTAs for state {state_fips}")
         
-        # Use the official TIGER REST API endpoint for ZCTA boundaries (Layer 7)
-        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/7/query"
+        # Use the Census 2020 TIGER REST API endpoint for ZCTA boundaries (Layer 2)
+        base_url = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/2/query"
         
-        params = {
-            "where": f"GEOID LIKE '{state_fips}%'",  # Filter by state FIPS prefix
-            "outFields": "*",  # Get all available fields
-            "returnGeometry": "true",
-            "f": "geojson",  # Use GeoJSON format for easier processing
+        # Map state FIPS to common ZCTA prefixes (postal code patterns)
+        state_zcta_prefixes = {
+            "37": ["27", "28"],  # North Carolina: 27xxx, 28xxx
+            "45": ["29"],        # South Carolina: 29xxx
+            "13": ["30", "31"],  # Georgia: 30xxx, 31xxx
+            "51": ["22", "23", "24"],  # Virginia: 22xxx, 23xxx, 24xxx
+            "06": ["90", "91", "92", "93", "94", "95", "96"],  # California
+            "36": ["10", "11", "12", "13", "14"],  # New York
+            "48": ["75", "76", "77", "78", "79"],  # Texas
         }
         
-        try:
-            # Apply rate limiting
-            if self._rate_limiter:
-                self._rate_limiter.wait_if_needed("census")
+        # Get ZCTA prefixes for this state
+        zcta_prefixes = state_zcta_prefixes.get(state_fips, [])
+        
+        if not zcta_prefixes:
+            logger.warning(f"No ZCTA prefix mapping for state {state_fips}")
+            raise ValueError(f"No ZCTA prefix mapping available for state {state_fips}")
+        
+        # Fetch ZCTAs for each prefix separately (API doesn't handle complex OR clauses well)
+        all_zctas = []
+        
+        for prefix in zcta_prefixes:
+            logger.info(f"Fetching ZCTAs with prefix {prefix}")
             
-            # Use requests directly since we're calling a different API
-            import requests
-            response = requests.get(base_url, params=params, timeout=30)
+            params = {
+                "where": f"GEOID LIKE '{prefix}%'",
+                "outFields": "GEOID,ZCTA5,NAME,POP100,HU100,AREALAND,AREAWATER,CENTLAT,CENTLON",
+                "returnGeometry": "true",
+                "f": "geojson",
+                "resultRecordCount": 2000,
+            }
             
-            if response.status_code == 200:
-                # Parse the response
-                data = response.json()
-                logger.info(f"API response keys: {list(data.keys())}")
+            try:
+                # Apply rate limiting
+                if self._rate_limiter:
+                    self._rate_limiter.wait_if_needed("census")
                 
-                # Handle ArcGIS REST API response format
-                if "features" in data and isinstance(data["features"], list):
-                    logger.info(f"Found {len(data['features'])} features in response")
-                    if data["features"]:
-                        logger.info(f"Sample feature: {data['features'][0]}")
+                # Use requests directly since we're calling a different API
+                import requests
+                response = requests.get(base_url, params=params, timeout=60)
+                
+                logger.info(f"API request URL: {response.url}")
+                logger.info(f"Response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    # Parse the GeoJSON response
+                    try:
+                        data = response.json()
+                        logger.info(f"API response keys: {list(data.keys())}")
+                    except Exception as json_error:
+                        logger.error(f"Failed to parse JSON response: {json_error}")
+                        logger.error(f"Raw response: {response.text[:500]}")
+                        continue  # Skip this prefix and try the next one
                     
-                    # Convert ArcGIS features to GeoDataFrame
-                    features = []
-                    for feature in data["features"]:
-                        # Extract geometry and attributes
-                        geom = feature.get("geometry")
-                        attrs = feature.get("attributes", {})
+                    # Handle GeoJSON format
+                    if "features" in data and isinstance(data["features"], list):
+                        logger.info(f"Found {len(data['features'])} features for prefix {prefix}")
                         
-                        # Skip features without geometry
-                        if not geom or not geom.get("rings"):
-                            continue
-                        
-                        # Convert ArcGIS geometry to GeoJSON format
-                        if "rings" in geom:
-                            # ArcGIS polygon format
-                            geojson_geom = {
-                                "type": "Polygon",
-                                "coordinates": geom["rings"]
-                            }
+                        if data["features"]:
+                            # Create GeoDataFrame directly from GeoJSON
+                            prefix_zctas = gpd.GeoDataFrame.from_features(data["features"], crs="EPSG:4326")
+                            all_zctas.append(prefix_zctas)
+                            logger.info(f"Added {len(prefix_zctas)} ZCTAs for prefix {prefix}")
                         else:
-                            # Skip unsupported geometry types
-                            continue
-                        
-                        # Create a GeoJSON-like feature
-                        geojson_feature = {
-                            "type": "Feature",
-                            "geometry": geojson_geom,
-                            "properties": attrs
-                        }
-                        features.append(geojson_feature)
-                    
-                    if features:
-                        zctas = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
-                        logger.info(f"Retrieved {len(zctas)} ZCTAs from API")
-                        logger.info(f"Sample ZCTA columns: {list(zctas.columns)}")
-                        
-                        # Filter by state if we have state information
-                        if 'STATEFP20' in zctas.columns:
-                            zctas = zctas[zctas['STATEFP20'] == state_fips]
-                            logger.info(f"Filtered to {len(zctas)} ZCTAs for state {state_fips}")
-                        elif 'STATEFP' in zctas.columns:
-                            zctas = zctas[zctas['STATEFP'] == state_fips]
-                            logger.info(f"Filtered to {len(zctas)} ZCTAs for state {state_fips}")
-                        
-                        if len(zctas) == 0:
-                            raise ValueError(f"No ZCTAs found for state {state_fips}")
+                            logger.info(f"No ZCTAs found for prefix {prefix}")
                     else:
-                        raise ValueError("No ZCTA features found in response")
+                        logger.warning(f"Unexpected response format for prefix {prefix}: {list(data.keys())}")
                 else:
-                    # Handle error or unexpected format
-                    logger.warning(f"Unexpected response format: {data}")
-                    raise ValueError(f"Unexpected API response format: {list(data.keys())}")
-                
-                # Standardize column names for consistency
-                if "ZCTA5CE20" in zctas.columns:
-                    zctas["ZCTA5CE"] = zctas["ZCTA5CE20"]
-                if "GEOID20" in zctas.columns:
-                    zctas["GEOID"] = zctas["GEOID20"]
-                if "STATEFP20" in zctas.columns:
-                    zctas["STATEFP"] = zctas["STATEFP20"]
-                
-                # Ensure proper formatting
-                if "STATEFP" not in zctas.columns or not all(zctas["STATEFP"] == state_fips):
-                    zctas["STATEFP"] = state_fips
-                
-                # Cache the result
-                if self._cache:
-                    self._cache.set(cache_key, zctas)
-                
-                logger.info(f"Retrieved {len(zctas)} ZCTAs for state {state_fips}")
-                return zctas
-            else:
-                raise ValueError(f"Census API returned status code {response.status_code}")
-                
-        except Exception as e:
-            logger.error(f"Error fetching ZCTAs for state {state_fips}: {e}")
-            raise ValueError(f"Could not fetch ZCTAs: {str(e)}")
+                    logger.warning(f"API returned status code {response.status_code} for prefix {prefix}")
+                    
+            except Exception as e:
+                logger.error(f"Error fetching ZCTAs for prefix {prefix}: {e}")
+                continue  # Skip this prefix and try the next one
+        
+        # Combine all ZCTAs
+        if all_zctas:
+            zctas = gpd.pd.concat(all_zctas, ignore_index=True)
+            logger.info(f"Combined {len(zctas)} ZCTAs from {len(all_zctas)} prefixes")
+            
+            # Standardize column names for consistency
+            if "ZCTA5CE" not in zctas.columns and "ZCTA5" in zctas.columns:
+                zctas["ZCTA5CE"] = zctas["ZCTA5"]
+            
+            # Ensure state FIPS is available
+            if "STATEFP" not in zctas.columns:
+                zctas["STATEFP"] = state_fips
+            
+            # Cache the result
+            if self._cache:
+                self._cache.set(cache_key, zctas)
+            
+            logger.info(f"Retrieved {len(zctas)} ZCTAs for state {state_fips}")
+            return zctas
+        else:
+            raise ValueError(f"No ZCTAs found for any prefix in state {state_fips}")
     
     def get_zctas_for_states(
         self, 
@@ -191,7 +183,8 @@ class ZctaService:
         """
         all_zctas = []
         
-        for state_fips in tqdm(state_fips_list, desc="Fetching ZCTAs by state", unit="state"):
+        progress_bar = get_progress_bar()
+        for state_fips in progress_bar(state_fips_list, desc="Fetching ZCTAs by state"):
             try:
                 state_zctas = self.get_zctas_for_state(state_fips)
                 all_zctas.append(state_zctas)

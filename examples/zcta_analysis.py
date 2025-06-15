@@ -22,10 +22,14 @@ Prerequisites:
 
 import os
 import sys
+import logging
 from pathlib import Path
 
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Enable logging to see what's happening
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 from socialmapper import get_census_system
 

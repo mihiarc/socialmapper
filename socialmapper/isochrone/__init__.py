@@ -40,6 +40,7 @@ from .clustering import (
     create_optimized_clusters,
 )
 from .concurrent import ConcurrentIsochroneProcessor, ProcessingStats, process_isochrones_concurrent
+from .travel_modes import TravelMode, get_travel_mode_config
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ def create_isochrone_from_poi(
     save_file: bool = True,
     simplify_tolerance: Optional[float] = None,
     use_parquet: bool = True,
+    travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> Union[str, gpd.GeoDataFrame]:
     """
     Create an isochrone from a POI using modern optimized methods.
@@ -78,6 +80,7 @@ def create_isochrone_from_poi(
         save_file (bool): Whether to save the isochrone to a file
         simplify_tolerance (float, optional): Tolerance for geometry simplification
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
+        travel_mode (TravelMode): Mode of travel (walk, bike, drive)
 
     Returns:
         Union[str, gpd.GeoDataFrame]: File path if save_file=True, or GeoDataFrame if save_file=False
@@ -107,7 +110,11 @@ def create_isochrone_from_poi(
 
     # Download network with caching
     G = download_and_cache_network(
-        bbox=bbox, travel_time_minutes=travel_time_limit, cluster_size=1, cache=cache
+        bbox=bbox, 
+        travel_time_minutes=travel_time_limit, 
+        cluster_size=1, 
+        cache=cache,
+        travel_mode=travel_mode
     )
 
     if G is None:
@@ -115,7 +122,11 @@ def create_isochrone_from_poi(
 
     # Create isochrone using optimized method
     isochrone_gdf = create_isochrone_from_poi_with_network(
-        poi=poi, network=G, network_crs=G.graph["crs"], travel_time_minutes=travel_time_limit
+        poi=poi, 
+        network=G, 
+        network_crs=G.graph["crs"], 
+        travel_time_minutes=travel_time_limit,
+        travel_mode=travel_mode
     )
 
     if isochrone_gdf is None:
@@ -195,6 +206,7 @@ def create_isochrones_from_poi_list(
     max_network_workers: int = 8,
     max_isochrone_workers: Optional[int] = None,
     progress_callback: Optional[Callable] = None,
+    travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> Union[str, gpd.GeoDataFrame, List[str]]:
     """
     Create isochrones from a list of POIs with modern optimization.
@@ -214,6 +226,7 @@ def create_isochrones_from_poi_list(
         max_network_workers (int): Maximum concurrent network downloads
         max_isochrone_workers (int, optional): Maximum concurrent isochrone calculations
         progress_callback (Callable, optional): Progress callback function
+        travel_mode (TravelMode): Mode of travel (walk, bike, drive)
 
     Returns:
         Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
@@ -260,6 +273,7 @@ def create_isochrones_from_poi_list(
             max_network_workers=max_network_workers,
             max_isochrone_workers=max_isochrone_workers,
             progress_callback=progress_callback,
+            travel_mode=travel_mode,
         )
 
     elif use_clustering:
@@ -287,6 +301,7 @@ def create_isochrones_from_poi_list(
                 travel_time_minutes=travel_time_limit,
                 cluster_size=len(cluster),
                 cache=cache,
+                travel_mode=travel_mode,
             )
 
             if network is None:
@@ -303,6 +318,7 @@ def create_isochrones_from_poi_list(
                     network=cluster.network,
                     network_crs=cluster.network_crs,
                     travel_time_minutes=travel_time_limit,
+                    travel_mode=travel_mode,
                 )
 
                 if isochrone_gdf is not None:
@@ -329,6 +345,7 @@ def create_isochrones_from_poi_list(
                     save_file=False,  # We'll handle saving later
                     simplify_tolerance=simplify_tolerance,
                     use_parquet=use_parquet,
+                    travel_mode=travel_mode,
                 )
                 isochrone_gdfs.append(result)
 

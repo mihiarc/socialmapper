@@ -28,6 +28,8 @@ from typing import List, Optional, Tuple
 import networkx as nx
 import osmnx as ox
 
+from .travel_modes import TravelMode, get_default_speed, get_network_type
+
 logger = logging.getLogger(__name__)
 
 
@@ -517,22 +519,32 @@ def download_and_cache_network(
     travel_time_minutes: int = 15,
     cluster_size: int = 1,
     cache: Optional[ModernNetworkCache] = None,
+    travel_mode: Optional[TravelMode] = None,
 ) -> Optional[nx.MultiDiGraph]:
     """
     Download network and store in cache, or retrieve from cache if available.
 
     Args:
         bbox: Bounding box (min_lat, min_lon, max_lat, max_lon)
-        network_type: Type of network to download
+        network_type: Type of network to download (deprecated, use travel_mode)
         travel_time_minutes: Travel time requirement
         cluster_size: Number of POIs this network will serve
         cache: Cache instance to use (uses global cache if None)
+        travel_mode: Travel mode (walk, bike, drive)
 
     Returns:
         Network graph or None if download failed
     """
     if cache is None:
         cache = get_global_cache()
+
+    # Handle travel mode vs network type
+    if travel_mode is not None:
+        network_type = get_network_type(travel_mode)
+        default_speed = get_default_speed(travel_mode)
+    else:
+        # Legacy support - default to drive mode
+        default_speed = 50.0
 
     # Try to get from cache first
     network = cache.get_network(bbox, network_type, travel_time_minutes)
@@ -541,15 +553,15 @@ def download_and_cache_network(
 
     # Download new network
     try:
-        logger.info(f"Downloading network for bbox {bbox}")
+        logger.info(f"Downloading network for bbox {bbox} with network_type={network_type}")
 
         min_lat, min_lon, max_lat, max_lon = bbox
         # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
         osm_bbox = (min_lon, min_lat, max_lon, max_lat)
         G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
-        # Add speeds and travel times
-        G = ox.add_edge_speeds(G, fallback=50)
+        # Add speeds and travel times with mode-specific defaults
+        G = ox.add_edge_speeds(G, fallback=default_speed)
         G = ox.add_edge_travel_times(G)
         G = ox.project_graph(G)
 
