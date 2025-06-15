@@ -73,24 +73,24 @@ python examples/zcta_analysis.py
 
 Comprehensive demonstrations for testing and validation:
 
-### **ZCTA Test Demos** (`demos/`)
+### **ZCTA Test Demos** (`tests/demos/`)
 Detailed test demonstrations for ZCTA functionality:
 
 ```bash
 # Test ZCTA fundamentals
-python examples/demos/zcta_fundamentals_demo.py
+python tests/demos/zcta_fundamentals_demo.py
 
 # Test POI integration
-python examples/demos/zcta_poi_integration_demo.py
+python tests/demos/zcta_poi_integration_demo.py
 
 # Test modern Census API
-python examples/demos/modern_zcta_api_demo.py
+python tests/demos/modern_zcta_api_demo.py
 
 # Test TIGER boundary API
-python examples/demos/tiger_api_boundaries_demo.py
+python tests/demos/tiger_api_boundaries_demo.py
 ```
 
-See `demos/README_ZCTA_DEMOS.md` for detailed information.
+See `tests/demos/README_ZCTA_DEMOS.md` for detailed information.
 
 ## 🔧 Core Feature Demos
 

@@ -79,7 +79,7 @@ def main():
         .with_osm_pois("amenity", "hospital")
         .with_travel_time(20)
         .with_travel_mode("drive")  # Default mode
-        .with_census_variables("total_population", "percent_over_65")
+        .with_census_variables("total_population", "median_age")
         .limit_pois(2)
         .with_output_directory("output/drive_example")
         .build()
