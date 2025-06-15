@@ -41,8 +41,8 @@ from ..ui.rich_console import (
     rich_tqdm,
 )
 
-# Streamlit detection removed - always use Rich progress
-_IN_STREAMLIT = False
+# Streamlit has been completely removed from SocialMapper
+# Always use Rich progress for consistent CLI experience
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class ModernProgressTracker:
         self.enable_performance_metrics = enable_performance_metrics
         self.current_stage: Optional[ProcessingStage] = None
         self.stage_metrics: Dict[ProcessingStage, ProgressMetrics] = {}
-        self.current_pbar: Optional[Union[RichProgressWrapper, "stqdm"]] = None
+        self.current_pbar: Optional[RichProgressWrapper] = None
         self._lock = threading.Lock()
 
         # Stage descriptions for user-friendly output
@@ -157,10 +157,8 @@ class ModernProgressTracker:
             # Get stage description
             description = self.stage_descriptions.get(stage, str(stage))
 
-            # Create new progress bar
-            progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
-
-            self.current_pbar = progress_bar_class(
+            # Create new progress bar using Rich
+            self.current_pbar = rich_tqdm(
                 total=total_items, desc=f"🚀 {description}", unit="items"
             )
 
@@ -333,17 +331,17 @@ def get_progress_bar(iterable=None, **kwargs):
     """
     Return the appropriate progress bar based on the execution context.
 
-    This function provides tqdm progress bars for both CLI and Streamlit contexts.
+    This function provides Rich tqdm progress bars for CLI usage.
 
     Args:
         iterable: The iterable to wrap with a progress bar
         **kwargs: Additional arguments to pass to the progress bar
 
     Returns:
-        A progress bar instance that can be used as a context manager
+        A Rich progress bar instance that can be used as a context manager
     """
-    # Use the environment detection done at import time
-    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
+    # Always use Rich progress bars
+    progress_bar_class = rich_tqdm
 
     # Always return an instance, not a class
     if iterable is not None:
@@ -398,7 +396,7 @@ def track_export_visualization(total_outputs: Optional[int] = None):
 # Enhanced progress bar creation functions for specific use cases
 def create_poi_progress_bar(
     total_pois: int, desc: str = "Processing POIs"
-) -> Union[RichProgressWrapper, "stqdm"]:
+) -> RichProgressWrapper:
     """Create a progress bar specifically for POI processing."""
     progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(total=total_pois, desc=f"🎯 {desc}", unit="POI")
@@ -406,7 +404,7 @@ def create_poi_progress_bar(
 
 def create_isochrone_progress_bar(
     total_isochrones: int, desc: str = "Generating Isochrones"
-) -> Union[RichProgressWrapper, "stqdm"]:
+) -> RichProgressWrapper:
     """Create a progress bar specifically for isochrone generation."""
     progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(total=total_isochrones, desc=f"🗺️ {desc}", unit="isochrone")
@@ -414,7 +412,7 @@ def create_isochrone_progress_bar(
 
 def create_census_progress_bar(
     total_blocks: int, desc: str = "Processing Census Data"
-) -> Union[RichProgressWrapper, "stqdm"]:
+) -> RichProgressWrapper:
     """Create a progress bar specifically for census data processing."""
     progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(total=total_blocks, desc=f"📊 {desc}", unit="block")
@@ -422,7 +420,7 @@ def create_census_progress_bar(
 
 def create_network_progress_bar(
     total_networks: int, desc: str = "Downloading Networks"
-) -> Union[RichProgressWrapper, "stqdm"]:
+) -> RichProgressWrapper:
     """Create a progress bar specifically for network downloads."""
     progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
     return progress_bar_class(total=total_networks, desc=f"🌐 {desc}", unit="network")

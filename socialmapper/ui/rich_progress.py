@@ -10,7 +10,7 @@ Key Features:
 - Beautiful Rich progress bars with real-time metrics
 - Professional console output with colors and formatting
 - Status indicators with spinners for long operations
-- Context-aware progress (CLI vs Streamlit)
+- Optimized for CLI usage with Rich console
 - Memory and performance monitoring
 - Rich tracebacks for better error reporting
 - Tables for summary data

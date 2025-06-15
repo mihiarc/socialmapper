@@ -593,7 +593,11 @@ def log_export_start(formats: List[str]):
 
 def create_rich_panel(content: str, title: str = "", style: str = "cyan") -> str:
     """
-    Create a rich-styled panel for Streamlit (returns markdown).
+    Create a rich-styled panel (returns markdown for compatibility).
+    
+    Note: This function was originally designed for Streamlit integration,
+    but Streamlit has been removed from SocialMapper. The function is kept
+    for backward compatibility and returns markdown format.
 
     Args:
         content: Panel content
@@ -621,7 +625,11 @@ def create_rich_panel(content: str, title: str = "", style: str = "cyan") -> str
 
 def create_performance_table(data: Dict[str, Any]) -> str:
     """
-    Create a performance comparison table for Streamlit (returns markdown).
+    Create a performance comparison table (returns markdown for compatibility).
+    
+    Note: This function was originally designed for Streamlit integration,
+    but Streamlit has been removed from SocialMapper. The function is kept
+    for backward compatibility and returns markdown format.
 
     Args:
         data: Performance data dictionary

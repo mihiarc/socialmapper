@@ -19,7 +19,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from ..data.neighbors import get_file_neighbor_manager
+from ..neighbors import get_neighbor_manager
 from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 
 logger = logging.getLogger(__name__)
@@ -190,7 +190,7 @@ class NominatimProvider(GeocodingProvider):
             return
 
         try:
-            neighbor_manager = get_file_neighbor_manager()
+            neighbor_manager = get_neighbor_manager()
             geo_info = neighbor_manager.get_geography_from_point(result.latitude, result.longitude)
 
             if geo_info:
@@ -297,7 +297,7 @@ class CensusProvider(GeocodingProvider):
             return
 
         try:
-            neighbor_manager = get_file_neighbor_manager()
+            neighbor_manager = get_neighbor_manager()
             geo_info = neighbor_manager.get_geography_from_point(result.latitude, result.longitude)
 
             if geo_info:

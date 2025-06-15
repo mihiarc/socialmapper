@@ -40,7 +40,7 @@ from requests.adapters import HTTPAdapter
 from shapely.geometry import Point
 from urllib3.util.retry import Retry
 
-from ..data.neighbors import get_file_neighbor_manager
+from ..neighbors import get_neighbor_manager
 from ..progress import get_progress_bar
 
 # Local imports

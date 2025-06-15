@@ -28,10 +28,10 @@ import pandas as pd
 from socialmapper.util import CENSUS_VARIABLE_MAPPING
 
 from ..config.optimization import IOConfig, OptimizationConfig
-from ..data.memory import MemoryEfficientDataProcessor, memory_efficient_processing
+from ..census.infrastructure import MemoryEfficientDataProcessor, memory_efficient_processing
 
 # Import Phase 3 components
-from ..data.streaming import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
+from ..census.infrastructure import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
 
 logger = logging.getLogger(__name__)
 

@@ -72,8 +72,7 @@ from .infrastructure.repository import (
 )
 from .infrastructure.geocoder import CensusGeocoder
 
-# Import adapters
-# from .adapters.legacy_adapter import LegacyCensusAdapter  # Temporarily disabled to avoid circular imports
+# Legacy adapters have been removed and integrated into the modern census system
 
 
 class CacheStrategy(Enum):
@@ -582,21 +581,21 @@ def get_census_system(
 
 def get_legacy_adapter(census_system: Optional[CensusSystem] = None):
     """
-    Get a legacy adapter for backward compatibility.
+    Legacy adapter functionality has been integrated into the modern CensusSystem.
+    
+    This function now returns the CensusSystem directly as it provides all
+    the functionality that was previously in the legacy adapter.
     
     Args:
         census_system: Optional CensusSystem instance (creates default if None)
         
     Returns:
-        LegacyCensusAdapter instance
+        CensusSystem instance with full legacy compatibility
     """
-    # Import here to avoid circular dependency
-    from .adapters.legacy_adapter import LegacyCensusAdapter
-    
     if census_system is None:
         census_system = get_census_system()
     
-    return LegacyCensusAdapter(census_system)
+    return census_system
 
 
 def get_streaming_census_manager(
