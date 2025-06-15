@@ -37,14 +37,13 @@ from ..ui.rich_console import (
     print_info,
     print_success,
     print_warning,
-    progress_bar,
+    progress_bar as rich_progress_context,
     rich_tqdm,
+    get_logger,
 )
 
-# Streamlit has been completely removed from SocialMapper
 # Always use Rich progress for consistent CLI experience
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ProcessingStage(Enum):
@@ -398,29 +397,25 @@ def create_poi_progress_bar(
     total_pois: int, desc: str = "Processing POIs"
 ) -> RichProgressWrapper:
     """Create a progress bar specifically for POI processing."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
-    return progress_bar_class(total=total_pois, desc=f"🎯 {desc}", unit="POI")
+    return rich_tqdm(total=total_pois, desc=f"🎯 {desc}", unit="POI")
 
 
 def create_isochrone_progress_bar(
     total_isochrones: int, desc: str = "Generating Isochrones"
 ) -> RichProgressWrapper:
     """Create a progress bar specifically for isochrone generation."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
-    return progress_bar_class(total=total_isochrones, desc=f"🗺️ {desc}", unit="isochrone")
+    return rich_tqdm(total=total_isochrones, desc=f"🗺️ {desc}", unit="isochrone")
 
 
 def create_census_progress_bar(
     total_blocks: int, desc: str = "Processing Census Data"
 ) -> RichProgressWrapper:
     """Create a progress bar specifically for census data processing."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
-    return progress_bar_class(total=total_blocks, desc=f"📊 {desc}", unit="block")
+    return rich_tqdm(total=total_blocks, desc=f"📊 {desc}", unit="block")
 
 
 def create_network_progress_bar(
     total_networks: int, desc: str = "Downloading Networks"
 ) -> RichProgressWrapper:
     """Create a progress bar specifically for network downloads."""
-    progress_bar_class = stqdm if _IN_STREAMLIT else rich_tqdm
-    return progress_bar_class(total=total_networks, desc=f"🌐 {desc}", unit="network")
+    return rich_tqdm(total=total_networks, desc=f"🌐 {desc}", unit="network")

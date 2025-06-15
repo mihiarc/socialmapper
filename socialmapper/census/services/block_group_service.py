@@ -5,13 +5,11 @@ Handles census block group operations including fetching boundaries,
 batch processing, and TIGER/Line shapefile URL generation.
 """
 
-import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import pandas as pd
-from tqdm import tqdm
 
 from ..domain.entities import BlockGroupInfo, CountyInfo
 from ..domain.interfaces import (
@@ -20,8 +18,10 @@ from ..domain.interfaces import (
     ConfigurationProvider,
     RateLimiter
 )
+from ...progress import get_progress_bar
+from ...ui.rich_console import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BlockGroupService:
@@ -130,7 +130,9 @@ class BlockGroupService:
         """
         all_block_groups = []
         
-        for state_fips, county_fips in tqdm(counties, desc="Fetching block groups by county", unit="county"):
+        with get_progress_bar(total=len(counties), desc="Fetching block groups by county", unit="county") as pbar:
+            for state_fips, county_fips in counties:
+                pbar.update(1)
             try:
                 county_block_groups = self.get_block_groups_for_county(state_fips, county_fips)
                 all_block_groups.append(county_block_groups)

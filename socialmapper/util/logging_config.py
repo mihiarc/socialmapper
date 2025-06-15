@@ -1,16 +1,17 @@
 """
-Logging configuration for SocialMapper.
+Logging configuration for SocialMapper using Rich.
 
-This module sets up the default logging configuration for the entire package.
+This module sets up Rich-enhanced logging for the entire package.
 """
 
 import logging
 import os
+from ..ui.rich_console import setup_rich_logging
 
 
 def configure_logging(level=None):
     """
-    Configure logging for SocialMapper.
+    Configure Rich logging for SocialMapper.
     
     Args:
         level: Logging level (defaults to CRITICAL unless SOCIALMAPPER_LOG_LEVEL env var is set)
@@ -18,22 +19,14 @@ def configure_logging(level=None):
     if level is None:
         # Check environment variable for logging level
         env_level = os.environ.get('SOCIALMAPPER_LOG_LEVEL', 'CRITICAL').upper()
-        level = getattr(logging, env_level, logging.CRITICAL)
+        level = env_level
     
-    # Configure root logger for socialmapper package
+    # Use Rich logging setup
+    setup_rich_logging(level=level, show_time=False, show_path=False)
+    
+    # Set socialmapper logger level
     logger = logging.getLogger('socialmapper')
-    logger.setLevel(level)
-    
-    # Only add handler if none exists
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setLevel(level)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-    
-    # Prevent propagation to root logger
-    logger.propagate = False
+    logger.setLevel(getattr(logging, level, logging.CRITICAL))
     
     # Also set urllib3 to warning or higher to reduce noise
     logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -43,7 +36,10 @@ def configure_logging(level=None):
     logging.getLogger('fiona').setLevel(logging.WARNING)
     logging.getLogger('rasterio').setLevel(logging.WARNING)
     logging.getLogger('pyproj').setLevel(logging.WARNING)
+    logging.getLogger('shapely').setLevel(logging.WARNING)
+    logging.getLogger('geopandas').setLevel(logging.WARNING)
+    logging.getLogger('osmnx').setLevel(logging.WARNING)
 
 
 # Configure logging on import with CRITICAL level by default
-configure_logging(logging.CRITICAL)
+configure_logging('CRITICAL')

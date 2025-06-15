@@ -24,10 +24,9 @@ import networkx as nx
 import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
-from tqdm import tqdm
-
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
+from socialmapper.ui.rich_console import get_logger
 
 from .cache import ModernNetworkCache, download_and_cache_network, get_global_cache
 
@@ -42,7 +41,7 @@ from .clustering import (
 from .concurrent import ConcurrentIsochroneProcessor, ProcessingStats, process_isochrones_concurrent
 
 # Setup logging
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Suppress FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning)

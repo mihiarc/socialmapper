@@ -5,13 +5,11 @@ Handles ZIP Code Tabulation Area (ZCTA) operations including fetching boundaries
 batch processing, and TIGER/Line shapefile URL generation.
 """
 
-import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import geopandas as gpd
 import pandas as pd
-from tqdm import tqdm
 
 from ..domain.entities import CountyInfo
 from ..domain.interfaces import (
@@ -20,8 +18,10 @@ from ..domain.interfaces import (
     ConfigurationProvider,
     RateLimiter
 )
+from ...progress import get_progress_bar
+from ...ui.rich_console import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ZctaService:
@@ -192,7 +192,9 @@ class ZctaService:
         """
         all_zctas = []
         
-        for state_fips in tqdm(state_fips_list, desc="Fetching ZCTAs by state", unit="state"):
+        with get_progress_bar(total=len(state_fips_list), desc="Fetching ZCTAs by state", unit="state") as pbar:
+            for state_fips in state_fips_list:
+                pbar.update(1)
             try:
                 state_zctas = self.get_zctas_for_state(state_fips)
                 all_zctas.append(state_zctas)
