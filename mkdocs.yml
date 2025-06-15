@@ -134,6 +134,7 @@ nav:
   
   - Reference:
     - Census Variables: reference/census-variables.md
+    - Travel Speeds: reference/travel-speeds.md
     - API Reference: api-reference.md
   
   - Resources:
