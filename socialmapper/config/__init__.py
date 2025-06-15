@@ -2,21 +2,21 @@
 """
 Configuration package for SocialMapper optimization.
 
-This package provides centralized configuration management for all
+This package provides clean dataclass-based configuration schemas for all
 optimization settings and performance tuning.
+
+For configuration management utilities, import from socialmapper.util:
+- ConfigPresets: Configuration factory with presets
+- get_global_config, set_global_config: Global configuration management
+- apply_preset, validate_config: Configuration utilities
 """
 
 from .optimization import (
-    OPTIMIZED_CONFIG,
     DistanceConfig,
     IOConfig,
     IsochroneConfig,
     MemoryConfig,
     OptimizationConfig,
-    PerformancePresets,
-    get_config,
-    reset_config,
-    update_config,
 )
 
 __all__ = [
@@ -25,9 +25,4 @@ __all__ = [
     "IsochroneConfig",
     "MemoryConfig",
     "IOConfig",
-    "PerformancePresets",
-    "get_config",
-    "update_config",
-    "reset_config",
-    "OPTIMIZED_CONFIG",
 ]

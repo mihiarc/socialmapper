@@ -169,6 +169,39 @@ from .rate_limiter import (
     with_retry,
 )
 
+# Import new utility modules
+from .system_detection import (
+    get_system_capabilities,
+    get_optimal_worker_count,
+    get_available_memory_gb,
+    get_total_memory_gb,
+    get_performance_tier,
+    is_memory_constrained,
+    is_high_performance_system,
+    validate_system_requirements,
+)
+from .config_presets import (
+    ConfigPresets,
+    get_development_config,
+    get_production_config,
+    get_auto_config,
+    get_config_for_environment,
+)
+from .config_manager import (
+    get_global_config,
+    set_global_config,
+    update_global_config,
+    reset_global_config,
+    apply_preset,
+    get_config_summary,
+    validate_config,
+    optimize_for_current_system,
+    # Backward compatibility aliases
+    get_config,
+    update_config,
+    reset_config,
+)
+
 # Export these symbols at the package level
 __all__ = [
     # Census variable utilities
@@ -211,6 +244,34 @@ __all__ = [
     "validate_api_response",
     "sanitize_filename_input",
     "InputValidationError",
+    # System detection utilities
+    "get_system_capabilities",
+    "get_optimal_worker_count",
+    "get_available_memory_gb",
+    "get_total_memory_gb",
+    "get_performance_tier",
+    "is_memory_constrained",
+    "is_high_performance_system",
+    "validate_system_requirements",
+    # Configuration preset utilities
+    "ConfigPresets",
+    "get_development_config",
+    "get_production_config",
+    "get_auto_config",
+    "get_config_for_environment",
+    # Configuration management utilities
+    "get_global_config",
+    "set_global_config",
+    "update_global_config",
+    "reset_global_config",
+    "apply_preset",
+    "get_config_summary",
+    "validate_config",
+    "optimize_for_current_system",
+    # Backward compatibility aliases
+    "get_config",
+    "update_config",
+    "reset_config",
 ]
 
 

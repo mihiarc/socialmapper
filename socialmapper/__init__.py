@@ -96,6 +96,13 @@ try:
 except ImportError:
     _NEIGHBOR_FUNCTIONS_AVAILABLE = False
 
+# Import visualization module
+try:
+    from .visualization import ChoroplethMap, MapType, MapConfig, ColorScheme
+    _VISUALIZATION_AVAILABLE = True
+except ImportError:
+    _VISUALIZATION_AVAILABLE = False
+
 # Build __all__ based on available features
 __all__ = [
     # Modern API (primary interface)
@@ -118,4 +125,9 @@ __all__ = [
     # Neighbor functions
     "get_geography_from_point",
     "get_counties_from_pois",
+    # Visualization
+    "ChoroplethMap",
+    "MapType",
+    "MapConfig",
+    "ColorScheme",
 ]
