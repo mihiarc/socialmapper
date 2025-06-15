@@ -24,9 +24,6 @@ from typing import Dict, List, Optional, Union
 import geopandas as gpd
 import pandas as pd
 
-# Import legacy components for backward compatibility
-from socialmapper.util import CENSUS_VARIABLE_MAPPING
-
 from ..config.optimization import IOConfig, OptimizationConfig
 from ..census.infrastructure import MemoryEfficientDataProcessor, memory_efficient_processing
 
@@ -151,12 +148,6 @@ def export_census_data_to_csv(
         except Exception as e:
             print(f"Warning: Error adding basic POI name: {e}")
 
-    # Add census variables with friendly names but in lowercase with underscores
-    # Create a mapping from census variable code to human-readable name
-    code_to_name = {}
-    for name, code in CENSUS_VARIABLE_MAPPING.items():
-        code_to_name[code] = name
-
     # Add census variables
     exclude_cols = [
         "geometry",
@@ -177,19 +168,8 @@ def export_census_data_to_csv(
     for col in df.columns:
         if col not in exclude_cols:
             try:
-                # Convert census variable code to human-readable name if possible
-                if col.startswith("B") and "_" in col and col.endswith("E"):
-                    # This looks like a census variable code
-                    column_name = code_to_name.get(col, col).lower()
-                else:
-                    # Not a census variable code, use as is but convert to lowercase with underscores
-                    column_name = col.lower().replace(" ", "_")
-
-                # Convert to numeric if possible, otherwise keep as is
-                try:
-                    csv_data[column_name] = pd.to_numeric(df[col])
-                except (ValueError, TypeError):
-                    csv_data[column_name] = df[col]
+                # Just add the column as-is
+                csv_data[col] = df[col]
             except Exception as e:
                 print(f"Warning: Error processing column {col}: {e}")
 

@@ -322,7 +322,7 @@ class ZctaService:
             api_response = self._api_client.get_census_data(
                 variables=variables,
                 geography=geography_param,
-                year=2022,  # Use most recent ACS 5-year data
+                year=2023,  # Use most recent ACS 5-year data
                 dataset="acs/acs5"
             )
             
@@ -354,7 +354,7 @@ class ZctaService:
                             'GEOID': geoid,
                             'variable_code': variable,
                             'value': value,
-                            'year': 2022,
+                            'year': 2023,
                             'dataset': 'acs5',
                             'NAME': f"ZCTA5 {geoid}"
                         })

@@ -155,7 +155,7 @@ class BlockGroupService:
         """
         return self.get_block_groups_for_county(county.state_fips, county.county_fips)
     
-    def get_block_group_urls(self, state_fips: str, year: int = 2022) -> Dict[str, str]:
+    def get_block_group_urls(self, state_fips: str, year: int = 2023) -> Dict[str, str]:
         """
         Get the download URLs for block group shapefiles from the Census Bureau.
         

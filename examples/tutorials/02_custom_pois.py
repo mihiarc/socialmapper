@@ -28,7 +28,7 @@ from pathlib import Path
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper import run_socialmapper
+from socialmapper import SocialMapperClient, SocialMapperBuilder
 
 
 def main():
@@ -80,62 +80,50 @@ Community Center,35.7754,-78.6434,community_center
     print("Step 4: Running analysis on custom POIs...")
     
     try:
-        results = run_socialmapper(
-            custom_coords_path=custom_coords_path,
-            travel_time=travel_time,
-            census_variables=census_variables,
-            export_csv=True,
-            export_isochrones=False  # Skip for tutorial speed
-        )
-        
-        print("\n✅ Analysis complete!\n")
-        
-        # Step 5: Explore results
-        print("Step 5: Results summary")
-        
-        if results.get("poi_data") and results["poi_data"].get("pois"):
-            pois = results["poi_data"]["pois"]
-            print(f"\n📍 Analyzed {len(pois)} custom POIs:")
-            for poi in pois:
-                name = poi.get("name", "Unknown")
-                poi_type = poi.get("type", "unspecified")
-                print(f"  - {name} ({poi_type})")
-        
-        census_data = results.get("census_data")
-        if census_data is not None and not census_data.empty:
-            # Group results by POI
-            print(f"\n👥 Population within {travel_time} minutes of each POI:")
+        with SocialMapperClient() as client:
+            # Build configuration for custom POIs
+            config = (SocialMapperBuilder()
+                .with_custom_pois(custom_coords_path)
+                .with_travel_time(travel_time)
+                .with_census_variables(*census_variables)
+                .with_exports(csv=True, isochrones=False)  # Skip for tutorial speed
+                .build()
+            )
             
-            # Note: In real implementation, you'd need to track which
-            # census blocks belong to which POI's isochrone
-            total_pop = 0
-            if hasattr(census_data, 'iterrows'):
-                # It's a DataFrame/GeoDataFrame
-                for _, row in census_data.iterrows():
-                    total_pop += row.get("total_population", 0) or 0
-            else:
-                # It's a list of dictionaries
-                total_pop = sum(
-                    row.get("total_population", 0) or 0
-                    for row in census_data
-                )
+            # Run analysis
+            result = client.run_analysis(config)
             
-            poi_count = len(results["poi_data"]["pois"]) if results.get("poi_data") and results["poi_data"].get("pois") else 1
-            avg_pop_per_poi = total_pop / poi_count
-            print(f"  Average population reach: {avg_pop_per_poi:,.0f}")
+            if result.is_err():
+                error = result.unwrap_err()
+                print(f"\n❌ Error: {error.message}")
+                print("\nCommon issues:")
+                print("- Check CSV format (name, latitude, longitude)")
+                print("- Ensure coordinates are in decimal degrees")
+                print("- Verify coordinates are in the US (for census data)")
+                return 1
+            
+            analysis_result = result.unwrap()
+            
+            print("\n✅ Analysis complete!\n")
         
-        print("\n💡 Tips for custom POI analysis:")
-        print("  - Use descriptive names for your POIs")
-        print("  - Group POIs by type for comparative analysis")
-        print("  - Consider different travel times for different POI types")
-        print("  - Export maps to visualize overlapping service areas")
+            # Step 5: Explore results
+            print("Step 5: Results summary")
+            print(f"\n📍 Analyzed {analysis_result.poi_count} custom POIs")
+            print(f"👥 Population data collected for {analysis_result.census_units_analyzed} census units")
+            
+            if analysis_result.metadata:
+                print(f"\nAnalysis details:")
+                for key, value in analysis_result.metadata.items():
+                    print(f"  - {key}: {value}")
+            
+            print("\n💡 Tips for custom POI analysis:")
+            print("  - Use descriptive names for your POIs")
+            print("  - Group POIs by type for comparative analysis")
+            print("  - Consider different travel times for different POI types")
+            print("  - Export maps to visualize overlapping service areas")
         
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
-        print("\nCommon issues:")
-        print("- Check CSV format (name, latitude, longitude)")
-        print("- Ensure coordinates are in decimal degrees")
-        print("- Verify coordinates are in the US (for census data)")
+        print(f"\n❌ Unexpected error: {str(e)}")
         return 1
     
     print("\n🎉 Tutorial complete! Next steps:")
@@ -152,20 +140,31 @@ def show_batch_processing_example():
     print("\n📚 Bonus: Batch Processing Example")
     print("-" * 40)
     print("""
-# Process different POI types separately
+# Process different POI types separately using the modern API
+from socialmapper import SocialMapperClient, SocialMapperBuilder
+
 poi_types = ['library', 'school', 'hospital', 'park']
 
-for poi_type in poi_types:
-    print(f"Analyzing {poi_type}s...")
-    results = run_socialmapper(
-        state="North Carolina",
-        county="Wake County", 
-        place_type=poi_type,
-        travel_time=15,
-        census_variables=['total_population'],
-        export_csv=True
-    )
-    print(f"Found {len(results['poi_data'])} {poi_type}s")
+with SocialMapperClient() as client:
+    for poi_type in poi_types:
+        print(f"Analyzing {poi_type}s...")
+        
+        config = (SocialMapperBuilder()
+            .with_location("Wake County", "North Carolina")
+            .with_osm_pois("amenity", poi_type)
+            .with_travel_time(15)
+            .with_census_variables("total_population")
+            .with_exports(csv=True)
+            .build()
+        )
+        
+        result = client.run_analysis(config)
+        
+        if result.is_ok():
+            analysis = result.unwrap()
+            print(f"Found {analysis.poi_count} {poi_type}s")
+        else:
+            print(f"Error analyzing {poi_type}s: {result.unwrap_err().message}")
 """)
 
 

@@ -5,7 +5,7 @@ This service coordinates between the domain layer and infrastructure layer,
 implementing the core business logic without depending on specific implementations.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import hashlib
 import json
 
@@ -193,21 +193,23 @@ class CensusService:
         """Fetch data from Census API."""
         data_points = []
         
-        # Group GEOIDs by state for efficient API calls
-        state_groups = self._group_geoids_by_state(geoids)
+        # Group GEOIDs by state and county for more specific API calls
+        state_county_groups = self._group_geoids_by_state_and_county(geoids)
         
-        for state_fips, state_geoids in state_groups.items():
+        for (state_fips, county_fips), county_geoids in state_county_groups.items():
             self._rate_limiter.wait_if_needed("census_api")
             
             try:
-                # Build geography parameter for API
-                geography = f"block group:* in state:{state_fips} county:* tract:*"
+                # Build geography parameter for API - use separate 'for' and 'in' parameters
+                geography = "block group:*"
+                in_clause = f"state:{state_fips} county:{county_fips}"
                 
                 api_response = self._api_client.get_census_data(
                     variables=variable_codes + ["NAME"],
                     geography=geography,
                     year=year,
-                    dataset=dataset
+                    dataset=dataset,
+                    **{"in": in_clause}  # Pass 'in' as a keyword argument
                 )
                 
                 # Convert API response to domain entities
@@ -216,7 +218,7 @@ class CensusService:
                 )
                 
             except Exception as e:
-                self._logger.error(f"API request failed for state {state_fips}: {e}")
+                self._logger.error(f"API request failed for state {state_fips} county {county_fips}: {e}")
                 continue
         
         # Filter to only requested GEOIDs
@@ -301,6 +303,21 @@ class CensusService:
                 state_groups[state_fips].append(geoid)
         
         return state_groups
+    
+    def _group_geoids_by_state_and_county(self, geoids: List[str]) -> Dict[Tuple[str, str], List[str]]:
+        """Group GEOIDs by state and county for more specific API calls."""
+        state_county_groups = {}
+        
+        for geoid in geoids:
+            if len(geoid) >= 5:  # Need at least state (2) + county (3) digits
+                state_fips = geoid[:2]
+                county_fips = geoid[2:5]
+                key = (state_fips, county_fips)
+                if key not in state_county_groups:
+                    state_county_groups[key] = []
+                state_county_groups[key].append(geoid)
+        
+        return state_county_groups
     
     def _generate_cache_key(
         self,

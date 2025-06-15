@@ -112,11 +112,14 @@ class SocialMapperBuilder:
         validated_variables = []
         for var in variables:
             try:
-                # Normalize and validate each variable
+                # First validate the input variable name/code
+                validate_census_variable(var)
+                # Then normalize it (which may return a list for calculated variables)
                 normalized = normalize_census_variable(var)
-                # Additional validation using the existing validator
-                validate_census_variable(normalized)
-                validated_variables.append(normalized)
+                # For calculated variables, normalized will be a list of census codes
+                # For simple variables, it will be a single census code
+                # Both are valid, so we add them as-is
+                validated_variables.append(var)  # Store the original variable name
             except Exception as e:
                 self._validation_errors.append(
                     f"Invalid census variable '{var}': {str(e)}"
@@ -155,6 +158,12 @@ class SocialMapperBuilder:
     def with_output_directory(self, path: Union[str, Path]) -> Self:
         """Set custom output directory."""
         self._config["output_dir"] = str(path)
+        return self
+
+    def with_exports(self, csv: bool = True, isochrones: bool = False) -> Self:
+        """Configure export options."""
+        self._config["export_csv"] = csv
+        self._config["export_isochrones"] = isochrones
         return self
 
     def validate(self) -> List[str]:

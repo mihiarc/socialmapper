@@ -28,7 +28,7 @@ from pathlib import Path
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper import run_socialmapper
+from socialmapper import SocialMapperClient, SocialMapperBuilder
 
 
 def main():
@@ -54,7 +54,7 @@ def main():
     census_variables = [
         "total_population",
         "median_household_income",
-        "percent_without_vehicle"
+        "median_age"
     ]
     print(f"  📊 Variables: {', '.join(census_variables)}\n")
     
@@ -65,63 +65,54 @@ def main():
     print("  📊 Analyzing demographics...")
     
     try:
-        results = run_socialmapper(
-            geocode_area=geocode_area,
-            state=state,
-            poi_type=poi_type,
-            poi_name=poi_name,
-            travel_time=travel_time,
-            census_variables=census_variables,
-            export_csv=True,  # Save results to CSV
-            export_isochrones=False  # Skip map generation for tutorial
-        )
-        
-        print("\n✅ Analysis complete!\n")
-        
-        # Step 4: Explore results
-        print("Step 4: Results summary:")
-        
-        if results.get("poi_data") and results["poi_data"].get("pois"):
-            pois = results["poi_data"]["pois"]
-            poi_count = len(pois)
-            print(f"  🏛️  Found {poi_count} libraries")
+        # Use the modern API with context manager
+        with SocialMapperClient() as client:
+            # Build configuration using fluent interface
+            config = (SocialMapperBuilder()
+                .with_location(geocode_area, state)
+                .with_osm_pois(poi_type, poi_name)
+                .with_travel_time(travel_time)
+                .with_census_variables(*census_variables)
+                .with_exports(csv=True, isochrones=False)  # Skip map generation for tutorial
+                .build()
+            )
             
-            # Show first few POIs
-            print("\n  First 3 libraries found:")
-            for i, poi in enumerate(pois[:3], 1):
-                name = poi.get("name", "Unnamed")
-                lat = poi.get("lat", 0)
-                lon = poi.get("lon", 0)
-                print(f"    {i}. {name} ({lat:.4f}, {lon:.4f})")
-        
-        census_data = results.get("census_data")
-        if census_data is not None and not census_data.empty:
-            print(f"\n  📊 Census data collected for {len(census_data)} block groups")
+            # Run analysis
+            result = client.run_analysis(config)
             
-            # Calculate total population within reach
-            total_pop = 0
-            if hasattr(census_data, 'iterrows'):
-                # It's a DataFrame/GeoDataFrame
-                for _, row in census_data.iterrows():
-                    total_pop += row.get("total_population", 0) or 0
-            else:
-                # It's a list of dictionaries
-                total_pop = sum(
-                    row.get("total_population", 0) or 0
-                    for row in census_data
-                )
-            print(f"  👥 Total population within {travel_time} minutes: {total_pop:,}")
-        
-        print("\n📁 Results saved to output/ directory")
-        print("   - CSV files with detailed data")
-        print("   - Run with export_isochrones=True to generate visualizations")
+            # Handle result using pattern matching
+            if result.is_err():
+                error = result.unwrap_err()
+                print(f"\n❌ Error: {error.message}")
+                print("\nTroubleshooting tips:")
+                print("- Ensure you have internet connection")
+                print("- Check if Census API key is set (optional)")
+                print("- Try a different location or POI type")
+                return 1
+            
+            # Get successful result
+            analysis_result = result.unwrap()
+            
+            print("\n✅ Analysis complete!\n")
+            
+            # Step 4: Explore results
+            print("Step 4: Results summary:")
+            print(f"  🏛️  Found {analysis_result.poi_count} libraries")
+            print(f"  📊 Census data collected for {analysis_result.census_units_analyzed} block groups")
+            
+            # Show metadata
+            if analysis_result.metadata:
+                travel_time = analysis_result.metadata.get("travel_time", 15)
+                print(f"  ⏱️  Analysis performed with {travel_time} minute travel time")
+            
+            # Show generated files
+            if analysis_result.files_generated:
+                print("\n📁 Results saved to output/ directory:")
+                for file_type, file_path in analysis_result.files_generated.items():
+                    print(f"   - {file_type}: {file_path}")
         
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
-        print("\nTroubleshooting tips:")
-        print("- Ensure you have internet connection")
-        print("- Check if Census API key is set (optional)")
-        print("- Try a different location or POI type")
+        print(f"\n❌ Unexpected error: {str(e)}")
         return 1
     
     print("\n🎉 Tutorial complete! Next steps:")

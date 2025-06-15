@@ -119,16 +119,16 @@ class CensusSystem:
         self, 
         variables: List[str], 
         geographic_units: List[str],
-        year: int = 2022
+        year: int = 2023
     ) -> List[CensusDataPoint]:
         """Get census data for specified variables and geographic units."""
-        return self._census_service.get_census_data(variables, geographic_units, year)
+        return self._census_service.get_census_data(geographic_units, variables, year)
     
     def get_census_data_for_counties(
         self,
         variables: List[str],
         counties: List[Tuple[str, str]],
-        year: int = 2022
+        year: int = 2023
     ) -> List[CensusDataPoint]:
         """Get census data for specified counties."""
         return self._census_service.get_census_data_for_counties(variables, counties, year)
@@ -200,7 +200,7 @@ class CensusSystem:
         """Fetch block groups for multiple counties."""
         return self._block_group_service.get_block_groups_for_counties(counties)
     
-    def get_block_group_urls(self, state_fips: str, year: int = 2022) -> Dict[str, str]:
+    def get_block_group_urls(self, state_fips: str, year: int = 2023) -> Dict[str, str]:
         """Get TIGER/Line shapefile URLs for block groups."""
         return self._block_group_service.get_block_group_urls(state_fips, year)
     

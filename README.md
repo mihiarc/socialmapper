@@ -68,61 +68,107 @@ See `env.example` for all available configuration options.
 
 ## Using SocialMapper
 
-### Using the Command Line Interface
+### Quick Start with Python API
 
-SocialMapper provides a powerful command-line interface that allows you to:
-- Query OpenStreetMap for points of interest or use your own coordinates
-- Set travel times and select demographic variables 
-- Generate maps and analyze census data
-- Export data to CSV for further analysis in other tools
+```python
+from socialmapper import SocialMapperClient
 
-It's perfect for:
-- Urban planners analyzing access to public services
-- Community organizations studying resource distribution 
-- Researchers examining demographic patterns around facilities
-- Anyone who wants to understand demographics around points of interest
+# Simple analysis
+with SocialMapperClient() as client:
+    result = client.analyze(
+        location="San Francisco, CA",
+        poi_type="amenity",
+        poi_name="library",
+        travel_time=15
+    )
+    
+    if result.is_ok():
+        analysis = result.unwrap()
+        print(f"Found {analysis.poi_count} libraries")
+        print(f"Analyzed {analysis.census_units_analyzed} census units")
+```
 
-### Using the Command-line Interface
+### Advanced Usage with Builder Pattern
 
-SocialMapper can also be used directly from the command line:
+```python
+from socialmapper import SocialMapperClient, SocialMapperBuilder
+
+with SocialMapperClient() as client:
+    # Configure analysis using fluent builder
+    config = (SocialMapperBuilder()
+        .with_location("Chicago", "IL")
+        .with_osm_pois("leisure", "park")
+        .with_travel_time(20)
+        .with_census_variables("total_population", "median_income", "percent_poverty")
+        .with_geographic_level("zcta")  # Use ZIP codes instead of block groups
+        .with_exports(csv=True, isochrones=True)  # Generate maps
+        .build()
+    )
+    
+    result = client.run_analysis(config)
+```
+
+### Using Custom POI Coordinates
+
+```python
+from socialmapper import SocialMapperClient, SocialMapperBuilder
+
+with SocialMapperClient() as client:
+    config = (SocialMapperBuilder()
+        .with_custom_pois("my_locations.csv")
+        .with_travel_time(15)
+        .with_census_variables("total_population")
+        .build()
+    )
+    
+    result = client.run_analysis(config)
+```
+
+### Command Line Interface
+
+SocialMapper also provides a powerful command-line interface:
 
 ```bash
 # Show help
 socialmapper --help
 
-# Run with OpenStreetMap POI query
-socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+# Analyze libraries in Chicago
+socialmapper --poi --geocode-area "Chicago" --state "Illinois" \
+    --poi-type "amenity" --poi-name "library" --travel-time 15 \
+    --census-variables total_population median_household_income
 
-# Run with custom coordinates
-socialmapper --custom-coords "path/to/coordinates.csv" --travel-time 20 --census-variables total_population median_household_income
+# Use custom coordinates
+socialmapper --custom-coords "path/to/coordinates.csv" \
+    --travel-time 20 --census-variables total_population median_household_income
 
-# Additional options
-socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "amenity" --poi-name "library" --geographic-level zcta --output-dir my_analysis
+# Use ZIP codes instead of block groups
+socialmapper --poi --geocode-area "Denver" --state "Colorado" \
+    --poi-type "amenity" --poi-name "hospital" --geographic-level zcta
 ```
 
-### Using the Python API
+### Error Handling
 
-You can import SocialMapper in your own Python code:
+The modern API uses Result types for explicit error handling:
 
 ```python
-from socialmapper import run_socialmapper
+from socialmapper import SocialMapperClient
 
-# Run with POI query
-results = run_socialmapper(
-    geocode_area="Chicago",
-    state="IL",
-    poi_type="amenity",
-    poi_name="library",
-    travel_time=15,
-    census_variables=["total_population", "median_household_income"]
-)
-
-# Run with custom coordinates
-results = run_socialmapper(
-    custom_coords_path="path/to/coordinates.csv",
-    travel_time=20,
-    census_variables=["total_population", "median_household_income"]
-)
+with SocialMapperClient() as client:
+    result = client.analyze(
+        location="Invalid Location",
+        poi_type="amenity",
+        poi_name="library"
+    )
+    
+    # Pattern matching (Python 3.10+)
+    match result:
+        case Ok(analysis):
+            print(f"Success: {analysis.poi_count} POIs found")
+        case Err(error):
+            print(f"Error type: {error.type.name}")
+            print(f"Message: {error.message}")
+            if error.context:
+                print(f"Context: {error.context}")
 ```
 
 ## Creating Your Own Community Maps: Step-by-Step Guide

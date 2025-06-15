@@ -139,3 +139,4 @@ OPTIMIZATION_PLAN.md
 .cursor/rules/workspace.mdc
 uv.lock
 test_cache/
+docs-dev/2023-5yr-api-changes.csv

@@ -19,7 +19,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from . import __version__
-from .core import run_socialmapper
+from .api import SocialMapperClient, SocialMapperBuilder
 from .progress import get_progress_tracker
 from .census.services.geography_service import StateFormat
 from .census import get_census_system
@@ -140,11 +140,11 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    # If not testing migration and not listing variables, require input method
-    if not args.test_migration and not args.list_variables and not args.dry_run:
+    # If not listing variables, require input method
+    if not args.list_variables and not args.dry_run:
         if not args.custom_coords and not args.poi and not args.addresses:
             parser.error(
-                "one of the arguments --custom-coords --poi --addresses is required (unless using --test-migration, --list-variables, or --dry-run)"
+                "one of the arguments --custom-coords --poi --addresses is required (unless using --list-variables or --dry-run)"
             )
 
         # Validate address arguments if --addresses is specified
@@ -236,113 +236,137 @@ def main():
     start_time = time.time()
 
     try:
-        # Execute the full pipeline
-        if args.poi:
-            # Normalize state to abbreviation
-            state_abbr = None
-            if args.state:
-                census_system = get_census_system()
-                state_abbr = census_system.normalize_state(args.state, to_format=StateFormat.ABBREVIATION)
+        # Execute the full pipeline using modern API
+        with SocialMapperClient() as client:
+            if args.poi:
+                # Normalize state to abbreviation
+                state_abbr = None
+                if args.state:
+                    census_system = get_census_system()
+                    state_abbr = census_system.normalize_state(args.state, to_format=StateFormat.ABBREVIATION)
 
-            # Use direct POI parameters
-            run_socialmapper(
-                geocode_area=args.geocode_area,
-                state=state_abbr,
-                city=args.city or args.geocode_area,  # Default to geocode_area if city not provided
-                poi_type=args.poi_type,
-                poi_name=args.poi_name,
-                travel_time=args.travel_time,
-                geographic_level=args.geographic_level,
-                census_variables=args.census_variables,
-                api_key=args.api_key,
-                output_dir=args.output_dir,
-                export_csv=args.export_csv,
-            )
-        elif args.addresses:
-            # Handle address-based analysis
-            import pandas as pd
+                # Build configuration
+                builder = (SocialMapperBuilder()
+                    .with_location(args.geocode_area, state_abbr)
+                    .with_osm_pois(args.poi_type, args.poi_name)
+                    .with_travel_time(args.travel_time)
+                    .with_geographic_level(args.geographic_level)
+                    .with_census_variables(*args.census_variables)
+                    .with_output_directory(args.output_dir)
+                    .with_exports(csv=args.export_csv)
+                )
+                
+                if args.api_key:
+                    builder.with_census_api_key(args.api_key)
+                
+                config = builder.build()
+                result = client.run_analysis(config)
+                
+                if result.is_err():
+                    error = result.unwrap_err()
+                    raise Exception(f"{error.type.name}: {error.message}")
+            elif args.addresses:
+                # Handle address-based analysis
+                import pandas as pd
 
-            from .geocoding import (
-                AddressProvider,
-                AddressQuality,
-                GeocodingConfig,
-                addresses_to_poi_format,
-            )
-
-            console.print(
-                f"[bold cyan]📍 Processing addresses from {args.address_file}[/bold cyan]"
-            )
-
-            # Load addresses from CSV
-            df = pd.read_csv(args.address_file)
-            if args.address_column not in df.columns:
-                raise ValueError(f"Column '{args.address_column}' not found in {args.address_file}")
-
-            addresses = df[args.address_column].tolist()
-
-            # Configure geocoding
-            config = GeocodingConfig(
-                primary_provider=(
-                    AddressProvider.NOMINATIM
-                    if args.geocoding_provider == "nominatim"
-                    else (
-                        AddressProvider.CENSUS
-                        if args.geocoding_provider == "census"
-                        else AddressProvider.NOMINATIM
-                    )
-                ),  # auto defaults to Nominatim
-                min_quality_threshold=AddressQuality(args.geocoding_quality),
-            )
-
-            # Geocode addresses to POI format
-            console.print(f"[bold yellow]🔍 Geocoding {len(addresses)} addresses...[/bold yellow]")
-            poi_data = addresses_to_poi_format(addresses, config)
-
-            # Create a temporary file for the geocoded coordinates
-
-            temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
-            os.makedirs(args.output_dir, exist_ok=True)
-
-            # Convert to CSV format for SocialMapper
-            poi_csv_data = []
-            for poi in poi_data:
-                poi_csv_data.append(
-                    {
-                        "name": poi["name"],
-                        "lat": poi["lat"],
-                        "lon": poi["lon"],
-                        "type": poi.get("type", "address"),
-                    }
+                from .geocoding import (
+                    AddressProvider,
+                    AddressQuality,
+                    GeocodingConfig,
+                    addresses_to_poi_format,
                 )
 
-            import pandas as pd
+                console.print(
+                    f"[bold cyan]📍 Processing addresses from {args.address_file}[/bold cyan]"
+                )
 
-            df = pd.DataFrame(poi_csv_data)
-            df.to_csv(temp_file, index=False)
+                # Load addresses from CSV
+                df = pd.read_csv(args.address_file)
+                if args.address_column not in df.columns:
+                    raise ValueError(f"Column '{args.address_column}' not found in {args.address_file}")
 
-            console.print(f"[bold green]✅ Saved geocoded addresses to {temp_file}[/bold green]")
+                addresses = df[args.address_column].tolist()
 
-            # Run SocialMapper with the geocoded coordinates
-            run_socialmapper(
-                custom_coords=temp_file,
-                travel_time=args.travel_time,
-                geographic_level=args.geographic_level,
-                census_variables=args.census_variables,
-                api_key=args.api_key,
-                output_dir=args.output_dir,
-                export_csv=args.export_csv,
-            )
-        else:
-            # Use custom coordinates file
-            run_socialmapper(
-                custom_coords=args.custom_coords,
-                travel_time=args.travel_time,
-                geographic_level=args.geographic_level,
-                census_variables=args.census_variables,
-                api_key=args.api_key,
-                output_dir=args.output_dir,
-                export_csv=args.export_csv,
-            )
+                # Configure geocoding
+                geocoding_config = GeocodingConfig(
+                    primary_provider=(
+                        AddressProvider.NOMINATIM
+                        if args.geocoding_provider == "nominatim"
+                        else (
+                            AddressProvider.CENSUS
+                            if args.geocoding_provider == "census"
+                            else AddressProvider.NOMINATIM
+                        )
+                    ),  # auto defaults to Nominatim
+                    min_quality_threshold=AddressQuality(args.geocoding_quality),
+                )
+
+                # Geocode addresses to POI format
+                console.print(f"[bold yellow]🔍 Geocoding {len(addresses)} addresses...[/bold yellow]")
+                poi_data = addresses_to_poi_format(addresses, geocoding_config)
+
+                # Create a temporary file for the geocoded coordinates
+                temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
+                os.makedirs(args.output_dir, exist_ok=True)
+
+                # Convert to CSV format for SocialMapper
+                poi_csv_data = []
+                for poi in poi_data:
+                    poi_csv_data.append(
+                        {
+                            "name": poi["name"],
+                            "lat": poi["lat"],
+                            "lon": poi["lon"],
+                            "type": poi.get("type", "address"),
+                        }
+                    )
+
+                import pandas as pd
+
+                df = pd.DataFrame(poi_csv_data)
+                df.to_csv(temp_file, index=False)
+
+                console.print(f"[bold green]✅ Saved geocoded addresses to {temp_file}[/bold green]")
+
+                # Build configuration for custom POIs
+                builder = (SocialMapperBuilder()
+                    .with_custom_pois(temp_file)
+                    .with_travel_time(args.travel_time)
+                    .with_geographic_level(args.geographic_level)
+                    .with_census_variables(*args.census_variables)
+                    .with_output_directory(args.output_dir)
+                    .with_exports(csv=args.export_csv)
+                )
+                
+                if args.api_key:
+                    builder.with_census_api_key(args.api_key)
+                
+                config = builder.build()
+                result = client.run_analysis(config)
+                
+                if result.is_err():
+                    error = result.unwrap_err()
+                    raise Exception(f"{error.type.name}: {error.message}")
+            else:
+                # Use custom coordinates file
+                builder = (SocialMapperBuilder()
+                    .with_custom_pois(args.custom_coords)
+                    .with_travel_time(args.travel_time)
+                    .with_geographic_level(args.geographic_level)
+                    .with_census_variables(*args.census_variables)
+                    .with_output_directory(args.output_dir)
+                    .with_exports(csv=args.export_csv)
+                )
+                
+                if args.api_key:
+                    builder.with_census_api_key(args.api_key)
+                
+                config = builder.build()
+                result = client.run_analysis(config)
+                
+                if result.is_err():
+                    error = result.unwrap_err()
+                    raise Exception(f"{error.type.name}: {error.message}")
 
         end_time = time.time()
         elapsed = end_time - start_time

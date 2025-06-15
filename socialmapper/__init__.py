@@ -13,6 +13,14 @@ except ImportError:
     # dotenv not available - continue without it
     pass
 
+# Configure logging for the package (defaults to CRITICAL level)
+try:
+    from .util.logging_config import configure_logging
+    configure_logging()
+except ImportError:
+    # Logging config not available - continue without it
+    pass
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:
@@ -36,8 +44,7 @@ except ImportError:
     # Warnings config not available - continue without it
     pass
 
-# Import main functionality (deprecated - use api module instead)
-from .core import run_socialmapper
+# Core module is deprecated - use api module instead
 
 # Note: setup_directory removed from exports - use internal modules directly
 
@@ -91,7 +98,14 @@ except ImportError:
 
 # Build __all__ based on available features
 __all__ = [
-    "run_socialmapper",  # Deprecated - use SocialMapperClient instead
+    # Modern API (primary interface)
+    "SocialMapperClient",
+    "SocialMapperBuilder",
+    "quick_analysis",
+    "analyze_location",
+    "Result",
+    "Ok",
+    "Err",
     # Modern census system
     "get_census_system",
     "get_legacy_adapter", 
@@ -105,18 +119,3 @@ __all__ = [
     "get_geography_from_point",
     "get_counties_from_pois",
 ]
-
-# Add modern API if available
-if _MODERN_API_AVAILABLE:
-    __all__.extend(
-        [
-            # Modern API (recommended)
-            "SocialMapperClient",
-            "SocialMapperBuilder",
-            "quick_analysis",
-            "analyze_location",
-            "Result",
-            "Ok",
-            "Err",
-        ]
-    )

@@ -37,16 +37,37 @@ def integrate_census_data(
 
     print("\n=== Integrating Census Data ===")
 
-    # Convert any human-readable names to census codes
-    census_codes = [normalize_census_variable(var) for var in census_variables]
-
-    # Display human-readable names for requested census variables
-    readable_names = get_readable_census_variables(census_codes)
-    print(f"Requesting census data for: {', '.join(readable_names)}")
-    print(f"Geographic level: {geographic_level}")
-
     # Get census system
     census_system = get_census_system()
+    
+    # Process variables - normalize them to census codes
+    census_codes = []
+    
+    for var in census_variables:
+        # Normalize the variable to its census code(s)
+        normalized = census_system._variable_service.normalize_variable(var)
+        if isinstance(normalized, list):
+            # Calculated variable - add all component codes
+            census_codes.extend(normalized)
+        else:
+            # Simple variable - add the single code
+            census_codes.append(normalized)
+    
+    # Remove duplicates while preserving order
+    census_codes = list(dict.fromkeys(census_codes))
+    
+    # Display human-readable names for requested census variables
+    readable_names = []
+    for var in census_variables:
+        normalized = census_system._variable_service.normalize_variable(var)
+        if isinstance(normalized, list):
+            # It's a calculated variable
+            readable_names.append(census_system._variable_service.get_readable_variable(var))
+        else:
+            readable_names.append(census_system._variable_service.get_readable_variable(normalized))
+    
+    print(f"Requesting census data for: {', '.join(readable_names)}")
+    print(f"Geographic level: {geographic_level}")
 
     # Determine states to search from POI data
     counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
@@ -97,9 +118,6 @@ def integrate_census_data(
     units_label = "ZIP Code Tabulation Areas" if geographic_level == "zcta" else "block groups"
     print(f"Calculated travel distances for {len(units_with_distances)} {units_label}")
 
-    # Create variable mapping for human-readable names
-    variable_mapping = {code: census_code_to_name(code) for code in census_codes}
-
     # Fetch census data
     geoids = units_with_distances["GEOID"].tolist()
 
@@ -135,9 +153,9 @@ def integrate_census_data(
         else:
             # Use modern census system for block group data
             census_data_points = census_system.get_census_data(
-                variables=census_codes,
-                geographic_units=geoids,
-                year=2022
+                census_codes,
+                geoids,
+                2023
             )
             pbar.update(len(geoids) // 2)
 
@@ -156,10 +174,9 @@ def integrate_census_data(
                     census_data_gdf.loc[mask, var_code] = value
 
             pbar.update(len(geoids) // 2)
-
-    # Apply variable mapping
-    if variable_mapping:
-        census_data_gdf = census_data_gdf.rename(columns=variable_mapping)
+    
+    # Note: Removed human-readable name conversion to simplify the pipeline
+    # Census data will use census codes (e.g., B01003_001E) directly
 
     # Set visualization attributes
     variables_for_viz = [var for var in census_codes if var != "NAME"]
