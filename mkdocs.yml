@@ -100,7 +100,7 @@ extra:
       link: https://pypi.org/project/socialmapper/
 
 # Copyright
-copyright: Copyright &copy; 2023-2025 SocialMapper Contributors
+copyright: MIT License - https://github.com/mihiarc/socialmapper
 
 # Navigation
 nav:
@@ -114,6 +114,9 @@ nav:
   - Tutorials:
     - Overview: tutorials/index.md
     - Getting Started: tutorials/getting-started-tutorial.md
+    - Custom POIs: tutorials/custom-pois-tutorial.md
+    - Travel Modes: tutorials/travel-modes-tutorial.md
+    - ZIP Code Analysis: tutorials/zcta-analysis-tutorial.md
   
   - User Guide:
     - Overview: user-guide/index.md

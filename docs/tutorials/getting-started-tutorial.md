@@ -129,61 +129,99 @@ The tutorial generates a CSV file in the `output/csv/` directory containing:
 
 ### Sample Output Structure
 
-The CSV output contains detailed data that can be hard to read in raw format. Here's how to create a beautiful, readable table using SocialMapper's built-in Rich console:
+The CSV file contains detailed demographic data for each library. Let's first look at the raw output:
 
 ```python
 import pandas as pd
-from socialmapper.ui.rich_console import console, print_table
 
 # Read the generated CSV file
 df = pd.read_csv('output/csv/wake_county_north_carolina_library_analysis.csv')
 
-# Select key columns and format for display
-display_data = []
-for _, row in df.iterrows():
-    display_data.append({
-        'Library': row['poi_name'],
-        'Population Served': f"{int(row['total_population']):,}",
-        'Median Income': f"${int(row['median_household_income']):,}",
-        'Median Age': f"{row['median_age']:.1f}"
-    })
-
-# Display using Rich table
-print_table(display_data, title="Library Accessibility Analysis")
+# Show raw data
+print(df.head())
 ```
 
-This produces a beautiful, formatted table:
+Raw output (hard to read):
 ```
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃ Library                               ┃ Population Served ┃ Median Income  ┃ Median Age ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ Wake County Public Library - Main     │ 15,420           │ $65,000        │ 34.5       │
-│ Eva H. Perry Regional Library         │ 12,300           │ $58,000        │ 36.2       │
-│ Green Road Library                    │ 18,750           │ $72,500        │ 32.1       │
-│ Apex Library                          │ 22,100           │ $85,000        │ 35.8       │
-└───────────────────────────────────────┴──────────────────┴────────────────┴────────────┘
+                              poi_name     poi_lat     poi_lon  total_population  median_household_income  median_age  percent_poverty  ...
+0     Wake County Public Library - Main  35.779623  -78.638245             15420                    65000        34.5             12.3  ...
+1          Eva H. Perry Regional Library  35.723412  -78.856732             12300                    58000        36.2             15.7  ...
+2                    Green Road Library  35.903234  -78.567891             18750                    72500        32.1              8.9  ...
+3                         Apex Library  35.732156  -78.850234             22100                    85000        35.8              5.2  ...
 ```
 
-For even simpler usage with direct DataFrame printing:
+### Creating a Readable Table
+
+Now let's transform this into a clean, readable table using the `tabulate` package:
+
 ```python
-from socialmapper.ui.rich_console import console
+from tabulate import tabulate
 
-# Create a Rich table directly from DataFrame
-from rich.table import Table
+# Select and format key columns for display
+display_df = pd.DataFrame({
+    'Library': df['poi_name'],
+    'Population Served': df['total_population'].astype(int).map('{:,}'.format),
+    'Median Income': df['median_household_income'].astype(int).map('${:,}'.format),
+    'Median Age': df['median_age'].round(1)
+})
 
-table = Table(title="Library Accessibility Summary")
-table.add_column("Library Name", style="cyan", no_wrap=True)
-table.add_column("Pop. Reach", justify="right", style="green")
-table.add_column("Income", justify="right", style="yellow")
+# Display using tabulate with GitHub-flavored markdown style
+print(tabulate(display_df, headers='keys', tablefmt='github', showindex=False))
+```
 
-for _, row in df.head(5).iterrows():
-    table.add_row(
-        row['poi_name'][:30],  # Truncate long names
-        f"{int(row['total_population']):,}",
-        f"${int(row['median_household_income']):,}"
-    )
+Clean, formatted table:
+```
+| Library                           | Population Served | Median Income | Median Age |
+|-----------------------------------|-------------------|---------------|------------|
+| Wake County Public Library - Main | 15,420           | $65,000       | 34.5       |
+| Eva H. Perry Regional Library     | 12,300           | $58,000       | 36.2       |
+| Green Road Library                | 18,750           | $72,500       | 32.1       |
+| Apex Library                      | 22,100           | $85,000       | 35.8       |
+```
 
-console.print(table)
+### Quick Summary Statistics
+
+You can also use pandas to calculate summary statistics and display them in a clean table:
+
+```python
+# Calculate summary statistics using pandas
+summary_stats = pd.DataFrame({
+    'Metric': [
+        'Total Libraries',
+        'Total Population Reach',
+        'Average Population per Library',
+        'Average Median Income',
+        'Lowest Income Area',
+        'Highest Income Area',
+        'Average Age'
+    ],
+    'Value': [
+        f"{len(df)}",
+        f"{df['total_population'].sum():,}",
+        f"{df['total_population'].mean():,.0f}",
+        f"${df['median_household_income'].mean():,.0f}",
+        f"${df['median_household_income'].min():,}",
+        f"${df['median_household_income'].max():,}",
+        f"{df['median_age'].mean():.1f} years"
+    ]
+})
+
+print("\nSummary Statistics:")
+print(tabulate(summary_stats, headers='keys', tablefmt='simple', showindex=False))
+```
+
+Output:
+```
+Summary Statistics:
+Metric                           Value
+-------------------------------  -------------
+Total Libraries                  12
+Total Population Reach           198,470
+Average Population per Library   16,539
+Average Median Income            $68,750
+Lowest Income Area               $45,000
+Highest Income Area              $95,000
+Average Age                      34.8 years
 ```
 
 ## Customizing the Analysis
@@ -266,9 +304,7 @@ After completing this tutorial, explore:
 ## Full Code
 
 The complete tutorial script is available at:
-```
-examples/tutorials/01_getting_started.py
-```
+[`examples/tutorials/01_getting_started.py`](https://github.com/mihiarc/socialmapper/blob/main/examples/tutorials/01_getting_started.py)
 
 ## Key Takeaways
 
