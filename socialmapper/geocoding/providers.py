@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-Geocoding Providers
-==================
+Geocoding providers for address lookup.
 
-Implementation of various geocoding providers with robust error handling,
-rate limiting, and quality assessment following modern SWE practices.
-
-Author: SocialMapper Team
-Date: June 2025
+This module contains implementations of various geocoding providers.
 """
 
 import time
@@ -19,9 +14,9 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from ..neighbors import get_neighbor_manager
-from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
-
 from ..ui.console import get_logger
+from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
+
 logger = get_logger(__name__)
 
 
@@ -198,7 +193,6 @@ class NominatimProvider(GeocodingProvider):
                 result.county_fips = geo_info.get("county_fips")
                 result.tract_geoid = geo_info.get("tract_geoid")
                 result.block_group_geoid = geo_info.get("block_group_geoid")
-                result.zcta_geoid = geo_info.get("zcta_geoid")
 
         except Exception as e:
             logger.warning(f"Failed to get geographic context: {e}")
@@ -305,7 +299,21 @@ class CensusProvider(GeocodingProvider):
                 result.county_fips = geo_info.get("county_fips")
                 result.tract_geoid = geo_info.get("tract_geoid")
                 result.block_group_geoid = geo_info.get("block_group_geoid")
-                result.zcta_geoid = geo_info.get("zcta_geoid")
 
         except Exception as e:
             logger.warning(f"Failed to get geographic context: {e}")
+
+
+# Factory function for creating providers
+def create_provider(provider_type: AddressProvider, config: GeocodingConfig) -> GeocodingProvider:
+    """Create a geocoding provider instance."""
+    providers = {
+        AddressProvider.NOMINATIM: NominatimProvider,
+        AddressProvider.CENSUS: CensusProvider,
+    }
+    
+    provider_class = providers.get(provider_type)
+    if not provider_class:
+        raise ValueError(f"Unsupported provider: {provider_type}")
+    
+    return provider_class(config)

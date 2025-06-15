@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 """
-Address Geocoding Engine
-========================
+Main geocoding engine orchestrating providers, caching, and quality validation.
 
-Core geocoding engine orchestrating multiple providers with intelligent
-fallback, caching, and quality validation following modern SWE practices.
-
-Author: SocialMapper Team
-Date: June 2025
+This module provides the high-level geocoding engine that manages multiple providers
+with intelligent fallback, caching, and quality validation.
 """
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 from ..progress import get_progress_bar
-from . import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
-from .cache import AddressCache
-from .providers import CensusProvider, NominatimProvider
-
 from ..ui.console import get_logger
+from .cache import AddressCache
+from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
+from .providers import CensusProvider, GeocodingProvider, NominatimProvider, create_provider
+
 logger = get_logger(__name__)
 
 
@@ -40,7 +36,7 @@ class AddressGeocodingEngine:
             "provider_usage": {provider.value: 0 for provider in AddressProvider},
         }
 
-    def _initialize_providers(self) -> Dict[AddressProvider, Any]:
+    def _initialize_providers(self) -> Dict[AddressProvider, GeocodingProvider]:
         """Initialize available geocoding providers."""
         providers = {}
 
@@ -54,7 +50,7 @@ class AddressGeocodingEngine:
 
         return providers
 
-    def geocode_address(self, address: AddressInput) -> GeocodingResult:
+    def geocode_address(self, address: Union[str, AddressInput]) -> GeocodingResult:
         """
         Geocode a single address with intelligent provider selection and fallback.
 
@@ -134,7 +130,7 @@ class AddressGeocodingEngine:
         return failed_result
 
     def geocode_addresses_batch(
-        self, addresses: List[AddressInput], progress: bool = True
+        self, addresses: List[Union[str, AddressInput]], progress: bool = True
     ) -> List[GeocodingResult]:
         """
         Geocode multiple addresses in batch with progress tracking.
@@ -158,7 +154,7 @@ class AddressGeocodingEngine:
 
         # Process in batches with progress tracking
         if progress:
-            progress_bar = get_progress_bar(total=len(address_inputs), desc="Geocoding addresses")
+            progress_bar = get_progress_bar(len(address_inputs), description="Geocoding addresses")
 
         for i in range(0, len(address_inputs), self.config.batch_size):
             batch = address_inputs[i : i + self.config.batch_size]
@@ -227,31 +223,10 @@ class AddressGeocodingEngine:
 
         return stats
 
-    def convert_to_poi_format(self, results: List[GeocodingResult]) -> Dict[str, Any]:
-        """
-        Convert geocoding results to standard SocialMapper POI format.
+    def __enter__(self):
+        """Context manager entry."""
+        return self
 
-        Args:
-            results: List of GeocodingResult objects
-
-        Returns:
-            Dictionary in POI format compatible with existing SocialMapper workflow
-        """
-        pois = []
-        metadata = {
-            "total_addresses": len(results),
-            "successful_geocodes": 0,
-            "failed_geocodes": 0,
-            "geocoding_stats": self.get_statistics(),
-        }
-
-        for result in results:
-            if result.success:
-                poi = result.to_poi_format()
-                if poi:
-                    pois.append(poi)
-                    metadata["successful_geocodes"] += 1
-            else:
-                metadata["failed_geocodes"] += 1
-
-        return {"poi_count": len(pois), "pois": pois, "metadata": metadata}
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - save cache."""
+        self.cache.save_cache()

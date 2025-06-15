@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-Address Geocoding Cache
-======================
+Caching system for geocoding results.
 
-High-performance caching system for geocoded addresses using Parquet storage
-and in-memory optimization following ETL best practices.
-
-Author: SocialMapper Team
-Date: June 2025
+This module provides high-performance caching for geocoded addresses.
 """
 
 import json
@@ -17,9 +12,9 @@ from typing import Optional
 
 import pandas as pd
 
-from . import AddressInput, GeocodingConfig, GeocodingResult
-
 from ..ui.console import get_logger
+from .models import AddressInput, GeocodingConfig, GeocodingResult
+
 logger = get_logger(__name__)
 
 
