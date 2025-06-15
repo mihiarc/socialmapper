@@ -129,11 +129,61 @@ The tutorial generates a CSV file in the `output/csv/` directory containing:
 
 ### Sample Output Structure
 
-```csv
-poi_name,poi_lat,poi_lon,total_population,median_household_income,median_age
-Wake County Public Library - Main,35.7796,-78.6382,15420,65000,34.5
-Eva H. Perry Regional Library,35.7234,-78.8567,12300,58000,36.2
-...
+The CSV output contains detailed data that can be hard to read in raw format. Here's how to create a beautiful, readable table using SocialMapper's built-in Rich console:
+
+```python
+import pandas as pd
+from socialmapper.ui.rich_console import console, print_table
+
+# Read the generated CSV file
+df = pd.read_csv('output/csv/wake_county_north_carolina_library_analysis.csv')
+
+# Select key columns and format for display
+display_data = []
+for _, row in df.iterrows():
+    display_data.append({
+        'Library': row['poi_name'],
+        'Population Served': f"{int(row['total_population']):,}",
+        'Median Income': f"${int(row['median_household_income']):,}",
+        'Median Age': f"{row['median_age']:.1f}"
+    })
+
+# Display using Rich table
+print_table(display_data, title="Library Accessibility Analysis")
+```
+
+This produces a beautiful, formatted table:
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Library                               ┃ Population Served ┃ Median Income  ┃ Median Age ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ Wake County Public Library - Main     │ 15,420           │ $65,000        │ 34.5       │
+│ Eva H. Perry Regional Library         │ 12,300           │ $58,000        │ 36.2       │
+│ Green Road Library                    │ 18,750           │ $72,500        │ 32.1       │
+│ Apex Library                          │ 22,100           │ $85,000        │ 35.8       │
+└───────────────────────────────────────┴──────────────────┴────────────────┴────────────┘
+```
+
+For even simpler usage with direct DataFrame printing:
+```python
+from socialmapper.ui.rich_console import console
+
+# Create a Rich table directly from DataFrame
+from rich.table import Table
+
+table = Table(title="Library Accessibility Summary")
+table.add_column("Library Name", style="cyan", no_wrap=True)
+table.add_column("Pop. Reach", justify="right", style="green")
+table.add_column("Income", justify="right", style="yellow")
+
+for _, row in df.head(5).iterrows():
+    table.add_row(
+        row['poi_name'][:30],  # Truncate long names
+        f"{int(row['total_population']):,}",
+        f"${int(row['median_household_income']):,}"
+    )
+
+console.print(table)
 ```
 
 ## Customizing the Analysis
