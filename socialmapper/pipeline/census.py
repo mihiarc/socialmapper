@@ -4,11 +4,14 @@ Census data integration module for the SocialMapper pipeline.
 This module handles integration of census data with isochrones and POIs.
 """
 
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import geopandas as gpd
 
 from ..progress import get_progress_bar
+
+logger = logging.getLogger(__name__)
 
 
 def integrate_census_data(
@@ -68,13 +71,12 @@ def integrate_census_data(
     print(f"Requesting census data for: {', '.join(readable_names)}")
     print(f"Geographic level: {geographic_level}")
 
-    # Determine states to search from POI data
-    counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
-    print(f"Found {len(counties)} counties from POIs")
-    state_fips = list(set([county[0] for county in counties]))
-
     # Get geographic units based on level
     if geographic_level == "zcta":
+        # For ZCTAs, we still need state info but we'll get it from POI locations
+        counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
+        state_fips = list(set([county[0] for county in counties]))
+        
         # Use modern census system for ZCTA functionality
         with get_progress_bar(
             total=len(state_fips), desc="🏛️ Finding ZIP Code Tabulation Areas", unit="state"
@@ -92,21 +94,22 @@ def integrate_census_data(
 
         print(f"Found {len(geographic_units_gdf)} intersecting ZIP Code Tabulation Areas")
     else:
-        # Get block groups using modern census system
+        # Use spatial query to get block groups that intersect with isochrones
+        # This captures block groups across county boundaries
+        from ..census.services.spatial_block_group_service import SpatialBlockGroupService
+        
+        print("🔄 Using spatial query to fetch block groups intersecting isochrones")
+        spatial_service = SpatialBlockGroupService()
+        
         with get_progress_bar(
-            total=len(counties), desc="🏛️ Finding Census Block Groups", unit="county"
+            total=1, desc="🏛️ Finding Census Block Groups (spatial query)", unit="query"
         ) as pbar:
-            geographic_units_gdf = census_system.get_block_groups_for_counties(counties)
-            pbar.update(len(counties))
-
-            # Filter to intersecting block groups
-            isochrone_union = isochrone_gdf.geometry.union_all()
-            intersecting_mask = geographic_units_gdf.geometry.intersects(isochrone_union)
-            geographic_units_gdf = geographic_units_gdf[intersecting_mask]
-
+            geographic_units_gdf = spatial_service.fetch_block_groups_by_isochrones(isochrone_gdf)
+            pbar.update(1)
+            
         if geographic_units_gdf is None or geographic_units_gdf.empty:
             raise ValueError("No census block groups found intersecting with isochrones.")
-
+            
         print(f"Found {len(geographic_units_gdf)} intersecting census block groups")
 
     # Calculate travel distances in memory
