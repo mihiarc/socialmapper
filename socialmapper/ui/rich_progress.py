@@ -2,10 +2,6 @@
 """
 Rich-based Progress Tracking System for SocialMapper.
 
-This module provides beautiful progress tracking using the Rich library for
-excellent user experience with stunning progress bars, status indicators,
-and formatted console output.
-
 Key Features:
 - Beautiful Rich progress bars with real-time metrics
 - Professional console output with colors and formatting
