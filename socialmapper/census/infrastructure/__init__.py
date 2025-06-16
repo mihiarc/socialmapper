@@ -19,38 +19,38 @@ from .repository import InMemoryRepository, NoOpRepository, RepositoryError, SQL
 from .streaming import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
 
 __all__ = [
-    # Configuration
-    "CensusConfig",
-    "ConfigurationProvider",
+    "AdaptiveRateLimiter",
     # API Client
     "CensusAPIClientImpl",
     "CensusAPIError",
-    # Cache
-    "InMemoryCacheProvider",
-    "FileCacheProvider",
-    "NoOpCacheProvider",
-    "HybridCacheProvider",
-    # Rate Limiting
-    "TokenBucketRateLimiter",
-    "AdaptiveRateLimiter",
-    "NoOpRateLimiter",
-    # Repository
-    "SQLiteRepository",
-    "NoOpRepository",
-    "InMemoryRepository",
-    "RepositoryError",
+    # Configuration
+    "CensusConfig",
     # Geocoding
     "CensusGeocoder",
-    "MockGeocoder",
-    "NoOpGeocoder",
+    "ConfigurationProvider",
+    "FileCacheProvider",
     "GeocodingError",
+    "HybridCacheProvider",
+    # Cache
+    "InMemoryCacheProvider",
+    "InMemoryRepository",
+    "MemoryEfficientDataProcessor",
     # Memory Management
     "MemoryMonitor",
-    "MemoryEfficientDataProcessor",
-    "get_memory_monitor",
-    "memory_efficient_processing",
+    "MockGeocoder",
+    "ModernDataExporter",
+    "NoOpCacheProvider",
+    "NoOpGeocoder",
+    "NoOpRateLimiter",
+    "NoOpRepository",
+    "RepositoryError",
+    # Repository
+    "SQLiteRepository",
     # Streaming
     "StreamingDataPipeline",
-    "ModernDataExporter",
+    # Rate Limiting
+    "TokenBucketRateLimiter",
+    "get_memory_monitor",
     "get_streaming_pipeline",
+    "memory_efficient_processing",
 ]

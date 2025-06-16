@@ -214,7 +214,7 @@ def example_integration_with_census_data():
     # Initialize clients
     tiger_client = TigerGeometryClient()
     census_client = CensusAPIClientImpl(api_key="YOUR_CENSUS_API_KEY")
-    census_service = CensusDataService(census_client)
+    CensusDataService(census_client)
 
     # Fetch block group geometries
     geometry_result = tiger_client.fetch_block_groups(
@@ -224,7 +224,6 @@ def example_integration_with_census_data():
 
     # Fetch demographic data for the same block groups
     # Note: This is a simplified example - actual implementation would need proper API key
-    variables = ["B01001_001E"]  # Total population
 
     # Merge geometries with demographic data
     # (In practice, you'd fetch the census data and merge on GEOID)

@@ -372,7 +372,7 @@ def reset_rich_tracker():
 def track_stage(stage: ProcessingStage, total_items: int | None = None):
     """Context manager for tracking a processing stage."""
     tracker = get_rich_tracker()
-    metrics = tracker.start_stage(stage, total_items)
+    tracker.start_stage(stage, total_items)
     try:
         yield tracker
     finally:

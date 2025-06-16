@@ -4,7 +4,7 @@
 This module provides Rich-based progress bars and progress tracking utilities.
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 from rich.progress import (
     BarColumn,
@@ -89,11 +89,9 @@ class RichProgressWrapper:
 
     def update(self, n=1):
         if self.progress_instance and self.task_id is not None:
-            try:
-                self.progress_instance.update(self.task_id, advance=n)
-            except Exception:
+            with suppress(Exception):
                 # If progress update fails, just track position
-                pass
+                self.progress_instance.update(self.task_id, advance=n)
         self.position += n
 
         # If no progress display, show periodic updates

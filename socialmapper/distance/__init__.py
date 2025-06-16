@@ -199,7 +199,7 @@ def _calculate_distances_vectorized(
         distances = engine.calculate_distances(poi_points, centroids)
 
     total_time = time.time() - start_time
-    rate = len(centroids) / total_time if total_time > 0 else 0
+    len(centroids) / total_time if total_time > 0 else 0
 
     return distances.tolist()
 

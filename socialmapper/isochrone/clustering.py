@@ -105,7 +105,7 @@ class IntelligentPOIClusterer:
             else:
                 result.append(cluster_pois)
 
-        clustering_time = time.time() - start_time
+        time.time() - start_time
 
         # Log clustering results
         num_clusters = len(result)

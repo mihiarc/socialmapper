@@ -280,15 +280,29 @@ if selected_page == "Getting Started":
                         status_text.text("Building analysis configuration...")
                         progress_bar.progress(40)
                         
-                        config = (SocialMapperBuilder()
-                            .with_location(location)
-                            .with_osm_pois(poi_type, poi_name)
-                            .with_travel_time(travel_time)
-                            .with_travel_mode(travel_mode)
-                            .with_census_variables(*[var[0] for var in census_vars])
-                            .with_exports(csv=True, isochrones=True, maps=False)
-                            .build()
-                        )
+                        # Parse location into city and state
+                        if ", " in location:
+                            city, state = location.split(", ", 1)
+                            config = (SocialMapperBuilder()
+                                .with_location(city, state)
+                                .with_osm_pois(poi_type, poi_name)
+                                .with_travel_time(travel_time)
+                                .with_travel_mode(travel_mode)
+                                .with_census_variables(*[var[0] for var in census_vars])
+                                .with_exports(csv=True, isochrones=True, maps=False)
+                                .build()
+                            )
+                        else:
+                            # Single location name
+                            config = (SocialMapperBuilder()
+                                .with_location(location)
+                                .with_osm_pois(poi_type, poi_name)
+                                .with_travel_time(travel_time)
+                                .with_travel_mode(travel_mode)
+                                .with_census_variables(*[var[0] for var in census_vars])
+                                .with_exports(csv=True, isochrones=True, maps=False)
+                                .build()
+                            )
                         
                         # Run analysis
                         status_text.text("Executing analysis...")
@@ -306,13 +320,26 @@ if selected_page == "Getting Started":
                             # Display results
                             st.success("✅ Analysis completed successfully!")
                             
+                            # Check if we actually have POIs
+                            poi_count = len(analysis_data.get('pois', []))
+                            
+                            if poi_count == 0:
+                                st.warning("""
+                                ⚠️ **No POIs found in the search area**
+                                
+                                This could mean:
+                                - There are no libraries in the specified area
+                                - The location name might need to be more specific
+                                - Try searching for a different POI type
+                                """)
+                            
                             # Metrics row
                             col1, col2, col3, col4 = st.columns(4)
                             
                             with col1:
                                 st.metric(
                                     "POIs Found",
-                                    len(analysis_data.get('pois', []))
+                                    poi_count
                                 )
                             
                             with col2:
@@ -408,9 +435,36 @@ if selected_page == "Getting Started":
                             error = result.unwrap_err()
                             st.error(f"❌ Analysis failed: {error.message}")
                             
+                            # Provide more specific guidance based on error type
+                            if "no pois found" in error.message.lower():
+                                st.info("""
+                                💡 **No POIs found. Try:**
+                                - Using a different POI type (e.g., "shop" instead of "amenity")
+                                - Using a different POI name (e.g., "restaurant" instead of "library")
+                                - Checking the location spelling
+                                - Using a larger city or different area
+                                """)
+                            elif "numba" in error.message.lower():
+                                st.warning("""
+                                ⚠️ **Performance module not available**
+                                
+                                The analysis may run slower without the performance optimization module.
+                                This won't affect the results, just the speed.
+                                """)
+                            elif "census" in error.message.lower():
+                                st.error("""
+                                🔑 **Census API issue**
+                                
+                                Please check that your Census API key is valid and configured in the sidebar.
+                                """)
+                            
             except Exception as e:
                 st.error(f"❌ An error occurred: {str(e)}")
                 st.info("Please check your API key and internet connection")
+                
+                # Log the full error for debugging
+                import traceback
+                st.expander("🔍 Full Error Details").code(traceback.format_exc())
 
 elif selected_page == "Custom POIs":
     st.markdown("## 📍 Custom Points of Interest")

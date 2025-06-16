@@ -456,7 +456,6 @@ def _create_accessibility_map(
     dpi: int,
 ) -> Path:
     """Create an accessibility-focused map with isochrones."""
-    unit_label = "ZIP Code Areas" if geographic_level == "zcta" else "Block Groups"
     variable_name = _get_legend_title(variable)
     title = f"{variable_name} within {travel_time}-Minute Travel Time"
 

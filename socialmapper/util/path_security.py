@@ -111,9 +111,7 @@ def _contains_symlink(path: Path) -> bool:
         if parent.exists() and parent.is_symlink():
             return True
     # Check the path itself
-    if path.exists() and path.is_symlink():
-        return True
-    return False
+    return bool(path.exists() and path.is_symlink())
 
 
 def safe_join_path(base: str | Path, *parts: str | Path) -> Path:

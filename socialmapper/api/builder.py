@@ -129,7 +129,7 @@ class SocialMapperBuilder:
                 # First validate the input variable name/code
                 validate_census_variable(var)
                 # Then normalize it (which may return a list for calculated variables)
-                normalized = normalize_census_variable(var)
+                normalize_census_variable(var)
                 # For calculated variables, normalized will be a list of census codes
                 # For simple variables, it will be a single census code
                 # Both are valid, so we add them as-is

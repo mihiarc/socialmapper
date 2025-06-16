@@ -46,8 +46,7 @@ def get_geography_hierarchy(
     ]
 
     # Create a small buffer around the point for spatial query
-    buffer = point.buffer(0.01)  # ~1km buffer
-    bounds = buffer.bounds
+    point.buffer(0.01)  # ~1km buffer
 
     for level in levels_to_check:
         try:
@@ -305,10 +304,7 @@ def validate_geoid_format(geoid: str, geography_level: GeographyLevel) -> bool:
         return False
 
     # Check if numeric (except for some special cases)
-    if not geoid.isdigit():
-        return False
-
-    return True
+    return geoid.isdigit()
 
 
 def clip_geometries_to_boundary(

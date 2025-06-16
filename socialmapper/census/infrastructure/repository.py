@@ -9,7 +9,7 @@ Provides multiple storage backends:
 import json
 import logging
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -78,7 +78,7 @@ class SQLiteRepository:
             # Use INSERT OR REPLACE to handle duplicates
             cursor.executemany(
                 """
-                INSERT OR REPLACE INTO census_data 
+                INSERT OR REPLACE INTO census_data
                 (geoid, variable_code, variable_name, variable_description, variable_unit,
                  value, margin_of_error, year, dataset, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -112,10 +112,10 @@ class SQLiteRepository:
             var_placeholders = ",".join("?" * len(variable_codes))
 
             query = f"""
-                SELECT geoid, variable_code, variable_name, variable_description, 
+                SELECT geoid, variable_code, variable_name, variable_description,
                        variable_unit, value, margin_of_error, year, dataset
-                FROM census_data 
-                WHERE geoid IN ({geoid_placeholders}) 
+                FROM census_data
+                WHERE geoid IN ({geoid_placeholders})
                 AND variable_code IN ({var_placeholders})
             """
 
@@ -169,7 +169,7 @@ class SQLiteRepository:
 
             cursor.executemany(
                 """
-                INSERT OR REPLACE INTO boundaries 
+                INSERT OR REPLACE INTO boundaries
                 (geoid, geometry, area_land, area_water, created_at)
                 VALUES (?, ?, ?, ?, ?)
             """,
@@ -197,7 +197,7 @@ class SQLiteRepository:
             placeholders = ",".join("?" * len(geoids))
             query = f"""
                 SELECT geoid, geometry, area_land, area_water
-                FROM boundaries 
+                FROM boundaries
                 WHERE geoid IN ({placeholders})
             """
 
@@ -243,7 +243,7 @@ class SQLiteRepository:
 
             cursor.executemany(
                 """
-                INSERT OR REPLACE INTO neighbor_relationships 
+                INSERT OR REPLACE INTO neighbor_relationships
                 (source_geoid, neighbor_geoid, relationship_type, shared_boundary_length, created_at)
                 VALUES (?, ?, ?, ?, ?)
             """,
@@ -268,7 +268,7 @@ class SQLiteRepository:
             cursor.execute(
                 """
                 SELECT source_geoid, neighbor_geoid, relationship_type, shared_boundary_length
-                FROM neighbor_relationships 
+                FROM neighbor_relationships
                 WHERE source_geoid = ?
             """,
                 (geoid,),
@@ -342,10 +342,8 @@ class SQLiteRepository:
             # Get database size (for file-based databases)
             db_size = None
             if self._db_path != ":memory:":
-                try:
+                with suppress(OSError):
                     db_size = Path(self._db_path).stat().st_size
-                except OSError:
-                    pass
 
             return {
                 "census_data_count": census_count,

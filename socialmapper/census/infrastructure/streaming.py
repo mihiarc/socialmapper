@@ -210,7 +210,6 @@ class StreamingDataPipeline:
 
         start_time = time.time()
         total_rows = 0
-        batch_count = 0
 
         # Create output directory
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -414,7 +413,7 @@ class StreamingDataPipeline:
 
             # Progress update
             if self.config.enable_progress:
-                progress = (batch_num / total_batches) * 100
+                (batch_num / total_batches) * 100
                 # Removed noisy logging: get_progress_bar().write(f"Batch {batch_num}/{total_batches} ({progress:.1f}%)")
 
     def _optimize_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:

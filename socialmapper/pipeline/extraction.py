@@ -5,7 +5,6 @@ This module handles extraction of POI data from custom files or OpenStreetMap.
 
 import csv
 import json
-import os
 import random
 from typing import Any
 from urllib.error import URLError
@@ -230,8 +229,8 @@ def extract_poi_data(
                 print(f"Using states from custom coordinates: {', '.join(state_abbreviations)}")
 
         # Set a name for the output file based on the custom coords file
-        file_basename = os.path.basename(custom_coords_path)
-        base_filename = f"custom_{os.path.splitext(file_basename)[0]}"
+        file_path = Path(custom_coords_path)
+        base_filename = f"custom_{file_path.stem}"
 
         # Apply POI limit if specified
         if max_poi_count and "pois" in poi_data and len(poi_data["pois"]) > max_poi_count:

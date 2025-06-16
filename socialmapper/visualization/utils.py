@@ -46,15 +46,15 @@ def add_north_arrow(
         da.add_artist(arrow)
 
         # Create text
-        text = TextArea(
+        TextArea(
             "N",
-            textprops=dict(
-                color=text_color,
-                fontsize=fontsize * scale,
-                fontweight="bold",
-                ha="center",
-                va="center",
-            ),
+            textprops={
+                "color": text_color,
+                "fontsize": fontsize * scale,
+                "fontweight": "bold",
+                "ha": "center",
+                "va": "center",
+            },
         )
 
         # Pack arrow and text
@@ -103,7 +103,7 @@ def add_north_arrow(
             fontweight="bold",
             ha=ha,
             va=va,
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+            bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.8},
         )
 
 
@@ -235,7 +235,7 @@ def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list
     colors = [cmap(i / (n_colors - 1)) for i in range(n_colors)]
 
     if reverse:
-        colors = colors[::-1]
+        colors.reverse()
 
     # Convert to hex
     hex_colors = [f"#{int(color[0] * 255):02x}{int(color[1] * 255):02x}{int(color[2] * 255):02x}" for color in colors]

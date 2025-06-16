@@ -99,16 +99,16 @@ def addresses_to_poi_format(
 
 # Export public API
 __all__ = [
+    # Engine
+    "AddressGeocodingEngine",
+    "AddressInput",
     # Models
     "AddressProvider",
     "AddressQuality",
     "GeocodingConfig",
-    "AddressInput",
     "GeocodingResult",
-    # Engine
-    "AddressGeocodingEngine",
+    "addresses_to_poi_format",
     # Convenience functions
     "geocode_address",
     "geocode_addresses",
-    "addresses_to_poi_format",
 ]

@@ -18,7 +18,7 @@ import gc
 import threading
 import time
 from collections.abc import Callable
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -209,10 +209,8 @@ class MemoryMonitor:
 
         # Clear any cached data
         if hasattr(pd, "core") and hasattr(pd.core, "common"):
-            try:
+            with suppress(Exception):
                 pd.core.common.clear_cache()
-            except:
-                pass
 
     def should_use_streaming(self, estimated_memory_mb: float) -> bool:
         """Determine if streaming should be used based on memory pressure."""

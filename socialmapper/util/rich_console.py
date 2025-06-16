@@ -256,7 +256,7 @@ def print_table(
     table = Table(title=title, show_header=show_header, **kwargs)
 
     # Add columns from first row
-    for key in data[0].keys():
+    for key in data[0]:
         table.add_column(str(key).replace("_", " ").title())
 
     # Add rows
@@ -278,10 +278,7 @@ def print_statistics(stats: dict[str, Any], title: str = "Statistics", **kwargs)
 
         # Format the value
         if isinstance(value, float):
-            if 0 < value < 1:
-                formatted_value = f"{value:.1%}"
-            else:
-                formatted_value = f"{value:.1f}"
+            formatted_value = f"{value:.1%}" if 0 < value < 1 else f"{value:.1f}"
         elif isinstance(value, int):
             formatted_value = f"{value:,}"
         else:

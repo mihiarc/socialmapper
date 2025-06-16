@@ -5,7 +5,6 @@ batch processing, and TIGER/Line shapefile URL generation.
 """
 
 import logging
-from typing import Optional
 from collections.abc import Callable
 
 import geopandas as gpd
@@ -24,8 +23,8 @@ class ZctaService:
         self,
         config: ConfigurationProvider,
         api_client: CensusAPIClient,
-        cache: Optional[CacheProvider] = None,
-        rate_limiter: Optional[RateLimiter] = None,
+        cache: CacheProvider | None = None,
+        rate_limiter: RateLimiter | None = None,
     ):
         self._config = config
         self._api_client = api_client
@@ -269,7 +268,7 @@ class ZctaService:
         self,
         geoids: list[str],
         variables: list[str],
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         geographic_level: str = "zcta",
     ) -> "pd.DataFrame":
         """Get census data for ZCTA geoids.
@@ -389,7 +388,7 @@ class ZctaService:
             GeoDataFrame with ZCTAs that intersect the counties
         """
         # Get unique states from the counties list
-        state_fips_set = set(county[0] for county in counties)
+        state_fips_set = {county[0] for county in counties}
 
         # Fetch ZCTAs for all relevant states
         all_zctas = self.get_zctas_for_states(list(state_fips_set))
@@ -407,7 +406,7 @@ class ZctaService:
         self,
         state_fips_list: list[str],
         batch_size: int = 5,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> gpd.GeoDataFrame:
         """Get ZCTAs for multiple states with batching and progress tracking.
 
@@ -524,7 +523,7 @@ class ZctaService:
                 self,
                 geoids: list[str],
                 variables: list[str],
-                api_key: Optional[str] = None,
+                api_key: str | None = None,
                 geographic_level: str = "zcta",
             ) -> pd.DataFrame:
                 """Legacy method: Get census data for ZCTAs."""

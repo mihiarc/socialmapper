@@ -11,9 +11,9 @@ except ImportError:
     pass
 
 import argparse
-import os
 import sys
 import time
+from pathlib import Path
 
 from rich import box
 from rich.panel import Panel
@@ -158,11 +158,10 @@ def parse_arguments():
             parser.error("When using --addresses, you must specify --address-file")
 
     # Validate POI arguments if --poi is specified for querying OSM
-    if args.poi:
-        if not all([args.geocode_area, args.poi_type, args.poi_name]):
-            parser.error(
-                "When using --poi, you must specify --geocode-area, --poi-type, and --poi-name"
-            )
+    if args.poi and not all([args.geocode_area, args.poi_type, args.poi_name]):
+        parser.error(
+            "When using --poi, you must specify --geocode-area, --poi-type, and --poi-name"
+        )
 
     return args
 
@@ -187,7 +186,7 @@ def main():
         sys.exit(0)
 
     # Create the output directory
-    os.makedirs(args.output_dir, exist_ok=True)
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
     # Print beautiful banner using Rich
     tracker = get_progress_tracker()
@@ -318,20 +317,19 @@ def main():
                 poi_data = addresses_to_poi_format(addresses, geocoding_config)
 
                 # Create a temporary file for the geocoded coordinates
-                temp_file = os.path.join(args.output_dir, "geocoded_addresses.csv")
-                os.makedirs(args.output_dir, exist_ok=True)
+                temp_file = Path(args.output_dir) / "geocoded_addresses.csv"
+                Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
                 # Convert to CSV format for SocialMapper
-                poi_csv_data = []
-                for poi in poi_data:
-                    poi_csv_data.append(
-                        {
-                            "name": poi["name"],
-                            "lat": poi["lat"],
-                            "lon": poi["lon"],
-                            "type": poi.get("type", "address"),
-                        }
-                    )
+                poi_csv_data = [
+                    {
+                        "name": poi["name"],
+                        "lat": poi["lat"],
+                        "lon": poi["lon"],
+                        "type": poi.get("type", "address"),
+                    }
+                    for poi in poi_data
+                ]
 
                 import pandas as pd
 

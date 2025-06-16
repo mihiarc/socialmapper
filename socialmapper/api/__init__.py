@@ -84,39 +84,39 @@ if TYPE_CHECKING:
 
 # Public API
 __all__ = [
-    # Version
-    "__version__",
-    # Builder
-    "SocialMapperBuilder",
     "AnalysisResult",
-    "GeographicLevel",
-    # Client
-    "SocialMapperClient",
-    "ClientConfig",
+    # Async
+    "AsyncSocialMapper",
     "CacheStrategy",
-    # Result types
-    "Result",
-    "Ok",
+    "ClientConfig",
     "Err",
     "Error",
     "ErrorType",
-    "collect_results",
-    "try_all",
-    "result_handler",
-    # Test utilities
-    "assert_ok",
+    "GeographicLevel",
+    "IsochroneResult",
+    "Ok",
+    "POIResult",
+    # Result types
+    "Result",
+    "ResultCollector",
+    # Builder
+    "SocialMapperBuilder",
+    # Client
+    "SocialMapperClient",
+    # Version
+    "__version__",
+    "analyze_custom_pois",
+    "analyze_location",
     "assert_err",
     "assert_err_type",
-    "ResultCollector",
-    # Async
-    "AsyncSocialMapper",
-    "run_async_analysis",
-    "POIResult",
-    "IsochroneResult",
+    # Test utilities
+    "assert_ok",
+    "collect_results",
     # Convenience
     "quick_analysis",
-    "analyze_location",
-    "analyze_custom_pois",
+    "result_handler",
+    "run_async_analysis",
+    "try_all",
 ]
 
 

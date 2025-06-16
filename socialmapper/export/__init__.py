@@ -215,13 +215,13 @@ def _export_with_streaming(
 
 # Public API
 __all__ = [
-    # Main export functions
-    "export_census_data",
-    "export_census_data_to_csv",  # Legacy
-    "export_to_parquet",
-    "export_to_geoparquet",
     # Configuration
     "DataPrepConfig",
     # Exceptions
     "ExportError",
+    # Main export functions
+    "export_census_data",
+    "export_census_data_to_csv",  # Legacy
+    "export_to_geoparquet",
+    "export_to_parquet",
 ]

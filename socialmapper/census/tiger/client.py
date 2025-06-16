@@ -220,13 +220,11 @@ class TigerGeometryClient:
         if query.geography_level in [
             GeographyLevel.BLOCK_GROUP,
             GeographyLevel.BLOCK_GROUP_DETAILED,
-        ]:
-            if not query.state_fips:
-                raise ValueError("state_fips is required for block group queries")
+        ] and not query.state_fips:
+            raise ValueError("state_fips is required for block group queries")
 
-        if query.geography_level == GeographyLevel.TRACT:
-            if not query.state_fips:
-                raise ValueError("state_fips is required for tract queries")
+        if query.geography_level == GeographyLevel.TRACT and not query.state_fips:
+            raise ValueError("state_fips is required for tract queries")
 
     def _build_query_params(self, query: GeometryQuery, endpoint: TigerEndpoint) -> dict[str, Any]:
         """Build query parameters for the API request."""

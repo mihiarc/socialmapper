@@ -73,7 +73,7 @@ def integrate_census_data(
     if geographic_level == "zcta":
         # For ZCTAs, we still need state info but we'll get it from POI locations
         counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
-        state_fips = list(set([county[0] for county in counties]))
+        state_fips = list({county[0] for county in counties})
 
         # Use modern census system for ZCTA functionality
         with get_progress_bar(

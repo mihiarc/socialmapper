@@ -152,8 +152,8 @@ class CensusService:
             return
 
         # Group by geoids and variables for efficient caching
-        geoids = list(set(point.geoid for point in data))
-        variable_codes = list(set(point.variable.code for point in data))
+        geoids = list({point.geoid for point in data})
+        variable_codes = list({point.variable.code for point in data})
 
         cache_key = self._generate_cache_key(geoids, variable_codes, year, dataset)
         self._cache.set(cache_key, data, ttl=self._config.cache_ttl_seconds)
@@ -167,7 +167,7 @@ class CensusService:
         # Group GEOIDs by state and county for more specific API calls
         state_county_groups = self._group_geoids_by_state_and_county(geoids)
 
-        for (state_fips, county_fips), county_geoids in state_county_groups.items():
+        for (state_fips, county_fips) in state_county_groups:
             self._rate_limiter.wait_if_needed("census_api")
 
             try:

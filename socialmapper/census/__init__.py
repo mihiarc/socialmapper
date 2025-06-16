@@ -321,7 +321,7 @@ class CensusSystem:
             logger.warning(f"Failed to geocode {failed_pois} out of {len(pois)} POIs")
 
         # TODO: Add neighbor functionality when neighbor system is integrated
-        return sorted(list(counties))
+        return sorted(counties)
 
     # Neighbor Operations
     def get_neighboring_states(self, state_fips: str) -> list[str]:
@@ -462,7 +462,7 @@ class CensusSystemBuilder:
         self._rate_limit = requests_per_second
         return self
 
-    def with_repository_type(self, repo_type: Union[str, RepositoryType]) -> "CensusSystemBuilder":
+    def with_repository_type(self, repo_type: str | RepositoryType) -> "CensusSystemBuilder":
         """Set the repository type for data persistence."""
         if isinstance(repo_type, str):
             repo_type = RepositoryType(repo_type)
@@ -629,43 +629,43 @@ def get_streaming_census_manager(cache_census_data: bool = False, cache_dir: str
 
 # Export main interfaces
 __all__ = [
+    "BlockGroupInfo",
+    "BlockGroupService",
+    "CacheStrategy",
+    "CensusAPIClientImpl",
+    # Infrastructure (for advanced usage)
+    "CensusConfig",
+    # Domain entities
+    "CensusDataPoint",
+    "CensusGeocoder",
+    # Services
+    "CensusService",
     # Main system
     "CensusSystem",
     "CensusSystemBuilder",
+    "CensusVariable",
+    "CensusVariableService",
+    "ConfigurationProvider",
+    "CountyInfo",
+    "FileCacheProvider",
+    "GeographicUnit",
+    "GeographyLevel",
+    "GeographyService",
+    "GeometryQuery",
+    "GeometryResult",
+    "HybridCacheProvider",
+    "InMemoryCacheProvider",
+    "NoOpCacheProvider",
+    "RepositoryType",
+    # Enums
+    "StateFormat",
+    "StateInfo",
+    # TIGER geometry submodule
+    "TigerGeometryClient",
+    "TokenBucketRateLimiter",
+    "VariableFormat",
+    "ZctaService",
     "get_census_system",
     "get_legacy_adapter",
     "get_streaming_census_manager",  # Modern replacement for legacy function
-    # Domain entities
-    "CensusDataPoint",
-    "GeographicUnit",
-    "CensusVariable",
-    "StateInfo",
-    "CountyInfo",
-    "BlockGroupInfo",
-    # Services
-    "CensusService",
-    "CensusVariableService",
-    "GeographyService",
-    "BlockGroupService",
-    "ZctaService",
-    # Enums
-    "StateFormat",
-    "VariableFormat",
-    "CacheStrategy",
-    "RepositoryType",
-    # Infrastructure (for advanced usage)
-    "CensusConfig",
-    "ConfigurationProvider",
-    "CensusAPIClientImpl",
-    "CensusGeocoder",
-    "InMemoryCacheProvider",
-    "FileCacheProvider",
-    "HybridCacheProvider",
-    "NoOpCacheProvider",
-    "TokenBucketRateLimiter",
-    # TIGER geometry submodule
-    "TigerGeometryClient",
-    "GeographyLevel",
-    "GeometryQuery",
-    "GeometryResult",
 ]

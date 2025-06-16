@@ -101,7 +101,7 @@ class ModernNetworkCache:
             # Create spatial index for efficient bbox queries
             conn.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_bbox 
+                CREATE INDEX IF NOT EXISTS idx_bbox
                 ON networks (bbox_minlat, bbox_minlon, bbox_maxlat, bbox_maxlon)
             """
             )
@@ -109,7 +109,7 @@ class ModernNetworkCache:
             # Create index for cache management
             conn.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_access 
+                CREATE INDEX IF NOT EXISTS idx_access
                 ON networks (last_accessed, file_size)
             """
             )
@@ -173,8 +173,8 @@ class ModernNetworkCache:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """
-                SELECT * FROM networks 
-                WHERE network_type = ? 
+                SELECT * FROM networks
+                WHERE network_type = ?
                 AND travel_time_minutes >= ?
                 AND bbox_minlat <= ? AND bbox_maxlat >= ?
                 AND bbox_minlon <= ? AND bbox_maxlon >= ?
@@ -238,7 +238,7 @@ class ModernNetworkCache:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.execute(
                     """
-                    SELECT file_path, node_count, edge_count FROM networks 
+                    SELECT file_path, node_count, edge_count FROM networks
                     WHERE cache_key = ?
                 """,
                     (cache_key,),
@@ -257,7 +257,7 @@ class ModernNetworkCache:
                         # Update access statistics
                         conn.execute(
                             """
-                            UPDATE networks 
+                            UPDATE networks
                             SET access_count = access_count + 1, last_accessed = ?
                             WHERE cache_key = ?
                         """,
@@ -361,7 +361,7 @@ class ModernNetworkCache:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO networks 
+                    INSERT OR REPLACE INTO networks
                     (cache_key, bbox_minlat, bbox_minlon, bbox_maxlat, bbox_maxlon,
                      network_type, created_at, file_size, node_count, edge_count,
                      file_path, travel_time_minutes, cluster_size, last_accessed)
@@ -421,7 +421,7 @@ class ModernNetworkCache:
                     cursor = conn.execute(
                         """
                         SELECT cache_key, file_path, file_size, last_accessed, access_count
-                        FROM networks 
+                        FROM networks
                         ORDER BY last_accessed ASC, access_count ASC
                     """
                     )
