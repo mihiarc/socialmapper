@@ -152,17 +152,38 @@ with st.sidebar:
     
     # API Key configuration
     st.markdown("### 🔑 API Configuration")
-    census_api_key = st.text_input(
-        "Census API Key",
-        type="password",
-        help="Get your free API key at https://api.census.gov/data/key_signup.html"
-    )
     
-    if census_api_key:
-        os.environ['CENSUS_API_KEY'] = census_api_key
-        st.success("API key configured!")
-    else:
-        st.warning("Census API key required for demographic data")
+    # Check for API key in Streamlit secrets first
+    try:
+        if "census" in st.secrets and "CENSUS_API_KEY" in st.secrets["census"]:
+            os.environ['CENSUS_API_KEY'] = st.secrets["census"]["CENSUS_API_KEY"]
+            st.success("✅ API key loaded from secrets")
+        else:
+            # Fall back to manual input
+            census_api_key = st.text_input(
+                "Census API Key",
+                type="password",
+                help="Get your free API key at https://api.census.gov/data/key_signup.html"
+            )
+            
+            if census_api_key:
+                os.environ['CENSUS_API_KEY'] = census_api_key
+                st.success("API key configured!")
+            else:
+                st.warning("Census API key required for demographic data")
+    except FileNotFoundError:
+        # No secrets file, use manual input
+        census_api_key = st.text_input(
+            "Census API Key",
+            type="password",
+            help="Get your free API key at https://api.census.gov/data/key_signup.html"
+        )
+        
+        if census_api_key:
+            os.environ['CENSUS_API_KEY'] = census_api_key
+            st.success("API key configured!")
+        else:
+            st.warning("Census API key required for demographic data")
     
     st.markdown("---")
     st.markdown("### 📊 About SocialMapper")
@@ -259,11 +280,14 @@ if selected_page == "Getting Started":
             format_func=lambda x: x[1]
         )
         
+        # Save census vars to session state for display
+        st.session_state.census_vars = census_vars
+        
         submitted = st.form_submit_button("🔍 Run Analysis", use_container_width=True)
     
-    # Analysis execution
+    # Analysis execution inside form
     if submitted:
-        if not census_api_key:
+        if not os.environ.get('CENSUS_API_KEY'):
             st.error("⚠️ Please configure your Census API key in the sidebar")
         else:
             try:
@@ -314,122 +338,13 @@ if selected_page == "Getting Started":
                             progress_bar.progress(100)
                             status_text.text("Analysis complete!")
                             
-                            analysis_data = result.unwrap()
-                            st.session_state.analysis_results = analysis_data
+                            analysis_result = result.unwrap()
+                            st.session_state.analysis_results = analysis_result
+                            st.session_state.analysis_complete = True
                             
-                            # Display results
+                            # Just show success message
                             st.success("✅ Analysis completed successfully!")
-                            
-                            # Check if we actually have POIs
-                            poi_count = len(analysis_data.get('pois', []))
-                            
-                            if poi_count == 0:
-                                st.warning("""
-                                ⚠️ **No POIs found in the search area**
-                                
-                                This could mean:
-                                - There are no libraries in the specified area
-                                - The location name might need to be more specific
-                                - Try searching for a different POI type
-                                """)
-                            
-                            # Metrics row
-                            col1, col2, col3, col4 = st.columns(4)
-                            
-                            with col1:
-                                st.metric(
-                                    "POIs Found",
-                                    poi_count
-                                )
-                            
-                            with col2:
-                                st.metric(
-                                    "Area Coverage",
-                                    f"{analysis_data.get('isochrone_area', 0):.1f} km²"
-                                )
-                            
-                            with col3:
-                                pop = analysis_data.get('demographics', {}).get('B01003_001E', 0)
-                                st.metric(
-                                    "Population Served",
-                                    f"{pop:,.0f}"
-                                )
-                            
-                            with col4:
-                                income = analysis_data.get('demographics', {}).get('B19013_001E', 0)
-                                st.metric(
-                                    "Median Income",
-                                    f"${income:,.0f}"
-                                )
-                            
-                            # Map and demographics
-                            col1, col2 = st.columns([2, 1])
-                            
-                            with col1:
-                                st.markdown("### 🗺️ Interactive Map")
-                                
-                                # Create map centered on analysis location
-                                center_lat = analysis_data.get('center_lat', 35.7796)
-                                center_lon = analysis_data.get('center_lon', -78.6382)
-                                
-                                m = create_folium_map(center_lat, center_lon)
-                                
-                                # Add POI markers
-                                for poi in analysis_data.get('pois', [])[:10]:  # Limit to 10 POIs
-                                    folium.Marker(
-                                        [poi['lat'], poi['lon']],
-                                        popup=poi['name'],
-                                        icon=folium.Icon(color='green', icon='book')
-                                    ).add_to(m)
-                                
-                                st_folium(m, height=400, use_container_width=True)
-                            
-                            with col2:
-                                st.markdown("### 📊 Demographics")
-                                
-                                demo_df = pd.DataFrame([
-                                    {"Variable": format_census_variable(var[0], 
-                                     analysis_data.get('demographics', {}).get(var[0], 0)).split(':')[0],
-                                     "Value": format_census_variable(var[0], 
-                                     analysis_data.get('demographics', {}).get(var[0], 0)).split(':')[1]}
-                                    for var in census_vars
-                                ])
-                                
-                                st.dataframe(demo_df, hide_index=True, use_container_width=True)
-                            
-                            # POIs table
-                            if analysis_data.get('pois'):
-                                st.markdown("### 📍 Points of Interest Found")
-                                poi_df = pd.DataFrame(analysis_data['pois'][:20])  # Show top 20
-                                
-                                if not poi_df.empty:
-                                    display_cols = ['name', 'distance_km', 'travel_time_min']
-                                    if all(col in poi_df.columns for col in display_cols):
-                                        poi_df = poi_df[display_cols].rename(columns={
-                                            'name': 'Name',
-                                            'distance_km': 'Distance (km)',
-                                            'travel_time_min': 'Travel Time (min)'
-                                        })
-                                        poi_df = poi_df.round(2)
-                                        st.dataframe(poi_df, hide_index=True, use_container_width=True)
-                            
-                            # Download options
-                            st.markdown("### 💾 Export Results")
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                if st.button("📥 Download CSV"):
-                                    csv_data = poi_df.to_csv(index=False)
-                                    st.download_button(
-                                        "Download",
-                                        csv_data,
-                                        "socialmapper_results.csv",
-                                        "text/csv"
-                                    )
-                            
-                            with col2:
-                                if st.button("📥 Download Full Report"):
-                                    st.info("Full report generation coming soon!")
+                            st.rerun()
                         
                         else:
                             error = result.unwrap_err()
@@ -465,6 +380,148 @@ if selected_page == "Getting Started":
                 # Log the full error for debugging
                 import traceback
                 st.expander("🔍 Full Error Details").code(traceback.format_exc())
+    
+    # Display results outside of form
+    if 'analysis_complete' in st.session_state and st.session_state.analysis_complete:
+        if 'analysis_results' in st.session_state:
+            analysis_result = st.session_state.analysis_results
+            
+            # Check if we actually have POIs
+            poi_count = analysis_result.poi_count
+            
+            if poi_count == 0:
+                st.warning("""
+                ⚠️ **No POIs found in the search area**
+                
+                This could mean:
+                - There are no libraries in the specified area
+                - The location name might need to be more specific
+                - Try searching for a different POI type
+                """)
+            
+            # Metrics row
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    "POIs Found",
+                    poi_count
+                )
+            
+            with col2:
+                st.metric(
+                    "Area Coverage",
+                    f"{analysis_result.isochrone_area:.1f} km²"
+                )
+            
+            with col3:
+                pop = analysis_result.demographics.get('B01003_001E', 0)
+                st.metric(
+                    "Population Served",
+                    f"{pop:,.0f}"
+                )
+            
+            with col4:
+                income = analysis_result.demographics.get('B19013_001E', 0)
+                st.metric(
+                    "Median Income",
+                    f"${income:,.0f}"
+                )
+            
+            # Map and demographics
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown("### 🗺️ Interactive Map")
+                
+                # Create map centered on analysis location
+                # Get center from metadata or use default
+                center_lat = analysis_result.metadata.get('center_lat', 35.7796)
+                center_lon = analysis_result.metadata.get('center_lon', -78.6382)
+                
+                m = create_folium_map(center_lat, center_lon)
+                
+                # Add POI markers
+                for poi in analysis_result.pois[:10]:  # Limit to 10 POIs
+                    # Get name from tags or use ID as fallback
+                    poi_name = poi.get('name') or poi.get('tags', {}).get('name', f"POI {poi.get('id', 'Unknown')}")
+                    folium.Marker(
+                        [poi['lat'], poi['lon']],
+                        popup=poi_name,
+                        icon=folium.Icon(color='green', icon='book')
+                    ).add_to(m)
+                
+                st_folium(m, height=400, use_container_width=True)
+            
+            with col2:
+                st.markdown("### 📊 Demographics")
+                
+                # Get census vars from session state or use defaults
+                census_vars = st.session_state.get('census_vars', [
+                    ("B01003_001E", "Total Population"),
+                    ("B19013_001E", "Median Household Income")
+                ])
+                
+                demo_df = pd.DataFrame([
+                    {"Variable": format_census_variable(var[0], 
+                     analysis_result.demographics.get(var[0], 0)).split(':')[0],
+                     "Value": format_census_variable(var[0], 
+                     analysis_result.demographics.get(var[0], 0)).split(':')[1]}
+                    for var in census_vars
+                ])
+                
+                st.dataframe(demo_df, hide_index=True, use_container_width=True)
+            
+            # POIs table
+            if analysis_result.pois:
+                st.markdown("### 📍 Points of Interest Found")
+                # Process POI data to extract names from tags
+                poi_data = []
+                for poi in analysis_result.pois[:20]:
+                    poi_dict = {
+                        'name': poi.get('name') or poi.get('tags', {}).get('name', f"POI {poi.get('id', 'Unknown')}"),
+                        'lat': poi.get('lat'),
+                        'lon': poi.get('lon'),
+                    }
+                    # Add distance and travel time if available
+                    if 'distance_km' in poi:
+                        poi_dict['distance_km'] = poi['distance_km']
+                    if 'travel_time_min' in poi:
+                        poi_dict['travel_time_min'] = poi['travel_time_min']
+                    poi_data.append(poi_dict)
+                
+                poi_df = pd.DataFrame(poi_data)
+                
+                if not poi_df.empty:
+                    # Show relevant columns
+                    display_cols = [col for col in ['name', 'distance_km', 'travel_time_min'] if col in poi_df.columns]
+                    if display_cols:
+                        poi_df = poi_df[display_cols].rename(columns={
+                            'name': 'Name',
+                            'distance_km': 'Distance (km)',
+                            'travel_time_min': 'Travel Time (min)'
+                        })
+                        poi_df = poi_df.round(2)
+                        st.dataframe(poi_df, hide_index=True, use_container_width=True)
+            
+            # Download options
+            st.markdown("### 💾 Export Results")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("📥 Download CSV"):
+                    if 'poi_df' in locals() and not poi_df.empty:
+                        csv_data = poi_df.to_csv(index=False)
+                        st.download_button(
+                            "Download",
+                            csv_data,
+                            "socialmapper_results.csv",
+                            "text/csv"
+                        )
+            
+            with col2:
+                if st.button("📥 Download Full Report"):
+                    st.info("Full report generation coming soon!")
 
 elif selected_page == "Custom POIs":
     st.markdown("## 📍 Custom Points of Interest")
