@@ -214,14 +214,13 @@ class BlockGroupService:
             logger.warning(f"Missing required columns: {missing_columns}")
 
         # Ensure GEOID column exists
-        if "GEOID" not in gdf.columns:
-            if all(col in gdf.columns for col in required_columns):
-                gdf["GEOID"] = (
-                    gdf["STATE"].astype(str).str.zfill(2)
-                    + gdf["COUNTY"].astype(str).str.zfill(3)
-                    + gdf["TRACT"].astype(str).str.zfill(6)
-                    + gdf["BLKGRP"].astype(str)
-                )
+        if "GEOID" not in gdf.columns and all(col in gdf.columns for col in required_columns):
+            gdf["GEOID"] = (
+                gdf["STATE"].astype(str).str.zfill(2)
+                + gdf["COUNTY"].astype(str).str.zfill(3)
+                + gdf["TRACT"].astype(str).str.zfill(6)
+                + gdf["BLKGRP"].astype(str)
+            )
 
         # Remove invalid geometries
         if "geometry" in gdf.columns:

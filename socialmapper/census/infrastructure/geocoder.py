@@ -303,10 +303,7 @@ class MockGeocoder:
         # This is obviously not real geocoding, just for testing
 
         # Mock state FIPS (based on longitude roughly)
-        if longitude > -100:
-            state_fips = "06"  # California-ish
-        else:
-            state_fips = "36"  # New York-ish
+        state_fips = "06" if longitude > -100 else "36"  # California-ish vs New York-ish
 
         # Mock county and tract
         county_fips = "001"

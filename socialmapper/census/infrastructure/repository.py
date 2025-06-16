@@ -482,13 +482,10 @@ class InMemoryRepository:
         self, geoids: list[str], variable_codes: list[str]
     ) -> list[CensusDataPoint]:
         """Retrieve census data from memory."""
-        results = []
-
-        for point in self._census_data.values():
-            if point.geoid in geoids and point.variable.code in variable_codes:
-                results.append(point)
-
-        return results
+        return [
+            point for point in self._census_data.values()
+            if point.geoid in geoids and point.variable.code in variable_codes
+        ]
 
     def save_boundaries(self, boundaries: list[BoundaryData]) -> None:
         """Store boundaries in memory."""
@@ -497,13 +494,10 @@ class InMemoryRepository:
 
     def get_boundaries(self, geoids: list[str]) -> list[BoundaryData]:
         """Retrieve boundaries from memory."""
-        results = []
-
-        for geoid in geoids:
-            if geoid in self._boundaries:
-                results.append(self._boundaries[geoid])
-
-        return results
+        return [
+            self._boundaries[geoid] for geoid in geoids
+            if geoid in self._boundaries
+        ]
 
     def save_neighbor_relationships(self, relationships: list[NeighborRelationship]) -> None:
         """Store neighbor relationships in memory."""

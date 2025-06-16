@@ -36,13 +36,22 @@ __version__ = "0.5.4"
 # Type exports for better IDE support
 from typing import TYPE_CHECKING
 
-# Async support
-from .async_client import (
-    AsyncSocialMapper,
-    IsochroneResult,
-    POIResult,
-    run_async_analysis,
-)
+# Async support (optional)
+try:
+    from .async_client import (
+        AsyncSocialMapper,
+        IsochroneResult,
+        POIResult,
+        run_async_analysis,
+    )
+    _ASYNC_AVAILABLE = True
+except ImportError:
+    # Async client requires aiohttp which might not be installed
+    _ASYNC_AVAILABLE = False
+    AsyncSocialMapper = None
+    IsochroneResult = None
+    POIResult = None
+    run_async_analysis = None
 from .builder import (
     AnalysisResult,
     GeographicLevel,
@@ -85,17 +94,13 @@ if TYPE_CHECKING:
 # Public API
 __all__ = [
     "AnalysisResult",
-    # Async
-    "AsyncSocialMapper",
     "CacheStrategy",
     "ClientConfig",
     "Err",
     "Error",
     "ErrorType",
     "GeographicLevel",
-    "IsochroneResult",
     "Ok",
-    "POIResult",
     # Result types
     "Result",
     "ResultCollector",
@@ -115,9 +120,17 @@ __all__ = [
     # Convenience
     "quick_analysis",
     "result_handler",
-    "run_async_analysis",
     "try_all",
 ]
+
+# Add async components only if available
+if _ASYNC_AVAILABLE:
+    __all__.extend([
+        "AsyncSocialMapper",
+        "IsochroneResult",
+        "POIResult",
+        "run_async_analysis",
+    ])
 
 
 # Deprecation warnings for old API

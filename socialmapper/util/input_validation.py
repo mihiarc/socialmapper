@@ -104,8 +104,8 @@ def validate_coordinates(lat: str | float, lon: str | float) -> tuple[float, flo
     try:
         lat = float(lat)
         lon = float(lon)
-    except (ValueError, TypeError):
-        raise InputValidationError("Coordinates must be numeric")
+    except (ValueError, TypeError) as e:
+        raise InputValidationError("Coordinates must be numeric") from e
 
     # Validate ranges
     if not -90 <= lat <= 90:

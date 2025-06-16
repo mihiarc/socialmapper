@@ -17,6 +17,7 @@ import os
 import time
 import warnings
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import geopandas as gpd
@@ -140,19 +141,15 @@ def create_isochrone_from_poi(
     if save_file:
         # Save result
         poi_name = poi_name.lower().replace(" ", "_")
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         if use_parquet and USE_ARROW:
             # Save as GeoParquet for better performance
-            isochrone_file = os.path.join(
-                output_dir, f"isochrone{travel_time_limit}_{poi_name}.parquet"
-            )
+            isochrone_file = Path(output_dir) / f"isochrone{travel_time_limit}_{poi_name}.parquet"
             isochrone_gdf.to_parquet(isochrone_file)
         else:
             # Fallback to GeoJSON
-            isochrone_file = os.path.join(
-                output_dir, f"isochrone{travel_time_limit}_{poi_name}.geojson"
-            )
+            isochrone_file = Path(output_dir) / f"isochrone{travel_time_limit}_{poi_name}.geojson"
             isochrone_gdf.to_file(isochrone_file, driver="GeoJSON", use_arrow=USE_ARROW)
 
         return isochrone_file

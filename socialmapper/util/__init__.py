@@ -264,7 +264,6 @@ __all__ = [
     "validate_address",
     "validate_api_response",
     "validate_census_variable",
-    "validate_census_variable",
     "validate_config",
     "validate_coordinates",
     "validate_filename",
@@ -276,23 +275,8 @@ __all__ = [
 ]
 
 
-# Define rate limiters for different services
-# 1 call per second for Census API and OSM
-class RateLimiter:
-    def __init__(self):
-        self.last_call_time = {}
-
-    def wait_if_needed(self, service, calls_per_second=1):
-        now = time.time()
-        if service in self.last_call_time:
-            elapsed = now - self.last_call_time[service]
-            min_interval = 1.0 / calls_per_second
-            if elapsed < min_interval:
-                time.sleep(min_interval - elapsed)
-        self.last_call_time[service] = time.time()
-
-
-rate_limiter = RateLimiter()
+# Create default rate limiter instance for backward compatibility
+rate_limiter = RateLimitedClient()
 
 # State name mapping utilities
 STATE_NAMES_TO_ABBR = {
@@ -410,44 +394,4 @@ def state_fips_to_abbreviation(fips_code):
     return fips_to_abbrev.get(fips_code)
 
 
-class AsyncRateLimitedClient:
-    """Custom async HTTP client with built-in rate limiting.
 
-    This client helps manage:
-    1. Rate limiting for APIs
-    2. Retries with exponential backoff
-    3. Proper client cleanup
-    """
-
-    def __init__(self, service="default", max_retries=3, timeout=30, transport=None):
-        self.service = service
-        self.max_retries = max_retries
-        self.client = httpx.AsyncClient(timeout=timeout, transport=transport)
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.client.aclose()
-
-    async def get(self, *args, **kwargs):
-        """Rate-limited GET request with retries."""
-        # Apply service-specific rate limiting
-        rate_limiter.wait_if_needed(self.service)
-
-        # Try the request with retries
-        for attempt in range(self.max_retries + 1):
-            try:
-                response = await self.client.get(*args, **kwargs)
-                return response
-            except httpx.TransportError as e:
-                if attempt == self.max_retries:
-                    raise
-
-                # Exponential backoff with jitter
-                wait_time = 2**attempt + (0.1 * attempt)
-                logging.warning(
-                    f"Request failed (attempt {attempt + 1}/{self.max_retries + 1}): {e!s}. "
-                    f"Retrying in {wait_time:.1f}s"
-                )
-                await asyncio.sleep(wait_time)

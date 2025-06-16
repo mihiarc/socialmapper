@@ -73,27 +73,39 @@ def build_overpass_query(poi_config):
         city = poi_config.get("city")
 
         if state and city:
-            # Use ISO code for US states to be more specific
-            if state in ["NC", "North Carolina"]:
-                state_iso = "US-NC"
-            elif len(state) == 2 and state.isupper():
-                # Assume it's a US state abbreviation
-                state_iso = f"US-{state}"
-            else:
-                # For full state names or non-US, try the name directly
-                state_iso = None
+            # Map common state names to abbreviations
+            state_mapping = {
+                "North Carolina": "NC",
+                "South Carolina": "SC",
+                "New York": "NY",
+                "California": "CA",
+                "Texas": "TX",
+                "Florida": "FL",
+                "New Hampshire": "NH",
+                "Virginia": "VA",
+                "Georgia": "GA",
+                # Add more as needed
+            }
 
-            if state_iso:
-                # Use ISO code for more accurate state matching
-                query += f'area["ISO3166-2"="{state_iso}"]->.state;\n'
+            # Normalize state
+            state_abbrev = state_mapping.get(state, state)
+
+            # Build a geocode query that's more specific
+            # First get the state area
+            if len(state_abbrev) == 2 and state_abbrev.isupper():
+                # US state - use ISO code
+                query += f'area["ISO3166-2"="US-{state_abbrev}"]->.state;\n'
             else:
-                # Fall back to name-based search
+                # Non-US or full state name
                 query += f'area[name="{state}"]["admin_level"="4"]->.state;\n'
 
-            # Then find the city within that state - also check for admin_level 8 (cities in US)
-            query += (
-                f'(area[name="{city}"]["admin_level"~"^(6|7|8)$"](area.state);)->.searchArea;\n'
-            )
+            # Then search for the city within that state
+            # Using multiple possible admin levels for cities
+            query += '(\n'
+            query += f'  area[name="{city}"]["place"="city"](area.state);\n'
+            query += f'  area[name="{city}"]["admin_level"="8"](area.state);\n'
+            query += f'  area[name="{city}"]["boundary"="administrative"](area.state);\n'
+            query += ')->.searchArea;\n'
         else:
             # Simple area based query. If multiple areas have the same name, this will return all of them.
             query += f'area[name="{area_name}"]->.searchArea;\n'
@@ -206,13 +218,39 @@ def format_results(result, config=None):
     if config and "state" in config:
         state = config["state"]
 
+    # Define approximate bounds for US states to filter results
+    # This helps when the Overpass query returns results from multiple states
+    state_bounds = {
+        "NC": {"min_lat": 33.7, "max_lat": 36.6, "min_lon": -84.4, "max_lon": -75.3},
+        "North Carolina": {"min_lat": 33.7, "max_lat": 36.6, "min_lon": -84.4, "max_lon": -75.3},
+        "CA": {"min_lat": 32.5, "max_lat": 42.0, "min_lon": -124.5, "max_lon": -114.0},
+        "NH": {"min_lat": 42.7, "max_lat": 45.3, "min_lon": -72.6, "max_lon": -70.6},
+        "CT": {"min_lat": 40.9, "max_lat": 42.1, "min_lon": -73.8, "max_lon": -71.8},
+        # Add more states as needed
+    }
+
+    # Check if we should filter by bounds
+    bounds = None
+    if state and state in state_bounds:
+        bounds = state_bounds[state]
+        logger.info(f"Filtering POIs to {state} bounds: {bounds}")
+
     # Process nodes
     for node in result.nodes:
+        lat = float(node.lat)
+        lon = float(node.lon)
+
+        # Skip if outside state bounds
+        if bounds:
+            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
+                continue
+
         poi_data = {
             "id": node.id,
             "type": "node",
-            "lat": float(node.lat),
-            "lon": float(node.lon),
+            "lat": lat,
+            "lon": lon,
             "tags": node.tags,
         }
 
@@ -228,12 +266,22 @@ def format_results(result, config=None):
         center_lat = getattr(way, "center_lat", None)
         center_lon = getattr(way, "center_lon", None)
 
-        poi_data = {"id": way.id, "type": "way", "tags": way.tags}
+        # Skip if no coordinates
+        if not (center_lat and center_lon):
+            continue
 
-        # Add center coordinates if available
-        if center_lat and center_lon:
-            poi_data["lat"] = float(center_lat)
-            poi_data["lon"] = float(center_lon)
+        lat = float(center_lat)
+        lon = float(center_lon)
+
+        # Skip if outside state bounds
+        if bounds:
+            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
+                continue
+
+        poi_data = {"id": way.id, "type": "way", "tags": way.tags}
+        poi_data["lat"] = lat
+        poi_data["lon"] = lon
 
         # Add state if available
         if state:
@@ -247,12 +295,22 @@ def format_results(result, config=None):
         center_lat = getattr(relation, "center_lat", None)
         center_lon = getattr(relation, "center_lon", None)
 
-        poi_data = {"id": relation.id, "type": "relation", "tags": relation.tags}
+        # Skip if no coordinates
+        if not (center_lat and center_lon):
+            continue
 
-        # Add center coordinates if available
-        if center_lat and center_lon:
-            poi_data["lat"] = float(center_lat)
-            poi_data["lon"] = float(center_lon)
+        lat = float(center_lat)
+        lon = float(center_lon)
+
+        # Skip if outside state bounds
+        if bounds:
+            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
+                continue
+
+        poi_data = {"id": relation.id, "type": "relation", "tags": relation.tags}
+        poi_data["lat"] = lat
+        poi_data["lon"] = lon
 
         # Add state if available
         if state:
@@ -262,6 +320,11 @@ def format_results(result, config=None):
 
     # Update poi count
     data["poi_count"] = len(data["pois"])
+    
+    # Log filtering results if bounds were applied
+    if bounds:
+        total_results = len(result.nodes) + len(result.ways) + len(result.relations)
+        logger.info(f"Filtered {total_results} results to {data['poi_count']} within {state} bounds")
 
     return data
 

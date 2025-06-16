@@ -6,6 +6,7 @@ This module handles extraction of POI data from custom files or OpenStreetMap.
 import csv
 import json
 import random
+from pathlib import Path
 from typing import Any
 from urllib.error import URLError
 
@@ -30,7 +31,7 @@ def parse_custom_coordinates(
     try:
         safe_file_path = sanitize_path(file_path, allow_absolute=True)
     except PathSecurityError as e:
-        raise ValueError(f"Invalid file path: {e}")
+        raise ValueError(f"Invalid file path: {e}") from e
 
     if not safe_file_path.exists():
         raise FileNotFoundError(f"Custom coordinates file not found: {file_path}")

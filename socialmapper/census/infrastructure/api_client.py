@@ -195,7 +195,7 @@ class CensusAPIClientImpl:
                 try:
                     data = response.json()
                 except ValueError as e:
-                    raise CensusAPIError(f"Invalid JSON response: {e}")
+                    raise CensusAPIError(f"Invalid JSON response: {e}") from e
 
                 # Check for API-level errors
                 if isinstance(data, dict) and "error" in data:

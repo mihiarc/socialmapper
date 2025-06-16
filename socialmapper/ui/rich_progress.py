@@ -16,13 +16,13 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import psutil
 from rich import box
 
 # Rich imports
 from rich.console import Console
-from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
@@ -36,6 +36,9 @@ from rich.progress import (
 from rich.status import Status
 from rich.table import Table
 from rich.traceback import install as install_rich_traceback
+
+if TYPE_CHECKING:
+    from rich.live import Live
 
 # Always use Rich console output
 

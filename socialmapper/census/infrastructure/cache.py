@@ -221,7 +221,7 @@ class FileCacheProvider:
             except (pickle.PickleError, OSError) as e:
                 # Clean up temporary file if it exists
                 temp_file.unlink(missing_ok=True)
-                raise RuntimeError(f"Failed to write cache file: {e}")
+                raise RuntimeError(f"Failed to write cache file: {e}") from e
 
     def delete(self, key: str) -> None:
         """Remove an entry from file cache.

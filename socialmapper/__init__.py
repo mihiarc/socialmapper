@@ -62,8 +62,17 @@ try:
     )
 
     _MODERN_API_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Warning: Modern API not available: {e}")
     _MODERN_API_AVAILABLE = False
+    # Set to None so they're at least defined
+    SocialMapperClient = None
+    SocialMapperBuilder = None
+    quick_analysis = None
+    analyze_location = None
+    Result = None
+    Ok = None
+    Err = None
 
 # Import modern census system
 from .census import (
@@ -110,26 +119,35 @@ __all__ = [
     "CacheStrategy",
     "CensusSystem",
     "CensusSystemBuilder",
-    # Visualization
-    "ChoroplethMap",
-    "ColorScheme",
-    "Err",
-    "MapConfig",
-    "MapType",
-    "Ok",
     "RepositoryType",
-    "Result",
-    "SocialMapperBuilder",
-    # Modern API (primary interface)
-    "SocialMapperClient",
     "StateFormat",
     "VariableFormat",
-    "analyze_location",
     # Modern census system
     "get_census_system",
     "get_counties_from_pois",
     # Neighbor functions
     "get_geography_from_point",
     "get_legacy_adapter",
-    "quick_analysis",
 ]
+
+# Add API items if available
+if _MODERN_API_AVAILABLE:
+    __all__.extend([
+        "Err",
+        "Ok",
+        "Result",
+        "SocialMapperBuilder",
+        # Modern API (primary interface)
+        "SocialMapperClient",
+        "analyze_location",
+        "quick_analysis",
+    ])
+
+# Add visualization items if available
+if _VISUALIZATION_AVAILABLE:
+    __all__.extend([
+        "ChoroplethMap",
+        "ColorScheme",
+        "MapConfig",
+        "MapType",
+    ])
