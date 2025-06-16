@@ -395,10 +395,26 @@ class SocialMapperClient:
         """Extract file paths from pipeline results."""
         files = {}
 
-        if "csv_file" in result_data:
-            files["census_data"] = Path(result_data["csv_file"])
-        if "map_file" in result_data:
-            files["map"] = Path(result_data["map_file"])
+        # Extract CSV data file
+        if "csv_data" in result_data:
+            csv_data = result_data["csv_data"]
+            if isinstance(csv_data, dict) and "csv_data" in csv_data:
+                files["census_data"] = Path(csv_data["csv_data"])
+            elif isinstance(csv_data, (str, Path)):
+                files["census_data"] = Path(csv_data)
+
+        # Extract map files
+        if "maps" in result_data:
+            maps_info = result_data["maps"]
+            if isinstance(maps_info, dict):
+                if "output_paths" in maps_info:
+                    # Add individual map paths
+                    for map_type, map_path in maps_info["output_paths"].items():
+                        files[f"map_{map_type}"] = Path(map_path)
+                if "output_directory" in maps_info:
+                    files["maps_directory"] = Path(maps_info["output_directory"])
+
+        # Extract isochrone file
         if "isochrone_file" in result_data:
             files["isochrones"] = Path(result_data["isochrone_file"])
 

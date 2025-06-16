@@ -87,7 +87,7 @@ with SocialMapperClient() as client:
         .with_osm_pois(poi_type, poi_name)
         .with_travel_time(travel_time)
         .with_census_variables(*census_variables)
-        .with_exports(csv=True, isochrones=False)
+        .with_exports(csv=True, isochrones=False, maps=True)
         .build()
     )
     
@@ -100,7 +100,7 @@ The builder pattern makes it easy to configure analyses:
 - `.with_osm_pois()`: Configures POI search
 - `.with_travel_time()`: Sets travel time limit
 - `.with_census_variables()`: Selects demographic data
-- `.with_exports()`: Controls output formats
+- `.with_exports()`: Controls output formats (CSV data, isochrone boundaries, choropleth maps)
 
 ### Step 5: Handle Results
 
@@ -121,11 +121,25 @@ SocialMapper uses Result types for robust error handling. The analysis returns:
 
 ## Understanding the Output
 
-The tutorial generates a CSV file in the `output/csv/` directory containing:
+The tutorial generates multiple outputs:
 
-1. **POI Information**: Name, address, and coordinates of each library
-2. **Demographics**: Population characteristics within walking distance
-3. **Aggregated Statistics**: Summary metrics across all reachable areas
+### 1. CSV Data File
+Located in `output/csv/`, containing:
+- **POI Information**: Name, address, and coordinates of each library
+- **Demographics**: Population characteristics within walking distance
+- **Aggregated Statistics**: Summary metrics across all reachable areas
+
+### 2. Choropleth Maps
+Located in `output/maps/`, visualizing:
+- **Demographic Maps**: Population density, income distribution, age patterns
+- **Distance Map**: Travel distance to nearest library by census block group
+- **Accessibility Map**: Combined view showing demographics within isochrones
+
+Each map includes:
+- Color-coded census block groups showing data intensity
+- Library locations marked with symbols
+- Legend explaining the color scale
+- Scale bar and north arrow for reference
 
 ### Sample Output Structure
 
@@ -270,10 +284,17 @@ census_variables = [
 ]
 ```
 
-### Enable Map Generation
+### Export Options
 
 ```python
-.with_exports(csv=True, isochrones=True)  # Creates visual maps
+# Default (CSV + maps)
+.with_exports(csv=True, isochrones=False, maps=True)
+
+# All outputs
+.with_exports(csv=True, isochrones=True, maps=True)
+
+# Data only (no visualizations)
+.with_exports(csv=True, isochrones=False, maps=False)
 ```
 
 ## Common Issues and Solutions

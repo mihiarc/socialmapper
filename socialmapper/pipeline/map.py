@@ -299,22 +299,33 @@ def _create_demographic_map(
     # Determine color scheme based on variable type
     color_scheme = _get_color_scheme_for_variable(variable)
     
-    # Calculate appropriate zoom level based on map extent
-    bbox = gdf.total_bounds
-    # Rough calculation: smaller areas need higher zoom
-    bbox_width = bbox[2] - bbox[0]
-    bbox_height = bbox[3] - bbox[1]
-    bbox_size = max(bbox_width, bbox_height)
+    # Calculate appropriate zoom level based on POI extent if available
+    if poi_gdf is not None and not poi_gdf.empty:
+        # Use POI bounds for better centering
+        poi_bounds = poi_gdf.total_bounds
+        bbox_width = poi_bounds[2] - poi_bounds[0]
+        bbox_height = poi_bounds[3] - poi_bounds[1]
+    else:
+        # Fall back to census data bounds
+        bbox = gdf.total_bounds
+        bbox_width = bbox[2] - bbox[0]
+        bbox_height = bbox[3] - bbox[1]
     
-    # Estimate zoom level (very rough approximation)
-    if bbox_size < 0.01:  # Very small area (neighborhood)
-        zoom_level = 15
-    elif bbox_size < 0.05:  # Small area (district)
-        zoom_level = 13
-    elif bbox_size < 0.1:   # Medium area (city)
+    # Calculate diagonal for better area estimation
+    bbox_diagonal = (bbox_width**2 + bbox_height**2)**0.5
+    
+    # Improved zoom level calculation for Web Mercator
+    # These values work well for US geography
+    if bbox_diagonal < 50000:  # < 50km - neighborhood/small city
+        zoom_level = 12
+    elif bbox_diagonal < 100000:  # < 100km - city/metro area
         zoom_level = 11
-    else:  # Large area
-        zoom_level = "auto"
+    elif bbox_diagonal < 200000:  # < 200km - large metro/small region
+        zoom_level = 10
+    elif bbox_diagonal < 400000:  # < 400km - region/small state
+        zoom_level = 9
+    else:  # Large area - state or bigger
+        zoom_level = 8
     
     # Create configuration
     config = MapConfig(
@@ -323,8 +334,8 @@ def _create_demographic_map(
         classification_scheme=ClassificationScheme.QUANTILES,
         n_classes=5,
         title=title,
-        alpha=0.8 if isochrone_gdf is not None else 0.7,  # More transparent with basemap
-        add_basemap=True,
+        alpha=0.8 if isochrone_gdf is not None else 0.7,
+        add_basemap=True,  # Re-enabled with debugging
         basemap_source="OpenStreetMap.Mapnik",
         basemap_alpha=0.6,
         basemap_zoom=zoom_level,
@@ -382,17 +393,32 @@ def _create_distance_map(
     unit_label = "ZIP Code Areas" if geographic_level == "zcta" else "Block Groups"
     title = f"Travel Distance to Nearest POI by {unit_label}"
     
-    # Calculate appropriate zoom level
-    bbox = gdf.total_bounds
-    bbox_size = max(bbox[2] - bbox[0], bbox[3] - bbox[1])
-    if bbox_size < 0.01:
-        zoom_level = 15
-    elif bbox_size < 0.05:
-        zoom_level = 13
-    elif bbox_size < 0.1:
-        zoom_level = 11
+    # Calculate appropriate zoom level based on POI extent if available
+    if poi_gdf is not None and not poi_gdf.empty:
+        # Use POI bounds for better centering
+        poi_bounds = poi_gdf.total_bounds
+        bbox_width = poi_bounds[2] - poi_bounds[0]
+        bbox_height = poi_bounds[3] - poi_bounds[1]
     else:
-        zoom_level = "auto"
+        # Fall back to census data bounds
+        bbox = gdf.total_bounds
+        bbox_width = bbox[2] - bbox[0]
+        bbox_height = bbox[3] - bbox[1]
+    
+    # Calculate diagonal for better area estimation
+    bbox_diagonal = (bbox_width**2 + bbox_height**2)**0.5
+    
+    # Improved zoom level calculation for Web Mercator
+    if bbox_diagonal < 50000:  # < 50km
+        zoom_level = 12
+    elif bbox_diagonal < 100000:  # < 100km
+        zoom_level = 11
+    elif bbox_diagonal < 200000:  # < 200km
+        zoom_level = 10
+    elif bbox_diagonal < 400000:  # < 400km
+        zoom_level = 9
+    else:
+        zoom_level = 8
     
     # Create configuration
     config = MapConfig(
@@ -401,8 +427,8 @@ def _create_distance_map(
         classification_scheme=ClassificationScheme.FISHER_JENKS,
         n_classes=5,
         title=title,
-        alpha=0.7,  # More transparent with basemap
-        add_basemap=True,
+        alpha=0.7,
+        add_basemap=True,  # Re-enabled with debugging
         basemap_source="OpenStreetMap.Mapnik",
         basemap_alpha=0.6,
         basemap_zoom=zoom_level,
@@ -452,17 +478,32 @@ def _create_accessibility_map(
     variable_name = _get_legend_title(variable)
     title = f"{variable_name} within {travel_time}-Minute Travel Time"
     
-    # Calculate appropriate zoom level
-    bbox = gdf.total_bounds
-    bbox_size = max(bbox[2] - bbox[0], bbox[3] - bbox[1])
-    if bbox_size < 0.01:
-        zoom_level = 15
-    elif bbox_size < 0.05:
-        zoom_level = 13
-    elif bbox_size < 0.1:
-        zoom_level = 11
+    # Calculate appropriate zoom level based on POI extent if available
+    if poi_gdf is not None and not poi_gdf.empty:
+        # Use POI bounds for better centering
+        poi_bounds = poi_gdf.total_bounds
+        bbox_width = poi_bounds[2] - poi_bounds[0]
+        bbox_height = poi_bounds[3] - poi_bounds[1]
     else:
-        zoom_level = "auto"
+        # Fall back to census data bounds
+        bbox = gdf.total_bounds
+        bbox_width = bbox[2] - bbox[0]
+        bbox_height = bbox[3] - bbox[1]
+    
+    # Calculate diagonal for better area estimation
+    bbox_diagonal = (bbox_width**2 + bbox_height**2)**0.5
+    
+    # Improved zoom level calculation for Web Mercator
+    if bbox_diagonal < 50000:  # < 50km
+        zoom_level = 12
+    elif bbox_diagonal < 100000:  # < 100km
+        zoom_level = 11
+    elif bbox_diagonal < 200000:  # < 200km
+        zoom_level = 10
+    elif bbox_diagonal < 400000:  # < 400km
+        zoom_level = 9
+    else:
+        zoom_level = 8
     
     # Create configuration
     config = MapConfig(
@@ -472,7 +513,7 @@ def _create_accessibility_map(
         n_classes=5,
         title=title,
         alpha=0.7,  # More transparent for overlay
-        add_basemap=True,
+        add_basemap=True,  # Re-enabled with debugging
         basemap_source="OpenStreetMap.Mapnik",
         basemap_alpha=0.6,
         basemap_zoom=zoom_level,

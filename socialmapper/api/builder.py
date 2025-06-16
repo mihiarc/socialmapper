@@ -67,6 +67,7 @@ class SocialMapperBuilder:
             "census_variables": ["total_population"],
             "export_csv": True,
             "export_isochrones": False,
+            "create_maps": True,  # Enable choropleth maps by default
             "output_dir": Path("output"),
         }
         self._validation_errors = []
@@ -165,6 +166,11 @@ class SocialMapperBuilder:
         self._config["export_isochrones"] = True
         return self
 
+    def enable_map_generation(self) -> Self:
+        """Enable choropleth map generation."""
+        self._config["create_maps"] = True
+        return self
+
     def disable_csv_export(self) -> Self:
         """Disable CSV export (enabled by default)."""
         self._config["export_csv"] = False
@@ -175,10 +181,17 @@ class SocialMapperBuilder:
         self._config["output_dir"] = str(path)
         return self
 
-    def with_exports(self, csv: bool = True, isochrones: bool = False) -> Self:
-        """Configure export options."""
+    def with_exports(self, csv: bool = True, isochrones: bool = False, maps: bool = False) -> Self:
+        """Configure export options.
+        
+        Args:
+            csv: Export demographic data to CSV format
+            isochrones: Export isochrone boundaries as shapefiles  
+            maps: Generate choropleth maps visualizing demographic patterns
+        """
         self._config["export_csv"] = csv
         self._config["export_isochrones"] = isochrones
+        self._config["create_maps"] = maps
         return self
 
     def validate(self) -> List[str]:

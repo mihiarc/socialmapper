@@ -91,12 +91,12 @@ class ChoroplethMap:
         # Remove axes for cleaner look
         self._ax.set_axis_off()
         
-        # Add basemap first (if enabled) - it will go to background with zorder=0
+        # Create the base choropleth first to establish the view
+        self._create_choropleth(column)
+        
+        # Add basemap after choropleth (if enabled) - it will go to background with zorder=0
         if self.config.add_basemap and CONTEXTILY_AVAILABLE:
             self._add_basemap()
-        
-        # Create the base choropleth on top of basemap
-        self._create_choropleth(column)
         
         # Add overlays based on map type
         if map_type == MapType.ACCESSIBILITY and isochrone_gdf is not None:
@@ -181,7 +181,7 @@ class ChoroplethMap:
                 },
                 legend=True,
                 legend_kwds=legend_kwds,
-                zorder=2  # Put choropleth above basemap
+                zorder=3  # Put choropleth above basemap and other layers
             )
         else:
             # Plot without legend
@@ -197,7 +197,7 @@ class ChoroplethMap:
                 missing_kwds={
                     "color": self.config.missing_color
                 },
-                zorder=2  # Put choropleth above basemap
+                zorder=3  # Put choropleth above basemap and other layers
             )
     
     def _create_legend_kwds(self, column: str) -> Dict[str, Any]:
@@ -295,27 +295,33 @@ class ChoroplethMap:
                 for amenity_type, group in poi_gdf.groupby("amenity"):
                     group.plot(
                         ax=self._ax,
-                        color="darkred",
-                        markersize=100,
-                        marker="*",
+                        color="teal",
+                        markersize=80,
+                        marker="o",
+                        edgecolor="gold",
+                        linewidth=2,
                         label=amenity_type.title(),
                         zorder=5  # Put POIs on top
                     )
             else:
                 poi_gdf.plot(
                     ax=self._ax,
-                    color="darkred",
-                    markersize=100,
-                    marker="*",
+                    color="teal",
+                    markersize=80,
+                    marker="o",
+                    edgecolor="gold",
+                    linewidth=2,
                     label="Points of Interest",
                     zorder=5  # Put POIs on top
                 )
         else:
             poi_gdf.plot(
                 ax=self._ax,
-                color="darkred",
-                markersize=100,
-                marker="*",
+                color="teal",
+                markersize=80,
+                marker="o",
+                edgecolor="gold",
+                linewidth=2,
                 label="Points of Interest",
                 zorder=5  # Put POIs on top
             )
@@ -374,11 +380,20 @@ class ChoroplethMap:
             return
         
         try:
+            # Store current axis limits before adding basemap
+            xlim = self._ax.get_xlim()
+            ylim = self._ax.get_ylim()
+            
+            print(f"   - Current axis limits: x={xlim}, y={ylim}")
+            print(f"   - Current CRS: {self._gdf.crs}")
+            
             # Ensure data is in Web Mercator for contextily
             if self._gdf.crs != "EPSG:3857":
                 gdf_mercator = self._gdf.to_crs("EPSG:3857")
+                print(f"   - Transformed to Web Mercator")
             else:
                 gdf_mercator = self._gdf
+                print(f"   - Already in Web Mercator")
             
             # Prepare zoom parameter
             zoom_param = {}
@@ -386,14 +401,19 @@ class ChoroplethMap:
                 if isinstance(self.config.basemap_zoom, int):
                     # Cap zoom level to valid range (0-19 for most providers)
                     zoom_param["zoom"] = min(max(self.config.basemap_zoom, 0), 19)
+                    print(f"   - Using zoom level: {zoom_param['zoom']}")
                 elif self.config.basemap_zoom is not None:
                     try:
                         zoom_level = int(self.config.basemap_zoom)
                         # Cap zoom level to valid range
                         zoom_param["zoom"] = min(max(zoom_level, 0), 19)
+                        print(f"   - Using zoom level: {zoom_param['zoom']}")
                     except ValueError:
                         # Invalid zoom value, let contextily auto-determine
+                        print(f"   - Using auto zoom")
                         pass
+            else:
+                print(f"   - Using auto zoom")
             
             # Add basemap with proper z-order (behind everything)
             ctx.add_basemap(

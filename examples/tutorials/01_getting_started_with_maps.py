@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SocialMapper Tutorial 01: Getting Started
+SocialMapper Tutorial 01: Getting Started (with Choropleth Maps)
 
 This tutorial introduces the basic concepts of SocialMapper:
 - Finding Points of Interest (POIs) from OpenStreetMap
@@ -30,12 +30,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper import SocialMapperClient, SocialMapperBuilder
+from socialmapper.visualization.pipeline_integration import add_visualization_to_pipeline
 
 
 def main():
     """Run a basic SocialMapper analysis with choropleth visualization."""
     
-    print("🗺️  SocialMapper Tutorial 01: Getting Started\n")
+    print("🗺️  SocialMapper Tutorial 01: Getting Started (with Maps)\n")
     print("This tutorial will analyze access to libraries in Wake County, NC")
     print("and create choropleth maps to visualize the results.\n")
     
@@ -56,7 +57,9 @@ def main():
     census_variables = [
         "total_population",
         "median_household_income",
-        "median_age"
+        "median_age",
+        "percent_poverty",
+        "percent_no_vehicle"
     ]
     print(f"  📊 Variables: {', '.join(census_variables)}\n")
     
@@ -65,7 +68,6 @@ def main():
     print("  🔍 Searching for libraries...")
     print("  🗺️  Generating isochrones...")
     print("  📊 Analyzing demographics...")
-    print("  🎨 Creating choropleth maps...")
     
     try:
         # Use the modern API with context manager
@@ -76,7 +78,7 @@ def main():
                 .with_osm_pois(poi_type, poi_name)
                 .with_travel_time(travel_time)
                 .with_census_variables(*census_variables)
-                .with_exports(csv=True, isochrones=False, maps=True)  # Enable map generation
+                .with_exports(csv=True, isochrones=True)  # Enable both CSV and map exports
                 .build()
             )
             
@@ -110,34 +112,77 @@ def main():
             
             # Show generated files
             if analysis_result.files_generated:
-                print("\n📁 Results saved to output/ directory:")
+                print("\n📁 Initial results saved to output/ directory:")
                 for file_type, file_path in analysis_result.files_generated.items():
                     print(f"   - {file_type}: {file_path}")
             
-            # Check for generated maps
-            map_dir = Path("output/maps")
-            if map_dir.exists():
-                map_files = list(map_dir.glob("*.png"))
-                if map_files:
-                    print("\n🗺️  Choropleth maps generated:")
-                    for map_file in sorted(map_files):
-                        print(f"   - {map_file.name}")
-                    print("\n   Open these files to visualize:")
-                    print("   - Population density patterns")
-                    print("   - Income distribution")
-                    print("   - Age demographics")
-                    print("   - Travel distance to libraries")
+            # Step 5: Generate choropleth maps
+            print("\nStep 5: Creating choropleth maps...")
+            print("  🎨 Generating demographic visualizations...")
+            
+            # Find the parquet files needed for visualization
+            pipeline_data_dir = Path("output/pipeline_data")
+            census_data_path = None
+            poi_data_path = None
+            isochrone_data_path = None
+            
+            # Look for the most recent parquet files
+            if pipeline_data_dir.exists():
+                # Find census data
+                census_files = list(pipeline_data_dir.glob("*census*.parquet"))
+                if census_files:
+                    census_data_path = sorted(census_files, key=lambda x: x.stat().st_mtime)[-1]
+                
+                # Find POI data
+                poi_files = list(pipeline_data_dir.glob("*pois*.parquet"))
+                if poi_files:
+                    poi_data_path = sorted(poi_files, key=lambda x: x.stat().st_mtime)[-1]
+                
+                # Find isochrone data
+                iso_files = list(pipeline_data_dir.glob("*isochrones*.parquet"))
+                if iso_files:
+                    isochrone_data_path = sorted(iso_files, key=lambda x: x.stat().st_mtime)[-1]
+            
+            if census_data_path:
+                # Create visualization output directory
+                viz_output_dir = Path("output/maps")
+                
+                try:
+                    # Generate maps
+                    map_paths = add_visualization_to_pipeline(
+                        census_data_path=census_data_path,
+                        output_dir=viz_output_dir,
+                        poi_data_path=poi_data_path,
+                        isochrone_data_path=isochrone_data_path,
+                        demographic_columns=census_variables[:3],  # Limit to first 3 for demo
+                        create_distance_map=False,  # Skip distance map for libraries
+                        create_demographic_maps=True,
+                        map_format="png",
+                        dpi=150  # Lower DPI for faster generation
+                    )
+                    
+                    print("\n✅ Choropleth maps created!")
+                    print("\n🗺️  Generated maps:")
+                    for map_type, map_path in map_paths.items():
+                        print(f"   - {map_type}: {map_path}")
+                    
+                except Exception as e:
+                    print(f"\n⚠️  Could not create choropleth maps: {str(e)}")
+                    print("   Maps require parquet output format. Ensure pipeline saves intermediate data.")
+            else:
+                print("\n⚠️  Choropleth map generation skipped - no parquet data found")
+                print("   To enable maps, ensure the pipeline exports intermediate parquet files")
         
     except Exception as e:
         print(f"\n❌ Unexpected error: {str(e)}")
         return 1
     
     print("\n🎉 Tutorial complete! Next steps:")
-    print("- View the generated choropleth maps in output/maps/")
-    print("- Examine the detailed CSV data in output/csv/")
+    print("- Open the generated maps in output/maps/ directory")
     print("- Try different POI types: 'school', 'hospital', 'park'")
     print("- Adjust travel time: 5, 10, 20, 30 minutes")
-    print("- Add more census variables for richer analysis")
+    print("- Add more census variables for richer visualizations")
+    print("- Experiment with different map styles and color schemes")
     
     return 0
 
