@@ -230,15 +230,15 @@ def get_config_for_environment(env: str = "auto") -> "OptimizationConfig":
 
     if env == "auto":
         return ConfigPresets.auto_detect()
-    elif env == "development" or env == "dev":
+    elif env in {"development", "dev"}:
         return ConfigPresets.for_development()
-    elif env == "production" or env == "prod":
+    elif env in {"production", "prod"}:
         return ConfigPresets.for_production()
-    elif env == "ci" or env == "continuous-integration":
+    elif env in {"ci", "continuous-integration"}:
         return ConfigPresets.for_continuous_integration()
-    elif env == "jupyter" or env == "notebook":
+    elif env in {"jupyter", "notebook"}:
         return ConfigPresets.for_jupyter_notebook()
-    elif env == "benchmark" or env == "benchmarking":
+    elif env in {"benchmark", "benchmarking"}:
         return ConfigPresets.for_benchmarking()
     elif env.startswith("cloud-"):
         instance_type = env.split("-", 1)[1]

@@ -5,126 +5,99 @@ This module provides Pydantic-based validation for all coordinate inputs
 to ensure data quality and prevent issues with PyProj transformations.
 """
 
-from typing import Any
+from typing import Any, Dict, List, Union
 
 import geopandas as gpd
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from shapely.geometry import Point
 
-from ..constants import MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE
+from ..constants import (
+    MAX_LATITUDE,
+    MAX_LONGITUDE,
+    MIN_CLUSTER_POINTS,
+    MIN_GEOJSON_COORDINATES,
+    MIN_LATITUDE,
+    MIN_LONGITUDE,
+)
 from ..ui.console import get_logger
 
 logger = get_logger(__name__)
 
 
-class CoordinatePoint(BaseModel):
-    """Pydantic model for validating individual coordinate points."""
+class Coordinate(BaseModel):
+    """Validates a single coordinate pair (latitude, longitude)."""
 
-    lat: float = Field(..., ge=MIN_LATITUDE, le=MAX_LATITUDE, description="Latitude in decimal degrees")
-    lon: float = Field(..., ge=MIN_LONGITUDE, le=MAX_LONGITUDE, description="Longitude in decimal degrees")
+    lat: float
+    lon: float
 
     @field_validator("lat")
     @classmethod
     def validate_latitude(cls, v):
+        """Validate latitude is within valid range."""
         if not isinstance(v, int | float):
             raise ValueError("Latitude must be a number")
         if not MIN_LATITUDE <= v <= MAX_LATITUDE:
-            raise ValueError(f"Latitude must be between {MIN_LATITUDE} and {MAX_LATITUDE} degrees")
-        return float(v)
-
-    @field_validator("lon")
-    @classmethod
-    def validate_longitude(cls, v):
-        if not isinstance(v, int | float):
-            raise ValueError("Longitude must be a number")
-        if not -180 <= v <= 180:
-            raise ValueError("Longitude must be between -180 and 180 degrees")
-        return float(v)
-
-    def to_point(self) -> Point:
-        """Convert to Shapely Point."""
-        return Point(self.lon, self.lat)
-
-    def to_tuple(self) -> tuple[float, float]:
-        """Convert to (lon, lat) tuple."""
-        return (self.lon, self.lat)
-
-
-class POICoordinate(BaseModel):
-    """Pydantic model for validating POI coordinates with metadata."""
-
-    id: str | int | None = None
-    lat: float = Field(..., ge=MIN_LATITUDE, le=MAX_LATITUDE)
-    lon: float = Field(..., ge=MIN_LONGITUDE, le=MAX_LONGITUDE)
-    name: str | None = None
-    tags: dict[str, Any] | None = None
-
-    @field_validator("lat")
-    @classmethod
-    def validate_latitude(cls, v):
-        if not isinstance(v, int | float):
-            raise ValueError("Latitude must be a number")
-        if not -90 <= v <= 90:
             raise ValueError("Latitude must be between -90 and 90 degrees")
         return float(v)
 
     @field_validator("lon")
     @classmethod
     def validate_longitude(cls, v):
+        """Validate longitude is within valid range."""
         if not isinstance(v, int | float):
             raise ValueError("Longitude must be a number")
-        if not -180 <= v <= 180:
+        if not MIN_LONGITUDE <= v <= MAX_LONGITUDE:
             raise ValueError("Longitude must be between -180 and 180 degrees")
         return float(v)
 
-    def to_point(self) -> Point:
-        """Convert to Shapely Point."""
-        return Point(self.lon, self.lat)
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary format expected by the rest of the system."""
-        result = {"lat": self.lat, "lon": self.lon}
-        if self.id is not None:
-            result["id"] = self.id
-        if self.name is not None:
-            result["name"] = self.name
-        if self.tags is not None:
-            result["tags"] = self.tags
-        return result
+class StrictCoordinate(BaseModel):
+    """Stricter coordinate validation for high-precision use cases."""
+
+    lat: float
+    lon: float
+
+    @field_validator("lat")
+    @classmethod
+    def validate_latitude(cls, v):
+        """Validate latitude is within valid range with strict typing."""
+        if not isinstance(v, int | float):
+            raise ValueError("Latitude must be a number")
+        if not MIN_LATITUDE <= v <= MAX_LATITUDE:
+            raise ValueError("Latitude must be between -90 and 90 degrees")
+        return float(v)
+
+    @field_validator("lon")
+    @classmethod
+    def validate_longitude(cls, v):
+        """Validate longitude is within valid range with strict typing."""
+        if not isinstance(v, int | float):
+            raise ValueError("Longitude must be a number")
+        if not MIN_LONGITUDE <= v <= MAX_LONGITUDE:
+            raise ValueError("Longitude must be between -180 and 180 degrees")
+        return float(v)
 
 
 class CoordinateCluster(BaseModel):
-    """Pydantic model for validating coordinate clusters."""
+    """Validates a cluster of coordinates for distance calculations."""
 
-    points: list[CoordinatePoint] = Field(
-        ..., min_length=2, description="At least 2 points required for clustering"
-    )
-    cluster_id: str | int | None = None
+    points: List[Coordinate]
 
     @field_validator("points")
     @classmethod
     def validate_minimum_points(cls, v):
-        if len(v) < 2:
+        """Validate cluster has minimum number of points for meaningful analysis."""
+        if len(v) < MIN_CLUSTER_POINTS:
             raise ValueError(
                 "Coordinate clusters must contain at least 2 points for meaningful distance calculations"
             )
         return v
 
-    def to_points_list(self) -> list[Point]:
-        """Convert to list of Shapely Points."""
-        return [point.to_point() for point in self.points]
-
-    def get_centroid(self) -> CoordinatePoint:
-        """Calculate the centroid of the cluster."""
-        avg_lat = sum(p.lat for p in self.points) / len(self.points)
-        avg_lon = sum(p.lon for p in self.points) / len(self.points)
-        return CoordinatePoint(lat=avg_lat, lon=avg_lon)
-
 
 class ValidationResult(BaseModel):
     """Result of coordinate validation process."""
 
-    valid_coordinates: list[CoordinatePoint | POICoordinate]
+    valid_coordinates: list[Coordinate]
     invalid_coordinates: list[dict[str, Any]]
     validation_errors: list[str]
     total_input: int
@@ -141,7 +114,7 @@ class ValidationResult(BaseModel):
 
 def validate_coordinate_point(
     lat: float, lon: float, context: str = "unknown"
-) -> CoordinatePoint | None:
+) -> Coordinate | None:
     """Validate a single coordinate point using Pydantic.
 
     Args:
@@ -150,120 +123,118 @@ def validate_coordinate_point(
         context: Context for error reporting
 
     Returns:
-        CoordinatePoint if valid, None if invalid
+        Coordinate if valid, None if invalid
     """
     try:
-        return CoordinatePoint(lat=lat, lon=lon)
+        return Coordinate(lat=lat, lon=lon)
     except ValidationError as e:
         logger.warning(f"Invalid coordinate in {context}: lat={lat}, lon={lon}. Errors: {e}")
         return None
 
 
-def validate_poi_coordinates(poi_data: list[dict[str, Any]]) -> ValidationResult:
-    """Validate a list of POI coordinates using Pydantic.
-
+def validate_poi_coordinates(poi_data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> List[Coordinate]:
+    """Validate POI coordinate data and return validated coordinates.
+    
     Args:
-        poi_data: List of POI dictionaries
-
+        poi_data: POI data in various formats (single POI dict or list of POIs)
+        
     Returns:
-        ValidationResult with valid and invalid coordinates
+        List of validated Coordinate objects
+        
+    Raises:
+        ValueError: If coordinate data is invalid or missing
     """
-    valid_coordinates = []
-    invalid_coordinates = []
-    validation_errors = []
+    if not poi_data:
+        return []
 
-    for i, poi in enumerate(poi_data):
+    validated_coords = []
+
+    # Handle single POI or list of POIs
+    pois = poi_data if isinstance(poi_data, list) else [poi_data]
+
+    for i, poi in enumerate(pois):
         try:
-            # Try to extract coordinates from various possible formats
-            lat = None
-            lon = None
+            # Multiple coordinate format possibilities
+            coord = None
 
-            # Direct lat/lon fields
+            # Format 1: Direct lat/lon fields
             if "lat" in poi and "lon" in poi:
-                lat, lon = poi["lat"], poi["lon"]
+                coord = Coordinate(lat=poi["lat"], lon=poi["lon"])
+
+            # Format 2: latitude/longitude fields
             elif "latitude" in poi and "longitude" in poi:
-                lat, lon = poi["latitude"], poi["longitude"]
-            elif "lat" in poi and "lng" in poi:
-                lat, lon = poi["lat"], poi["lng"]
-            elif (
-                "geometry" in poi
-                and hasattr(poi["geometry"], "x")
-                and hasattr(poi["geometry"], "y")
-            ):
-                lat, lon = poi["geometry"].y, poi["geometry"].x
+                coord = Coordinate(lat=poi["latitude"], lon=poi["longitude"])
+
+            # Format 3: GeoJSON coordinates array [lon, lat]
             elif (
                 "coordinates" in poi
                 and isinstance(poi["coordinates"], list)
-                and len(poi["coordinates"]) >= 2
+                and len(poi["coordinates"]) >= MIN_GEOJSON_COORDINATES
             ):
                 lon, lat = poi["coordinates"][0], poi["coordinates"][1]  # GeoJSON format
+                coord = Coordinate(lat=lat, lon=lon)
+
+            # Format 4: Nested geometry object
+            elif "geometry" in poi and isinstance(poi["geometry"], dict):
+                geom = poi["geometry"]
+                if (
+                    "coordinates" in geom
+                    and isinstance(geom["coordinates"], list)
+                    and len(geom["coordinates"]) >= MIN_GEOJSON_COORDINATES
+                ):
+                    lon, lat = geom["coordinates"][0], geom["coordinates"][1]
+                    coord = Coordinate(lat=lat, lon=lon)
+
+            if coord:
+                validated_coords.append(coord)
             else:
-                validation_errors.append(f"POI {i}: No valid coordinate fields found")
-                invalid_coordinates.append(
-                    {"index": i, "data": poi, "error": "No valid coordinate fields found"}
-                )
+                logger.warning(f"POI {i}: No valid coordinates found in format: {list(poi.keys())}")
+
+        except Exception as e:
+            logger.warning(f"POI {i}: Coordinate validation failed: {e}")
+            continue
+
+    return validated_coords
+
+
+def validate_coordinate_cluster(coordinates: List[Dict[str, Any]], cluster_id: str = None) -> CoordinateCluster:
+    """Validate a cluster of coordinates.
+    
+    Args:
+        coordinates: List of coordinate dictionaries
+        cluster_id: Optional identifier for the cluster (for logging)
+        
+    Returns:
+        Validated CoordinateCluster object
+        
+    Raises:
+        ValueError: If cluster validation fails
+    """
+    validated_points = []
+
+    for i, coord_dict in enumerate(coordinates):
+        try:
+            # Try different coordinate formats
+            if "lat" in coord_dict and "lon" in coord_dict:
+                coord_point = Coordinate(lat=coord_dict["lat"], lon=coord_dict["lon"])
+            elif "latitude" in coord_dict and "longitude" in coord_dict:
+                coord_point = Coordinate(lat=coord_dict["latitude"], lon=coord_dict["longitude"])
+            else:
+                logger.warning(f"Coordinate {i}: Unknown format: {list(coord_dict.keys())}")
                 continue
 
-            # Validate using Pydantic
-            validated_poi = POICoordinate(
-                id=poi.get("id", i), lat=lat, lon=lon, name=poi.get("name"), tags=poi.get("tags")
-            )
-            valid_coordinates.append(validated_poi)
+            validated_points.append(coord_point)
 
-        except ValidationError as e:
-            error_msg = f"POI {i}: {e!s}"
-            validation_errors.append(error_msg)
-            invalid_coordinates.append({"index": i, "data": poi, "error": str(e)})
-            logger.warning(error_msg)
         except Exception as e:
-            error_msg = f"POI {i}: Unexpected error during validation: {e!s}"
-            validation_errors.append(error_msg)
-            invalid_coordinates.append({"index": i, "data": poi, "error": str(e)})
-            logger.error(error_msg)
+            logger.warning(f"Coordinate {i}: Validation failed: {e}")
+            continue
 
-    return ValidationResult(
-        valid_coordinates=valid_coordinates,
-        invalid_coordinates=invalid_coordinates,
-        validation_errors=validation_errors,
-        total_input=len(poi_data),
-        total_valid=len(valid_coordinates),
-        total_invalid=len(invalid_coordinates),
-    )
-
-
-def validate_coordinate_cluster(
-    points: list[dict[str, Any]], cluster_id: str | int | None = None
-) -> CoordinateCluster | None:
-    """Validate a cluster of coordinates.
-
-    Args:
-        points: List of coordinate dictionaries
-        cluster_id: Optional cluster identifier
-
-    Returns:
-        CoordinateCluster if valid, None if invalid
-    """
-    try:
-        # Validate individual points first
-        validated_points = []
-        for point in points:
-            coord_point = validate_coordinate_point(
-                point.get("lat"), point.get("lon"), f"cluster_{cluster_id}"
-            )
-            if coord_point:
-                validated_points.append(coord_point)
-
-        if len(validated_points) < 2:
+        if len(validated_points) < MIN_CLUSTER_POINTS:
             logger.warning(
                 f"Cluster {cluster_id}: Insufficient valid points ({len(validated_points)}) for clustering"
             )
-            return None
 
-        return CoordinateCluster(points=validated_points, cluster_id=cluster_id)
-
-    except ValidationError as e:
-        logger.warning(f"Cluster {cluster_id} validation failed: {e}")
-        return None
+    return CoordinateCluster(points=validated_points)
 
 
 def validate_geodataframe_coordinates(gdf: gpd.GeoDataFrame) -> ValidationResult:
@@ -375,11 +346,11 @@ def prevalidate_for_pyproj(
             # Check if it's a list of dictionaries (POI data)
             if isinstance(data[0], dict):
                 validation_result = validate_poi_coordinates(data)
-                if validation_result.total_valid < 1:
+                if len(validation_result) < 1:
                     errors.append(
-                        f"No valid coordinates found: {validation_result.total_valid} valid out of {validation_result.total_input}"
+                        f"No valid coordinates found: {len(validation_result)} valid out of {len(data)}"
                     )
-                    errors.extend(validation_result.validation_errors)
+                    errors.extend([f"Invalid coordinate: {coord}" for coord in validation_result])
                     return False, errors
 
             # Check if it's a list of Points

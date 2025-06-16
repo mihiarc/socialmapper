@@ -176,7 +176,7 @@ class CensusService:
                 in_clause = f"state:{state_fips} county:{county_fips}"
 
                 api_response = self._api_client.get_census_data(
-                    variables=variable_codes + ["NAME"],
+                    variables=[*variable_codes, "NAME"],
                     geography=geography,
                     year=year,
                     dataset=dataset,

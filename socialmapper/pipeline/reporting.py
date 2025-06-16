@@ -64,10 +64,7 @@ def generate_final_report(
         result["csv_data"] = result_files["csv_data"]
 
     # Add maps if applicable
-    if "maps" in result_files:
-        result["maps"] = result_files["maps"]
-    else:
-        result["maps"] = []
+    result["maps"] = result_files.get("maps", [])
 
     # Add sampling information if POIs were sampled
     if sampled_pois:

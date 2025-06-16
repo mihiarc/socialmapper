@@ -127,7 +127,7 @@ class VectorizedDistanceEngine:
             logger.error(error_msg)
 
             # Track invalid data for user review
-            for i, point in enumerate(points):
+            for _i, point in enumerate(points):
                 point_data = {
                     "lat": point.y,
                     "lon": point.x,

@@ -14,7 +14,7 @@ from ..util import PathSecurityError, sanitize_path
 
 
 def parse_custom_coordinates(
-    file_path: str, name_field: str = None, type_field: str = None, preserve_original: bool = True
+    file_path: str, name_field: str | None = None, type_field: str | None = None, preserve_original: bool = True
 ) -> dict:
     """Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
 

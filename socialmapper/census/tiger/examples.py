@@ -163,7 +163,7 @@ def example_multi_geography_visualization():
     )
 
     # Add labels for counties
-    for idx, row in counties_result.geodataframe.iterrows():
+    for _idx, row in counties_result.geodataframe.iterrows():
         centroid = row.geometry.centroid
         ax.annotate(
             row["NAME"],

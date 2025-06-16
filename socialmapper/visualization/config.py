@@ -83,7 +83,7 @@ class LegendConfig(BaseModel):
     labels: list[str] | None = None
 
     @field_validator("loc")
-    def validate_loc(cls, v):
+    def validate_loc(self, v):
         valid_locs = [
             "best",
             "upper right",
@@ -162,7 +162,7 @@ class MapConfig(BaseModel):
     aspect: str = "auto"
 
     @field_validator("n_classes")
-    def validate_n_classes(cls, v):
+    def validate_n_classes(self, v):
         if v < 2 or v > 12:
             raise ValueError("n_classes must be between 2 and 12")
         return v

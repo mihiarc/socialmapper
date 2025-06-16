@@ -1,4 +1,4 @@
-"""SocialMapper Neighbors API
+"""SocialMapper Neighbors API.
 
 Direct access to geographic neighbor relationships for US states and counties.
 This module provides a simple, standalone API for neighbor analysis without

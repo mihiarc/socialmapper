@@ -11,7 +11,6 @@ from typing import Any
 from ...constants import (
     BLOCK_GROUP_LENGTH,
     COUNTY_FIPS_LENGTH,
-    FULL_BLOCK_GROUP_GEOID_LENGTH,
     STATE_FIPS_LENGTH,
     TRACT_LENGTH,
 )

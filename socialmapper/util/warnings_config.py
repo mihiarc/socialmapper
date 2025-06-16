@@ -164,7 +164,7 @@ def configure_osmnx_settings(
 
         return True
     except ImportError:
-        warnings.warn("OSMnx not available - skipping configuration")
+        warnings.warn("OSMnx not available - skipping configuration", stacklevel=2)
         return False
 
 

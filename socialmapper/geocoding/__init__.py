@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SocialMapper Address Geocoding System
+"""SocialMapper Address Geocoding System.
 ====================================
 
 Modern, production-ready address lookup system following SWE and ETL best practices.

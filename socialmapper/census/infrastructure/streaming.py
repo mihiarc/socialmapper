@@ -40,7 +40,7 @@ try:
     ARROW_AVAILABLE = True
 except ImportError:
     ARROW_AVAILABLE = False
-    warnings.warn("PyArrow not available, falling back to pandas")
+    warnings.warn("PyArrow not available, falling back to pandas", stacklevel=2)
 
 try:
     import polars as pl
@@ -48,7 +48,7 @@ try:
     POLARS_AVAILABLE = True
 except ImportError:
     POLARS_AVAILABLE = False
-    warnings.warn("Polars not available, using pandas for data processing")
+    warnings.warn("Polars not available, using pandas for data processing", stacklevel=2)
 
 
 from ...ui.console import get_logger

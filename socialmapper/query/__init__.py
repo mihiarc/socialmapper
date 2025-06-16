@@ -241,10 +241,9 @@ def format_results(result, config=None):
         lon = float(node.lon)
 
         # Skip if outside state bounds
-        if bounds:
-            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
-                continue
+        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+            continue
 
         poi_data = {
             "id": node.id,
@@ -274,10 +273,9 @@ def format_results(result, config=None):
         lon = float(center_lon)
 
         # Skip if outside state bounds
-        if bounds:
-            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
-                continue
+        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+            continue
 
         poi_data = {"id": way.id, "type": "way", "tags": way.tags}
         poi_data["lat"] = lat
@@ -303,10 +301,9 @@ def format_results(result, config=None):
         lon = float(center_lon)
 
         # Skip if outside state bounds
-        if bounds:
-            if not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                    bounds["min_lon"] <= lon <= bounds["max_lon"]):
-                continue
+        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
+                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+            continue
 
         poi_data = {"id": relation.id, "type": "relation", "tags": relation.tags}
         poi_data["lat"] = lat
@@ -414,7 +411,7 @@ def main():
             filename = f"{location_part}_{type_part}_{name_part}.json"
         elif "tags" in config:
             # Use first tag for naming
-            tag_key = list(config["tags"].keys())[0]
+            tag_key = next(iter(config["tags"].keys()))
             tag_value = config["tags"][tag_key]
             filename = f"{location_part}_{tag_key}_{tag_value}.json"
         else:

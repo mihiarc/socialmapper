@@ -15,10 +15,10 @@ from socialmapper.isochrone import TravelMode
 def main():
     """Run travel mode comparison example."""
     print("=== SocialMapper Travel Mode Example ===\n")
-    
+
     # Example 1: Walking isochrone for parks
     print("1. Generating 15-minute walking isochrone for parks in Chapel Hill, NC")
-    
+
     config = (
         SocialMapperBuilder()
         .with_location("Chapel Hill", "NC")
@@ -30,10 +30,10 @@ def main():
         .with_output_directory("output/walk_example")
         .build()
     )
-    
+
     with SocialMapperClient() as client:
         result = client.run_analysis(config)
-        
+
         if result.is_ok():
             data = result.unwrap()
             print(f"✅ Found {data.poi_count} parks")
@@ -42,10 +42,10 @@ def main():
         else:
             error = result.unwrap_err()
             print(f"❌ Error: {error.message}")
-    
+
     # Example 2: Biking isochrone for libraries
     print("\n2. Generating 10-minute biking isochrone for libraries in Chapel Hill, NC")
-    
+
     config = (
         SocialMapperBuilder()
         .with_location("Chapel Hill", "NC")
@@ -57,10 +57,10 @@ def main():
         .with_output_directory("output/bike_example")
         .build()
     )
-    
+
     with SocialMapperClient() as client:
         result = client.run_analysis(config)
-        
+
         if result.is_ok():
             data = result.unwrap()
             print(f"✅ Found {data.poi_count} libraries")
@@ -69,10 +69,10 @@ def main():
         else:
             error = result.unwrap_err()
             print(f"❌ Error: {error.message}")
-    
+
     # Example 3: Driving isochrone for hospitals
     print("\n3. Generating 20-minute driving isochrone for hospitals in Chapel Hill, NC")
-    
+
     config = (
         SocialMapperBuilder()
         .with_location("Chapel Hill", "NC")
@@ -84,10 +84,10 @@ def main():
         .with_output_directory("output/drive_example")
         .build()
     )
-    
+
     with SocialMapperClient() as client:
         result = client.run_analysis(config)
-        
+
         if result.is_ok():
             data = result.unwrap()
             print(f"✅ Found {data.poi_count} hospitals")
@@ -96,10 +96,10 @@ def main():
         else:
             error = result.unwrap_err()
             print(f"❌ Error: {error.message}")
-    
+
     # Example 4: Using custom POIs with different travel modes
     print("\n4. Using custom POI file with bike mode")
-    
+
     # Create a simple custom POI file
     custom_poi_file = Path("output/custom_pois.csv")
     custom_poi_file.parent.mkdir(exist_ok=True)
@@ -109,7 +109,7 @@ def main():
         "Franklin Street,35.9132,-79.0558\n"
         "Carrboro Plaza,35.9101,-79.0753\n"
     )
-    
+
     config = (
         SocialMapperBuilder()
         .with_custom_pois(custom_poi_file)
@@ -119,10 +119,10 @@ def main():
         .with_output_directory("output/custom_bike_example")
         .build()
     )
-    
+
     with SocialMapperClient() as client:
         result = client.run_analysis(config)
-        
+
         if result.is_ok():
             data = result.unwrap()
             print(f"✅ Loaded {data.poi_count} custom POIs")
@@ -131,7 +131,7 @@ def main():
         else:
             error = result.unwrap_err()
             print(f"❌ Error: {error.message}")
-    
+
     print("\n=== Travel Mode Comparison Complete ===")
     print("\nNote: Different travel modes use different road networks:")
     print("- Walk: Pedestrian paths, sidewalks, crosswalks")
