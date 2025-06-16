@@ -7,6 +7,7 @@ batch processing, and TIGER/Line shapefile URL generation.
 import geopandas as gpd
 import pandas as pd
 
+from ...constants import FULL_BLOCK_GROUP_GEOID_LENGTH, HTTP_OK
 from ...progress import get_progress_bar
 from ...ui.console import get_logger
 from ..domain.entities import BlockGroupInfo, CountyInfo
@@ -80,7 +81,7 @@ class BlockGroupService:
 
             response = requests.get(base_url, params=params, timeout=30)
 
-            if response.status_code == 200:
+            if response.status_code == HTTP_OK:
                 # Parse the GeoJSON response
                 data = response.json()
                 block_groups = gpd.GeoDataFrame.from_features(data["features"], crs="EPSG:4326")
@@ -180,7 +181,7 @@ class BlockGroupService:
         Returns:
             BlockGroupInfo entity or None if invalid
         """
-        if not geoid or len(geoid) != 12 or not geoid.isdigit():
+        if not geoid or len(geoid) != FULL_BLOCK_GROUP_GEOID_LENGTH or not geoid.isdigit():
             return None
 
         try:

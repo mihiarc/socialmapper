@@ -10,6 +10,7 @@ from collections.abc import Callable
 import geopandas as gpd
 import pandas as pd
 
+from ...constants import HTTP_OK
 from ...progress import get_progress_bar
 from ..domain.interfaces import CacheProvider, CensusAPIClient, ConfigurationProvider, RateLimiter
 
@@ -105,7 +106,7 @@ class ZctaService:
                 logger.info(f"API request URL: {response.url}")
                 logger.info(f"Response status: {response.status_code}")
 
-                if response.status_code == 200:
+                if response.status_code == HTTP_OK:
                     # Parse the GeoJSON response
                     try:
                         data = response.json()

@@ -13,6 +13,7 @@ from typing import Any
 
 import requests
 
+from ...constants import HTTP_TOO_MANY_REQUESTS
 from ..domain.interfaces import ConfigurationProvider
 
 
@@ -182,7 +183,7 @@ class CensusAPIClientImpl:
                 response = self._session.get(url, params=params)
 
                 # Handle rate limiting
-                if response.status_code == 429:
+                if response.status_code == HTTP_TOO_MANY_REQUESTS:
                     retry_after = int(response.headers.get("Retry-After", 60))
                     self._logger.warning(f"Rate limited, waiting {retry_after} seconds")
                     time.sleep(retry_after)

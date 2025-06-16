@@ -23,6 +23,7 @@ from typing import Any
 import geopandas as gpd
 import psutil
 
+from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
 from ..progress import get_progress_bar
 from ..ui.console import get_logger
 from .cache import ModernNetworkCache, download_and_cache_network
@@ -119,11 +120,11 @@ class ConcurrentIsochroneProcessor:
         isochrone_workers = self.max_isochrone_workers
 
         # Reduce workers if system is under stress
-        if resources.get("cpu_percent", 0) > 90:
+        if resources.get("cpu_percent", 0) > HIGH_CPU_USAGE_THRESHOLD:
             isochrone_workers = max(1, isochrone_workers // 2)
             logger.info(f"High CPU usage, reducing isochrone workers to {isochrone_workers}")
 
-        if resources.get("memory_percent", 0) > 85:
+        if resources.get("memory_percent", 0) > HIGH_MEMORY_USAGE_THRESHOLD:
             network_workers = max(1, network_workers // 2)
             isochrone_workers = max(1, isochrone_workers // 2)
             logger.info(

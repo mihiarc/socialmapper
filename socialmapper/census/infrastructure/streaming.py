@@ -29,6 +29,8 @@ from typing import Any
 import geopandas as gpd
 import pandas as pd
 
+from ...constants import FULL_BLOCK_GROUP_GEOID_LENGTH
+
 # Modern data format imports
 try:
     import pyarrow as pa
@@ -649,7 +651,7 @@ class ModernDataExporter:
                 # Ensure GEOID is string type before using str accessor
                 df["GEOID"] = df["GEOID"].astype(str)
                 # Extract tract and block group components
-                if len(str(df["GEOID"].iloc[0])) >= 12:
+                if len(str(df["GEOID"].iloc[0])) >= FULL_BLOCK_GROUP_GEOID_LENGTH:
                     df["tract"] = df["GEOID"].str[5:11]
                     df["block_group"] = df["GEOID"].str[11:12]
             except (IndexError, TypeError) as e:

@@ -15,6 +15,7 @@ import pandas as pd
 
 from ..census.infrastructure import ModernDataExporter, get_streaming_pipeline
 from ..config.optimization import OptimizationConfig
+from ..constants import LARGE_DATASET_MB
 from ..ui.console import get_logger
 from .base import DataPrepConfig, ExportError
 from .formats import CSVExporter, GeoParquetExporter, ParquetExporter
@@ -107,7 +108,7 @@ def export_census_data(
         )
 
         # For very large datasets, use streaming
-        if data_size_mb > 500 and selected_format in ["parquet", "geoparquet"]:
+        if data_size_mb > LARGE_DATASET_MB and selected_format in ["parquet", "geoparquet"]:
             logger.info("Using streaming export for large dataset")
             return _export_with_streaming(
                 census_data,
