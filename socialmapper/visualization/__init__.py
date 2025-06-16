@@ -3,4 +3,4 @@
 from .chloropleth import ChoroplethMap, MapType
 from .config import ColorScheme, MapConfig
 
-__all__ = ["ChoroplethMap", "MapType", "MapConfig", "ColorScheme"]
+__all__ = ["ChoroplethMap", "ColorScheme", "MapConfig", "MapType"]

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Isochrone Generation Module.
+"""Modern Isochrone Generation Module.
 
 This module provides high-performance isochrone generation with intelligent
 spatial clustering, advanced network caching, and concurrent processing.
@@ -12,11 +11,13 @@ Key Features:
 - Automatic optimization based on dataset characteristics
 - Comprehensive performance monitoring and statistics
 """
+
 import json
 import os
 import time
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import geopandas as gpd
 import networkx as nx
@@ -61,16 +62,15 @@ except ImportError:
 
 
 def create_isochrone_from_poi(
-    poi: Dict[str, Any],
+    poi: dict[str, Any],
     travel_time_limit: int,
     output_dir: str = "output/isochrones",
     save_file: bool = True,
-    simplify_tolerance: Optional[float] = None,
+    simplify_tolerance: float | None = None,
     use_parquet: bool = True,
     travel_mode: TravelMode = TravelMode.DRIVE,
-) -> Union[str, gpd.GeoDataFrame]:
-    """
-    Create an isochrone from a POI using modern optimized methods.
+) -> str | gpd.GeoDataFrame:
+    """Create an isochrone from a POI using modern optimized methods.
 
     Args:
         poi (Dict[str, Any]): POI dictionary containing at minimum 'lat', 'lon', and 'tags'
@@ -109,11 +109,11 @@ def create_isochrone_from_poi(
 
     # Download network with caching
     G = download_and_cache_network(
-        bbox=bbox, 
-        travel_time_minutes=travel_time_limit, 
-        cluster_size=1, 
+        bbox=bbox,
+        travel_time_minutes=travel_time_limit,
+        cluster_size=1,
         cache=cache,
-        travel_mode=travel_mode
+        travel_mode=travel_mode,
     )
 
     if G is None:
@@ -121,11 +121,11 @@ def create_isochrone_from_poi(
 
     # Create isochrone using optimized method
     isochrone_gdf = create_isochrone_from_poi_with_network(
-        poi=poi, 
-        network=G, 
-        network_crs=G.graph["crs"], 
+        poi=poi,
+        network=G,
+        network_crs=G.graph["crs"],
         travel_time_minutes=travel_time_limit,
-        travel_mode=travel_mode
+        travel_mode=travel_mode,
     )
 
     if isochrone_gdf is None:
@@ -161,10 +161,9 @@ def create_isochrone_from_poi(
 
 
 def get_bounding_box(
-    pois: List[Dict[str, Any]], buffer_km: float = 5.0
-) -> Tuple[float, float, float, float]:
-    """
-    Get a bounding box for a list of POIs with a buffer.
+    pois: list[dict[str, Any]], buffer_km: float = 5.0
+) -> tuple[float, float, float, float]:
+    """Get a bounding box for a list of POIs with a buffer.
 
     Args:
         pois: List of POI dictionaries with 'lat' and 'lon'
@@ -191,24 +190,23 @@ def get_bounding_box(
 
 
 def create_isochrones_from_poi_list(
-    poi_data: Dict[str, List[Dict[str, Any]]],
+    poi_data: dict[str, list[dict[str, Any]]],
     travel_time_limit: int,
     output_dir: str = "output/isochrones",
     save_individual_files: bool = True,
     combine_results: bool = False,
-    simplify_tolerance: Optional[float] = None,
+    simplify_tolerance: float | None = None,
     use_parquet: bool = True,
-    use_clustering: Optional[bool] = None,
+    use_clustering: bool | None = None,
     max_cluster_radius_km: float = 15.0,
     min_cluster_size: int = 2,
-    use_concurrent: Optional[bool] = None,
+    use_concurrent: bool | None = None,
     max_network_workers: int = 8,
-    max_isochrone_workers: Optional[int] = None,
-    progress_callback: Optional[Callable] = None,
+    max_isochrone_workers: int | None = None,
+    progress_callback: Callable | None = None,
     travel_mode: TravelMode = TravelMode.DRIVE,
-) -> Union[str, gpd.GeoDataFrame, List[str]]:
-    """
-    Create isochrones from a list of POIs with modern optimization.
+) -> str | gpd.GeoDataFrame | list[str]:
+    """Create isochrones from a list of POIs with modern optimization.
 
     Args:
         poi_data (Dict[str, List[Dict]]): Dictionary with 'pois' key containing list of POIs
@@ -414,12 +412,11 @@ def create_isochrones_from_json_file(
     output_dir: str = "isochrones",
     save_individual_files: bool = True,
     combine_results: bool = False,
-    simplify_tolerance: Optional[float] = None,
+    simplify_tolerance: float | None = None,
     use_parquet: bool = True,
     **kwargs,
-) -> Union[str, gpd.GeoDataFrame, List[str]]:
-    """
-    Create isochrones from POIs stored in a JSON file.
+) -> str | gpd.GeoDataFrame | list[str]:
+    """Create isochrones from POIs stored in a JSON file.
 
     Args:
         json_file_path (str): Path to JSON file containing POI data
@@ -435,7 +432,7 @@ def create_isochrones_from_json_file(
         Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
     """
     # Load POI data from JSON file
-    with open(json_file_path, "r") as f:
+    with open(json_file_path) as f:
         poi_data = json.load(f)
 
     return create_isochrones_from_poi_list(
@@ -451,7 +448,7 @@ def create_isochrones_from_json_file(
 
 
 # Performance monitoring functions
-def get_cache_statistics() -> Dict[str, Any]:
+def get_cache_statistics() -> dict[str, Any]:
     """Get current cache performance statistics."""
     cache = get_global_cache()
     stats = cache.get_cache_stats()

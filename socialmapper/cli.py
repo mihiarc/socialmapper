@@ -4,6 +4,7 @@
 # Load environment variables from .env file as early as possible
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -36,8 +37,7 @@ logger = get_logger(__name__)
 
 
 def parse_arguments():
-    """
-    Parse command line arguments.
+    """Parse command line arguments.
 
     Returns:
         Parsed arguments
@@ -167,7 +167,6 @@ def parse_arguments():
     return args
 
 
-
 def main():
     """Main entry point for the application."""
     args = parse_arguments()
@@ -186,7 +185,6 @@ def main():
             "\n[bold]Usage example:[/bold] --census-variables total_population median_household_income"
         )
         sys.exit(0)
-
 
     # Create the output directory
     os.makedirs(args.output_dir, exist_ok=True)
@@ -249,10 +247,13 @@ def main():
                 state_abbr = None
                 if args.state:
                     census_system = get_census_system()
-                    state_abbr = census_system.normalize_state(args.state, to_format=StateFormat.ABBREVIATION)
+                    state_abbr = census_system.normalize_state(
+                        args.state, to_format=StateFormat.ABBREVIATION
+                    )
 
                 # Build configuration
-                builder = (SocialMapperBuilder()
+                builder = (
+                    SocialMapperBuilder()
                     .with_location(args.geocode_area, state_abbr)
                     .with_osm_pois(args.poi_type, args.poi_name)
                     .with_travel_time(args.travel_time)
@@ -262,13 +263,13 @@ def main():
                     .with_output_directory(args.output_dir)
                     .with_exports(csv=args.export_csv)
                 )
-                
+
                 if args.api_key:
                     builder.with_census_api_key(args.api_key)
-                
+
                 config = builder.build()
                 result = client.run_analysis(config)
-                
+
                 if result.is_err():
                     error = result.unwrap_err()
                     raise Exception(f"{error.type.name}: {error.message}")
@@ -290,7 +291,9 @@ def main():
                 # Load addresses from CSV
                 df = pd.read_csv(args.address_file)
                 if args.address_column not in df.columns:
-                    raise ValueError(f"Column '{args.address_column}' not found in {args.address_file}")
+                    raise ValueError(
+                        f"Column '{args.address_column}' not found in {args.address_file}"
+                    )
 
                 addresses = df[args.address_column].tolist()
 
@@ -309,7 +312,9 @@ def main():
                 )
 
                 # Geocode addresses to POI format
-                console.print(f"[bold yellow]🔍 Geocoding {len(addresses)} addresses...[/bold yellow]")
+                console.print(
+                    f"[bold yellow]🔍 Geocoding {len(addresses)} addresses...[/bold yellow]"
+                )
                 poi_data = addresses_to_poi_format(addresses, geocoding_config)
 
                 # Create a temporary file for the geocoded coordinates
@@ -333,10 +338,13 @@ def main():
                 df = pd.DataFrame(poi_csv_data)
                 df.to_csv(temp_file, index=False)
 
-                console.print(f"[bold green]✅ Saved geocoded addresses to {temp_file}[/bold green]")
+                console.print(
+                    f"[bold green]✅ Saved geocoded addresses to {temp_file}[/bold green]"
+                )
 
                 # Build configuration for custom POIs
-                builder = (SocialMapperBuilder()
+                builder = (
+                    SocialMapperBuilder()
                     .with_custom_pois(temp_file)
                     .with_travel_time(args.travel_time)
                     .with_travel_mode(args.travel_mode)
@@ -345,19 +353,20 @@ def main():
                     .with_output_directory(args.output_dir)
                     .with_exports(csv=args.export_csv)
                 )
-                
+
                 if args.api_key:
                     builder.with_census_api_key(args.api_key)
-                
+
                 config = builder.build()
                 result = client.run_analysis(config)
-                
+
                 if result.is_err():
                     error = result.unwrap_err()
                     raise Exception(f"{error.type.name}: {error.message}")
             else:
                 # Use custom coordinates file
-                builder = (SocialMapperBuilder()
+                builder = (
+                    SocialMapperBuilder()
                     .with_custom_pois(args.custom_coords)
                     .with_travel_time(args.travel_time)
                     .with_travel_mode(args.travel_mode)
@@ -366,13 +375,13 @@ def main():
                     .with_output_directory(args.output_dir)
                     .with_exports(csv=args.export_csv)
                 )
-                
+
                 if args.api_key:
                     builder.with_census_api_key(args.api_key)
-                
+
                 config = builder.build()
                 result = client.run_analysis(config)
-                
+
                 if result.is_err():
                     error = result.unwrap_err()
                     raise Exception(f"{error.type.name}: {error.message}")
@@ -396,7 +405,7 @@ def main():
     except Exception as e:
         # Rich will automatically handle the traceback beautifully
         error_panel = Panel(
-            f"[bold red]❌ SocialMapper encountered an error:[/bold red]\n[red]{str(e)}[/red]",
+            f"[bold red]❌ SocialMapper encountered an error:[/bold red]\n[red]{e!s}[/red]",
             title="💥 Error",
             box=box.ROUNDED,
             border_style="red",

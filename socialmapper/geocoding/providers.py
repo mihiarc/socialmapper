@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""
-Geocoding providers for address lookup.
+"""Geocoding providers for address lookup.
 
 This module contains implementations of various geocoding providers.
 """
 
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -59,12 +58,10 @@ class GeocodingProvider(ABC):
     @abstractmethod
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
         """Geocode a single address."""
-        pass
 
     @abstractmethod
     def get_provider_name(self) -> AddressProvider:
         """Get the provider identifier."""
-        pass
 
 
 class NominatimProvider(GeocodingProvider):
@@ -154,7 +151,7 @@ class NominatimProvider(GeocodingProvider):
                 processing_time_ms=(time.time() - start_time) * 1000,
             )
 
-    def _determine_quality_from_osm(self, result: Dict[str, Any]) -> AddressQuality:
+    def _determine_quality_from_osm(self, result: dict[str, Any]) -> AddressQuality:
         """Determine address quality from OSM result."""
         osm_class = result.get("class", "")
         osm_type = result.get("type", "")
@@ -174,7 +171,7 @@ class NominatimProvider(GeocodingProvider):
         # Default to approximate
         return AddressQuality.APPROXIMATE
 
-    def _calculate_confidence(self, result: Dict[str, Any]) -> float:
+    def _calculate_confidence(self, result: dict[str, Any]) -> float:
         """Calculate confidence score from OSM result."""
         importance = float(result.get("importance", 0.5))
         return min(importance * 2, 1.0)  # Scale to 0-1 range
@@ -311,9 +308,9 @@ def create_provider(provider_type: AddressProvider, config: GeocodingConfig) -> 
         AddressProvider.NOMINATIM: NominatimProvider,
         AddressProvider.CENSUS: CensusProvider,
     }
-    
+
     provider_class = providers.get(provider_type)
     if not provider_class:
         raise ValueError(f"Unsupported provider: {provider_type}")
-    
+
     return provider_class(config)

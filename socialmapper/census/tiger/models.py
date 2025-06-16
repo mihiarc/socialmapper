@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import geopandas as gpd
 from pydantic import BaseModel, Field, field_validator
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class GeographyLevel(str, Enum):
     """Supported geography levels for TIGER API."""
-    
+
     COUNTY = "county"
     BLOCK_GROUP = "block_group"
     BLOCK_GROUP_DETAILED = "block_group_detailed"  # Non-generalized version
@@ -25,32 +25,24 @@ class GeographyLevel(str, Enum):
 
 class GeometryQuery(BaseModel):
     """Query parameters for fetching TIGER geometries."""
-    
-    geography_level: GeographyLevel = Field(
-        ..., description="The geographic level to fetch"
-    )
-    state_fips: Optional[str] = Field(
-        None, description="State FIPS code (e.g., '06' for California)"
-    )
-    county_fips: Optional[str] = Field(
+
+    geography_level: GeographyLevel = Field(..., description="The geographic level to fetch")
+    state_fips: str | None = Field(None, description="State FIPS code (e.g., '06' for California)")
+    county_fips: str | None = Field(
         None, description="County FIPS code (e.g., '001' for Alameda County)"
     )
-    zcta_prefix: Optional[str] = Field(
+    zcta_prefix: str | None = Field(
         None, description="ZCTA prefix for filtering (e.g., '945' for 94501-94599)"
     )
-    geometry_ids: Optional[List[str]] = Field(
-        None, description="Specific geometry IDs to fetch"
-    )
-    simplify_tolerance: Optional[float] = Field(
+    geometry_ids: list[str] | None = Field(None, description="Specific geometry IDs to fetch")
+    simplify_tolerance: float | None = Field(
         0.0001, description="Tolerance for geometry simplification (0 = no simplification)"
     )
-    include_attributes: bool = Field(
-        True, description="Whether to include demographic attributes"
-    )
-    
+    include_attributes: bool = Field(True, description="Whether to include demographic attributes")
+
     @field_validator("state_fips", "county_fips")
     @classmethod
-    def validate_fips(cls, v: Optional[str]) -> Optional[str]:
+    def validate_fips(cls, v: str | None) -> str | None:
         """Validate FIPS codes are properly formatted."""
         if v is not None:
             # Remove any non-numeric characters
@@ -59,10 +51,10 @@ class GeometryQuery(BaseModel):
             if len(v) == 1:
                 v = "0" + v
         return v
-    
+
     @field_validator("zcta_prefix")
     @classmethod
-    def validate_zcta_prefix(cls, v: Optional[str]) -> Optional[str]:
+    def validate_zcta_prefix(cls, v: str | None) -> str | None:
         """Validate ZCTA prefix."""
         if v is not None:
             # Remove any non-numeric characters
@@ -75,23 +67,23 @@ class GeometryQuery(BaseModel):
 @dataclass
 class GeometryResult:
     """Result from TIGER geometry fetch operation."""
-    
+
     geodataframe: gpd.GeoDataFrame
     geography_level: GeographyLevel
     query: GeometryQuery
-    metadata: Dict[str, Any]
-    
+    metadata: dict[str, Any]
+
     @property
     def geometry_count(self) -> int:
         """Number of geometries returned."""
         return len(self.geodataframe)
-    
+
     @property
     def bounds(self) -> tuple:
         """Total bounds of all geometries."""
         return self.geodataframe.total_bounds
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "geography_level": self.geography_level.value,
@@ -104,21 +96,21 @@ class GeometryResult:
 
 class TigerEndpoint(BaseModel):
     """Configuration for a TIGER REST API endpoint."""
-    
+
     base_url: str = Field(..., description="Base URL for the service")
     layer_id: int = Field(..., description="Layer ID within the service")
     id_field: str = Field(..., description="Field name for geometry ID")
     name_field: str = Field(..., description="Field name for geometry name")
-    state_field: Optional[str] = Field(None, description="Field name for state FIPS")
-    county_field: Optional[str] = Field(None, description="Field name for county FIPS")
-    
+    state_field: str | None = Field(None, description="Field name for state FIPS")
+    county_field: str | None = Field(None, description="Field name for county FIPS")
+
     def build_query_url(self) -> str:
         """Build the full query URL."""
         return f"{self.base_url}/{self.layer_id}/query"
 
 
 # Endpoint configurations for each geography level
-TIGER_ENDPOINTS: Dict[GeographyLevel, TigerEndpoint] = {
+TIGER_ENDPOINTS: dict[GeographyLevel, TigerEndpoint] = {
     GeographyLevel.STATE: TigerEndpoint(
         base_url="https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer",
         layer_id=0,

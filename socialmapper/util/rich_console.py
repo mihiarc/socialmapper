@@ -1,13 +1,13 @@
-"""
-Rich console and logging utilities for SocialMapper.
+"""Rich console and logging utilities for SocialMapper.
 
 This module provides a centralized Rich-based console and logging system
 to replace standard logging and tqdm throughout the codebase.
 """
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any
 
 from rich.align import Align
 from rich.console import Console
@@ -81,7 +81,7 @@ class RichProgressColumn(ProgressColumn):
         if task.speed >= 1:
             return Text(f"{task.speed:.1f} items/sec", style="progress")
         else:
-            return Text(f"{1/task.speed:.1f} sec/item", style="progress")
+            return Text(f"{1 / task.speed:.1f} sec/item", style="progress")
 
 
 def setup_rich_logging(
@@ -90,8 +90,7 @@ def setup_rich_logging(
     show_path: bool = False,
     rich_tracebacks: bool = True,
 ) -> None:
-    """
-    Set up Rich-based logging for the entire application.
+    """Set up Rich-based logging for the entire application.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR)
@@ -135,8 +134,7 @@ def setup_rich_logging(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a Rich-enabled logger.
+    """Get a Rich-enabled logger.
 
     Args:
         name: Logger name (usually __name__)
@@ -149,8 +147,7 @@ def get_logger(name: str) -> logging.Logger:
 
 @contextmanager
 def status(message: str, spinner: str = "dots"):
-    """
-    Context manager for showing a spinner status.
+    """Context manager for showing a spinner status.
 
     Args:
         message: Status message to show
@@ -165,10 +162,9 @@ def status(message: str, spinner: str = "dots"):
 
 @contextmanager
 def progress_bar(
-    description: str, total: Optional[int] = None, transient: bool = False, disable: bool = False
+    description: str, total: int | None = None, transient: bool = False, disable: bool = False
 ) -> Iterator[Progress]:
-    """
-    Context manager for Rich progress bars.
+    """Context manager for Rich progress bars.
 
     Args:
         description: Progress description
@@ -239,8 +235,8 @@ def print_error(message: str, **kwargs) -> None:
 
 def print_panel(
     content: str,
-    title: Optional[str] = None,
-    subtitle: Optional[str] = None,
+    title: str | None = None,
+    subtitle: str | None = None,
     style: str = "info",
     **kwargs,
 ) -> None:
@@ -250,7 +246,7 @@ def print_panel(
 
 
 def print_table(
-    data: List[Dict[str, Any]], title: Optional[str] = None, show_header: bool = True, **kwargs
+    data: list[dict[str, Any]], title: str | None = None, show_header: bool = True, **kwargs
 ) -> None:
     """Print data as a formatted table."""
     if not data:
@@ -270,7 +266,7 @@ def print_table(
     console.print(table)
 
 
-def print_statistics(stats: Dict[str, Any], title: str = "Statistics", **kwargs) -> None:
+def print_statistics(stats: dict[str, Any], title: str = "Statistics", **kwargs) -> None:
     """Print statistics in a formatted table."""
     table = Table(title=title, show_header=True, **kwargs)
     table.add_column("Metric", style="bold")
@@ -296,7 +292,7 @@ def print_statistics(stats: Dict[str, Any], title: str = "Statistics", **kwargs)
     console.print(table)
 
 
-def print_poi_summary(pois: List[Dict[str, Any]], **kwargs) -> None:
+def print_poi_summary(pois: list[dict[str, Any]], **kwargs) -> None:
     """Print a summary of POI data."""
     if not pois:
         print_warning("No POIs to display")
@@ -397,21 +393,21 @@ def rich_tqdm(*args, **kwargs):
 
 # Export main interface
 __all__ = [
-    "console",
-    "progress",
-    "setup_rich_logging",
-    "get_logger",
-    "status",
-    "progress_bar",
-    "print_info",
-    "print_success",
-    "print_warning",
-    "print_error",
-    "print_panel",
-    "print_table",
-    "print_statistics",
-    "print_poi_summary",
-    "create_section_header",
-    "rich_tqdm",
     "RichProgressWrapper",
+    "console",
+    "create_section_header",
+    "get_logger",
+    "print_error",
+    "print_info",
+    "print_panel",
+    "print_poi_summary",
+    "print_statistics",
+    "print_success",
+    "print_table",
+    "print_warning",
+    "progress",
+    "progress_bar",
+    "rich_tqdm",
+    "setup_rich_logging",
+    "status",
 ]

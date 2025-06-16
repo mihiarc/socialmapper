@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-High-performance vectorized distance calculation engine.
+"""High-performance vectorized distance calculation engine.
 
 This module provides a complete replacement for the legacy distance calculation
 system, offering 95% performance improvement through vectorization, JIT compilation,
@@ -10,7 +9,6 @@ and modern spatial algorithms.
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
-from typing import List
 
 import geopandas as gpd
 import numba
@@ -27,8 +25,7 @@ logger = get_logger(__name__)
 
 
 class VectorizedDistanceEngine:
-    """
-    High-performance vectorized distance calculation engine.
+    """High-performance vectorized distance calculation engine.
 
     This engine replaces the legacy O(n×m) nested loop approach with:
     - Bulk coordinate transformations
@@ -40,8 +37,7 @@ class VectorizedDistanceEngine:
     """
 
     def __init__(self, crs: str = "EPSG:5070", n_jobs: int = -1):
-        """
-        Initialize the vectorized distance engine.
+        """Initialize the vectorized distance engine.
 
         Args:
             crs: Projected CRS for accurate distance calculations (default: EPSG:5070 - Albers Equal Area)
@@ -60,8 +56,7 @@ class VectorizedDistanceEngine:
     def _calculate_distances_numba(
         poi_coords: np.ndarray, centroid_coords: np.ndarray
     ) -> np.ndarray:
-        """
-        Ultra-fast distance calculation using Numba JIT compilation.
+        """Ultra-fast distance calculation using Numba JIT compilation.
 
         This function is compiled to machine code for maximum performance.
         Uses parallel processing across CPU cores.
@@ -85,8 +80,7 @@ class VectorizedDistanceEngine:
                 dy = centroid_coords[i, 1] - poi_coords[j, 1]
                 distance = np.sqrt(dx * dx + dy * dy) / 1000.0  # Convert to km
 
-                if distance < min_distances[i]:
-                    min_distances[i] = distance
+                min_distances[i] = min(min_distances[i], distance)
 
         return min_distances
 
@@ -95,8 +89,7 @@ class VectorizedDistanceEngine:
     def _calculate_distances_balltree_numba(
         poi_coords: np.ndarray, centroid_coords: np.ndarray
     ) -> np.ndarray:
-        """
-        Alternative implementation using manual nearest neighbor search.
+        """Alternative implementation using manual nearest neighbor search.
         Optimized for cases where BallTree overhead is significant.
         """
         n_centroids = centroid_coords.shape[0]
@@ -109,15 +102,13 @@ class VectorizedDistanceEngine:
                 dx = centroid_coords[i, 0] - poi_coords[j, 0]
                 dy = centroid_coords[i, 1] - poi_coords[j, 1]
                 dist = np.sqrt(dx * dx + dy * dy)
-                if dist < min_dist:
-                    min_dist = dist
+                min_dist = min(min_dist, dist)
             min_distances[i] = min_dist / 1000.0  # Convert to km
 
         return min_distances
 
-    def _transform_coordinates_bulk(self, points: List[Point]) -> np.ndarray:
-        """
-        Transform coordinates in bulk for maximum efficiency.
+    def _transform_coordinates_bulk(self, points: list[Point]) -> np.ndarray:
+        """Transform coordinates in bulk for maximum efficiency.
 
         Args:
             points: List of Shapely Point objects in WGS84
@@ -158,9 +149,8 @@ class VectorizedDistanceEngine:
         x_proj, y_proj = self.transformer.transform(coords[:, 0], coords[:, 1])
         return np.column_stack([x_proj, y_proj])
 
-    def calculate_distances(self, poi_points: List[Point], centroids: gpd.GeoSeries) -> np.ndarray:
-        """
-        Main distance calculation method using vectorized operations.
+    def calculate_distances(self, poi_points: list[Point], centroids: gpd.GeoSeries) -> np.ndarray:
+        """Main distance calculation method using vectorized operations.
 
         Args:
             poi_points: List of POI Point geometries in WGS84
@@ -195,16 +185,15 @@ class VectorizedDistanceEngine:
         elapsed = time.time() - start_time
         logger.info(
             f"Calculated {len(centroids)} distances to {len(poi_points)} POIs in {elapsed:.3f}s "
-            f"({len(centroids)/elapsed:.1f} centroids/sec)"
+            f"({len(centroids) / elapsed:.1f} centroids/sec)"
         )
 
         return distances
 
     def calculate_distances_with_balltree(
-        self, poi_points: List[Point], centroids: gpd.GeoSeries
+        self, poi_points: list[Point], centroids: gpd.GeoSeries
     ) -> np.ndarray:
-        """
-        Alternative implementation using BallTree for spatial indexing.
+        """Alternative implementation using BallTree for spatial indexing.
         May be faster for very large datasets with many POIs.
 
         Args:
@@ -243,16 +232,14 @@ class VectorizedDistanceEngine:
 
 
 class ParallelDistanceProcessor:
-    """
-    Process distance calculations across multiple cores for large datasets.
+    """Process distance calculations across multiple cores for large datasets.
 
     Automatically chunks large datasets and processes them in parallel
     to maximize CPU utilization and minimize memory usage.
     """
 
     def __init__(self, engine: VectorizedDistanceEngine, chunk_size: int = 5000):
-        """
-        Initialize the parallel processor.
+        """Initialize the parallel processor.
 
         Args:
             engine: VectorizedDistanceEngine instance
@@ -264,10 +251,9 @@ class ParallelDistanceProcessor:
         logger.info(f"Initialized ParallelDistanceProcessor with chunk_size={chunk_size}")
 
     def process_large_dataset(
-        self, poi_points: List[Point], centroids: gpd.GeoSeries
+        self, poi_points: list[Point], centroids: gpd.GeoSeries
     ) -> np.ndarray:
-        """
-        Process large datasets in parallel chunks.
+        """Process large datasets in parallel chunks.
 
         Args:
             poi_points: List of POI Point geometries
@@ -305,15 +291,14 @@ class ParallelDistanceProcessor:
         elapsed = time.time() - start_time
         logger.info(
             f"Parallel processing completed in {elapsed:.3f}s "
-            f"({len(centroids)/elapsed:.1f} centroids/sec)"
+            f"({len(centroids) / elapsed:.1f} centroids/sec)"
         )
 
         return final_distances
 
 
-def benchmark_distance_engines(poi_points: List[Point], centroids: gpd.GeoSeries) -> dict:
-    """
-    Benchmark different distance calculation methods for performance comparison.
+def benchmark_distance_engines(poi_points: list[Point], centroids: gpd.GeoSeries) -> dict:
+    """Benchmark different distance calculation methods for performance comparison.
 
     Args:
         poi_points: List of POI Point geometries

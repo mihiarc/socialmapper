@@ -1,5 +1,4 @@
-"""
-Modern builder pattern for SocialMapper API configuration.
+"""Modern builder pattern for SocialMapper API configuration.
 
 Provides a fluent interface for building analysis configurations
 with type safety and validation.
@@ -8,7 +7,7 @@ with type safety and validation.
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Self, Union
+from typing import Self
 
 # Import travel mode
 from ..isochrone import TravelMode
@@ -24,7 +23,6 @@ class GeographicLevel(Enum):
     ZCTA = "zcta"  # ZIP Code Tabulation Area
 
 
-
 @dataclass
 class AnalysisResult:
     """Structured result from a SocialMapper analysis."""
@@ -32,9 +30,9 @@ class AnalysisResult:
     poi_count: int
     isochrone_count: int
     census_units_analyzed: int
-    files_generated: Dict[str, Path]
-    metadata: Dict[str, any]
-    warnings: List[str] = field(default_factory=list)
+    files_generated: dict[str, Path]
+    metadata: dict[str, any]
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def success(self) -> bool:
@@ -43,12 +41,12 @@ class AnalysisResult:
 
 
 class SocialMapperBuilder:
-    """
-    Modern builder for SocialMapper analysis configuration.
+    """Modern builder for SocialMapper analysis configuration.
 
     Example:
         ```python
-        config = (SocialMapperBuilder()
+        config = (
+            SocialMapperBuilder()
             .with_location("San Francisco", "CA")
             .with_osm_pois("amenity", "library")
             .with_travel_time(15)
@@ -72,7 +70,7 @@ class SocialMapperBuilder:
         }
         self._validation_errors = []
 
-    def with_location(self, area: str, state: Optional[str] = None) -> Self:
+    def with_location(self, area: str, state: str | None = None) -> Self:
         """Set the geographic area for analysis."""
         self._config["geocode_area"] = area
         if state:
@@ -80,7 +78,7 @@ class SocialMapperBuilder:
         return self
 
     def with_osm_pois(
-        self, poi_type: str, poi_name: str, additional_tags: Optional[Dict[str, str]] = None
+        self, poi_type: str, poi_name: str, additional_tags: dict[str, str] | None = None
     ) -> Self:
         """Configure OpenStreetMap POI search."""
         self._config["poi_type"] = poi_type
@@ -91,9 +89,9 @@ class SocialMapperBuilder:
 
     def with_custom_pois(
         self,
-        file_path: Union[str, Path],
-        name_field: Optional[str] = None,
-        type_field: Optional[str] = None,
+        file_path: str | Path,
+        name_field: str | None = None,
+        type_field: str | None = None,
     ) -> Self:
         """Use custom POI coordinates from a file."""
         self._config["custom_coords_path"] = str(file_path)
@@ -112,7 +110,7 @@ class SocialMapperBuilder:
         self._config["travel_time"] = minutes
         return self
 
-    def with_travel_mode(self, mode: Union[str, TravelMode]) -> Self:
+    def with_travel_mode(self, mode: str | TravelMode) -> Self:
         """Set the travel mode for isochrone generation (walk, bike, drive)."""
         if isinstance(mode, str):
             try:
@@ -137,10 +135,8 @@ class SocialMapperBuilder:
                 # Both are valid, so we add them as-is
                 validated_variables.append(var)  # Store the original variable name
             except Exception as e:
-                self._validation_errors.append(
-                    f"Invalid census variable '{var}': {str(e)}"
-                )
-        
+                self._validation_errors.append(f"Invalid census variable '{var}': {e!s}")
+
         self._config["census_variables"] = validated_variables
         return self
 
@@ -176,17 +172,17 @@ class SocialMapperBuilder:
         self._config["export_csv"] = False
         return self
 
-    def with_output_directory(self, path: Union[str, Path]) -> Self:
+    def with_output_directory(self, path: str | Path) -> Self:
         """Set custom output directory."""
         self._config["output_dir"] = str(path)
         return self
 
     def with_exports(self, csv: bool = True, isochrones: bool = False, maps: bool = False) -> Self:
         """Configure export options.
-        
+
         Args:
             csv: Export demographic data to CSV format
-            isochrones: Export isochrone boundaries as shapefiles  
+            isochrones: Export isochrone boundaries as shapefiles
             maps: Generate choropleth maps visualizing demographic patterns
         """
         self._config["export_csv"] = csv
@@ -194,7 +190,7 @@ class SocialMapperBuilder:
         self._config["create_maps"] = maps
         return self
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate the configuration and return any errors."""
         errors = self._validation_errors.copy()
 
@@ -204,8 +200,7 @@ class SocialMapperBuilder:
 
         if not has_custom and not has_osm:
             errors.append(
-                "Must specify either custom POIs (with_custom_pois) "
-                "or OSM search (with_osm_pois)"
+                "Must specify either custom POIs (with_custom_pois) or OSM search (with_osm_pois)"
             )
 
         if has_osm and "geocode_area" not in self._config:
@@ -213,9 +208,8 @@ class SocialMapperBuilder:
 
         return errors
 
-    def build(self) -> Dict[str, any]:
-        """
-        Build and validate the configuration.
+    def build(self) -> dict[str, any]:
+        """Build and validate the configuration.
 
         Returns:
             Configuration dictionary ready for use
@@ -229,6 +223,6 @@ class SocialMapperBuilder:
 
         return self._config.copy()
 
-    def list_available_census_variables(self) -> Dict[str, str]:
+    def list_available_census_variables(self) -> dict[str, str]:
         """List available census variables with their codes."""
         return CENSUS_VARIABLE_MAPPING.copy()

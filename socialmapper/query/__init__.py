@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""
-Script to query OpenStreetMap using Overpass API and output POI data as JSON.
-"""
+"""Script to query OpenStreetMap using Overpass API and output POI data as JSON."""
+
 import argparse
 import json
 import os
@@ -19,8 +18,7 @@ logger = get_logger(__name__)
 
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):
-    """
-    Create a POI configuration dictionary directly from parameters.
+    """Create a POI configuration dictionary directly from parameters.
 
     Args:
         geocode_area: The area to search within (city/town name)
@@ -51,7 +49,7 @@ def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_
 def load_poi_config(file_path):
     """Load POI configuration from YAML file."""
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             config = yaml.safe_load(f)
         return config
     except Exception as e:
@@ -75,10 +73,27 @@ def build_overpass_query(poi_config):
         city = poi_config.get("city")
 
         if state and city:
-            # First create an area for the state
-            query += f'area[name="{state}"]["admin_level"="4"]->.state;\n'
-            # Then find the city within that state
-            query += f'area[name="{city}"](area.state)->.searchArea;\n'
+            # Use ISO code for US states to be more specific
+            if state in ["NC", "North Carolina"]:
+                state_iso = "US-NC"
+            elif len(state) == 2 and state.isupper():
+                # Assume it's a US state abbreviation
+                state_iso = f"US-{state}"
+            else:
+                # For full state names or non-US, try the name directly
+                state_iso = None
+
+            if state_iso:
+                # Use ISO code for more accurate state matching
+                query += f'area["ISO3166-2"="{state_iso}"]->.state;\n'
+            else:
+                # Fall back to name-based search
+                query += f'area[name="{state}"]["admin_level"="4"]->.state;\n'
+
+            # Then find the city within that state - also check for admin_level 8 (cities in US)
+            query += (
+                f'(area[name="{city}"]["admin_level"~"^(6|7|8)$"](area.state);)->.searchArea;\n'
+            )
         else:
             # Simple area based query. If multiple areas have the same name, this will return all of them.
             query += f'area[name="{area_name}"]->.searchArea;\n'
@@ -148,8 +163,7 @@ def build_overpass_query(poi_config):
 
 @with_retry(max_retries=3, base_delay=2.0, service="openstreetmap")
 def query_overpass(query):
-    """
-    Query the Overpass API with the given query.
+    """Query the Overpass API with the given query.
 
     Uses rate limiting and retry logic to handle transient errors
     and respect API usage limits.
@@ -267,10 +281,9 @@ def save_json(data, output_file):
 
 
 def query_pois(
-    config: Dict[str, Any], output_file: Optional[str] = None, verbose: bool = False
-) -> Dict[str, Any]:
-    """
-    Query POIs from OpenStreetMap with the given configuration.
+    config: dict[str, Any], output_file: str | None = None, verbose: bool = False
+) -> dict[str, Any]:
+    """Query POIs from OpenStreetMap with the given configuration.
 
     Args:
         config: POI configuration dictionary

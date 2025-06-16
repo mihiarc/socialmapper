@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-SocialMapper Address Geocoding System
+"""SocialMapper Address Geocoding System
 ====================================
 
 Modern, production-ready address lookup system following SWE and ETL best practices.
@@ -31,11 +30,8 @@ from .models import (
 
 
 # High-level convenience functions
-def geocode_address(
-    address: Union[str, AddressInput], config: GeocodingConfig = None
-) -> GeocodingResult:
-    """
-    Convenience function to geocode a single address.
+def geocode_address(address: str | AddressInput, config: GeocodingConfig = None) -> GeocodingResult:
+    """Convenience function to geocode a single address.
 
     Args:
         address: Address string or AddressInput object
@@ -49,10 +45,9 @@ def geocode_address(
 
 
 def geocode_addresses(
-    addresses: List[Union[str, AddressInput]], config: GeocodingConfig = None, progress: bool = True
-) -> List[GeocodingResult]:
-    """
-    Convenience function to geocode multiple addresses.
+    addresses: list[str | AddressInput], config: GeocodingConfig = None, progress: bool = True
+) -> list[GeocodingResult]:
+    """Convenience function to geocode multiple addresses.
 
     Args:
         addresses: List of address strings or AddressInput objects
@@ -67,10 +62,9 @@ def geocode_addresses(
 
 
 def addresses_to_poi_format(
-    addresses: List[Union[str, AddressInput]], config: GeocodingConfig = None
-) -> Dict[str, Any]:
-    """
-    Convenience function to geocode addresses and convert to POI format.
+    addresses: list[str | AddressInput], config: GeocodingConfig = None
+) -> dict[str, Any]:
+    """Convenience function to geocode addresses and convert to POI format.
 
     Args:
         addresses: List of address strings or AddressInput objects
@@ -81,7 +75,7 @@ def addresses_to_poi_format(
     """
     engine = AddressGeocodingEngine(config)
     results = engine.geocode_addresses_batch(addresses)
-    
+
     # Convert results to POI format
     pois = []
     metadata = {

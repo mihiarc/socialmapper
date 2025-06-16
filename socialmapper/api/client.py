@@ -1,15 +1,15 @@
-"""
-Modern SocialMapper client with improved API design.
+"""Modern SocialMapper client with improved API design.
 
 Provides a clean, type-safe interface with proper error handling,
 resource management, and extensibility.
 """
 
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..ui.console import get_logger
@@ -24,11 +24,11 @@ logger = get_logger(__name__)
 class CacheStrategy(Protocol):
     """Protocol for cache strategies."""
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Retrieve item from cache."""
         ...
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Store item in cache."""
         ...
 
@@ -41,8 +41,8 @@ class CacheStrategy(Protocol):
 class ClientConfig:
     """Configuration for SocialMapper client."""
 
-    api_key: Optional[str] = None
-    cache_strategy: Optional[CacheStrategy] = None
+    api_key: str | None = None
+    cache_strategy: CacheStrategy | None = None
     rate_limit: int = 10  # requests per second
     timeout: int = 300  # seconds
     retry_attempts: int = 3
@@ -71,17 +71,14 @@ class RateLimiter:
 
 
 class SocialMapperClient:
-    """
-    Modern client for SocialMapper with improved API design.
+    """Modern client for SocialMapper with improved API design.
 
     Example:
         ```python
         # Simple usage
         with SocialMapperClient() as client:
             result = client.analyze(
-                location="San Francisco, CA",
-                poi_type="amenity",
-                poi_name="library"
+                location="San Francisco, CA", poi_type="amenity", poi_name="library"
             )
 
             match result:
@@ -92,14 +89,13 @@ class SocialMapperClient:
 
         # Advanced usage with configuration
         config = ClientConfig(
-            api_key="your-census-api-key",
-            cache_strategy=RedisCache(),
-            rate_limit=5
+            api_key="your-census-api-key", cache_strategy=RedisCache(), rate_limit=5
         )
 
         with SocialMapperClient(config) as client:
             # Create analysis with builder
-            analysis = (client.create_analysis()
+            analysis = (
+                client.create_analysis()
                 .with_location("Chicago", "IL")
                 .with_osm_pois("leisure", "park")
                 .with_travel_time(20)
@@ -108,13 +104,12 @@ class SocialMapperClient:
 
             # Run with progress callback
             result = client.run_analysis(
-                analysis,
-                on_progress=lambda p: print(f"Progress: {p}%")
+                analysis, on_progress=lambda p: print(f"Progress: {p}%")
             )
         ```
     """
 
-    def __init__(self, config: Optional[ClientConfig] = None):
+    def __init__(self, config: ClientConfig | None = None):
         """Initialize client with optional configuration."""
         self.config = config or ClientConfig()
         self.rate_limiter = RateLimiter(self.config.rate_limit)
@@ -132,8 +127,7 @@ class SocialMapperClient:
         logger.info("SocialMapper client session ended")
 
     def create_analysis(self) -> SocialMapperBuilder:
-        """
-        Create a new analysis configuration builder.
+        """Create a new analysis configuration builder.
 
         Returns:
             Builder for fluent configuration
@@ -150,11 +144,10 @@ class SocialMapperClient:
         poi_type: str,
         poi_name: str,
         travel_time: int = 15,
-        census_variables: Optional[List[str]] = None,
+        census_variables: list[str] | None = None,
         **kwargs,
     ) -> Result[AnalysisResult, Error]:
-        """
-        Simple analysis method for common use cases.
+        """Simple analysis method for common use cases.
 
         Args:
             location: City and state (e.g., "San Francisco, CA")
@@ -201,15 +194,12 @@ class SocialMapperClient:
         except ValueError as e:
             return Err(Error(type=ErrorType.VALIDATION, message=str(e), cause=e))
         except Exception as e:
-            return Err(
-                Error(type=ErrorType.UNKNOWN, message=f"Unexpected error: {str(e)}", cause=e)
-            )
+            return Err(Error(type=ErrorType.UNKNOWN, message=f"Unexpected error: {e!s}", cause=e))
 
     def run_analysis(
-        self, config: Dict[str, Any], on_progress: Optional[Callable[[float], None]] = None
+        self, config: dict[str, Any], on_progress: Callable[[float], None] | None = None
     ) -> Result[AnalysisResult, Error]:
-        """
-        Run analysis with the given configuration.
+        """Run analysis with the given configuration.
 
         Args:
             config: Configuration from builder
@@ -265,16 +255,15 @@ class SocialMapperClient:
             return Ok(result)
 
         except Exception as e:
-            logger.error(f"Analysis failed: {str(e)}")
+            logger.error(f"Analysis failed: {e!s}")
 
             # Determine error type based on exception
             error_type = self._classify_error(e)
 
             return Err(Error(type=error_type, message=str(e), context={"config": config}, cause=e))
 
-    def validate_configuration(self, config: Dict[str, Any]) -> Result[Dict[str, Any], Error]:
-        """
-        Comprehensive configuration validation with detailed error reporting.
+    def validate_configuration(self, config: dict[str, Any]) -> Result[dict[str, Any], Error]:
+        """Comprehensive configuration validation with detailed error reporting.
 
         Args:
             config: Configuration to validate
@@ -284,23 +273,27 @@ class SocialMapperClient:
         """
         try:
             validation_errors = []
-            
+
             # Validate census variables if provided
             if "census_variables" in config:
                 invalid_vars = []
                 for var in config["census_variables"]:
                     normalized = normalize_census_variable(var)
                     # Check if it's a known variable or valid format
-                    if (normalized not in CENSUS_VARIABLE_MAPPING.values() and 
-                        not normalized.startswith('B') and '_' in normalized and normalized.endswith('E')):
+                    if (
+                        normalized not in CENSUS_VARIABLE_MAPPING.values()
+                        and not normalized.startswith("B")
+                        and "_" in normalized
+                        and normalized.endswith("E")
+                    ):
                         invalid_vars.append(var)
-                
+
                 if invalid_vars:
                     validation_errors.append(
                         f"Invalid census variables: {', '.join(invalid_vars)}. "
                         f"Available: {', '.join(CENSUS_VARIABLE_MAPPING.keys())}"
                     )
-            
+
             # Validate geographic level
             if "geographic_level" in config:
                 valid_levels = [level.value for level in GeographicLevel]
@@ -309,7 +302,7 @@ class SocialMapperClient:
                         f"Invalid geographic level: {config['geographic_level']}. "
                         f"Must be one of: {', '.join(valid_levels)}"
                     )
-            
+
             # Validate travel time
             if "travel_time" in config:
                 travel_time = config["travel_time"]
@@ -317,14 +310,14 @@ class SocialMapperClient:
                     validation_errors.append(
                         "Travel time must be an integer between 1 and 120 minutes"
                     )
-            
+
             # Validate output directory
             if "output_dir" in config:
                 try:
                     Path(config["output_dir"]).resolve()
                 except Exception:
                     validation_errors.append(f"Invalid output directory: {config['output_dir']}")
-            
+
             # Use builder validation for remaining checks
             builder = SocialMapperBuilder()
             builder._config = config.copy()
@@ -344,13 +337,12 @@ class SocialMapperClient:
 
         except Exception as e:
             return Err(
-                Error(type=ErrorType.VALIDATION, message=f"Validation error: {str(e)}", cause=e)
+                Error(type=ErrorType.VALIDATION, message=f"Validation error: {e!s}", cause=e)
             )
 
     @contextmanager
-    def batch_analyses(self, configs: List[Dict[str, Any]]):
-        """
-        Context manager for batch processing multiple analyses.
+    def batch_analyses(self, configs: list[dict[str, Any]]):
+        """Context manager for batch processing multiple analyses.
 
         Example:
             ```python
@@ -369,10 +361,10 @@ class SocialMapperClient:
                 self.configs = configs
                 self.results = []
 
-            def run_all(self) -> List[Result[AnalysisResult, Error]]:
+            def run_all(self) -> list[Result[AnalysisResult, Error]]:
                 """Run all analyses in batch."""
                 for i, config in enumerate(self.configs):
-                    logger.info(f"Running batch analysis {i+1}/{len(self.configs)}")
+                    logger.info(f"Running batch analysis {i + 1}/{len(self.configs)}")
                     result = self.client.run_analysis(config)
                     self.results.append(result)
                 return self.results
@@ -380,7 +372,7 @@ class SocialMapperClient:
         processor = BatchProcessor(self, configs)
         yield processor
 
-    def _generate_cache_key(self, config: Dict[str, Any]) -> str:
+    def _generate_cache_key(self, config: dict[str, Any]) -> str:
         """Generate cache key from configuration."""
         # Simple implementation - in production would use better hashing
         key_parts = [
@@ -391,7 +383,7 @@ class SocialMapperClient:
         ]
         return ":".join(key_parts)
 
-    def _extract_file_paths(self, result_data: Dict[str, Any]) -> Dict[str, Path]:
+    def _extract_file_paths(self, result_data: dict[str, Any]) -> dict[str, Path]:
         """Extract file paths from pipeline results."""
         files = {}
 

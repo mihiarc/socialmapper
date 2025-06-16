@@ -1,5 +1,4 @@
-"""
-SocialMapper: Explore Community Connections.
+"""SocialMapper: Explore Community Connections.
 
 An open-source Python toolkit that helps understand
 community connections through mapping demographics and access to points of interest.
@@ -8,6 +7,7 @@ community connections through mapping demographics and access to points of inter
 # Load environment variables from .env file as early as possible
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -16,6 +16,7 @@ except ImportError:
 # Configure logging for the package (defaults to CRITICAL level)
 try:
     from .util.logging_config import configure_logging
+
     configure_logging()
 except ImportError:
     # Logging config not available - continue without it
@@ -80,18 +81,18 @@ from .census import (
 try:
     from .census.infrastructure.geocoder import CensusGeocoder
     from .census.services.geography_service import GeographyService
-    
+
     # Create a default geography service for neighbor operations
     def get_geography_from_point(lat: float, lon: float):
         """Get geographic identifiers for a point using modern system."""
         census_system = get_census_system()
         return census_system.get_geography_from_point(lat, lon)
-    
+
     def get_counties_from_pois(pois, include_neighbors: bool = True):
         """Get counties for POIs using modern system."""
         census_system = get_census_system()
         return census_system.get_counties_from_pois(pois, include_neighbors)
-    
+
     _NEIGHBOR_FUNCTIONS_AVAILABLE = True
 except ImportError:
     _NEIGHBOR_FUNCTIONS_AVAILABLE = False
@@ -99,6 +100,7 @@ except ImportError:
 # Import visualization module
 try:
     from .visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
+
     _VISUALIZATION_AVAILABLE = True
 except ImportError:
     _VISUALIZATION_AVAILABLE = False
@@ -115,7 +117,7 @@ __all__ = [
     "Err",
     # Modern census system
     "get_census_system",
-    "get_legacy_adapter", 
+    "get_legacy_adapter",
     "CensusSystem",
     "CensusSystemBuilder",
     "StateFormat",

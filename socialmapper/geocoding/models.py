@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Data models for the geocoding system.
+"""Data models for the geocoding system.
 
 This module contains all the data models and enumerations used by the geocoding system.
 """
@@ -9,7 +8,7 @@ import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -40,14 +39,14 @@ class GeocodingConfig:
 
     # Provider settings
     primary_provider: AddressProvider = AddressProvider.NOMINATIM
-    fallback_providers: List[AddressProvider] = field(
+    fallback_providers: list[AddressProvider] = field(
         default_factory=lambda: [AddressProvider.CENSUS]
     )
 
     # API credentials
-    google_api_key: Optional[str] = None
-    here_api_key: Optional[str] = None
-    mapbox_api_key: Optional[str] = None
+    google_api_key: str | None = None
+    here_api_key: str | None = None
+    mapbox_api_key: str | None = None
 
     # Performance settings
     timeout_seconds: int = 10
@@ -76,20 +75,20 @@ class AddressInput(BaseModel):
 
     # Core address components
     address: str = Field(..., min_length=1, description="Full address or search string")
-    city: Optional[str] = Field(None, description="City name")
-    state: Optional[str] = Field(None, description="State name or abbreviation")
-    postal_code: Optional[str] = Field(None, description="ZIP/postal code")
-    country: Optional[str] = Field("US", description="Country code")
+    city: str | None = Field(None, description="City name")
+    state: str | None = Field(None, description="State name or abbreviation")
+    postal_code: str | None = Field(None, description="ZIP/postal code")
+    country: str | None = Field("US", description="Country code")
 
     # Metadata
-    id: Optional[str] = Field(None, description="Unique identifier for this address")
-    source: Optional[str] = Field(None, description="Source system or dataset")
+    id: str | None = Field(None, description="Unique identifier for this address")
+    source: str | None = Field(None, description="Source system or dataset")
 
     # Processing options
-    provider_preference: Optional[AddressProvider] = Field(
+    provider_preference: AddressProvider | None = Field(
         None, description="Preferred geocoding provider"
     )
-    quality_threshold: Optional[AddressQuality] = Field(
+    quality_threshold: AddressQuality | None = Field(
         None, description="Minimum quality requirement"
     )
 
@@ -130,35 +129,35 @@ class GeocodingResult(BaseModel):
 
     # Geocoding results
     success: bool
-    latitude: Optional[float] = Field(None, ge=-90, le=90)
-    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    latitude: float | None = Field(None, ge=-90, le=90)
+    longitude: float | None = Field(None, ge=-180, le=180)
 
     # Quality and metadata
     quality: AddressQuality
-    provider_used: Optional[AddressProvider] = None
-    confidence_score: Optional[float] = Field(None, ge=0, le=1)
+    provider_used: AddressProvider | None = None
+    confidence_score: float | None = Field(None, ge=0, le=1)
 
     # Standardized address components
-    formatted_address: Optional[str] = None
-    street_number: Optional[str] = None
-    street_name: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
-    country: Optional[str] = None
+    formatted_address: str | None = None
+    street_number: str | None = None
+    street_name: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
 
     # Geographic context
-    state_fips: Optional[str] = None
-    county_fips: Optional[str] = None
-    tract_geoid: Optional[str] = None
-    block_group_geoid: Optional[str] = None
+    state_fips: str | None = None
+    county_fips: str | None = None
+    tract_geoid: str | None = None
+    block_group_geoid: str | None = None
 
     # Processing metadata
-    processing_time_ms: Optional[float] = None
+    processing_time_ms: float | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
-    def to_poi_format(self) -> Optional[Dict[str, Any]]:
+    def to_poi_format(self) -> dict[str, Any] | None:
         """Convert to standard POI format for SocialMapper integration."""
         if not self.success or not self.latitude or not self.longitude:
             return None

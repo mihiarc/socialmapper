@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Rich Console Package for SocialMapper.
+"""Rich Console Package for SocialMapper.
 
 This package provides a centralized Rich console for consistent beautiful
 output throughout the SocialMapper application.

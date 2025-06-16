@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Progress Tracking System for SocialMapper.
+"""Modern Progress Tracking System for SocialMapper.
 
 This module provides intelligent progress tracking using tqdm for excellent
 user experience with proper progress bars and performance metrics.
@@ -23,10 +22,11 @@ Optimized Pipeline Stages (from OPTIMIZATION_PLAN.md):
 
 import threading
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 # Import Rich progress bar libraries
 from ..ui.console import (
@@ -64,10 +64,10 @@ class ProgressMetrics:
     stage: ProcessingStage
     start_time: float = field(default_factory=time.time)
     items_processed: int = 0
-    total_items: Optional[int] = None
+    total_items: int | None = None
     throughput_per_second: float = 0.0
     memory_usage_mb: float = 0.0
-    estimated_time_remaining: Optional[float] = None
+    estimated_time_remaining: float | None = None
 
     def get_elapsed_time(self) -> float:
         """Get elapsed time in seconds."""
@@ -79,7 +79,7 @@ class ProgressMetrics:
         if elapsed > 0:
             self.throughput_per_second = self.items_processed / elapsed
 
-    def estimate_time_remaining(self) -> Optional[float]:
+    def estimate_time_remaining(self) -> float | None:
         """Estimate remaining time based on current throughput."""
         if self.total_items and self.throughput_per_second > 0:
             remaining_items = self.total_items - self.items_processed
@@ -88,24 +88,22 @@ class ProgressMetrics:
 
 
 class ModernProgressTracker:
-    """
-    Modern progress tracker for the optimized SocialMapper pipeline.
+    """Modern progress tracker for the optimized SocialMapper pipeline.
 
     This class provides intelligent progress tracking using tqdm for excellent
     user experience with proper progress bars and performance metrics.
     """
 
     def __init__(self, enable_performance_metrics: bool = True):
-        """
-        Initialize the modern progress tracker.
+        """Initialize the modern progress tracker.
 
         Args:
             enable_performance_metrics: Whether to track performance metrics
         """
         self.enable_performance_metrics = enable_performance_metrics
-        self.current_stage: Optional[ProcessingStage] = None
-        self.stage_metrics: Dict[ProcessingStage, ProgressMetrics] = {}
-        self.current_pbar: Optional[RichProgressWrapper] = None
+        self.current_stage: ProcessingStage | None = None
+        self.stage_metrics: dict[ProcessingStage, ProgressMetrics] = {}
+        self.current_pbar: RichProgressWrapper | None = None
         self._lock = threading.Lock()
 
         # Stage descriptions for user-friendly output
@@ -132,10 +130,9 @@ class ModernProgressTracker:
         }
 
     def start_stage(
-        self, stage: ProcessingStage, total_items: Optional[int] = None
+        self, stage: ProcessingStage, total_items: int | None = None
     ) -> ProgressMetrics:
-        """
-        Start tracking a new processing stage with tqdm progress bar.
+        """Start tracking a new processing stage with tqdm progress bar.
 
         Args:
             stage: The processing stage to start
@@ -158,9 +155,7 @@ class ModernProgressTracker:
             description = self.stage_descriptions.get(stage, str(stage))
 
             # Create new progress bar using Rich
-            self.current_pbar = rich_tqdm(
-                total=total_items, desc=f"🚀 {description}", unit="items"
-            )
+            self.current_pbar = rich_tqdm(total=total_items, desc=f"🚀 {description}", unit="items")
 
             logger.info(f"Starting stage: {description}")
 
@@ -169,11 +164,10 @@ class ModernProgressTracker:
     def update_progress(
         self,
         items_processed: int,
-        substage: Optional[str] = None,
-        memory_usage_mb: Optional[float] = None,
+        substage: str | None = None,
+        memory_usage_mb: float | None = None,
     ) -> None:
-        """
-        Update progress for the current stage with tqdm.
+        """Update progress for the current stage with tqdm.
 
         Args:
             items_processed: Number of items processed
@@ -222,7 +216,7 @@ class ModernProgressTracker:
                 if metrics.throughput_per_second >= 1:
                     postfix_dict["rate"] = f"{metrics.throughput_per_second:.1f}/s"
                 else:
-                    postfix_dict["rate"] = f"{1/metrics.throughput_per_second:.1f}s/item"
+                    postfix_dict["rate"] = f"{1 / metrics.throughput_per_second:.1f}s/item"
 
                 if memory_usage_mb:
                     postfix_dict["mem"] = f"{memory_usage_mb:.0f}MB"
@@ -230,8 +224,7 @@ class ModernProgressTracker:
                 self.current_pbar.set_postfix(postfix_dict)
 
     def complete_stage(self, stage: ProcessingStage) -> None:
-        """
-        Mark a processing stage as complete and close progress bar.
+        """Mark a processing stage as complete and close progress bar.
 
         Args:
             stage: The processing stage to complete
@@ -256,7 +249,7 @@ class ModernProgressTracker:
                         if avg_throughput >= 1:
                             completion_msg += f" ({avg_throughput:.1f} items/sec)"
                         else:
-                            completion_msg += f" ({1/avg_throughput:.1f} sec/item)"
+                            completion_msg += f" ({1 / avg_throughput:.1f} sec/item)"
 
                 self.current_pbar.set_description(completion_msg)
                 self.current_pbar.close()
@@ -264,7 +257,7 @@ class ModernProgressTracker:
 
                 logger.info(f"Completed stage: {description} in {elapsed:.1f}s")
 
-    def get_stage_metrics(self, stage: ProcessingStage) -> Optional[ProgressMetrics]:
+    def get_stage_metrics(self, stage: ProcessingStage) -> ProgressMetrics | None:
         """Get metrics for a specific stage."""
         return self.stage_metrics.get(stage)
 
@@ -298,7 +291,7 @@ class ModernProgressTracker:
                     if throughput >= 1:
                         rate_str = f" ({throughput:.1f} items/sec)"
                     else:
-                        rate_str = f" ({1/throughput:.1f} sec/item)"
+                        rate_str = f" ({1 / throughput:.1f} sec/item)"
                 else:
                     rate_str = ""
 
@@ -306,12 +299,11 @@ class ModernProgressTracker:
 
 
 # Global progress tracker instance
-_global_tracker: Optional[ModernProgressTracker] = None
+_global_tracker: ModernProgressTracker | None = None
 
 
 def get_progress_tracker(enable_performance_metrics: bool = True) -> ModernProgressTracker:
-    """
-    Get the global progress tracker instance.
+    """Get the global progress tracker instance.
 
     Args:
         enable_performance_metrics: Whether to enable performance metrics
@@ -328,8 +320,7 @@ def get_progress_tracker(enable_performance_metrics: bool = True) -> ModernProgr
 
 
 def get_progress_bar(iterable=None, **kwargs):
-    """
-    Return the appropriate progress bar based on the execution context.
+    """Return the appropriate progress bar based on the execution context.
 
     This function provides Rich tqdm progress bars for CLI usage.
 
@@ -352,9 +343,8 @@ def get_progress_bar(iterable=None, **kwargs):
 
 
 @contextmanager
-def track_stage(stage: ProcessingStage, total_items: Optional[int] = None):
-    """
-    Context manager for tracking a processing stage with tqdm progress bar.
+def track_stage(stage: ProcessingStage, total_items: int | None = None):
+    """Context manager for tracking a processing stage with tqdm progress bar.
 
     Args:
         stage: The processing stage to track
@@ -373,30 +363,28 @@ def track_stage(stage: ProcessingStage, total_items: Optional[int] = None):
 
 
 # Convenience functions for common progress tracking patterns
-def track_poi_processing(total_pois: Optional[int] = None):
+def track_poi_processing(total_pois: int | None = None):
     """Track POI processing stage with tqdm progress bar."""
     return track_stage(ProcessingStage.POI_PROCESSING, total_pois)
 
 
-def track_isochrone_generation(total_pois: Optional[int] = None):
+def track_isochrone_generation(total_pois: int | None = None):
     """Track isochrone generation stage with tqdm progress bar."""
     return track_stage(ProcessingStage.ISOCHRONE_GENERATION, total_pois)
 
 
-def track_census_integration(total_block_groups: Optional[int] = None):
+def track_census_integration(total_block_groups: int | None = None):
     """Track census integration stage with tqdm progress bar."""
     return track_stage(ProcessingStage.CENSUS_INTEGRATION, total_block_groups)
 
 
-def track_export_visualization(total_outputs: Optional[int] = None):
+def track_export_visualization(total_outputs: int | None = None):
     """Track export and visualization stage with tqdm progress bar."""
     return track_stage(ProcessingStage.EXPORT_VISUALIZATION, total_outputs)
 
 
 # Enhanced progress bar creation functions for specific use cases
-def create_poi_progress_bar(
-    total_pois: int, desc: str = "Processing POIs"
-) -> RichProgressWrapper:
+def create_poi_progress_bar(total_pois: int, desc: str = "Processing POIs") -> RichProgressWrapper:
     """Create a progress bar specifically for POI processing."""
     return rich_tqdm(total=total_pois, desc=f"🎯 {desc}", unit="POI")
 

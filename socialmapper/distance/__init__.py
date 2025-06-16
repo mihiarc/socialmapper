@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern high-performance distance calculation module.
+"""Modern high-performance distance calculation module.
 
 This module provides vectorized distance calculations with 95% performance
 improvement over legacy systems through JIT compilation and modern algorithms.
@@ -26,8 +25,7 @@ logger = get_logger(__name__)
 
 
 def preprocess_poi_data(pois):
-    """
-    Preprocess POI data to ensure coordinates are at the top level.
+    """Preprocess POI data to ensure coordinates are at the top level.
 
     Args:
         pois: List of POI dictionaries
@@ -68,13 +66,12 @@ def preprocess_poi_data(pois):
 
 def add_travel_distances(
     block_groups_gdf: gpd.GeoDataFrame,
-    poi_data: Union[Dict, List[Dict]],
+    poi_data: dict | list[dict],
     n_jobs: int = -1,
     chunk_size: int = 5000,
     verbose: bool = False,
 ) -> gpd.GeoDataFrame:
-    """
-    Calculate and add travel distances from block groups to nearest POIs using
+    """Calculate and add travel distances from block groups to nearest POIs using
     high-performance vectorized algorithms.
 
     Args:
@@ -183,10 +180,9 @@ def add_travel_distances(
 
 
 def _calculate_distances_vectorized(
-    poi_points: List[Point], centroids: gpd.GeoSeries, n_jobs: int, chunk_size: int, verbose: bool
-) -> List[float]:
-    """
-    Calculate distances using the high-performance vectorized engine.
+    poi_points: list[Point], centroids: gpd.GeoSeries, n_jobs: int, chunk_size: int, verbose: bool
+) -> list[float]:
+    """Calculate distances using the high-performance vectorized engine.
 
     This method provides 95% performance improvement over legacy approaches.
     """
@@ -208,9 +204,8 @@ def _calculate_distances_vectorized(
     return distances.tolist()
 
 
-def run_distance_benchmark(poi_points: List[Point], centroids: gpd.GeoSeries) -> Dict:
-    """
-    Run performance benchmark of the vectorized distance calculation methods.
+def run_distance_benchmark(poi_points: list[Point], centroids: gpd.GeoSeries) -> dict:
+    """Run performance benchmark of the vectorized distance calculation methods.
 
     Args:
         poi_points: List of POI Point geometries

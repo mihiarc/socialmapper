@@ -1,11 +1,10 @@
-"""
-Convenience functions for common SocialMapper use cases.
+"""Convenience functions for common SocialMapper use cases.
 
 These functions provide simple interfaces for the most common operations.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .client import SocialMapperClient
@@ -19,11 +18,10 @@ def quick_analysis(
     location: str,
     poi_search: str,
     travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    output_dir: Union[str, Path] = "output",
+    census_variables: list[str] | None = None,
+    output_dir: str | Path = "output",
 ) -> Result[AnalysisResult, Error]:
-    """
-    Quick analysis for a location with minimal configuration.
+    """Quick analysis for a location with minimal configuration.
 
     Args:
         location: Location in "City, State" format
@@ -41,7 +39,7 @@ def quick_analysis(
             "Portland, OR",
             "amenity:school",
             travel_time=10,
-            census_variables=["total_population", "median_income"]
+            census_variables=["total_population", "median_income"],
         )
 
         if result.is_ok():
@@ -75,8 +73,7 @@ def quick_analysis(
 def analyze_location(
     city: str, state: str, poi_type: str = "amenity", poi_name: str = "library", **options
 ) -> Result[AnalysisResult, Error]:
-    """
-    Analyze a specific location with common POIs.
+    """Analyze a specific location with common POIs.
 
     Args:
         city: City name
@@ -91,11 +88,7 @@ def analyze_location(
     Example:
         ```python
         result = analyze_location(
-            "Austin",
-            "TX",
-            poi_type="leisure",
-            poi_name="park",
-            travel_time=20
+            "Austin", "TX", poi_type="leisure", poi_name="park", travel_time=20
         )
         ```
     """
@@ -122,15 +115,14 @@ def analyze_location(
 
 
 def analyze_custom_pois(
-    poi_file: Union[str, Path],
+    poi_file: str | Path,
     travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    name_field: Optional[str] = None,
-    type_field: Optional[str] = None,
+    census_variables: list[str] | None = None,
+    name_field: str | None = None,
+    type_field: str | None = None,
     **options,
 ) -> Result[AnalysisResult, Error]:
-    """
-    Analyze custom POIs from a file.
+    """Analyze custom POIs from a file.
 
     Args:
         poi_file: Path to CSV or JSON file with POI coordinates
@@ -149,7 +141,7 @@ def analyze_custom_pois(
             "my_locations.csv",
             travel_time=20,
             census_variables=["total_population", "median_age"],
-            name_field="location_name"
+            name_field="location_name",
         )
         ```
     """
@@ -187,12 +179,11 @@ def analyze_dataframe(
     df: "pd.DataFrame",
     lat_col: str = "latitude",
     lon_col: str = "longitude",
-    name_col: Optional[str] = "name",
-    type_col: Optional[str] = "type",
+    name_col: str | None = "name",
+    type_col: str | None = "type",
     **options,
 ) -> Result[AnalysisResult, Error]:
-    """
-    Analyze POIs from a pandas DataFrame.
+    """Analyze POIs from a pandas DataFrame.
 
     Args:
         df: DataFrame with POI data
@@ -209,17 +200,17 @@ def analyze_dataframe(
         ```python
         import pandas as pd
 
-        df = pd.DataFrame({
-            'latitude': [37.7749, 37.7849, 37.7949],
-            'longitude': [-122.4194, -122.4094, -122.3994],
-            'name': ['Library 1', 'Library 2', 'Library 3'],
-            'type': ['library', 'library', 'library']
-        })
+        df = pd.DataFrame(
+            {
+                "latitude": [37.7749, 37.7849, 37.7949],
+                "longitude": [-122.4194, -122.4094, -122.3994],
+                "name": ["Library 1", "Library 2", "Library 3"],
+                "type": ["library", "library", "library"],
+            }
+        )
 
         result = analyze_dataframe(
-            df,
-            travel_time=15,
-            census_variables=["total_population"]
+            df, travel_time=15, census_variables=["total_population"]
         )
         ```
     """

@@ -1,5 +1,4 @@
-"""
-Domain layer for the modern census module.
+"""Domain layer for the modern census module.
 
 This package contains the core business entities and interfaces
 that define the census domain without any external dependencies.
@@ -32,18 +31,17 @@ from .interfaces import (
 __all__ = [
     # Entities
     "GeographicUnit",
-    "CensusVariable", 
+    "CensusVariable",
     "CensusDataPoint",
     "BoundaryData",
     "NeighborRelationship",
     "GeocodeResult",
     "CensusRequest",
     "CacheEntry",
-    
     # Interfaces
     "CensusAPIClient",
     "GeocodeProvider",
-    "CacheProvider", 
+    "CacheProvider",
     "DataRepository",
     "ConfigurationProvider",
     "RateLimiter",
@@ -52,4 +50,4 @@ __all__ = [
     "CensusDataDependencies",
     "GeographyDependencies",
     "NeighborDependencies",
-] 
+]

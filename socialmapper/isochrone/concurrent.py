@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Concurrent Isochrone Processing System.
+"""Concurrent Isochrone Processing System.
 
 This module implements high-performance concurrent processing for isochrone
 generation with intelligent task scheduling, resource management, and
@@ -16,9 +15,10 @@ Key Features:
 
 import multiprocessing as mp
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 import geopandas as gpd
 import psutil
@@ -61,11 +61,10 @@ class ConcurrentIsochroneProcessor:
     def __init__(
         self,
         max_network_workers: int = 8,
-        max_isochrone_workers: Optional[int] = None,
-        cache: Optional[ModernNetworkCache] = None,
+        max_isochrone_workers: int | None = None,
+        cache: ModernNetworkCache | None = None,
     ):
-        """
-        Initialize the concurrent processor.
+        """Initialize the concurrent processor.
 
         Args:
             max_network_workers: Maximum concurrent network downloads
@@ -97,7 +96,7 @@ class ConcurrentIsochroneProcessor:
         self._monitor_resources = True
         self._resource_check_interval = 5.0  # seconds
 
-    def _monitor_system_resources(self) -> Dict[str, float]:
+    def _monitor_system_resources(self) -> dict[str, float]:
         """Monitor system resource usage."""
         try:
             cpu_percent = psutil.cpu_percent(interval=0.1)
@@ -114,7 +113,7 @@ class ConcurrentIsochroneProcessor:
             logger.warning(f"Failed to monitor resources: {e}")
             return {}
 
-    def _adjust_workers_based_on_resources(self, resources: Dict[str, float]) -> Tuple[int, int]:
+    def _adjust_workers_based_on_resources(self, resources: dict[str, float]) -> tuple[int, int]:
         """Adjust worker counts based on system resources."""
         network_workers = self.max_network_workers
         isochrone_workers = self.max_isochrone_workers
@@ -134,8 +133,11 @@ class ConcurrentIsochroneProcessor:
         return network_workers, isochrone_workers
 
     def _download_cluster_network(
-        self, cluster: OptimizedPOICluster, travel_time_minutes: int, travel_mode: TravelMode = TravelMode.DRIVE
-    ) -> Tuple[str, Optional[Any]]:
+        self,
+        cluster: OptimizedPOICluster,
+        travel_time_minutes: int,
+        travel_mode: TravelMode = TravelMode.DRIVE,
+    ) -> tuple[str, Any | None]:
         """Download network for a cluster (thread-safe)."""
         try:
             bbox = cluster.get_network_bbox(travel_time_minutes)
@@ -160,8 +162,11 @@ class ConcurrentIsochroneProcessor:
             return cluster.cluster_id, None
 
     def _generate_cluster_isochrones(
-        self, cluster: OptimizedPOICluster, travel_time_minutes: int, travel_mode: TravelMode = TravelMode.DRIVE
-    ) -> List[gpd.GeoDataFrame]:
+        self,
+        cluster: OptimizedPOICluster,
+        travel_time_minutes: int,
+        travel_mode: TravelMode = TravelMode.DRIVE,
+    ) -> list[gpd.GeoDataFrame]:
         """Generate isochrones for all POIs in a cluster."""
         isochrones = []
 
@@ -195,15 +200,14 @@ class ConcurrentIsochroneProcessor:
 
     def process_pois_concurrent(
         self,
-        pois: List[Dict[str, Any]],
+        pois: list[dict[str, Any]],
         travel_time_minutes: int = 15,
         max_cluster_radius_km: float = 15.0,
         min_cluster_size: int = 2,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
         travel_mode: TravelMode = TravelMode.DRIVE,
-    ) -> List[gpd.GeoDataFrame]:
-        """
-        Process POIs concurrently to generate isochrones.
+    ) -> list[gpd.GeoDataFrame]:
+        """Process POIs concurrently to generate isochrones.
 
         Args:
             pois: List of POI dictionaries
@@ -385,18 +389,17 @@ class ConcurrentIsochroneProcessor:
 
 # Convenience function for simple concurrent processing
 def process_isochrones_concurrent(
-    pois: List[Dict[str, Any]],
+    pois: list[dict[str, Any]],
     travel_time_minutes: int = 15,
     max_cluster_radius_km: float = 15.0,
     min_cluster_size: int = 2,
     max_network_workers: int = 8,
-    max_isochrone_workers: Optional[int] = None,
-    cache: Optional[ModernNetworkCache] = None,
-    progress_callback: Optional[Callable] = None,
+    max_isochrone_workers: int | None = None,
+    cache: ModernNetworkCache | None = None,
+    progress_callback: Callable | None = None,
     travel_mode: TravelMode = TravelMode.DRIVE,
-) -> List[gpd.GeoDataFrame]:
-    """
-    Process isochrones concurrently with optimized settings.
+) -> list[gpd.GeoDataFrame]:
+    """Process isochrones concurrently with optimized settings.
 
     Args:
         pois: List of POI dictionaries

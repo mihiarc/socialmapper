@@ -1,5 +1,4 @@
-"""
-Rate limiting and retry logic for external API services.
+"""Rate limiting and retry logic for external API services.
 
 This module provides utilities for managing rate limits and implementing
 retry logic when interacting with external APIs like OpenStreetMaps and Census API.
@@ -8,7 +7,6 @@ retry logic when interacting with external APIs like OpenStreetMaps and Census A
 import random
 import time
 from functools import wraps
-from typing import Dict, List, Optional, Type
 
 import httpx
 
@@ -19,8 +17,7 @@ logger = get_logger(__name__)
 
 
 class RateLimiter:
-    """
-    Rate limiter for API calls to ensure we don't exceed allowed request limits.
+    """Rate limiter for API calls to ensure we don't exceed allowed request limits.
 
     Maintains a record of requests per service and enforces minimum time
     between requests.
@@ -35,11 +32,10 @@ class RateLimiter:
         }
 
         # Timestamps of last requests
-        self.last_request_time: Dict[str, float] = {}
+        self.last_request_time: dict[str, float] = {}
 
     def wait_if_needed(self, service: str = "default") -> None:
-        """
-        Wait if necessary to comply with the rate limit for the specified service.
+        """Wait if necessary to comply with the rate limit for the specified service.
 
         Args:
             service: The service identifier (e.g., "openstreetmap", "census")
@@ -63,8 +59,7 @@ class RateLimiter:
         self.last_request_time[service] = time.time()
 
     def update_rate_limit(self, service: str, requests_per_second: float) -> None:
-        """
-        Update the rate limit for a specific service.
+        """Update the rate limit for a specific service.
 
         Args:
             service: The service identifier
@@ -78,8 +73,7 @@ rate_limiter = RateLimiter()
 
 
 def rate_limited(service: str = "default"):
-    """
-    Decorator to apply rate limiting to a function.
+    """Decorator to apply rate limiting to a function.
 
     Args:
         service: The service identifier to apply rate limiting for
@@ -100,9 +94,7 @@ def rate_limited(service: str = "default"):
 
 
 class RetryHandler:
-    """
-    Handles retrying failed API requests with exponential backoff.
-    """
+    """Handles retrying failed API requests with exponential backoff."""
 
     def __init__(
         self,
@@ -112,8 +104,7 @@ class RetryHandler:
         backoff_factor: float = 2.0,
         jitter: bool = True,
     ):
-        """
-        Initialize the retry handler.
+        """Initialize the retry handler.
 
         Args:
             max_retries: Maximum number of retry attempts
@@ -129,8 +120,7 @@ class RetryHandler:
         self.jitter = jitter
 
     def calculate_delay(self, attempt: int) -> float:
-        """
-        Calculate the delay before the next retry attempt.
+        """Calculate the delay before the next retry attempt.
 
         Args:
             attempt: The current attempt number (0-based)
@@ -149,8 +139,7 @@ class RetryHandler:
         return delay
 
     def should_retry(self, exception: Exception, attempt: int) -> bool:
-        """
-        Determine if a retry should be attempted based on the exception and attempt count.
+        """Determine if a retry should be attempted based on the exception and attempt count.
 
         Args:
             exception: The exception that occurred
@@ -182,11 +171,10 @@ def with_retry(
     base_delay: float = 1.0,
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
-    retry_exceptions: Optional[List[Type[Exception]]] = None,
-    service: Optional[str] = None,
+    retry_exceptions: list[type[Exception]] | None = None,
+    service: str | None = None,
 ):
-    """
-    Decorator that implements retry logic with exponential backoff.
+    """Decorator that implements retry logic with exponential backoff.
 
     Args:
         max_retries: Maximum number of retry attempts
@@ -239,7 +227,7 @@ def with_retry(
 
                     # Log the retry attempt
                     logger.info(
-                        f"Request failed with {e.__class__.__name__}: {str(e)}. "
+                        f"Request failed with {e.__class__.__name__}: {e!s}. "
                         f"Retrying in {delay:.2f}s (attempt {attempt}/{max_retries})"
                     )
 
@@ -253,8 +241,7 @@ def with_retry(
 
 # HTTP Client with built-in retry and rate limiting
 class RateLimitedClient:
-    """
-    HTTP client with built-in rate limiting and retry logic.
+    """HTTP client with built-in rate limiting and retry logic.
 
     Wraps httpx.Client to provide automatic rate limiting and retry functionality
     for API requests.
@@ -263,8 +250,7 @@ class RateLimitedClient:
     def __init__(
         self, service: str = "default", max_retries: int = 3, timeout: float = 30.0, **client_kwargs
     ):
-        """
-        Initialize the rate-limited client.
+        """Initialize the rate-limited client.
 
         Args:
             service: Service identifier for rate limiting
@@ -278,8 +264,7 @@ class RateLimitedClient:
         self.client = httpx.Client(timeout=timeout, **client_kwargs)
 
     def request(self, method: str, url: str, **kwargs) -> httpx.Response:
-        """
-        Make an HTTP request with rate limiting and retry logic.
+        """Make an HTTP request with rate limiting and retry logic.
 
         Args:
             method: HTTP method (GET, POST, etc.)
@@ -317,7 +302,7 @@ class RateLimitedClient:
 
                 # Log the retry attempt
                 logger.info(
-                    f"Request to {url} failed with {e.__class__.__name__}: {str(e)}. "
+                    f"Request to {url} failed with {e.__class__.__name__}: {e!s}. "
                     f"Retrying in {delay:.2f}s (attempt {attempt}/{self.max_retries})"
                 )
 
@@ -345,8 +330,7 @@ class RateLimitedClient:
 
 # Async version of the HTTP client
 class AsyncRateLimitedClient:
-    """
-    Asynchronous HTTP client with built-in rate limiting and retry logic.
+    """Asynchronous HTTP client with built-in rate limiting and retry logic.
 
     Wraps httpx.AsyncClient to provide automatic rate limiting and retry functionality
     for API requests.
@@ -355,8 +339,7 @@ class AsyncRateLimitedClient:
     def __init__(
         self, service: str = "default", max_retries: int = 3, timeout: float = 30.0, **client_kwargs
     ):
-        """
-        Initialize the async rate-limited client.
+        """Initialize the async rate-limited client.
 
         Args:
             service: Service identifier for rate limiting
@@ -370,8 +353,7 @@ class AsyncRateLimitedClient:
         self.client = httpx.AsyncClient(timeout=timeout, **client_kwargs)
 
     async def request(self, method: str, url: str, **kwargs) -> httpx.Response:
-        """
-        Make an asynchronous HTTP request with rate limiting and retry logic.
+        """Make an asynchronous HTTP request with rate limiting and retry logic.
 
         Args:
             method: HTTP method (GET, POST, etc.)
@@ -409,7 +391,7 @@ class AsyncRateLimitedClient:
 
                 # Log the retry attempt
                 logger.info(
-                    f"Request to {url} failed with {e.__class__.__name__}: {str(e)}. "
+                    f"Request to {url} failed with {e.__class__.__name__}: {e!s}. "
                     f"Retrying in {delay:.2f}s (attempt {attempt}/{self.max_retries})"
                 )
 

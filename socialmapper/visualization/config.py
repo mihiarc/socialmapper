@@ -1,14 +1,13 @@
 """Configuration classes for visualization module."""
 
 from enum import Enum
-from typing import Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class ColorScheme(str, Enum):
     """Available color schemes for choropleth maps."""
-    
+
     # Sequential schemes (for continuous data)
     YLORBR = "YlOrBr"
     YLORD = "YlOrRd"
@@ -23,7 +22,7 @@ class ColorScheme(str, Enum):
     INFERNO = "inferno"
     MAGMA = "magma"
     CIVIDIS = "cividis"
-    
+
     # Diverging schemes (for data with meaningful midpoint)
     RDBU = "RdBu"
     RDYLBU = "RdYlBu"
@@ -34,7 +33,7 @@ class ColorScheme(str, Enum):
     PRGN = "PRGn"
     PUOR = "PuOr"
     RDGY = "RdGy"
-    
+
     # Qualitative schemes (for categorical data)
     SET1 = "Set1"
     SET2 = "Set2"
@@ -50,7 +49,7 @@ class ColorScheme(str, Enum):
 
 class ClassificationScheme(str, Enum):
     """Classification methods for data binning."""
-    
+
     QUANTILES = "quantiles"
     EQUAL_INTERVAL = "equal_interval"
     FISHER_JENKS = "fisher_jenks"
@@ -68,10 +67,10 @@ class ClassificationScheme(str, Enum):
 
 class LegendConfig(BaseModel):
     """Configuration for map legend."""
-    
-    title: Optional[str] = None
+
+    title: str | None = None
     loc: str = "lower left"
-    bbox_to_anchor: Optional[Tuple[float, float]] = None
+    bbox_to_anchor: tuple[float, float] | None = None
     ncol: int = 1
     fontsize: int = 10
     title_fontsize: int = 12
@@ -81,14 +80,22 @@ class LegendConfig(BaseModel):
     borderpad: float = 0.4
     columnspacing: float = 2.0
     fmt: str = "{:.0f}"
-    labels: Optional[list[str]] = None
-    
+    labels: list[str] | None = None
+
     @field_validator("loc")
     def validate_loc(cls, v):
         valid_locs = [
-            "best", "upper right", "upper left", "lower left",
-            "lower right", "right", "center left", "center right",
-            "lower center", "upper center", "center"
+            "best",
+            "upper right",
+            "upper left",
+            "lower left",
+            "lower right",
+            "right",
+            "center left",
+            "center right",
+            "lower center",
+            "upper center",
+            "center",
         ]
         if v not in valid_locs:
             raise ValueError(f"loc must be one of {valid_locs}")
@@ -97,13 +104,13 @@ class LegendConfig(BaseModel):
 
 class MapConfig(BaseModel):
     """Configuration for chloropleth maps."""
-    
+
     # Figure settings
-    figsize: Tuple[float, float] = (12, 10)
+    figsize: tuple[float, float] = (12, 10)
     dpi: int = 300
     facecolor: str = "white"
     edgecolor: str = "none"
-    
+
     # Map appearance
     color_scheme: ColorScheme = ColorScheme.YLORBR
     classification_scheme: ClassificationScheme = ClassificationScheme.FISHER_JENKS
@@ -112,48 +119,48 @@ class MapConfig(BaseModel):
     edge_color: str = "white"
     edge_width: float = 0.5
     alpha: float = 1.0
-    
+
     # Map elements
-    title: Optional[str] = None
+    title: str | None = None
     title_fontsize: int = 16
     title_fontweight: str = "bold"
     title_pad: float = 20
-    
+
     # Legend configuration
     legend: bool = True
     legend_config: LegendConfig = Field(default_factory=LegendConfig)
-    
+
     # Additional elements
     north_arrow: bool = True
     north_arrow_location: str = "upper right"
     north_arrow_scale: float = 0.5
-    
+
     scale_bar: bool = True
     scale_bar_location: str = "lower right"
     scale_bar_length_fraction: float = 0.25
     scale_bar_box_alpha: float = 0.8
     scale_bar_font_size: int = 10
-    
+
     # Attribution
-    attribution: Optional[str] = "Data: US Census Bureau, OpenStreetMap | Analysis: SocialMapper"
+    attribution: str | None = "Data: US Census Bureau, OpenStreetMap | Analysis: SocialMapper"
     attribution_fontsize: int = 9
     attribution_color: str = "gray"
-    
+
     # Export settings
     bbox_inches: str = "tight"
     pad_inches: float = 0.1
-    
+
     # Basemap settings
     add_basemap: bool = True
     basemap_source: str = "OpenStreetMap.Mapnik"
     basemap_alpha: float = 0.6
-    basemap_attribution: Optional[str] = None
-    basemap_zoom: Union[str, int, None] = "auto"  # Can be "auto", integer zoom level, or None
-    
+    basemap_attribution: str | None = None
+    basemap_zoom: str | int | None = "auto"  # Can be "auto", integer zoom level, or None
+
     # Advanced settings
-    simplify_tolerance: Optional[float] = 0.01
+    simplify_tolerance: float | None = 0.01
     aspect: str = "auto"
-    
+
     @field_validator("n_classes")
     def validate_n_classes(cls, v):
         if v < 2 or v > 12:

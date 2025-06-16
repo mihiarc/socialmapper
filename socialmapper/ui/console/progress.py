@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-Progress bar and tracking functionality for SocialMapper.
+"""Progress bar and tracking functionality for SocialMapper.
 
 This module provides Rich-based progress bars and progress tracking utilities.
 """
 
 from contextlib import contextmanager
-from typing import Optional
 
 from rich.progress import (
     BarColumn,
@@ -35,7 +33,7 @@ class RichProgressColumn(ProgressColumn):
         if task.speed >= 1:
             return Text(f"{task.speed:.1f} items/sec", style="progress.percentage")
         else:
-            return Text(f"{1/task.speed:.1f} sec/item", style="progress.percentage")
+            return Text(f"{1 / task.speed:.1f} sec/item", style="progress.percentage")
 
 
 class RichProgressWrapper:
@@ -133,10 +131,9 @@ def rich_tqdm(*args, **kwargs):
 
 @contextmanager
 def progress_bar(
-    description: str, total: Optional[int] = None, transient: bool = False, disable: bool = False
+    description: str, total: int | None = None, transient: bool = False, disable: bool = False
 ):
-    """
-    Context manager for Rich progress bars.
+    """Context manager for Rich progress bars.
 
     Args:
         description: Progress description

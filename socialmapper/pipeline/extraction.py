@@ -1,5 +1,4 @@
-"""
-POI extraction module for the SocialMapper pipeline.
+"""POI extraction module for the SocialMapper pipeline.
 
 This module handles extraction of POI data from custom files or OpenStreetMap.
 """
@@ -8,7 +7,7 @@ import csv
 import json
 import os
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.error import URLError
 
 from ..util import PathSecurityError, sanitize_path
@@ -16,9 +15,8 @@ from ..util import PathSecurityError, sanitize_path
 
 def parse_custom_coordinates(
     file_path: str, name_field: str = None, type_field: str = None, preserve_original: bool = True
-) -> Dict:
-    """
-    Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
+) -> dict:
+    """Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
 
     Args:
         file_path: Path to the custom coordinates file
@@ -44,7 +42,7 @@ def parse_custom_coordinates(
     states_found = set()
 
     if file_extension == ".json":
-        with open(safe_file_path, "r") as f:
+        with open(safe_file_path) as f:
             data = json.load(f)
 
         # Handle different possible JSON formats
@@ -105,7 +103,7 @@ def parse_custom_coordinates(
 
     elif file_extension == ".csv":
         # Use newline="" to ensure correct universal newline handling across platforms
-        with open(safe_file_path, "r", newline="") as f:
+        with open(safe_file_path, newline="") as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader):
                 # Try to find lat/lon in different possible column names
@@ -164,7 +162,7 @@ def parse_custom_coordinates(
 
                     pois.append(poi)
                 else:
-                    print(f"Warning: Skipping row {i+1} - missing required coordinates")
+                    print(f"Warning: Skipping row {i + 1} - missing required coordinates")
 
     else:
         raise ValueError(
@@ -188,19 +186,18 @@ def parse_custom_coordinates(
 
 
 def extract_poi_data(
-    custom_coords_path: Optional[str] = None,
-    geocode_area: Optional[str] = None,
-    state: Optional[str] = None,
-    city: Optional[str] = None,
-    poi_type: Optional[str] = None,
-    poi_name: Optional[str] = None,
-    additional_tags: Optional[Dict] = None,
-    name_field: Optional[str] = None,
-    type_field: Optional[str] = None,
-    max_poi_count: Optional[int] = None,
-) -> Tuple[Dict[str, Any], str, List[str], bool]:
-    """
-    Extract POI data from either custom coordinates or OpenStreetMap.
+    custom_coords_path: str | None = None,
+    geocode_area: str | None = None,
+    state: str | None = None,
+    city: str | None = None,
+    poi_type: str | None = None,
+    poi_name: str | None = None,
+    additional_tags: dict | None = None,
+    name_field: str | None = None,
+    type_field: str | None = None,
+    max_poi_count: int | None = None,
+) -> tuple[dict[str, Any], str, list[str], bool]:
+    """Extract POI data from either custom coordinates or OpenStreetMap.
 
     Returns:
         Tuple of (poi_data, base_filename, state_abbreviations, sampled_pois)
@@ -211,7 +208,7 @@ def extract_poi_data(
 
     # Get census system for state normalization
     census_system = get_census_system()
-    
+
     state_abbreviations = []
     sampled_pois = False
 
@@ -262,7 +259,11 @@ def extract_poi_data(
             )
 
         # Normalize state to abbreviation if provided
-        state_abbr = census_system.normalize_state(state, to_format=StateFormat.ABBREVIATION) if state else None
+        state_abbr = (
+            census_system.normalize_state(state, to_format=StateFormat.ABBREVIATION)
+            if state
+            else None
+        )
 
         # Create POI configuration
         config = create_poi_config(
@@ -326,7 +327,9 @@ def extract_poi_data(
         # Extract state from config if available
         state_name = config.get("state")
         if state_name:
-            state_abbr = census_system.normalize_state(state_name, to_format=StateFormat.ABBREVIATION)
+            state_abbr = census_system.normalize_state(
+                state_name, to_format=StateFormat.ABBREVIATION
+            )
             if state_abbr and state_abbr not in state_abbreviations:
                 state_abbreviations.append(state_abbr)
                 print(f"Using state from parameters: {state_name} ({state_abbr})")

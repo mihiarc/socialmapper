@@ -9,8 +9,8 @@ from .client import TigerGeometryClient
 from .models import GeographyLevel, GeometryQuery, GeometryResult
 
 __all__ = [
-    "TigerGeometryClient",
     "GeographyLevel",
     "GeometryQuery",
     "GeometryResult",
+    "TigerGeometryClient",
 ]

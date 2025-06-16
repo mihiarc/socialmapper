@@ -1,24 +1,22 @@
-"""
-Reporting module for the SocialMapper pipeline.
+"""Reporting module for the SocialMapper pipeline.
 
 This module handles generation of final reports and summaries.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from ..progress import get_progress_tracker
 from ..util.invalid_data_tracker import get_global_tracker
 
 
 def generate_final_report(
-    poi_data: Dict[str, Any],
+    poi_data: dict[str, Any],
     sampled_pois: bool,
-    result_files: Dict[str, Any],
+    result_files: dict[str, Any],
     base_filename: str,
     travel_time: int,
-) -> Dict[str, Any]:
-    """
-    Generate final pipeline report and summary.
+) -> dict[str, Any]:
+    """Generate final pipeline report and summary.
 
     Args:
         poi_data: POI data dictionary
@@ -42,7 +40,6 @@ def generate_final_report(
         or invalid_summary["total_invalid_clusters"] > 0
         or invalid_summary["total_processing_errors"] > 0
     ):
-
         print("\n=== Invalid Data Report ===")
         invalid_tracker.print_summary()
 
@@ -57,7 +54,10 @@ def generate_final_report(
             print(f"⚠️  Warning: Could not save invalid data report: {e}")
 
     # Build final result dictionary
-    result = {"poi_data": poi_data, "interactive_maps_available": False}  # Visualization modules removed
+    result = {
+        "poi_data": poi_data,
+        "interactive_maps_available": False,
+    }  # Visualization modules removed
 
     # Add CSV path if applicable
     if "csv_data" in result_files:

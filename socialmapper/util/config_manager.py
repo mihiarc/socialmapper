@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Configuration Manager for SocialMapper.
+"""Configuration Manager for SocialMapper.
 
 This module provides utilities for managing global configuration state
 and providing centralized access to optimization settings.
@@ -16,25 +15,24 @@ _global_config: Optional["OptimizationConfig"] = None
 
 
 def get_global_config() -> "OptimizationConfig":
-    """
-    Get the global optimization configuration.
-    
+    """Get the global optimization configuration.
+
     Returns:
         Current global optimization configuration
     """
     global _global_config
-    
+
     if _global_config is None:
         from ..config.optimization import OptimizationConfig
+
         _global_config = OptimizationConfig.from_environment()
-    
+
     return _global_config
 
 
 def set_global_config(config: "OptimizationConfig") -> None:
-    """
-    Set a new global configuration.
-    
+    """Set a new global configuration.
+
     Args:
         config: New optimization configuration to use globally
     """
@@ -43,18 +41,17 @@ def set_global_config(config: "OptimizationConfig") -> None:
 
 
 def update_global_config(**kwargs) -> None:
-    """
-    Update the global configuration with new values.
-    
+    """Update the global configuration with new values.
+
     Args:
-        **kwargs: Configuration updates using dot notation 
+        **kwargs: Configuration updates using dot notation
                   (e.g., 'distance.chunk_size', 'memory.max_memory_gb')
     """
     global _global_config
-    
+
     # Ensure config exists
     config = get_global_config()
-    
+
     for key, value in kwargs.items():
         if hasattr(config, key):
             # Direct attribute
@@ -78,33 +75,32 @@ def reset_global_config() -> None:
     """Reset the global configuration to environment defaults."""
     global _global_config
     from ..config.optimization import OptimizationConfig
+
     _global_config = OptimizationConfig.from_environment()
 
 
 def apply_preset(preset_name: str) -> None:
-    """
-    Apply a configuration preset to the global configuration.
-    
+    """Apply a configuration preset to the global configuration.
+
     Args:
         preset_name: Name of the preset to apply
-                    ("development", "production", "memory_constrained", 
+                    ("development", "production", "memory_constrained",
                      "high_performance", "auto", etc.)
     """
     from .config_presets import get_config_for_environment
-    
+
     preset_config = get_config_for_environment(preset_name)
     set_global_config(preset_config)
 
 
 def get_config_summary() -> dict[str, Any]:
-    """
-    Get a summary of the current global configuration.
-    
+    """Get a summary of the current global configuration.
+
     Returns:
         Dictionary with configuration summary
     """
     config = get_global_config()
-    
+
     return {
         "distance": {
             "engine": config.distance.engine,
@@ -143,44 +139,43 @@ def get_config_summary() -> dict[str, Any]:
 
 
 def validate_config() -> dict[str, Any]:
-    """
-    Validate the current global configuration.
-    
+    """Validate the current global configuration.
+
     Returns:
         Dictionary with validation results
     """
     from .system_detection import validate_system_requirements
-    
+
     config = get_global_config()
     system_validation = validate_system_requirements()
-    
+
     warnings = []
     errors = []
-    
+
     # Validate memory settings
     if config.memory.max_memory_gb > 64:
         warnings.append("Memory limit is very high (>64GB), ensure this is intentional")
-    
+
     if config.memory.streaming_batch_size < 10:
         warnings.append("Streaming batch size is very small, may impact performance")
-    
+
     # Validate isochrone settings
     if config.isochrone.max_concurrent_downloads > 100:
         warnings.append("Very high concurrent downloads may trigger rate limiting")
-    
+
     if config.isochrone.max_cache_size_gb < 0.1:
         warnings.append("Cache size is very small, may impact performance")
-    
+
     # Validate distance settings
     if config.distance.chunk_size < 100:
         warnings.append("Distance chunk size is very small, may impact performance")
     elif config.distance.chunk_size > 100000:
         warnings.append("Distance chunk size is very large, may cause memory issues")
-    
+
     # Combine with system validation
     all_warnings = warnings + system_validation.get("warnings", [])
     all_errors = errors + system_validation.get("errors", [])
-    
+
     return {
         "is_valid": len(all_errors) == 0,
         "warnings": all_warnings,
@@ -191,50 +186,46 @@ def validate_config() -> dict[str, Any]:
 
 
 def optimize_for_current_system() -> None:
-    """
-    Automatically optimize configuration for the current system.
-    """
+    """Automatically optimize configuration for the current system."""
     from .config_presets import ConfigPresets
-    
+
     optimized_config = ConfigPresets.auto_detect()
     set_global_config(optimized_config)
 
 
 def save_config_to_file(filepath: str) -> None:
-    """
-    Save the current configuration to a JSON file.
-    
+    """Save the current configuration to a JSON file.
+
     Args:
         filepath: Path to save the configuration file
     """
     import json
     from pathlib import Path
-    
+
     config_dict = get_config_summary()
-    
+
     # Ensure directory exists
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(filepath, 'w') as f:
+
+    with open(filepath, "w") as f:
         json.dump(config_dict, f, indent=2)
 
 
 def load_config_from_file(filepath: str) -> None:
-    """
-    Load configuration from a JSON file and apply it globally.
-    
+    """Load configuration from a JSON file and apply it globally.
+
     Args:
         filepath: Path to the configuration file
     """
     import json
     from pathlib import Path
-    
+
     if not Path(filepath).exists():
         raise FileNotFoundError(f"Configuration file not found: {filepath}")
-    
-    with open(filepath, 'r') as f:
+
+    with open(filepath) as f:
         config_dict = json.load(f)
-    
+
     # Apply configuration updates
     updates = {}
     for section, settings in config_dict.items():
@@ -245,7 +236,7 @@ def load_config_from_file(filepath: str) -> None:
             # Apply nested settings with dot notation
             for key, value in settings.items():
                 updates[f"{section}.{key}"] = value
-    
+
     update_global_config(**updates)
 
 
@@ -261,4 +252,4 @@ def update_config(**kwargs) -> None:
 
 
 def reset_config() -> None:
-    """Alias for reset_global_config() for backward compatibility.""" 
+    """Alias for reset_global_config() for backward compatibility."""

@@ -3,19 +3,16 @@
 import html
 import ipaddress
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from urllib.parse import quote
 
 
 class InputValidationError(Exception):
     """Raised when input validation fails."""
 
-    pass
-
 
 def sanitize_for_api(input_str: str, max_length: int = 1000) -> str:
-    """
-    Sanitize user input for safe use in API calls.
+    """Sanitize user input for safe use in API calls.
 
     Args:
         input_str: The input string to sanitize
@@ -50,8 +47,7 @@ def sanitize_for_api(input_str: str, max_length: int = 1000) -> str:
 
 
 def validate_address(address: str) -> str:
-    """
-    Validate and sanitize an address string for geocoding.
+    """Validate and sanitize an address string for geocoding.
 
     Args:
         address: The address to validate
@@ -92,9 +88,8 @@ def validate_address(address: str) -> str:
     return address
 
 
-def validate_coordinates(lat: Union[str, float], lon: Union[str, float]) -> tuple[float, float]:
-    """
-    Validate geographic coordinates.
+def validate_coordinates(lat: str | float, lon: str | float) -> tuple[float, float]:
+    """Validate geographic coordinates.
 
     Args:
         lat: Latitude value
@@ -123,8 +118,7 @@ def validate_coordinates(lat: Union[str, float], lon: Union[str, float]) -> tupl
 
 
 def validate_census_variable(variable: str) -> str:
-    """
-    Validate a census variable code.
+    """Validate a census variable code.
 
     Args:
         variable: Census variable code
@@ -152,8 +146,7 @@ def validate_census_variable(variable: str) -> str:
 
 
 def validate_state_name(state: str) -> str:
-    """
-    Validate a US state name or abbreviation.
+    """Validate a US state name or abbreviation.
 
     Args:
         state: State name or abbreviation
@@ -281,8 +274,7 @@ def validate_state_name(state: str) -> str:
 
 
 def validate_poi_type(poi_type: str, poi_name: str) -> tuple[str, str]:
-    """
-    Validate POI type and name for OpenStreetMap queries.
+    """Validate POI type and name for OpenStreetMap queries.
 
     Args:
         poi_type: POI type (e.g., 'amenity', 'shop')
@@ -311,21 +303,20 @@ def validate_poi_type(poi_type: str, poi_name: str) -> tuple[str, str]:
     poi_type = poi_type.lower().strip()
     if poi_type not in allowed_types:
         raise InputValidationError(
-            f"Invalid POI type: {poi_type}. " f"Allowed types: {', '.join(sorted(allowed_types))}"
+            f"Invalid POI type: {poi_type}. Allowed types: {', '.join(sorted(allowed_types))}"
         )
 
     # Validate POI name - alphanumeric with underscores
     if not re.match(r"^[a-z0-9_]+$", poi_name.lower()):
         raise InputValidationError(
-            f"Invalid POI name: {poi_name}. " "Must contain only letters, numbers, and underscores"
+            f"Invalid POI name: {poi_name}. Must contain only letters, numbers, and underscores"
         )
 
     return poi_type, poi_name
 
 
 def validate_url(url: str) -> str:
-    """
-    Validate and sanitize a URL.
+    """Validate and sanitize a URL.
 
     Args:
         url: URL to validate
@@ -369,8 +360,7 @@ def validate_url(url: str) -> str:
 
 
 def encode_for_url(value: str) -> str:
-    """
-    Safely encode a string for use in URLs.
+    """Safely encode a string for use in URLs.
 
     Args:
         value: String to encode
@@ -382,10 +372,9 @@ def encode_for_url(value: str) -> str:
 
 
 def validate_api_response(
-    response_data: Any, expected_fields: Optional[List[str]] = None
-) -> Dict[str, Any]:
-    """
-    Validate API response data structure.
+    response_data: Any, expected_fields: list[str] | None = None
+) -> dict[str, Any]:
+    """Validate API response data structure.
 
     Args:
         response_data: Response data from API
@@ -411,8 +400,7 @@ def validate_api_response(
 
 
 def sanitize_filename(filename: str) -> str:
-    """
-    Sanitize a filename for safe file operations.
+    """Sanitize a filename for safe file operations.
 
     Args:
         filename: Filename to sanitize

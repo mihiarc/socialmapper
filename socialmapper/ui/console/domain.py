@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""
-Domain-specific display functions for SocialMapper.
+"""Domain-specific display functions for SocialMapper.
 
 This module provides specialized display functions for census data, POIs,
 and other SocialMapper-specific data types.
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 from rich import box
 from rich.table import Table
@@ -15,7 +14,7 @@ from rich.table import Table
 from .core import console, print_info, print_warning
 
 
-def print_census_variables_table(variables: Dict[str, str]):
+def print_census_variables_table(variables: dict[str, str]):
     """Print available census variables in a formatted table."""
     table = Table(title="📊 Available Census Variables", box=box.ROUNDED)
     table.add_column("Variable Name", style="cyan", no_wrap=True)
@@ -27,7 +26,7 @@ def print_census_variables_table(variables: Dict[str, str]):
     console.print(table)
 
 
-def print_poi_summary_table(pois: List[Dict[str, Any]]):
+def print_poi_summary_table(pois: list[dict[str, Any]]):
     """Print a summary table of POIs."""
     if not pois:
         print_warning("No POIs found")
@@ -58,7 +57,7 @@ def print_poi_summary_table(pois: List[Dict[str, Any]]):
     console.print(table)
 
 
-def print_performance_summary(metrics: Dict[str, Any]):
+def print_performance_summary(metrics: dict[str, Any]):
     """Print a performance summary table."""
     table = Table(title="⚡ Performance Summary", box=box.ROUNDED)
     table.add_column("Metric", style="cyan", no_wrap=True)
@@ -80,7 +79,7 @@ def print_performance_summary(metrics: Dict[str, Any]):
     console.print(table)
 
 
-def print_file_summary(output_dir: str, files: List[str]):
+def print_file_summary(output_dir: str, files: list[str]):
     """Print a summary of generated files."""
     if not files:
         print_warning("No files were generated")
@@ -130,7 +129,7 @@ def log_census_integration_start(count: int):
     print_info(f"Integrating census data for {count:,} block groups", "Census Integration")
 
 
-def log_export_start(formats: List[str]):
+def log_export_start(formats: list[str]):
     """Log the start of data export."""
     formats_str = ", ".join(formats)
     print_info(f"Exporting results in formats: {formats_str}", "Data Export")

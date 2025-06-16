@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Logging configuration for SocialMapper.
+"""Logging configuration for SocialMapper.
 
 This module provides Rich-enhanced logging setup and utilities.
 """
@@ -18,8 +17,7 @@ rich_handler = RichHandler(
 
 
 def setup_rich_logging(level: str = "INFO", show_time: bool = True, show_path: bool = False):
-    """
-    Set up Rich-enhanced logging for SocialMapper.
+    """Set up Rich-enhanced logging for SocialMapper.
 
     Args:
         level: Logging level (default: "INFO")
@@ -40,8 +38,7 @@ def setup_rich_logging(level: str = "INFO", show_time: bool = True, show_path: b
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a Rich-enabled logger.
+    """Get a Rich-enabled logger.
 
     Args:
         name: Logger name (usually __name__)

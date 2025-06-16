@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Utility functions for the socialmapper project.
+"""Utility functions for the socialmapper project.
 
 This module provides various utility functions including census variable handling,
 rate limiting, path security, and input validation.
@@ -9,6 +8,7 @@ rate limiting, path security, and input validation.
 # Load environment variables from .env file as early as possible
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -38,6 +38,7 @@ from ..census import get_census_system
 # Create a default system instance for utility functions
 _census_system = None
 
+
 def _get_census_system():
     """Get the census system instance."""
     global _census_system
@@ -45,43 +46,51 @@ def _get_census_system():
         _census_system = get_census_system()
     return _census_system
 
+
 # Census variable utilities - now using modern system
 def census_code_to_name(census_code: str) -> str:
     """Convert a census variable code to its human-readable name."""
     return _get_census_system()._variable_service.code_to_name(census_code)
 
+
 def census_name_to_code(name: str) -> str:
     """Convert a human-readable name to its census variable code."""
     return _get_census_system()._variable_service.name_to_code(name)
+
 
 def normalize_census_variable(variable: str) -> str:
     """Normalize a census variable to its code form."""
     return _get_census_system()._variable_service.normalize_variable(variable)
 
+
 def get_readable_census_variable(variable: str) -> str:
     """Get a human-readable representation of a census variable."""
     return _get_census_system()._variable_service.get_readable_variable(variable)
 
-def get_readable_census_variables(variables: List[str]) -> List[str]:
+
+def get_readable_census_variables(variables: list[str]) -> list[str]:
     """Get human-readable representations for a list of census variables."""
     return _get_census_system()._variable_service.get_readable_variables(variables)
+
 
 def validate_census_variable(variable: str) -> bool:
     """Validate a census variable code or name."""
     return _get_census_system()._variable_service.validate_variable(variable)
 
-def get_census_api_key() -> Optional[str]:
+
+def get_census_api_key() -> str | None:
     """Get the Census API key from environment variable."""
     return _get_census_api_key()
+
 
 # Legacy mappings for backward compatibility
 CENSUS_VARIABLE_MAPPING = _get_census_system()._variable_service.VARIABLE_MAPPING
 VARIABLE_COLORMAPS = _get_census_system()._variable_service.VARIABLE_COLORMAPS
 
+
 # Add north arrow utility function
 def add_north_arrow(ax, position="upper right", scale=0.1):
-    """
-    Add a north arrow to a map.
+    """Add a north arrow to a map.
 
     Args:
         ax: Matplotlib axis to add arrow to
@@ -125,9 +134,6 @@ def add_north_arrow(ax, position="upper right", scale=0.1):
     )
 
     return arrow
-
-
-
 
 
 # Import utilities to expose at the module level
@@ -346,9 +352,7 @@ STATE_NAMES_TO_ABBR = {
 
 
 def state_fips_to_abbreviation(fips_code):
-    """
-    Convert state FIPS code to state abbreviation.
-    """
+    """Convert state FIPS code to state abbreviation."""
     fips_to_abbrev = {
         "01": "AL",
         "02": "AK",
@@ -443,7 +447,7 @@ class AsyncRateLimitedClient:
                 # Exponential backoff with jitter
                 wait_time = 2**attempt + (0.1 * attempt)
                 logging.warning(
-                    f"Request failed (attempt {attempt+1}/{self.max_retries+1}): {str(e)}. "
+                    f"Request failed (attempt {attempt + 1}/{self.max_retries + 1}): {e!s}. "
                     f"Retrying in {wait_time:.1f}s"
                 )
                 await asyncio.sleep(wait_time)

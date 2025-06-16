@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-System Detection Utilities for SocialMapper.
+"""System Detection Utilities for SocialMapper.
 
 This module provides utilities to detect system capabilities and resources
 for optimal configuration and performance tuning.
@@ -8,14 +7,13 @@ for optimal configuration and performance tuning.
 
 import multiprocessing as mp
 import platform
-from typing import Any, Dict
+from typing import Any
 
 import psutil
 
 
-def get_system_capabilities() -> Dict[str, Any]:
-    """
-    Get comprehensive system capability information.
+def get_system_capabilities() -> dict[str, Any]:
+    """Get comprehensive system capability information.
 
     Returns:
         Dictionary with system information including CPU, memory, disk, and OS details
@@ -24,24 +22,21 @@ def get_system_capabilities() -> Dict[str, Any]:
         cpu_count = mp.cpu_count()
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
-        
+
         return {
             # CPU Information
             "cpu_count": cpu_count,
             "cpu_count_physical": psutil.cpu_count(logical=False) or cpu_count,
-            
-            # Memory Information  
+            # Memory Information
             "memory_total_gb": memory.total / 1024**3,
             "memory_available_gb": memory.available / 1024**3,
             "memory_used_gb": memory.used / 1024**3,
             "memory_percent_used": memory.percent,
-            
             # Disk Information
             "disk_total_gb": disk.total / 1024**3,
             "disk_free_gb": disk.free / 1024**3,
             "disk_used_gb": disk.used / 1024**3,
             "disk_percent_used": (disk.used / disk.total) * 100,
-            
             # System Information
             "platform": platform.system(),
             "platform_release": platform.release(),
@@ -53,8 +48,7 @@ def get_system_capabilities() -> Dict[str, Any]:
 
 
 def get_optimal_worker_count(task_type: str = "cpu_bound") -> int:
-    """
-    Get optimal number of workers based on system capabilities and task type.
+    """Get optimal number of workers based on system capabilities and task type.
 
     Args:
         task_type: Type of task ("cpu_bound", "io_bound", "mixed")
@@ -63,7 +57,7 @@ def get_optimal_worker_count(task_type: str = "cpu_bound") -> int:
         Optimal number of workers
     """
     cpu_count = mp.cpu_count()
-    
+
     if task_type == "cpu_bound":
         # For CPU-bound tasks, use all cores
         return cpu_count
@@ -76,8 +70,7 @@ def get_optimal_worker_count(task_type: str = "cpu_bound") -> int:
 
 
 def get_available_memory_gb() -> float:
-    """
-    Get available system memory in GB.
+    """Get available system memory in GB.
 
     Returns:
         Available memory in gigabytes
@@ -90,8 +83,7 @@ def get_available_memory_gb() -> float:
 
 
 def get_total_memory_gb() -> float:
-    """
-    Get total system memory in GB.
+    """Get total system memory in GB.
 
     Returns:
         Total memory in gigabytes
@@ -104,8 +96,7 @@ def get_total_memory_gb() -> float:
 
 
 def get_free_disk_space_gb(path: str = "/") -> float:
-    """
-    Get free disk space in GB for the given path.
+    """Get free disk space in GB for the given path.
 
     Args:
         path: Path to check disk space for
@@ -121,8 +112,7 @@ def get_free_disk_space_gb(path: str = "/") -> float:
 
 
 def is_memory_constrained() -> bool:
-    """
-    Determine if the system is memory constrained.
+    """Determine if the system is memory constrained.
 
     Returns:
         True if system has limited memory (< 4GB)
@@ -131,8 +121,7 @@ def is_memory_constrained() -> bool:
 
 
 def is_high_performance_system() -> bool:
-    """
-    Determine if this is a high-performance system.
+    """Determine if this is a high-performance system.
 
     Returns:
         True if system has abundant resources (>= 16GB RAM, >= 8 cores)
@@ -141,8 +130,7 @@ def is_high_performance_system() -> bool:
 
 
 def get_recommended_cache_size_gb() -> float:
-    """
-    Get recommended cache size based on available disk space.
+    """Get recommended cache size based on available disk space.
 
     Returns:
         Recommended cache size in GB (10% of free space, max 20GB)
@@ -154,8 +142,7 @@ def get_recommended_cache_size_gb() -> float:
 
 
 def get_recommended_memory_limit_gb() -> float:
-    """
-    Get recommended memory limit for processing.
+    """Get recommended memory limit for processing.
 
     Returns:
         Recommended memory limit in GB (50% of total memory)
@@ -166,15 +153,14 @@ def get_recommended_memory_limit_gb() -> float:
 
 
 def get_performance_tier() -> str:
-    """
-    Classify system performance tier.
+    """Classify system performance tier.
 
     Returns:
         Performance tier: "low", "medium", "high", or "enterprise"
     """
     memory_gb = get_total_memory_gb()
     cpu_count = mp.cpu_count()
-    
+
     if memory_gb >= 32 and cpu_count >= 16:
         return "enterprise"
     elif memory_gb >= 16 and cpu_count >= 8:
@@ -185,9 +171,8 @@ def get_performance_tier() -> str:
         return "low"
 
 
-def validate_system_requirements() -> Dict[str, Any]:
-    """
-    Validate system meets minimum requirements for SocialMapper.
+def validate_system_requirements() -> dict[str, Any]:
+    """Validate system meets minimum requirements for SocialMapper.
 
     Returns:
         Dictionary with validation results and warnings
@@ -195,24 +180,24 @@ def validate_system_requirements() -> Dict[str, Any]:
     memory_gb = get_total_memory_gb()
     cpu_count = mp.cpu_count()
     free_disk_gb = get_free_disk_space_gb()
-    
+
     warnings = []
     errors = []
-    
+
     # Check minimum requirements
     if memory_gb < 2.0:
         errors.append(f"Insufficient memory: {memory_gb:.1f}GB (minimum 2GB required)")
     elif memory_gb < 4.0:
         warnings.append(f"Low memory: {memory_gb:.1f}GB (4GB+ recommended)")
-    
+
     if cpu_count < 2:
         warnings.append(f"Limited CPU cores: {cpu_count} (2+ recommended)")
-    
+
     if free_disk_gb < 1.0:
         errors.append(f"Insufficient disk space: {free_disk_gb:.1f}GB (minimum 1GB required)")
     elif free_disk_gb < 5.0:
         warnings.append(f"Limited disk space: {free_disk_gb:.1f}GB (5GB+ recommended)")
-    
+
     return {
         "meets_requirements": len(errors) == 0,
         "performance_tier": get_performance_tier(),
@@ -225,17 +210,19 @@ def validate_system_requirements() -> Dict[str, Any]:
 def _get_system_recommendations(memory_gb: float, cpu_count: int, free_disk_gb: float) -> list[str]:
     """Get system-specific recommendations."""
     recommendations = []
-    
+
     if memory_gb < 8.0:
-        recommendations.append("Consider increasing memory for better performance with large datasets")
-    
+        recommendations.append(
+            "Consider increasing memory for better performance with large datasets"
+        )
+
     if cpu_count < 4:
         recommendations.append("More CPU cores would improve parallel processing performance")
-    
+
     if free_disk_gb < 10.0:
         recommendations.append("More disk space recommended for caching and large outputs")
-    
+
     if memory_gb >= 16.0 and cpu_count >= 8:
         recommendations.append("System well-suited for high-performance configurations")
-    
-    return recommendations 
+
+    return recommendations

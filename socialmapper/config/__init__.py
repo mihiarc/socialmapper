@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Configuration package for SocialMapper optimization.
+"""Configuration package for SocialMapper optimization.
 
 This package provides clean dataclass-based configuration schemas for all
 optimization settings and performance tuning.
@@ -20,9 +19,9 @@ from .optimization import (
 )
 
 __all__ = [
-    "OptimizationConfig",
     "DistanceConfig",
+    "IOConfig",
     "IsochroneConfig",
     "MemoryConfig",
-    "IOConfig",
+    "OptimizationConfig",
 ]

@@ -56,10 +56,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "black>=23.0.0",
-    "isort>=5.0.0",
     "mypy>=1.0.0",
-    "ruff>=0.0.290",
+    "ruff>=0.8.0",
 ]
 
 [project.urls]
@@ -78,18 +76,70 @@ include = [
 [tool.hatch.build.targets.wheel.shared-data]
 "socialmapper/data" = "socialmapper/data"
 
-[tool.black]
-line-length = 100
-target-version = ["py39"]
-
-[tool.isort]
-profile = "black"
-line_length = 100
-
 [tool.ruff]
 line-length = 100
-target-version = "py312"
-select = ["E", "F", "B", "I"]
+target-version = "py311"
+fix = true
+
+[tool.ruff.lint]
+# Enable comprehensive rule sets for 2025 best practices
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings  
+    "F",      # Pyflakes
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "D",      # pydocstyle (docstring conventions)
+    "UP",     # pyupgrade (modernize Python syntax)
+    "B",      # flake8-bugbear (common bugs)
+    "C4",     # flake8-comprehensions (list/dict comprehensions)
+    "PIE",    # flake8-pie (misc best practices)
+    "PL",     # Pylint
+    "RUF",    # Ruff-specific rules
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking (type import optimization)
+    "PTH",    # flake8-use-pathlib (prefer pathlib over os.path)
+    "FURB",   # refurb (modernize code patterns)
+    "PERF",   # Perflint (performance anti-patterns)
+    "LOG",    # flake8-logging (logging best practices)
+]
+
+ignore = [
+    "E501",   # Line too long - handled by formatter
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "D107",   # Missing docstring in __init__
+    "PLR0913", # Too many arguments to function call
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "B008",   # Do not perform function calls in argument defaults (common in FastAPI/typer)
+]
+
+# Modern pydocstyle configuration
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# Per-file ignores for common patterns
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403", "E402"]  # Allow unused imports and import ordering in __init__.py
+"tests/*" = ["D", "PLR2004", "S101"]     # Disable docstring and assert rules in tests
+"examples/*" = ["D", "T201"]             # Allow print statements in examples
+"scripts/*" = ["D", "T201"]              # Allow print statements in scripts
+
+# Import sorting configuration (replaces isort)
+[tool.ruff.lint.isort]
+known-first-party = ["socialmapper"]
+force-single-line = false
+split-on-trailing-comma = true
+
+# Modern formatting configuration (replaces Black)
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 80
 
 [tool.pytest.ini_options]
 markers = [
@@ -118,4 +168,4 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::FutureWarning:pandas.*",
     "ignore::UserWarning:geopandas.*",
-] 
+]

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Centralized warning configuration for SocialMapper.
+"""Centralized warning configuration for SocialMapper.
 
 This module provides utilities to manage deprecation warnings from various
 geospatial libraries that are known issues and don't affect functionality.
@@ -14,8 +13,7 @@ import warnings
 
 
 def configure_geospatial_warnings(verbose: bool = False):
-    """
-    Configure warning filters for known geospatial library deprecation warnings.
+    """Configure warning filters for known geospatial library deprecation warnings.
 
     This function suppresses warnings that are:
     1. Known issues in upstream libraries
@@ -25,7 +23,6 @@ def configure_geospatial_warnings(verbose: bool = False):
     Args:
         verbose: If True, print information about which warnings are being suppressed
     """
-
     warning_configs = [
         # OSMnx pandas FutureWarnings
         {
@@ -94,8 +91,7 @@ def configure_geospatial_warnings(verbose: bool = False):
 
 
 def configure_numpy2_compatibility(verbose: bool = False):
-    """
-    Specific configuration for NumPy 2.0+ compatibility warnings.
+    """Specific configuration for NumPy 2.0+ compatibility warnings.
 
     This function addresses warnings that appear when using NumPy 2.0+
     with libraries that haven't fully updated their compatibility.
@@ -106,7 +102,6 @@ def configure_numpy2_compatibility(verbose: bool = False):
     Args:
         verbose: If True, print information about NumPy 2 compatibility setup
     """
-
     numpy2_configs = [
         # NumPy 2 dtype size warnings
         {
@@ -151,8 +146,7 @@ def configure_osmnx_settings(
     disable_rate_limit: bool = True,
     quiet_logging: bool = True,
 ):
-    """
-    Configure OSMnx settings for optimal performance with large datasets.
+    """Configure OSMnx settings for optimal performance with large datasets.
 
     Args:
         max_query_area_size: Maximum query area size in square meters (default: 50B)
@@ -175,8 +169,7 @@ def configure_osmnx_settings(
 
 
 def setup_production_environment(verbose: bool = False):
-    """
-    Complete setup for production environment with optimized settings.
+    """Complete setup for production environment with optimized settings.
 
     This is automatically called when SocialMapper is imported, unless
     disabled via the SOCIALMAPPER_NO_WARNING_CONFIG environment variable.
@@ -219,8 +212,7 @@ def setup_production_environment(verbose: bool = False):
 
 
 def setup_benchmark_environment(verbose: bool = True):
-    """
-    Setup environment specifically for benchmarking with minimal noise.
+    """Setup environment specifically for benchmarking with minimal noise.
 
     Args:
         verbose: Whether to print setup information
@@ -251,8 +243,7 @@ def setup_benchmark_environment(verbose: bool = True):
 
 
 def setup_development_environment(verbose: bool = True):
-    """
-    Setup environment for development with some warnings enabled.
+    """Setup environment for development with some warnings enabled.
 
     Args:
         verbose: Whether to print setup information
@@ -307,8 +298,7 @@ def quick_setup():
 
 
 def disable_warning_filters():
-    """
-    Disable all warning filters applied by SocialMapper.
+    """Disable all warning filters applied by SocialMapper.
 
     This resets the warning system to Python defaults.
     Useful if you want to see all warnings for debugging.

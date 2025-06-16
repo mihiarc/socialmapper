@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""
-Table creation and formatting utilities for SocialMapper.
+"""Table creation and formatting utilities for SocialMapper.
 
 This module provides functions for creating various types of Rich tables.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rich import box
 from rich.table import Table
@@ -15,13 +14,12 @@ from .core import console
 
 def create_data_table(
     title: str,
-    columns: List[Dict[str, Any]],
-    rows: List[List[str]],
+    columns: list[dict[str, Any]],
+    rows: list[list[str]],
     show_header: bool = True,
     box_style: box.Box = box.ROUNDED,
 ) -> Table:
-    """
-    Create a formatted data table.
+    """Create a formatted data table.
 
     Args:
         title: Table title
@@ -52,7 +50,7 @@ def create_data_table(
 
 
 def print_table(
-    data: List[Dict[str, Any]], title: Optional[str] = None, show_header: bool = True, **kwargs
+    data: list[dict[str, Any]], title: str | None = None, show_header: bool = True, **kwargs
 ) -> None:
     """Print data as a formatted table."""
     if not data:
@@ -100,10 +98,9 @@ def create_statistics_table(stats: dict, title: str = "Statistics", **kwargs) ->
     return table
 
 
-def create_performance_table(data: Dict[str, Any]) -> str:
-    """
-    Create a performance comparison table (returns markdown for compatibility).
-    
+def create_performance_table(data: dict[str, Any]) -> str:
+    """Create a performance comparison table (returns markdown for compatibility).
+
     Note: This function was originally designed for Streamlit integration,
     but Streamlit has been removed from SocialMapper. The function is kept
     for backward compatibility and returns markdown format.
@@ -138,9 +135,8 @@ def create_performance_table(data: Dict[str, Any]) -> str:
 
 
 def create_rich_panel(content: str, title: str = "", style: str = "cyan") -> str:
-    """
-    Create a rich-styled panel (returns markdown for compatibility).
-    
+    """Create a rich-styled panel (returns markdown for compatibility).
+
     Note: This function was originally designed for Streamlit integration,
     but Streamlit has been removed from SocialMapper. The function is kept
     for backward compatibility and returns markdown format.

@@ -1,14 +1,14 @@
-"""
-Result types for explicit error handling in SocialMapper API.
+"""Result types for explicit error handling in SocialMapper API.
 
 Implements the Result pattern (similar to Rust's Result<T, E>) for
 better error handling without exceptions.
 """
 
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E")
@@ -35,9 +35,9 @@ class Error:
 
     type: ErrorType
     message: str
-    context: Optional[Dict[str, Any]] = None
-    cause: Optional[Exception] = None
-    traceback: Optional[str] = None
+    context: dict[str, Any] | None = None
+    cause: Exception | None = None
+    traceback: str | None = None
 
     def __post_init__(self):
         """Capture traceback if cause is provided."""
@@ -50,18 +50,15 @@ class Error:
 
 
 class Result(Generic[T, E]):
-    """
-    Result type for explicit error handling.
+    """Result type for explicit error handling.
 
     Example:
         ```python
         def divide(a: int, b: int) -> Result[float, Error]:
             if b == 0:
-                return Err(Error(
-                    type=ErrorType.VALIDATION,
-                    message="Division by zero"
-                ))
+                return Err(Error(type=ErrorType.VALIDATION, message="Division by zero"))
             return Ok(a / b)
+
 
         result = divide(10, 2)
         match result:
@@ -72,7 +69,7 @@ class Result(Generic[T, E]):
         ```
     """
 
-    def __init__(self, value: Union[T, E], is_ok: bool):
+    def __init__(self, value: T | E, is_ok: bool):
         """Initialize with value and success flag."""
         self._value = value
         self._is_ok = is_ok
@@ -86,8 +83,7 @@ class Result(Generic[T, E]):
         return not self._is_ok
 
     def unwrap(self) -> T:
-        """
-        Get the success value or raise.
+        """Get the success value or raise.
 
         Raises:
             RuntimeError: If result is an error
@@ -97,8 +93,7 @@ class Result(Generic[T, E]):
         raise RuntimeError(f"Called unwrap on an Err value: {self._value}")
 
     def unwrap_err(self) -> E:
-        """
-        Get the error value or raise.
+        """Get the error value or raise.
 
         Raises:
             RuntimeError: If result is not an error
@@ -169,9 +164,8 @@ class Err(Result[Any, E]):
 # Convenience functions for common operations
 
 
-def collect_results(results: List[Result[T, E]]) -> Result[List[T], E]:
-    """
-    Collect a list of Results into a Result of a list.
+def collect_results(results: list[Result[T, E]]) -> Result[list[T], E]:
+    """Collect a list of Results into a Result of a list.
 
     Returns Ok with all values if all are Ok, or the first Err.
 
@@ -190,9 +184,8 @@ def collect_results(results: List[Result[T, E]]) -> Result[List[T], E]:
     return Ok(values)
 
 
-def try_all(operations: List[Callable[[], Result[T, E]]]) -> Result[List[T], List[E]]:
-    """
-    Try all operations and collect results and errors.
+def try_all(operations: list[Callable[[], Result[T, E]]]) -> Result[list[T], list[E]]:
+    """Try all operations and collect results and errors.
 
     Unlike collect_results, this continues on errors.
 
@@ -201,7 +194,7 @@ def try_all(operations: List[Callable[[], Result[T, E]]]) -> Result[List[T], Lis
         operations = [
             lambda: Ok(1),
             lambda: Err(Error(ErrorType.NETWORK, "Failed")),
-            lambda: Ok(3)
+            lambda: Ok(3),
         ]
         result = try_all(operations)
         # Returns Ok([1, 3]) if any succeeded
@@ -227,8 +220,7 @@ def try_all(operations: List[Callable[[], Result[T, E]]]) -> Result[List[T], Lis
 
 
 def result_handler(error_type: ErrorType = ErrorType.UNKNOWN):
-    """
-    Decorator to convert exceptions to Result types.
+    """Decorator to convert exceptions to Result types.
 
     Example:
         ```python
@@ -258,6 +250,7 @@ def result_handler(error_type: ErrorType = ErrorType.UNKNOWN):
 
 # Test utilities for easier testing
 
+
 def assert_ok(result: Result[T, E], message: str = "Expected Ok result") -> T:
     """Assert that result is Ok and return the value."""
     if result.is_err():
@@ -272,7 +265,11 @@ def assert_err(result: Result[T, E], message: str = "Expected Err result") -> E:
     return result.unwrap_err()
 
 
-def assert_err_type(result: Result[T, Error], expected_type: ErrorType, message: str = "Expected specific error type") -> Error:
+def assert_err_type(
+    result: Result[T, Error],
+    expected_type: ErrorType,
+    message: str = "Expected specific error type",
+) -> Error:
     """Assert that result is Err with specific error type and return the error."""
     error = assert_err(result, message)
     if error.type != expected_type:
@@ -283,32 +280,32 @@ def assert_err_type(result: Result[T, Error], expected_type: ErrorType, message:
 # Context manager for collecting results
 class ResultCollector:
     """Helper for collecting and analyzing multiple Results."""
-    
+
     def __init__(self):
-        self.results: List[Result[Any, Any]] = []
-    
+        self.results: list[Result[Any, Any]] = []
+
     def add(self, result: Result[Any, Any]) -> None:
         """Add a result to the collection."""
         self.results.append(result)
-    
+
     def success_count(self) -> int:
         """Count successful results."""
         return sum(1 for r in self.results if r.is_ok())
-    
+
     def error_count(self) -> int:
         """Count error results."""
         return sum(1 for r in self.results if r.is_err())
-    
+
     def success_rate(self) -> float:
         """Calculate success rate (0.0 to 1.0)."""
         if not self.results:
             return 0.0
         return self.success_count() / len(self.results)
-    
-    def get_errors(self) -> List[Any]:
+
+    def get_errors(self) -> list[Any]:
         """Get all errors from failed results."""
         return [r.unwrap_err() for r in self.results if r.is_err()]
-    
-    def get_values(self) -> List[Any]:
+
+    def get_values(self) -> list[Any]:
         """Get all values from successful results."""
         return [r.unwrap() for r in self.results if r.is_ok()]

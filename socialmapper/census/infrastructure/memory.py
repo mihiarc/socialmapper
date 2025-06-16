@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Memory Management for SocialMapper.
+"""Modern Memory Management for SocialMapper.
 
 - Intelligent memory monitoring and alerting
 - Automatic cleanup and garbage collection
@@ -18,9 +17,10 @@ Key Features:
 import gc
 import threading
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 import psutil
@@ -66,8 +66,7 @@ class MemoryThresholds:
 
 
 class MemoryMonitor:
-    """
-    Real-time memory monitoring and management system.
+    """Real-time memory monitoring and management system.
 
     This class provides:
     - Continuous memory usage monitoring
@@ -76,9 +75,8 @@ class MemoryMonitor:
     - Resource-aware processing decisions
     """
 
-    def __init__(self, config: Optional[MemoryConfig] = None):
-        """
-        Initialize the memory monitor.
+    def __init__(self, config: MemoryConfig | None = None):
+        """Initialize the memory monitor.
 
         Args:
             config: Memory configuration (uses defaults if None)
@@ -87,8 +85,8 @@ class MemoryMonitor:
         self.stats = MemoryStats()
         self.thresholds = MemoryThresholds()
         self._monitoring = False
-        self._monitor_thread: Optional[threading.Thread] = None
-        self._callbacks: List[Callable[[Dict[str, Any]], None]] = []
+        self._monitor_thread: threading.Thread | None = None
+        self._callbacks: list[Callable[[dict[str, Any]], None]] = []
 
         # Get system memory info
         self.system_memory = psutil.virtual_memory()
@@ -119,7 +117,7 @@ class MemoryMonitor:
 
         logger.info("Stopped memory monitoring")
 
-    def add_callback(self, callback: Callable[[Dict[str, Any]], None]):
+    def add_callback(self, callback: Callable[[dict[str, Any]], None]):
         """Add a callback for memory events."""
         self._callbacks.append(callback)
 
@@ -142,7 +140,7 @@ class MemoryMonitor:
                 logger.error(f"Error in memory monitoring loop: {e}")
                 time.sleep(interval_seconds)
 
-    def get_current_memory_info(self) -> Dict[str, Any]:
+    def get_current_memory_info(self) -> dict[str, Any]:
         """Get current memory usage information."""
         try:
             # System memory
@@ -163,7 +161,7 @@ class MemoryMonitor:
             logger.error(f"Failed to get memory info: {e}")
             return {}
 
-    def _check_memory_thresholds(self, memory_info: Dict[str, Any]):
+    def _check_memory_thresholds(self, memory_info: dict[str, Any]):
         """Check memory usage against thresholds and trigger actions."""
         system_percent = memory_info.get("system_used_percent", 0)
 
@@ -184,7 +182,7 @@ class MemoryMonitor:
             except Exception as e:
                 logger.error(f"Error in memory callback: {e}")
 
-    def _trigger_warning(self, memory_info: Dict[str, Any]):
+    def _trigger_warning(self, memory_info: dict[str, Any]):
         """Trigger memory warning."""
         logger.warning(f"High memory usage: {memory_info.get('system_used_percent', 0):.1f}%")
 
@@ -247,7 +245,7 @@ class MemoryMonitor:
         return base_batch_size
 
     @contextmanager
-    def memory_context(self, operation_name: str, expected_memory_mb: Optional[float] = None):
+    def memory_context(self, operation_name: str, expected_memory_mb: float | None = None):
         """Context manager for monitoring memory usage during operations."""
         start_memory = self.get_current_memory_info()["process_memory_mb"]
         start_time = time.time()
@@ -278,8 +276,7 @@ class MemoryMonitor:
 
 
 class MemoryEfficientDataProcessor:
-    """
-    Memory-efficient data processor with automatic optimization.
+    """Memory-efficient data processor with automatic optimization.
 
     This class provides:
     - Automatic memory-aware processing
@@ -288,9 +285,8 @@ class MemoryEfficientDataProcessor:
     - Memory leak prevention
     """
 
-    def __init__(self, monitor: Optional[MemoryMonitor] = None):
-        """
-        Initialize the memory-efficient processor.
+    def __init__(self, monitor: MemoryMonitor | None = None):
+        """Initialize the memory-efficient processor.
 
         Args:
             monitor: Memory monitor instance (creates new if None)
@@ -314,10 +310,9 @@ class MemoryEfficientDataProcessor:
         self,
         df: pd.DataFrame,
         operation: Callable[[pd.DataFrame], pd.DataFrame],
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
     ) -> pd.DataFrame:
-        """
-        Process DataFrame with memory-efficient batching.
+        """Process DataFrame with memory-efficient batching.
 
         Args:
             df: Input DataFrame
@@ -347,7 +342,7 @@ class MemoryEfficientDataProcessor:
         self,
         df: pd.DataFrame,
         operation: Callable[[pd.DataFrame], pd.DataFrame],
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
     ) -> pd.DataFrame:
         """Process DataFrame using streaming with batches."""
         if batch_size is None:
@@ -411,7 +406,7 @@ class MemoryEfficientDataProcessor:
 
         logger.info(
             f"Memory optimization: {original_memory:.1f}MB → {optimized_memory:.1f}MB "
-            f"(saved {memory_saved:.1f}MB, {memory_saved/original_memory*100:.1f}%)"
+            f"(saved {memory_saved:.1f}MB, {memory_saved / original_memory * 100:.1f}%)"
         )
 
         self.monitor.stats.memory_saved_mb += memory_saved
@@ -420,12 +415,11 @@ class MemoryEfficientDataProcessor:
 
 
 # Global memory monitor instance
-_global_monitor: Optional[MemoryMonitor] = None
+_global_monitor: MemoryMonitor | None = None
 
 
-def get_memory_monitor(config: Optional[MemoryConfig] = None) -> MemoryMonitor:
-    """
-    Get the global memory monitor instance.
+def get_memory_monitor(config: MemoryConfig | None = None) -> MemoryMonitor:
+    """Get the global memory monitor instance.
 
     Args:
         config: Optional memory configuration
@@ -452,7 +446,7 @@ def cleanup_global_monitor():
 
 
 @contextmanager
-def memory_efficient_processing(config: Optional[MemoryConfig] = None):
+def memory_efficient_processing(config: MemoryConfig | None = None):
     """Context manager for memory-efficient processing."""
     monitor = MemoryMonitor(config)
     processor = MemoryEfficientDataProcessor(monitor)
@@ -470,5 +464,5 @@ def memory_efficient_processing(config: Optional[MemoryConfig] = None):
             f"Memory processing completed: "
             f"peak={stats.peak_memory_mb:.1f}MB, "
             f"saved={stats.memory_saved_mb:.1f}MB, "
-            f"efficiency={stats.get_memory_efficiency()*100:.1f}%"
-        ) 
+            f"efficiency={stats.get_memory_efficiency() * 100:.1f}%"
+        )

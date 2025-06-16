@@ -1,28 +1,26 @@
-"""
-Export module for the SocialMapper pipeline.
+"""Export module for the SocialMapper pipeline.
 
 This module handles exporting pipeline outputs to various formats.
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 import geopandas as gpd
 
 
 def export_pipeline_outputs(
     census_data_gdf: gpd.GeoDataFrame,
-    poi_data: Dict[str, Any],
+    poi_data: dict[str, Any],
     isochrone_gdf: gpd.GeoDataFrame,
     base_filename: str,
     travel_time: int,
-    directories: Dict[str, str],
+    directories: dict[str, str],
     export_csv: bool,
-    census_codes: List[str],
+    census_codes: list[str],
     geographic_level: str = "block-group",
-) -> Dict[str, Any]:
-    """
-    Export pipeline outputs (CSV, maps, etc.).
+) -> dict[str, Any]:
+    """Export pipeline outputs (CSV, maps, etc.).
 
     Args:
         census_data_gdf: Census data GeoDataFrame

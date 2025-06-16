@@ -140,22 +140,19 @@ The enhanced tutorial creates multiple outputs:
 The choropleth maps reveal spatial patterns in library accessibility:
 
 #### Population Density Map
-![Population Density Example](images/population_density_example.png)
 - **Dark blue areas**: High population density with library access
 - **Light blue areas**: Lower population density with library access
 - **Gray areas**: Census blocks beyond 15-minute walk
 
 #### Median Income Map
-![Income Distribution Example](images/income_distribution_example.png)
 - **Dark green areas**: Higher income neighborhoods with library access
 - **Light green areas**: Lower income neighborhoods with library access
 - **Pattern analysis**: Are libraries equally accessible across income levels?
 
-#### Poverty Rate Map
-![Poverty Rate Example](images/poverty_rate_example.png)
-- **Dark red areas**: Higher poverty rates
-- **Light red areas**: Lower poverty rates
-- **Equity consideration**: Do high-poverty areas have adequate library access?
+#### Travel Distance Map
+- **Dark red areas**: Longer travel distance to nearest library
+- **Yellow areas**: Moderate travel distance
+- **Pattern analysis**: Geographic accessibility varies across the region
 
 ### Map Features
 

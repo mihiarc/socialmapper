@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Caching system for geocoding results.
+"""Caching system for geocoding results.
 
 This module provides high-performance caching for geocoded addresses.
 """
@@ -8,7 +7,6 @@ This module provides high-performance caching for geocoded addresses.
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -54,7 +52,7 @@ class AddressCache:
         except Exception as e:
             logger.warning(f"Failed to load geocoding cache: {e}")
 
-    def get(self, address: AddressInput) -> Optional[GeocodingResult]:
+    def get(self, address: AddressInput) -> GeocodingResult | None:
         """Get cached result for address."""
         if not self.config.enable_cache:
             return None

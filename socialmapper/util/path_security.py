@@ -1,23 +1,19 @@
 """Path security utilities for safe file operations."""
 
 from pathlib import Path
-from typing import Optional, Union
 
 
 class PathSecurityError(Exception):
     """Raised when a path operation is deemed unsafe."""
 
-    pass
-
 
 def sanitize_path(
-    user_path: Union[str, Path],
-    base_dir: Optional[Union[str, Path]] = None,
+    user_path: str | Path,
+    base_dir: str | Path | None = None,
     allow_absolute: bool = False,
     follow_symlinks: bool = False,
 ) -> Path:
-    """
-    Sanitize and validate a user-provided path to prevent directory traversal attacks.
+    """Sanitize and validate a user-provided path to prevent directory traversal attacks.
 
     Args:
         user_path: The path provided by the user
@@ -120,9 +116,8 @@ def _contains_symlink(path: Path) -> bool:
     return False
 
 
-def safe_join_path(base: Union[str, Path], *parts: Union[str, Path]) -> Path:
-    """
-    Safely join path components, ensuring the result stays within base directory.
+def safe_join_path(base: str | Path, *parts: str | Path) -> Path:
+    """Safely join path components, ensuring the result stays within base directory.
 
     Args:
         base: The base directory
@@ -149,8 +144,7 @@ def safe_join_path(base: Union[str, Path], *parts: Union[str, Path]) -> Path:
 
 
 def validate_filename(filename: str, allow_hidden: bool = False) -> str:
-    """
-    Validate a filename to ensure it's safe to use.
+    """Validate a filename to ensure it's safe to use.
 
     Args:
         filename: The filename to validate
@@ -219,9 +213,8 @@ def validate_filename(filename: str, allow_hidden: bool = False) -> str:
 
 
 # Convenience function for the most common use case
-def get_safe_cache_path(filename: str, cache_dir: Union[str, Path]) -> Path:
-    """
-    Get a safe path for a cache file.
+def get_safe_cache_path(filename: str, cache_dir: str | Path) -> Path:
+    """Get a safe path for a cache file.
 
     Args:
         filename: The cache filename

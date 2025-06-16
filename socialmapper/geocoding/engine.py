@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""
-Main geocoding engine orchestrating providers, caching, and quality validation.
+"""Main geocoding engine orchestrating providers, caching, and quality validation.
 
 This module provides the high-level geocoding engine that manages multiple providers
 with intelligent fallback, caching, and quality validation.
 """
 
 import time
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from ..progress import get_progress_bar
 from ..ui.console import get_logger
@@ -19,8 +18,7 @@ logger = get_logger(__name__)
 
 
 class AddressGeocodingEngine:
-    """
-    High-level geocoding engine orchestrating multiple providers with
+    """High-level geocoding engine orchestrating multiple providers with
     intelligent fallback, caching, and quality validation.
     """
 
@@ -36,7 +34,7 @@ class AddressGeocodingEngine:
             "provider_usage": {provider.value: 0 for provider in AddressProvider},
         }
 
-    def _initialize_providers(self) -> Dict[AddressProvider, GeocodingProvider]:
+    def _initialize_providers(self) -> dict[AddressProvider, GeocodingProvider]:
         """Initialize available geocoding providers."""
         providers = {}
 
@@ -50,9 +48,8 @@ class AddressGeocodingEngine:
 
         return providers
 
-    def geocode_address(self, address: Union[str, AddressInput]) -> GeocodingResult:
-        """
-        Geocode a single address with intelligent provider selection and fallback.
+    def geocode_address(self, address: str | AddressInput) -> GeocodingResult:
+        """Geocode a single address with intelligent provider selection and fallback.
 
         Args:
             address: Address string or AddressInput object
@@ -90,7 +87,6 @@ class AddressGeocodingEngine:
 
                 # Check quality threshold
                 if result.success and self._meets_quality_threshold(result.quality, address):
-
                     # Update stats
                     self.stats["successful_geocodes"] += 1
                     self.stats["provider_usage"][provider_type.value] += 1
@@ -130,10 +126,9 @@ class AddressGeocodingEngine:
         return failed_result
 
     def geocode_addresses_batch(
-        self, addresses: List[Union[str, AddressInput]], progress: bool = True
-    ) -> List[GeocodingResult]:
-        """
-        Geocode multiple addresses in batch with progress tracking.
+        self, addresses: list[str | AddressInput], progress: bool = True
+    ) -> list[GeocodingResult]:
+        """Geocode multiple addresses in batch with progress tracking.
 
         Args:
             addresses: List of address strings or AddressInput objects
@@ -178,7 +173,7 @@ class AddressGeocodingEngine:
 
         return results
 
-    def _get_provider_order(self, address: AddressInput) -> List[AddressProvider]:
+    def _get_provider_order(self, address: AddressInput) -> list[AddressProvider]:
         """Determine optimal provider order for an address."""
         providers = [self.config.primary_provider]
 
@@ -210,7 +205,7 @@ class AddressGeocodingEngine:
 
         return quality_order.index(quality) <= quality_order.index(threshold)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get geocoding engine statistics."""
         stats = self.stats.copy()
 

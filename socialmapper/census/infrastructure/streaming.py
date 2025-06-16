@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Streaming Data Pipeline for SocialMapper.
+"""Modern Streaming Data Pipeline for SocialMapper.
 
 This module implements Phase 3 of the optimization plan:
 - Streaming data architecture for memory efficiency
@@ -21,10 +20,11 @@ import gc
 import tempfile
 import time
 import warnings
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any
 
 import geopandas as gpd
 import pandas as pd
@@ -80,7 +80,7 @@ class StreamingConfig:
     compression_level: int = 6
     use_arrow: bool = ARROW_AVAILABLE
     use_polars: bool = POLARS_AVAILABLE
-    temp_dir: Optional[Path] = None
+    temp_dir: Path | None = None
     cleanup_threshold_mb: float = 1024.0
     enable_progress: bool = True
 
@@ -103,8 +103,7 @@ class StreamingConfig:
 
 
 class StreamingDataPipeline:
-    """
-    Modern streaming data pipeline with memory-efficient processing.
+    """Modern streaming data pipeline with memory-efficient processing.
 
     This class provides:
     - Streaming data processing with automatic batching
@@ -113,16 +112,15 @@ class StreamingDataPipeline:
     - Progress monitoring and performance statistics
     """
 
-    def __init__(self, config: Optional[StreamingConfig] = None):
-        """
-        Initialize the streaming data pipeline.
+    def __init__(self, config: StreamingConfig | None = None):
+        """Initialize the streaming data pipeline.
 
         Args:
             config: Streaming configuration (uses defaults if None)
         """
         self.config = config or StreamingConfig()
         self.stats = StreamingStats()
-        self._temp_files: List[Path] = []
+        self._temp_files: list[Path] = []
 
         # Create temp directory
         self.config.temp_dir.mkdir(parents=True, exist_ok=True)
@@ -190,12 +188,11 @@ class StreamingDataPipeline:
 
     def stream_csv_to_parquet(
         self,
-        csv_path: Union[str, Path],
-        output_path: Union[str, Path],
-        chunk_size: Optional[int] = None,
+        csv_path: str | Path,
+        output_path: str | Path,
+        chunk_size: int | None = None,
     ) -> StreamingStats:
-        """
-        Stream CSV data to Parquet format with memory-efficient processing.
+        """Stream CSV data to Parquet format with memory-efficient processing.
 
         Args:
             csv_path: Path to input CSV file
@@ -326,10 +323,9 @@ class StreamingDataPipeline:
         return total_rows
 
     def stream_geodataframe_to_parquet(
-        self, gdf: gpd.GeoDataFrame, output_path: Union[str, Path], batch_size: Optional[int] = None
+        self, gdf: gpd.GeoDataFrame, output_path: str | Path, batch_size: int | None = None
     ) -> StreamingStats:
-        """
-        Stream GeoDataFrame to GeoParquet format with memory-efficient processing.
+        """Stream GeoDataFrame to GeoParquet format with memory-efficient processing.
 
         Args:
             gdf: Input GeoDataFrame
@@ -449,10 +445,9 @@ class StreamingDataPipeline:
         return df_optimized
 
     def create_streaming_reader(
-        self, file_path: Union[str, Path], chunk_size: Optional[int] = None
+        self, file_path: str | Path, chunk_size: int | None = None
     ) -> Iterator[pd.DataFrame]:
-        """
-        Create a streaming reader for large files.
+        """Create a streaming reader for large files.
 
         Args:
             file_path: Path to the file to read
@@ -487,7 +482,7 @@ class StreamingDataPipeline:
             for i in range(0, len(df), chunk_size):
                 yield df.iloc[i : i + chunk_size]
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         """Get comprehensive performance summary."""
         return {
             "records_processed": self.stats.total_records_processed,
@@ -514,8 +509,7 @@ class StreamingDataPipeline:
 
 
 class ModernDataExporter:
-    """
-    Modern data exporter with support for multiple formats and streaming.
+    """Modern data exporter with support for multiple formats and streaming.
 
     Replaces legacy CSV-only export with modern formats:
     - GeoParquet for geospatial data
@@ -524,9 +518,8 @@ class ModernDataExporter:
     - Streaming support for large datasets
     """
 
-    def __init__(self, streaming_pipeline: Optional[StreamingDataPipeline] = None):
-        """
-        Initialize the modern data exporter.
+    def __init__(self, streaming_pipeline: StreamingDataPipeline | None = None):
+        """Initialize the modern data exporter.
 
         Args:
             streaming_pipeline: Optional streaming pipeline (creates new if None)
@@ -546,13 +539,12 @@ class ModernDataExporter:
     def export_census_data_modern(
         self,
         census_data: gpd.GeoDataFrame,
-        poi_data: Union[Dict, List[Dict]],
-        output_path: Union[str, Path],
+        poi_data: dict | list[dict],
+        output_path: str | Path,
         format: str = "parquet",
         include_geometry: bool = True,
     ) -> str:
-        """
-        Export census data using modern formats with optimizations.
+        """Export census data using modern formats with optimizations.
 
         Args:
             census_data: GeoDataFrame with census data
@@ -599,7 +591,7 @@ class ModernDataExporter:
     def _prepare_census_export_data(
         self,
         census_data: gpd.GeoDataFrame,
-        poi_data: Union[Dict, List[Dict]],
+        poi_data: dict | list[dict],
         include_geometry: bool,
     ) -> gpd.GeoDataFrame:
         """Prepare census data for export with optimizations."""
@@ -697,12 +689,11 @@ class ModernDataExporter:
 
 
 # Global streaming pipeline instance
-_global_pipeline: Optional[StreamingDataPipeline] = None
+_global_pipeline: StreamingDataPipeline | None = None
 
 
-def get_streaming_pipeline(config: Optional[StreamingConfig] = None) -> StreamingDataPipeline:
-    """
-    Get the global streaming pipeline instance.
+def get_streaming_pipeline(config: StreamingConfig | None = None) -> StreamingDataPipeline:
+    """Get the global streaming pipeline instance.
 
     Args:
         config: Optional streaming configuration

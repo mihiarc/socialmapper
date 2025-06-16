@@ -9,6 +9,7 @@ You'll learn:
 - How to fetch ZCTA boundaries and census data
 - Comparing ZCTA vs block group analysis
 - Batch processing for large-scale analysis
+- Creating choropleth maps to visualize ZCTA demographics
 
 Prerequisites:
 - SocialMapper installed: uv add socialmapper
@@ -33,7 +34,8 @@ import geopandas as gpd
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper import get_census_system, CensusSystemBuilder
+from socialmapper import get_census_system, CensusSystemBuilder, SocialMapperClient, SocialMapperBuilder
+from socialmapper.api.builder import GeographicLevel
 from socialmapper.census.services.zcta_service import ZctaService
 
 
@@ -301,6 +303,108 @@ def demo_advanced_features():
     print()
 
 
+def demo_zcta_map_visualization():
+    """Demonstrate full SocialMapper pipeline with ZCTA-level choropleth maps."""
+    print("🗺️  ZCTA Choropleth Map Visualization")
+    print("=" * 40)
+    
+    print("\nThis demonstrates the full SocialMapper pipeline at the ZCTA level,")
+    print("including automated choropleth map generation.")
+    
+    # Define search parameters
+    print("\n📍 Setting up analysis parameters...")
+    geocode_area = "Wake County"
+    state = "North Carolina"
+    poi_type = "amenity"
+    poi_name = "library"
+    travel_time = 15
+    
+    print(f"  • Location: {geocode_area}, {state}")
+    print(f"  • POI Type: {poi_type} - {poi_name}")
+    print(f"  • Travel Time: {travel_time} minutes")
+    print("  • Geographic Level: ZCTA (ZIP Code areas)")
+    
+    # Census variables to analyze
+    census_variables = [
+        "total_population",
+        "median_household_income",
+        "median_age"
+    ]
+    print(f"  • Census Variables: {', '.join(census_variables)}")
+    
+    print("\n🚀 Running ZCTA-level analysis...")
+    
+    try:
+        # Use the SocialMapper client with ZCTA geographic level
+        with SocialMapperClient() as client:
+            # Build configuration using fluent interface
+            config = (SocialMapperBuilder()
+                .with_location(geocode_area, state)
+                .with_osm_pois(poi_type, poi_name)
+                .with_travel_time(travel_time)
+                .with_census_variables(*census_variables)
+                .with_geographic_level(GeographicLevel.ZCTA)  # Use ZCTA instead of block group
+                .with_exports(csv=True, isochrones=False, maps=True)  # Enable map generation
+                .build()
+            )
+            
+            # Run analysis
+            result = client.run_analysis(config)
+            
+            # Handle result
+            if result.is_err():
+                error = result.unwrap_err()
+                print(f"\n❌ Error: {error.message}")
+                return
+            
+            # Get successful result
+            analysis_result = result.unwrap()
+            
+            print("\n✅ ZCTA analysis complete!")
+            
+            # Show results summary
+            print(f"\n📊 Results Summary:")
+            print(f"  • Found {analysis_result.poi_count} libraries")
+            print(f"  • Analyzed {analysis_result.census_units_analyzed} ZCTAs")
+            
+            # Show generated files
+            if analysis_result.files_generated:
+                print("\n📁 Files generated:")
+                for file_type, file_path in analysis_result.files_generated.items():
+                    print(f"  • {file_type}: {file_path}")
+            
+            # Check for generated maps
+            map_dir = Path("output/maps")
+            if map_dir.exists():
+                map_files = list(map_dir.glob("*zcta*.png"))
+                if map_files:
+                    print("\n🗺️  ZCTA Choropleth maps generated:")
+                    for map_file in sorted(map_files):
+                        print(f"  • {map_file.name}")
+                    
+                    print("\n💡 Map descriptions:")
+                    print("  • Population maps: Show population density by ZCTA")
+                    print("  • Income maps: Display median household income patterns")
+                    print("  • Age maps: Visualize median age demographics")
+                    print("  • Distance maps: Show travel distance to nearest library")
+                    print("  • Accessibility maps: Highlight ZCTAs within 15-minute reach")
+                else:
+                    print("\n📍 Note: Maps were requested but may not have been generated.")
+                    print("   This could happen if no POIs were found in the area.")
+            
+            print("\n🔍 ZCTA vs Block Group Comparison:")
+            print("  • ZCTAs provide broader regional patterns")
+            print("  • Processing is faster with fewer geographic units")
+            print("  • Results are more suitable for business/marketing analysis")
+            print("  • Trade-off: Less precision than block group analysis")
+    
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {str(e)}")
+        print("💡 Try checking your internet connection or Census API key")
+    
+    print()
+
+
 def main():
     """Run the ZCTA analysis tutorial."""
     print("🗺️  SocialMapper Tutorial 02: ZCTA Analysis\n")
@@ -323,6 +427,9 @@ def main():
     # Advanced features
     demo_advanced_features()
     
+    # NEW: Full pipeline with choropleth map visualization
+    demo_zcta_map_visualization()
+    
     # Next steps
     print("🎉 Tutorial Complete! Next Steps:")
     print("=" * 40)
@@ -330,10 +437,11 @@ def main():
     print("2. 📊 Explore different census variables in ZCTA analysis")
     print("3. 🗺️  Compare ZCTA vs block group results for your area")
     print("4. ⚡ Use batch processing for multi-state analysis")
-    print("5. 🎯 Check out examples/core/zcta_analysis.py for POI integration")
+    print("5. 🎯 Check out the generated choropleth maps in output/maps/")
     
     print("\n💡 Pro Tips:")
     print("  • ZCTAs are great for business/marketing analysis")
+    print("  • Choropleth maps at ZCTA level show regional patterns clearly")
     print("  • Use caching to speed up repeated analyses")
     print("  • Consider rate limiting for large batch jobs")
     print("  • Remember: ZCTAs ≈ ZIP codes, but not exactly the same!")

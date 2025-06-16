@@ -1,13 +1,13 @@
-"""
-Async client for SocialMapper with modern context manager support.
+"""Async client for SocialMapper with modern context manager support.
 
 Provides asynchronous operations for network I/O with proper resource management.
 """
 
 import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any
 
 import aiohttp
 
@@ -27,7 +27,7 @@ class POIResult:
     type: str
     latitude: float
     longitude: float
-    tags: Dict[str, str]
+    tags: dict[str, str]
 
 
 @dataclass
@@ -41,8 +41,7 @@ class IsochroneResult:
 
 
 class AsyncSocialMapper:
-    """
-    Asynchronous client for SocialMapper operations.
+    """Asynchronous client for SocialMapper operations.
 
     Example:
         ```python
@@ -57,11 +56,11 @@ class AsyncSocialMapper:
         ```
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize with configuration from builder."""
         self.config = PipelineConfig(**config)
-        self.session: Optional[aiohttp.ClientSession] = None
-        self._results: Dict[str, Any] = {}
+        self.session: aiohttp.ClientSession | None = None
+        self._results: dict[str, Any] = {}
 
     async def __aenter__(self):
         """Set up async resources."""
@@ -74,8 +73,7 @@ class AsyncSocialMapper:
             await self.session.close()
 
     async def stream_pois(self) -> AsyncIterator[POIResult]:
-        """
-        Stream POIs as they're discovered.
+        """Stream POIs as they're discovered.
 
         Yields:
             POIResult objects as they're found
@@ -100,9 +98,8 @@ class AsyncSocialMapper:
             await asyncio.sleep(0.05)  # Simulate processing time
             yield poi
 
-    async def generate_isochrones_with_progress(self) -> AsyncIterator[Dict[str, Any]]:
-        """
-        Generate isochrones with progress updates.
+    async def generate_isochrones_with_progress(self) -> AsyncIterator[dict[str, Any]]:
+        """Generate isochrones with progress updates.
 
         Yields:
             Progress updates with completed/total counts
@@ -119,8 +116,7 @@ class AsyncSocialMapper:
             }
 
     async def run_analysis(self) -> AnalysisResult:
-        """
-        Run the complete analysis asynchronously.
+        """Run the complete analysis asynchronously.
 
         Returns:
             AnalysisResult with summary information
@@ -160,8 +156,7 @@ class AsyncSocialMapper:
 
     @asynccontextmanager
     async def batch_operations(self, size: int = 10):
-        """
-        Context manager for batched operations.
+        """Context manager for batched operations.
 
         Example:
             ```python
@@ -180,7 +175,7 @@ class AsyncSocialMapper:
                     await self._process_batch(batch)
                     batch.clear()
 
-            async def _process_batch(self, items: List[POIResult]):
+            async def _process_batch(self, items: list[POIResult]):
                 logger.info(f"Processing batch of {len(items)} POIs")
                 await asyncio.sleep(0.1)  # Simulate processing
 
@@ -193,9 +188,8 @@ class AsyncSocialMapper:
                 await processor._process_batch(batch)
 
 
-async def run_async_analysis(config: Dict[str, Any]) -> AnalysisResult:
-    """
-    Convenience function to run analysis asynchronously.
+async def run_async_analysis(config: dict[str, Any]) -> AnalysisResult:
+    """Convenience function to run analysis asynchronously.
 
     Args:
         config: Configuration from SocialMapperBuilder
@@ -205,7 +199,8 @@ async def run_async_analysis(config: Dict[str, Any]) -> AnalysisResult:
 
     Example:
         ```python
-        config = (SocialMapperBuilder()
+        config = (
+            SocialMapperBuilder()
             .with_location("San Francisco", "CA")
             .with_osm_pois("amenity", "library")
             .build()

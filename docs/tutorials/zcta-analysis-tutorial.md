@@ -8,6 +8,7 @@ This tutorial introduces ZIP Code Tabulation Area (ZCTA) analysis, a powerful al
 - Fetching ZCTA boundaries and census data
 - Comparing ZCTA vs block group analysis
 - Batch processing multiple states
+- Creating choropleth maps at the ZCTA level
 - Choosing the right geographic unit for your analysis
 
 ## What are ZCTAs?
@@ -273,6 +274,7 @@ Use ZCTAs with the main SocialMapper API:
 
 ```python
 from socialmapper import SocialMapperBuilder, SocialMapperClient
+from socialmapper.api.builder import GeographicLevel
 
 with SocialMapperClient() as client:
     config = (SocialMapperBuilder()
@@ -280,12 +282,65 @@ with SocialMapperClient() as client:
         .with_osm_pois("amenity", "library")
         .with_travel_time(15)
         .with_census_variables("total_population", "median_household_income")
-        .with_geographic_level("zcta")  # Use ZCTA instead of block group
+        .with_geographic_level(GeographicLevel.ZCTA)  # Use ZCTA instead of block group
+        .with_exports(csv=True, maps=True)  # Enable choropleth maps
         .build()
     )
     
     result = client.run_analysis(config)
 ```
+
+## ZCTA Choropleth Maps
+
+SocialMapper can generate choropleth maps at the ZCTA level, providing clear visualization of regional patterns:
+
+### Map Types Generated
+
+When you enable map exports with `.with_exports(maps=True)`, SocialMapper creates:
+
+1. **Population Maps**: Visualize population density across ZCTAs
+2. **Income Maps**: Show median household income patterns
+3. **Age Maps**: Display median age demographics
+4. **Distance Maps**: Illustrate travel distance to nearest POI
+5. **Accessibility Maps**: Highlight ZCTAs within your specified travel time
+
+### Example: Full Pipeline with Maps
+
+```python
+from socialmapper import SocialMapperBuilder, SocialMapperClient
+from socialmapper.api.builder import GeographicLevel
+
+# Run ZCTA analysis with map generation
+with SocialMapperClient() as client:
+    config = (SocialMapperBuilder()
+        .with_location("Wake County", "North Carolina")
+        .with_osm_pois("amenity", "library")
+        .with_travel_time(15)
+        .with_census_variables(
+            "total_population",
+            "median_household_income",
+            "median_age"
+        )
+        .with_geographic_level(GeographicLevel.ZCTA)
+        .with_exports(csv=True, maps=True)
+        .build()
+    )
+    
+    result = client.run_analysis(config)
+    
+    if result.is_ok():
+        analysis = result.unwrap()
+        print(f"Analyzed {analysis.census_units_analyzed} ZCTAs")
+        print("Check output/maps/ for choropleth visualizations")
+```
+
+### Benefits of ZCTA Maps
+
+- **Regional Patterns**: ZCTAs show broader patterns than block groups
+- **Business-Friendly**: Perfect for market analysis presentations
+- **Faster Processing**: Fewer units mean quicker map generation
+- **Familiar Boundaries**: Stakeholders understand ZIP code areas
+
 
 ## Performance Tips
 

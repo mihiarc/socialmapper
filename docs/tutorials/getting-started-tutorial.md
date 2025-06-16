@@ -297,6 +297,7 @@ census_variables = [
 .with_exports(csv=True, isochrones=False, maps=False)
 ```
 
+
 ## Common Issues and Solutions
 
 ### No POIs Found

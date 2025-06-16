@@ -1,5 +1,4 @@
-"""
-Helper functions for the SocialMapper pipeline.
+"""Helper functions for the SocialMapper pipeline.
 
 This module contains utility functions used across pipeline modules.
 """
@@ -11,8 +10,7 @@ from ..util import PathSecurityError, sanitize_path
 
 
 def setup_directory(output_dir: str = "output") -> str:
-    """
-    Create a single output directory.
+    """Create a single output directory.
 
     Args:
         output_dir: Path to the output directory
@@ -33,8 +31,7 @@ def setup_directory(output_dir: str = "output") -> str:
 
 
 def convert_poi_to_geodataframe(poi_data_list):
-    """
-    Convert a list of POI dictionaries to a GeoDataFrame.
+    """Convert a list of POI dictionaries to a GeoDataFrame.
 
     Args:
         poi_data_list: List of POI dictionaries

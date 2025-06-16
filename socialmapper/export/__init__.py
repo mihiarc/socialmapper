@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Export Module with clean architecture.
+"""Modern Export Module with clean architecture.
 
 This module provides export functionality for census data in various formats:
 - CSV (legacy support)
@@ -32,13 +31,12 @@ logger = get_logger(__name__)
 
 def export_census_data_to_csv(
     census_data: gpd.GeoDataFrame,
-    poi_data: Union[Dict, List[Dict]],
-    output_path: Optional[str] = None,
-    base_filename: Optional[str] = None,
+    poi_data: dict | list[dict],
+    output_path: str | None = None,
+    base_filename: str | None = None,
     output_dir: str = "output/csv",
 ) -> str:
-    """
-    Legacy CSV export function (maintained for backward compatibility).
+    """Legacy CSV export function (maintained for backward compatibility).
 
     Args:
         census_data: GeoDataFrame with census data for block groups
@@ -51,20 +49,15 @@ def export_census_data_to_csv(
         Path to the saved CSV file
     """
     logger.info("Using legacy CSV export (consider upgrading to modern formats)")
-    
+
     # Prepare data using common utilities
     config = DataPrepConfig()
-    prepared_data = prepare_census_data(
-        census_data,
-        poi_data,
-        config=config,
-        deduplicate=True
-    )
-    
+    prepared_data = prepare_census_data(census_data, poi_data, config=config, deduplicate=True)
+
     # Generate output path if not provided
     if output_path is None:
         output_path = generate_output_path(base_filename, output_dir, "csv")
-    
+
     # Export using CSV exporter
     exporter = CSVExporter(config)
     return exporter.export(prepared_data, output_path)
@@ -72,18 +65,17 @@ def export_census_data_to_csv(
 
 def export_census_data(
     census_data: gpd.GeoDataFrame,
-    poi_data: Union[Dict, List[Dict]],
-    output_path: Optional[str] = None,
-    base_filename: Optional[str] = None,
+    poi_data: dict | list[dict],
+    output_path: str | None = None,
+    base_filename: str | None = None,
     output_dir: str = "output",
     format: str = "auto",
     include_geometry: bool = True,
-    travel_time_minutes: Optional[int] = None,
-    travel_mode: Optional[str] = None,
-    config: Optional[OptimizationConfig] = None,
+    travel_time_minutes: int | None = None,
+    travel_mode: str | None = None,
+    config: OptimizationConfig | None = None,
 ) -> str:
-    """
-    Export census data in modern formats with automatic optimization.
+    """Export census data in modern formats with automatic optimization.
 
     Args:
         census_data: GeoDataFrame with census data
@@ -103,25 +95,30 @@ def export_census_data(
     try:
         # Validate input data
         validate_export_data(census_data)
-        
+
         # Estimate data size and select format
         data_size_mb = estimate_data_size(census_data)
         has_geometry = include_geometry and "geometry" in census_data.columns
         selected_format = select_export_format(data_size_mb, has_geometry, format)
-        
+
         logger.info(
             f"Exporting {len(census_data)} records as {selected_format.upper()} "
             f"(~{data_size_mb:.1f} MB)"
         )
-        
+
         # For very large datasets, use streaming
         if data_size_mb > 500 and selected_format in ["parquet", "geoparquet"]:
             logger.info("Using streaming export for large dataset")
             return _export_with_streaming(
-                census_data, poi_data, output_path, base_filename,
-                output_dir, selected_format, include_geometry
+                census_data,
+                poi_data,
+                output_path,
+                base_filename,
+                output_dir,
+                selected_format,
+                include_geometry,
             )
-        
+
         # Prepare data
         prep_config = DataPrepConfig()
         prepared_data = prepare_census_data(
@@ -130,49 +127,43 @@ def export_census_data(
             config=prep_config,
             travel_time_minutes=travel_time_minutes,
             travel_mode=travel_mode,
-            deduplicate=True
+            deduplicate=True,
         )
-        
+
         # Generate output path if not provided
         if output_path is None:
             output_path = generate_output_path(
                 base_filename, output_dir, selected_format, include_geometry
             )
-        
+
         # Select appropriate exporter
         exporters = {
             "csv": CSVExporter,
             "parquet": ParquetExporter,
             "geoparquet": GeoParquetExporter,
         }
-        
+
         exporter_class = exporters.get(selected_format, CSVExporter)
         exporter = exporter_class(prep_config)
-        
+
         # Handle geometry conversion for GeoParquet
         if selected_format == "geoparquet" and not isinstance(prepared_data, gpd.GeoDataFrame):
             if "geometry" in census_data.columns:
                 # Add geometry back to prepared data
                 prepared_data = gpd.GeoDataFrame(
-                    prepared_data,
-                    geometry=census_data["geometry"][:len(prepared_data)]
+                    prepared_data, geometry=census_data["geometry"][: len(prepared_data)]
                 )
-        
+
         # Export data
         return exporter.export(prepared_data, output_path)
-        
+
     except Exception as e:
         logger.error(f"Export failed: {e}")
         raise ExportError(f"Failed to export census data: {e}") from e
 
 
-def export_to_parquet(
-    data: pd.DataFrame,
-    output_path: Union[str, Path],
-    **kwargs
-) -> str:
-    """
-    Export DataFrame to Parquet format.
+def export_to_parquet(data: pd.DataFrame, output_path: str | Path, **kwargs) -> str:
+    """Export DataFrame to Parquet format.
 
     Args:
         data: DataFrame to export
@@ -186,13 +177,8 @@ def export_to_parquet(
     return exporter.export(data, output_path, **kwargs)
 
 
-def export_to_geoparquet(
-    data: gpd.GeoDataFrame,
-    output_path: Union[str, Path],
-    **kwargs
-) -> str:
-    """
-    Export GeoDataFrame to GeoParquet format.
+def export_to_geoparquet(data: gpd.GeoDataFrame, output_path: str | Path, **kwargs) -> str:
+    """Export GeoDataFrame to GeoParquet format.
 
     Args:
         data: GeoDataFrame to export
@@ -208,28 +194,22 @@ def export_to_geoparquet(
 
 def _export_with_streaming(
     census_data: gpd.GeoDataFrame,
-    poi_data: Union[Dict, List[Dict]],
-    output_path: Optional[str],
-    base_filename: Optional[str],
+    poi_data: dict | list[dict],
+    output_path: str | None,
+    base_filename: str | None,
     output_dir: str,
     format: str,
-    include_geometry: bool
+    include_geometry: bool,
 ) -> str:
     """Use streaming pipeline for large datasets."""
     # Generate output path
     if output_path is None:
-        output_path = generate_output_path(
-            base_filename, output_dir, format, include_geometry
-        )
-    
+        output_path = generate_output_path(base_filename, output_dir, format, include_geometry)
+
     # Use Phase 3 streaming exporter
     with ModernDataExporter() as exporter:
         return exporter.export_census_data_modern(
-            census_data,
-            poi_data,
-            output_path,
-            format=format,
-            include_geometry=include_geometry
+            census_data, poi_data, output_path, format=format, include_geometry=include_geometry
         )
 
 

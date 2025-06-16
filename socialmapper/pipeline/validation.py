@@ -1,17 +1,15 @@
-"""
-POI validation module for the SocialMapper pipeline.
+"""POI validation module for the SocialMapper pipeline.
 
 This module handles validation of POI coordinates and data integrity.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from ..util.invalid_data_tracker import get_global_tracker
 
 
-def validate_poi_coordinates(poi_data: Dict[str, Any]) -> None:
-    """
-    Validate POI coordinates using Pydantic validation.
+def validate_poi_coordinates(poi_data: dict[str, Any]) -> None:
+    """Validate POI coordinates using Pydantic validation.
 
     Args:
         poi_data: POI data dictionary

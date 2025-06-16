@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Invalid Data Tracker for SocialMapper.
+"""Invalid Data Tracker for SocialMapper.
 
 This module provides utilities to track and manage invalid data points
 encountered during processing, such as single-point clusters, malformed
@@ -11,7 +10,7 @@ import csv
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..ui.console import get_logger
 
@@ -19,16 +18,14 @@ logger = get_logger(__name__)
 
 
 class InvalidDataTracker:
-    """
-    Tracks invalid data points encountered during SocialMapper processing.
+    """Tracks invalid data points encountered during SocialMapper processing.
 
     This class collects information about data quality issues and provides
     methods to save detailed reports for user review and debugging.
     """
 
     def __init__(self, output_dir: str = "output"):
-        """
-        Initialize the invalid data tracker.
+        """Initialize the invalid data tracker.
 
         Args:
             output_dir: Directory where invalid data reports will be saved
@@ -41,9 +38,8 @@ class InvalidDataTracker:
 
         logger.info(f"Initialized InvalidDataTracker with output_dir={output_dir}")
 
-    def add_invalid_point(self, point_data: Dict[str, Any], reason: str, stage: str = "unknown"):
-        """
-        Add an invalid point to the tracking list.
+    def add_invalid_point(self, point_data: dict[str, Any], reason: str, stage: str = "unknown"):
+        """Add an invalid point to the tracking list.
 
         Args:
             point_data: Dictionary containing point information (lat, lon, id, etc.)
@@ -65,10 +61,9 @@ class InvalidDataTracker:
         logger.warning(f"Invalid point detected at {stage}: {reason} - {point_data}")
 
     def add_invalid_cluster(
-        self, cluster_data: Dict[str, Any], reason: str, stage: str = "clustering"
+        self, cluster_data: dict[str, Any], reason: str, stage: str = "clustering"
     ):
-        """
-        Add an invalid cluster to the tracking list.
+        """Add an invalid cluster to the tracking list.
 
         Args:
             cluster_data: Dictionary containing cluster information
@@ -86,10 +81,9 @@ class InvalidDataTracker:
         logger.warning(f"Invalid cluster detected at {stage}: {reason} - {cluster_data}")
 
     def add_processing_error(
-        self, error_data: Dict[str, Any], error_message: str, stage: str = "unknown"
+        self, error_data: dict[str, Any], error_message: str, stage: str = "unknown"
     ):
-        """
-        Add a processing error to the tracking list.
+        """Add a processing error to the tracking list.
 
         Args:
             error_data: Dictionary containing data that caused the error
@@ -106,9 +100,8 @@ class InvalidDataTracker:
         self.processing_errors.append(error_entry)
         logger.error(f"Processing error at {stage}: {error_message} - {error_data}")
 
-    def get_summary(self) -> Dict[str, Any]:
-        """
-        Get a summary of all tracked invalid data.
+    def get_summary(self) -> dict[str, Any]:
+        """Get a summary of all tracked invalid data.
 
         Returns:
             Dictionary containing summary statistics
@@ -127,9 +120,8 @@ class InvalidDataTracker:
             ),
         }
 
-    def save_invalid_data_report(self, filename_prefix: str = "invalid_data") -> List[str]:
-        """
-        Save comprehensive invalid data report to files.
+    def save_invalid_data_report(self, filename_prefix: str = "invalid_data") -> list[str]:
+        """Save comprehensive invalid data report to files.
 
         Args:
             filename_prefix: Prefix for output filenames
@@ -230,7 +222,7 @@ class InvalidDataTracker:
 
 
 # Global tracker instance
-_global_tracker: Optional[InvalidDataTracker] = None
+_global_tracker: InvalidDataTracker | None = None
 
 
 def get_global_tracker() -> InvalidDataTracker:
@@ -247,19 +239,19 @@ def reset_global_tracker(output_dir: str = "output"):
     _global_tracker = InvalidDataTracker(output_dir)
 
 
-def track_invalid_point(point_data: Dict[str, Any], reason: str, stage: str = "unknown"):
+def track_invalid_point(point_data: dict[str, Any], reason: str, stage: str = "unknown"):
     """Convenience function to track an invalid point using the global tracker."""
     tracker = get_global_tracker()
     tracker.add_invalid_point(point_data, reason, stage)
 
 
-def track_invalid_cluster(cluster_data: Dict[str, Any], reason: str, stage: str = "clustering"):
+def track_invalid_cluster(cluster_data: dict[str, Any], reason: str, stage: str = "clustering"):
     """Convenience function to track an invalid cluster using the global tracker."""
     tracker = get_global_tracker()
     tracker.add_invalid_cluster(cluster_data, reason, stage)
 
 
-def track_processing_error(error_data: Dict[str, Any], error_message: str, stage: str = "unknown"):
+def track_processing_error(error_data: dict[str, Any], error_message: str, stage: str = "unknown"):
     """Convenience function to track a processing error using the global tracker."""
     tracker = get_global_tracker()
     tracker.add_processing_error(error_data, error_message, stage)

@@ -1,0 +1,13 @@
+# Core requirements for SocialMapper Streamlit Dashboard
+streamlit>=1.28.0
+streamlit-folium>=0.15.0
+folium>=0.15.0
+plotly>=5.18.0
+pandas>=2.0.0
+
+# SocialMapper package (install in development mode)
+# pip install -e .
+
+# Additional UI/UX enhancements
+streamlit-option-menu>=0.3.6
+streamlit-aggrid>=0.3.4

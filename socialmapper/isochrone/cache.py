@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Advanced Network Caching System for Isochrone Generation.
+"""Advanced Network Caching System for Isochrone Generation.
 
 This module implements high-performance network caching with SQLite indexing,
 compression, and intelligent cache management to dramatically reduce network
@@ -22,7 +21,6 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import networkx as nx
 import osmnx as ox
@@ -37,7 +35,7 @@ logger = get_logger(__name__)
 class NetworkMetadata:
     """Metadata for cached network graphs."""
 
-    bbox: Tuple[float, float, float, float]  # (min_lat, min_lon, max_lat, max_lon)
+    bbox: tuple[float, float, float, float]  # (min_lat, min_lon, max_lat, max_lon)
     network_type: str
     created_at: float
     file_size: int
@@ -64,8 +62,7 @@ class ModernNetworkCache:
     """High-performance network caching with SQLite index and compression."""
 
     def __init__(self, cache_dir: str = "cache/networks", max_cache_size_gb: float = 5.0):
-        """
-        Initialize the modern network cache.
+        """Initialize the modern network cache.
 
         Args:
             cache_dir: Directory to store cache files
@@ -120,7 +117,7 @@ class ModernNetworkCache:
             conn.commit()
 
     def _generate_cache_key(
-        self, bbox: Tuple[float, float, float, float], network_type: str, travel_time_minutes: int
+        self, bbox: tuple[float, float, float, float], network_type: str, travel_time_minutes: int
     ) -> str:
         """Generate unique cache key for network parameters."""
         # Round bbox to reduce cache fragmentation
@@ -144,7 +141,7 @@ class ModernNetworkCache:
         return pickle.loads(pickled_data)
 
     def _calculate_bbox_overlap(
-        self, bbox1: Tuple[float, float, float, float], bbox2: Tuple[float, float, float, float]
+        self, bbox1: tuple[float, float, float, float], bbox2: tuple[float, float, float, float]
     ) -> float:
         """Calculate overlap percentage between two bounding boxes."""
         min_lat1, min_lon1, max_lat1, max_lon1 = bbox1
@@ -167,11 +164,11 @@ class ModernNetworkCache:
 
     def find_overlapping_networks(
         self,
-        bbox: Tuple[float, float, float, float],
+        bbox: tuple[float, float, float, float],
         network_type: str,
         travel_time_minutes: int,
         min_overlap: float = 0.8,
-    ) -> List[NetworkMetadata]:
+    ) -> list[NetworkMetadata]:
         """Find cached networks that significantly overlap with requested bbox."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
@@ -215,12 +212,11 @@ class ModernNetworkCache:
 
     def get_network(
         self,
-        bbox: Tuple[float, float, float, float],
+        bbox: tuple[float, float, float, float],
         network_type: str = "drive",
         travel_time_minutes: int = 15,
-    ) -> Optional[nx.MultiDiGraph]:
-        """
-        Retrieve network from cache or return None if not found.
+    ) -> nx.MultiDiGraph | None:
+        """Retrieve network from cache or return None if not found.
 
         Args:
             bbox: Bounding box (min_lat, min_lon, max_lat, max_lon)
@@ -318,13 +314,12 @@ class ModernNetworkCache:
     def store_network(
         self,
         network: nx.MultiDiGraph,
-        bbox: Tuple[float, float, float, float],
+        bbox: tuple[float, float, float, float],
         network_type: str = "drive",
         travel_time_minutes: int = 15,
         cluster_size: int = 1,
     ) -> bool:
-        """
-        Store network in cache with compression.
+        """Store network in cache with compression.
 
         Args:
             network: Network graph to cache
@@ -514,15 +509,14 @@ def get_global_cache() -> ModernNetworkCache:
 
 
 def download_and_cache_network(
-    bbox: Tuple[float, float, float, float],
+    bbox: tuple[float, float, float, float],
     network_type: str = "drive",
     travel_time_minutes: int = 15,
     cluster_size: int = 1,
-    cache: Optional[ModernNetworkCache] = None,
-    travel_mode: Optional[TravelMode] = None,
-) -> Optional[nx.MultiDiGraph]:
-    """
-    Download network and store in cache, or retrieve from cache if available.
+    cache: ModernNetworkCache | None = None,
+    travel_mode: TravelMode | None = None,
+) -> nx.MultiDiGraph | None:
+    """Download network and store in cache, or retrieve from cache if available.
 
     Args:
         bbox: Bounding box (min_lat, min_lon, max_lat, max_lon)

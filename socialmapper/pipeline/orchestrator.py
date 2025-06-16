@@ -1,11 +1,11 @@
-"""
-Pipeline orchestrator for the SocialMapper pipeline.
+"""Pipeline orchestrator for the SocialMapper pipeline.
 
 This module provides a class-based orchestrator that coordinates all pipeline stages.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from ..isochrone import TravelMode
 from ..ui.console import get_logger, print_error, print_info
@@ -25,23 +25,23 @@ class PipelineConfig:
     """Configuration for the pipeline orchestrator."""
 
     # POI configuration
-    geocode_area: Optional[str] = None
-    state: Optional[str] = None
-    city: Optional[str] = None
-    poi_type: Optional[str] = None
-    poi_name: Optional[str] = None
-    additional_tags: Optional[Dict] = None
-    custom_coords_path: Optional[str] = None
-    name_field: Optional[str] = None
-    type_field: Optional[str] = None
-    max_poi_count: Optional[int] = None
+    geocode_area: str | None = None
+    state: str | None = None
+    city: str | None = None
+    poi_type: str | None = None
+    poi_name: str | None = None
+    additional_tags: dict | None = None
+    custom_coords_path: str | None = None
+    name_field: str | None = None
+    type_field: str | None = None
+    max_poi_count: int | None = None
 
     # Analysis configuration
     travel_time: int = 15
-    travel_mode: Union[str, TravelMode] = TravelMode.DRIVE
+    travel_mode: str | TravelMode = TravelMode.DRIVE
     geographic_level: str = "block-group"
-    census_variables: List[str] = field(default_factory=lambda: ["total_population"])
-    api_key: Optional[str] = None
+    census_variables: list[str] = field(default_factory=lambda: ["total_population"])
+    api_key: str | None = None
 
     # Output configuration
     output_dir: str = "output"
@@ -68,29 +68,27 @@ class PipelineStage:
             return self.result
         except Exception as e:
             self.error = e
-            logger.error(f"Stage '{self.name}' failed: {str(e)}")
+            logger.error(f"Stage '{self.name}' failed: {e!s}")
             raise
 
 
 class PipelineOrchestrator:
-    """
-    Orchestrates the SocialMapper pipeline execution.
+    """Orchestrates the SocialMapper pipeline execution.
 
     This class provides a clean interface for running the pipeline with
     better error handling, stage management, and extensibility.
     """
 
     def __init__(self, config: PipelineConfig):
-        """
-        Initialize the orchestrator with configuration.
+        """Initialize the orchestrator with configuration.
 
         Args:
             config: Pipeline configuration object
         """
         self.config = config
-        self.stages: List[PipelineStage] = []
-        self.results: Dict[str, Any] = {}
-        self.stage_outputs: Dict[str, Any] = {}
+        self.stages: list[PipelineStage] = []
+        self.results: dict[str, Any] = {}
+        self.stage_outputs: dict[str, Any] = {}
 
         # Define pipeline stages
         self._define_stages()
@@ -105,16 +103,16 @@ class PipelineOrchestrator:
             PipelineStage("census", self._integrate_census, "Integrating census data"),
             PipelineStage("export", self._export_outputs, "Exporting results"),
         ]
-        
+
         # Add mapping stage if enabled
         if self.config.create_maps:
             stages.append(PipelineStage("maps", self._generate_maps, "Creating maps"))
-            
+
         stages.append(PipelineStage("report", self._generate_report, "Generating final report"))
-        
+
         self.stages = stages
 
-    def _setup_environment(self) -> Dict[str, str]:
+    def _setup_environment(self) -> dict[str, str]:
         """Setup pipeline environment."""
         return setup_pipeline_environment(
             output_dir=self.config.output_dir,
@@ -123,7 +121,7 @@ class PipelineOrchestrator:
             create_maps=self.config.create_maps,
         )
 
-    def _extract_poi_data(self) -> Tuple[Dict[str, Any], str, List[str], bool]:
+    def _extract_poi_data(self) -> tuple[dict[str, Any], str, list[str], bool]:
         """Extract POI data."""
         return extract_poi_data(
             custom_coords_path=self.config.custom_coords_path,
@@ -197,7 +195,7 @@ class PipelineOrchestrator:
     def _generate_maps(self):
         """Generate maps from pipeline outputs."""
         from .map import generate_pipeline_maps
-        
+
         poi_data = self.stage_outputs["extract"][0]
         base_filename = self.stage_outputs["extract"][1]
         isochrone_gdf = self.stage_outputs["isochrone"]
@@ -231,9 +229,8 @@ class PipelineOrchestrator:
             travel_time=self.config.travel_time,
         )
 
-    def run(self, skip_on_error: bool = False) -> Dict[str, Any]:
-        """
-        Execute the pipeline.
+    def run(self, skip_on_error: bool = False) -> dict[str, Any]:
+        """Execute the pipeline.
 
         Args:
             skip_on_error: Whether to skip failed stages and continue
@@ -248,7 +245,7 @@ class PipelineOrchestrator:
 
             except Exception as e:
                 if skip_on_error:
-                    print_error(f"Stage '{stage.name}' failed: {str(e)}")
+                    print_error(f"Stage '{stage.name}' failed: {e!s}")
                     print_info("Continuing with next stage...")
                     continue
                 else:
@@ -270,7 +267,7 @@ class PipelineOrchestrator:
 
         # Could add error recovery logic here
 
-    def _compile_results(self) -> Dict[str, Any]:
+    def _compile_results(self) -> dict[str, Any]:
         """Compile all stage outputs into final result."""
         # Get the report which contains the main results
         result = self.stage_outputs.get("report", {})
@@ -297,8 +294,7 @@ class PipelineOrchestrator:
         return result
 
     def get_stage_output(self, stage_name: str) -> Any:
-        """
-        Get the output of a specific stage.
+        """Get the output of a specific stage.
 
         Args:
             stage_name: Name of the stage
@@ -308,6 +304,6 @@ class PipelineOrchestrator:
         """
         return self.stage_outputs.get(stage_name)
 
-    def get_failed_stages(self) -> List[str]:
+    def get_failed_stages(self) -> list[str]:
         """Get list of failed stages."""
         return [stage.name for stage in self.stages if stage.error is not None]

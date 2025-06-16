@@ -1,20 +1,17 @@
-"""
-Environment setup for the SocialMapper pipeline.
+"""Environment setup for the SocialMapper pipeline.
 
 This module handles directory creation, environment configuration,
 and initialization of tracking systems.
 """
 
 from pathlib import Path
-from typing import Dict
 
 from ..util import PathSecurityError, sanitize_path
 from ..util.invalid_data_tracker import reset_global_tracker
 
 
 def setup_directory(output_dir: str = "output") -> str:
-    """
-    Create a single output directory.
+    """Create a single output directory.
 
     Args:
         output_dir: Path to the output directory
@@ -36,9 +33,8 @@ def setup_directory(output_dir: str = "output") -> str:
 
 def setup_pipeline_environment(
     output_dir: str, export_csv: bool, export_isochrones: bool, create_maps: bool = True
-) -> Dict[str, str]:
-    """
-    Set up the pipeline environment and create necessary directories.
+) -> dict[str, str]:
+    """Set up the pipeline environment and create necessary directories.
 
     Args:
         output_dir: Base output directory

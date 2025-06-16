@@ -1,11 +1,10 @@
-"""
-Census data integration module for the SocialMapper pipeline.
+"""Census data integration module for the SocialMapper pipeline.
 
 This module handles integration of census data with isochrones and POIs.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import geopandas as gpd
 
@@ -16,13 +15,12 @@ logger = logging.getLogger(__name__)
 
 def integrate_census_data(
     isochrone_gdf: gpd.GeoDataFrame,
-    census_variables: List[str],
-    api_key: Optional[str],
-    poi_data: Dict[str, Any],
+    census_variables: list[str],
+    api_key: str | None,
+    poi_data: dict[str, Any],
     geographic_level: str = "block-group",
-) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, List[str]]:
-    """
-    Integrate census data with isochrones.
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, list[str]]:
+    """Integrate census data with isochrones.
 
     Args:
         isochrone_gdf: Isochrone GeoDataFrame
@@ -41,10 +39,10 @@ def integrate_census_data(
 
     # Get census system
     census_system = get_census_system()
-    
+
     # Process variables - normalize them to census codes
     census_codes = []
-    
+
     for var in census_variables:
         # Normalize the variable to its census code(s)
         normalized = census_system._variable_service.normalize_variable(var)
@@ -54,10 +52,10 @@ def integrate_census_data(
         else:
             # Simple variable - add the single code
             census_codes.append(normalized)
-    
+
     # Remove duplicates while preserving order
     census_codes = list(dict.fromkeys(census_codes))
-    
+
     # Display human-readable names for requested census variables
     readable_names = []
     for var in census_variables:
@@ -67,7 +65,7 @@ def integrate_census_data(
             readable_names.append(census_system._variable_service.get_readable_variable(var))
         else:
             readable_names.append(census_system._variable_service.get_readable_variable(normalized))
-    
+
     print(f"Requesting census data for: {', '.join(readable_names)}")
     print(f"Geographic level: {geographic_level}")
 
@@ -76,13 +74,13 @@ def integrate_census_data(
         # For ZCTAs, we still need state info but we'll get it from POI locations
         counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=False)
         state_fips = list(set([county[0] for county in counties]))
-        
+
         # Use modern census system for ZCTA functionality
         with get_progress_bar(
-            total=len(state_fips), desc="🏛️ Finding ZIP Code Tabulation Areas", unit="state"
+            total=1, desc="🏛️ Finding ZIP Code Tabulation Areas", unit="query"
         ) as pbar:
             geographic_units_gdf = census_system.get_zctas(state_fips)
-            pbar.update(len(state_fips))
+            pbar.update(1)
 
             # Filter to intersecting ZCTAs
             isochrone_union = isochrone_gdf.geometry.union_all()
@@ -97,19 +95,19 @@ def integrate_census_data(
         # Use spatial query to get block groups that intersect with isochrones
         # This captures block groups across county boundaries
         from ..census.services.spatial_block_group_service import SpatialBlockGroupService
-        
+
         print("🔄 Using spatial query to fetch block groups intersecting isochrones")
         spatial_service = SpatialBlockGroupService()
-        
+
         with get_progress_bar(
             total=1, desc="🏛️ Finding Census Block Groups (spatial query)", unit="query"
         ) as pbar:
             geographic_units_gdf = spatial_service.fetch_block_groups_by_isochrones(isochrone_gdf)
             pbar.update(1)
-            
+
         if geographic_units_gdf is None or geographic_units_gdf.empty:
             raise ValueError("No census block groups found intersecting with isochrones.")
-            
+
         print(f"Found {len(geographic_units_gdf)} intersecting census block groups")
 
     # Calculate travel distances in memory
@@ -129,11 +127,8 @@ def integrate_census_data(
     ) as pbar:
         if geographic_level == "zcta":
             # Use modern census system for ZCTA data
-            census_data = census_system._zcta_service.get_census_data(
-                geoids=geoids,
-                variables=census_codes,
-                api_key=api_key,
-                geographic_level=geographic_level,
+            census_data = census_system.get_zcta_census_data(
+                geoids=geoids, variables=census_codes, api_key=api_key
             )
             pbar.update(len(geoids) // 2)
 
@@ -154,11 +149,7 @@ def integrate_census_data(
             pbar.update(len(geoids) // 2)
         else:
             # Use modern census system for block group data
-            census_data_points = census_system.get_census_data(
-                census_codes,
-                geoids,
-                2023
-            )
+            census_data_points = census_system.get_census_data(census_codes, geoids, 2023)
             pbar.update(len(geoids) // 2)
 
             # Merge census data with geographic units
@@ -176,7 +167,7 @@ def integrate_census_data(
                     census_data_gdf.loc[mask, var_code] = value
 
             pbar.update(len(geoids) // 2)
-    
+
     # Note: Removed human-readable name conversion to simplify the pipeline
     # Census data will use census codes (e.g., B01003_001E) directly
 

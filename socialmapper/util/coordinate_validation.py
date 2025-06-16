@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""
-Coordinate Validation Module for SocialMapper.
+"""Coordinate Validation Module for SocialMapper.
 
 This module provides Pydantic-based validation for all coordinate inputs
 to ensure data quality and prevent issues with PyProj transformations.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import geopandas as gpd
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -18,9 +17,7 @@ logger = get_logger(__name__)
 
 
 class CoordinatePoint(BaseModel):
-    """
-    Pydantic model for validating individual coordinate points.
-    """
+    """Pydantic model for validating individual coordinate points."""
 
     lat: float = Field(..., ge=-90, le=90, description="Latitude in decimal degrees")
     lon: float = Field(..., ge=-180, le=180, description="Longitude in decimal degrees")
@@ -47,21 +44,19 @@ class CoordinatePoint(BaseModel):
         """Convert to Shapely Point."""
         return Point(self.lon, self.lat)
 
-    def to_tuple(self) -> Tuple[float, float]:
+    def to_tuple(self) -> tuple[float, float]:
         """Convert to (lon, lat) tuple."""
         return (self.lon, self.lat)
 
 
 class POICoordinate(BaseModel):
-    """
-    Pydantic model for validating POI coordinates with metadata.
-    """
+    """Pydantic model for validating POI coordinates with metadata."""
 
-    id: Optional[Union[str, int]] = None
+    id: str | int | None = None
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
-    name: Optional[str] = None
-    tags: Optional[Dict[str, Any]] = None
+    name: str | None = None
+    tags: dict[str, Any] | None = None
 
     @field_validator("lat")
     @classmethod
@@ -85,7 +80,7 @@ class POICoordinate(BaseModel):
         """Convert to Shapely Point."""
         return Point(self.lon, self.lat)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format expected by the rest of the system."""
         result = {"lat": self.lat, "lon": self.lon}
         if self.id is not None:
@@ -98,14 +93,12 @@ class POICoordinate(BaseModel):
 
 
 class CoordinateCluster(BaseModel):
-    """
-    Pydantic model for validating coordinate clusters.
-    """
+    """Pydantic model for validating coordinate clusters."""
 
-    points: List[CoordinatePoint] = Field(
+    points: list[CoordinatePoint] = Field(
         ..., min_length=2, description="At least 2 points required for clustering"
     )
-    cluster_id: Optional[Union[str, int]] = None
+    cluster_id: str | int | None = None
 
     @field_validator("points")
     @classmethod
@@ -116,7 +109,7 @@ class CoordinateCluster(BaseModel):
             )
         return v
 
-    def to_points_list(self) -> List[Point]:
+    def to_points_list(self) -> list[Point]:
         """Convert to list of Shapely Points."""
         return [point.to_point() for point in self.points]
 
@@ -128,13 +121,11 @@ class CoordinateCluster(BaseModel):
 
 
 class ValidationResult(BaseModel):
-    """
-    Result of coordinate validation process.
-    """
+    """Result of coordinate validation process."""
 
-    valid_coordinates: List[Union[CoordinatePoint, POICoordinate]]
-    invalid_coordinates: List[Dict[str, Any]]
-    validation_errors: List[str]
+    valid_coordinates: list[CoordinatePoint | POICoordinate]
+    invalid_coordinates: list[dict[str, Any]]
+    validation_errors: list[str]
     total_input: int
     total_valid: int
     total_invalid: int
@@ -149,9 +140,8 @@ class ValidationResult(BaseModel):
 
 def validate_coordinate_point(
     lat: float, lon: float, context: str = "unknown"
-) -> Optional[CoordinatePoint]:
-    """
-    Validate a single coordinate point using Pydantic.
+) -> CoordinatePoint | None:
+    """Validate a single coordinate point using Pydantic.
 
     Args:
         lat: Latitude in decimal degrees
@@ -168,9 +158,8 @@ def validate_coordinate_point(
         return None
 
 
-def validate_poi_coordinates(poi_data: List[Dict[str, Any]]) -> ValidationResult:
-    """
-    Validate a list of POI coordinates using Pydantic.
+def validate_poi_coordinates(poi_data: list[dict[str, Any]]) -> ValidationResult:
+    """Validate a list of POI coordinates using Pydantic.
 
     Args:
         poi_data: List of POI dictionaries
@@ -221,12 +210,12 @@ def validate_poi_coordinates(poi_data: List[Dict[str, Any]]) -> ValidationResult
             valid_coordinates.append(validated_poi)
 
         except ValidationError as e:
-            error_msg = f"POI {i}: {str(e)}"
+            error_msg = f"POI {i}: {e!s}"
             validation_errors.append(error_msg)
             invalid_coordinates.append({"index": i, "data": poi, "error": str(e)})
             logger.warning(error_msg)
         except Exception as e:
-            error_msg = f"POI {i}: Unexpected error during validation: {str(e)}"
+            error_msg = f"POI {i}: Unexpected error during validation: {e!s}"
             validation_errors.append(error_msg)
             invalid_coordinates.append({"index": i, "data": poi, "error": str(e)})
             logger.error(error_msg)
@@ -242,10 +231,9 @@ def validate_poi_coordinates(poi_data: List[Dict[str, Any]]) -> ValidationResult
 
 
 def validate_coordinate_cluster(
-    points: List[Dict[str, Any]], cluster_id: Optional[Union[str, int]] = None
-) -> Optional[CoordinateCluster]:
-    """
-    Validate a cluster of coordinates.
+    points: list[dict[str, Any]], cluster_id: str | int | None = None
+) -> CoordinateCluster | None:
+    """Validate a cluster of coordinates.
 
     Args:
         points: List of coordinate dictionaries
@@ -278,8 +266,7 @@ def validate_coordinate_cluster(
 
 
 def validate_geodataframe_coordinates(gdf: gpd.GeoDataFrame) -> ValidationResult:
-    """
-    Validate coordinates in a GeoDataFrame.
+    """Validate coordinates in a GeoDataFrame.
 
     Args:
         gdf: GeoDataFrame with geometry column
@@ -314,7 +301,7 @@ def validate_geodataframe_coordinates(gdf: gpd.GeoDataFrame) -> ValidationResult
                 invalid_coordinates.append({"index": idx, "error": "Invalid coordinate values"})
 
         except Exception as e:
-            error_msg = f"Row {idx}: Unexpected error: {str(e)}"
+            error_msg = f"Row {idx}: Unexpected error: {e!s}"
             validation_errors.append(error_msg)
             invalid_coordinates.append({"index": idx, "error": str(e)})
 
@@ -329,10 +316,9 @@ def validate_geodataframe_coordinates(gdf: gpd.GeoDataFrame) -> ValidationResult
 
 
 def safe_coordinate_transform(
-    points: List[Point], target_crs: str, source_crs: str = "EPSG:4326"
-) -> Optional[gpd.GeoDataFrame]:
-    """
-    Safely transform coordinates with validation.
+    points: list[Point], target_crs: str, source_crs: str = "EPSG:4326"
+) -> gpd.GeoDataFrame | None:
+    """Safely transform coordinates with validation.
 
     Args:
         points: List of Shapely Point objects
@@ -364,10 +350,9 @@ def safe_coordinate_transform(
 
 
 def prevalidate_for_pyproj(
-    data: Union[List[Dict], gpd.GeoDataFrame, List[Point]],
-) -> Tuple[bool, List[str]]:
-    """
-    Pre-validate data before it reaches PyProj to prevent warnings and errors.
+    data: list[dict] | gpd.GeoDataFrame | list[Point],
+) -> tuple[bool, list[str]]:
+    """Pre-validate data before it reaches PyProj to prevent warnings and errors.
 
     Args:
         data: Input data in various formats
@@ -419,5 +404,5 @@ def prevalidate_for_pyproj(
         return len(errors) == 0, errors
 
     except Exception as e:
-        errors.append(f"Validation error: {str(e)}")
+        errors.append(f"Validation error: {e!s}")
         return False, errors

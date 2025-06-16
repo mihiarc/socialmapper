@@ -1,5 +1,4 @@
-"""
-API for SocialMapper.
+"""API for SocialMapper.
 
 Example:
     ```python
@@ -8,9 +7,7 @@ Example:
     # Simple usage
     with SocialMapperClient() as client:
         result = client.analyze(
-            location="San Francisco, CA",
-            poi_type="amenity",
-            poi_name="library"
+            location="San Francisco, CA", poi_type="amenity", poi_name="library"
         )
 
         if result.is_ok():
@@ -18,7 +15,8 @@ Example:
             print(f"Found {analysis.poi_count} libraries")
 
     # Advanced usage with builder
-    config = (SocialMapperBuilder()
+    config = (
+        SocialMapperBuilder()
         .with_location("Chicago", "IL")
         .with_osm_pois("leisure", "park")
         .with_travel_time(20)
@@ -107,7 +105,7 @@ __all__ = [
     "result_handler",
     # Test utilities
     "assert_ok",
-    "assert_err", 
+    "assert_err",
     "assert_err_type",
     "ResultCollector",
     # Async
@@ -124,8 +122,7 @@ __all__ = [
 
 # Deprecation warnings for old API
 def run_socialmapper(*args, **kwargs):
-    """
-    Deprecated: Use SocialMapperClient instead.
+    """Deprecated: Use SocialMapperClient instead.
 
     This function is maintained for backward compatibility only.
     """

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Configuration Schemas for SocialMapper Optimization.
+"""Configuration Schemas for SocialMapper Optimization.
 
 This module provides clean dataclass-based configuration schemas for all
 optimization settings, with no utility functions or system detection logic.
@@ -8,7 +7,7 @@ optimization settings, with no utility functions or system detection logic.
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -40,7 +39,7 @@ class IsochroneConfig:
 
     # Concurrent processing settings
     max_concurrent_downloads: int = 8
-    max_concurrent_isochrones: Optional[int] = None
+    max_concurrent_isochrones: int | None = None
     auto_concurrent_threshold: int = 3
     enable_resource_monitoring: bool = True
 
@@ -147,7 +146,7 @@ class OptimizationConfig:
 
         return config
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary for serialization."""
         return {
             "distance": {

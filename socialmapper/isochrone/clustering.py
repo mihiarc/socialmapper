@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Modern Intelligent Spatial Clustering Engine for Isochrone Generation.
+"""Modern Intelligent Spatial Clustering Engine for Isochrone Generation.
 
 This module implements advanced POI clustering using machine learning algorithms
 to optimize network downloads and processing for large-scale isochrone generation.
@@ -15,7 +14,7 @@ Key Features:
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import geopandas as gpd
 import networkx as nx
@@ -49,8 +48,7 @@ class IntelligentPOIClusterer:
     """Advanced POI clustering using machine learning algorithms."""
 
     def __init__(self, max_cluster_radius_km: float = 15.0, min_cluster_size: int = 2):
-        """
-        Initialize the intelligent clusterer.
+        """Initialize the intelligent clusterer.
 
         Args:
             max_cluster_radius_km: Maximum radius for clustering in kilometers
@@ -60,9 +58,8 @@ class IntelligentPOIClusterer:
         self.min_cluster_size = min_cluster_size
         self._lock = threading.Lock()
 
-    def cluster_pois(self, pois: List[Dict], travel_time_minutes: int = 15) -> List[List[Dict]]:
-        """
-        Cluster POIs using DBSCAN with geographic distance.
+    def cluster_pois(self, pois: list[dict], travel_time_minutes: int = 15) -> list[list[dict]]:
+        """Cluster POIs using DBSCAN with geographic distance.
 
         Args:
             pois: List of POI dictionaries with 'lat' and 'lon' keys
@@ -122,7 +119,7 @@ class IntelligentPOIClusterer:
 
         return result
 
-    def get_cluster_metrics(self, pois: List[Dict], clusters: List[List[Dict]]) -> ClusterMetrics:
+    def get_cluster_metrics(self, pois: list[dict], clusters: list[list[dict]]) -> ClusterMetrics:
         """Calculate detailed metrics for clustering performance."""
         cluster_sizes = [len(cluster) for cluster in clusters]
 
@@ -143,7 +140,7 @@ class IntelligentPOIClusterer:
 class OptimizedPOICluster:
     """Represents an optimized cluster of POIs with advanced spatial algorithms."""
 
-    def __init__(self, cluster_id: Union[int, str], pois: List[Dict[str, Any]]):
+    def __init__(self, cluster_id: int | str, pois: list[dict[str, Any]]):
         self.cluster_id = cluster_id
         self.pois = pois
         self.centroid = self._calculate_centroid()
@@ -152,7 +149,7 @@ class OptimizedPOICluster:
         self.network_crs = None
         self.bbox = self._calculate_bbox()
 
-    def _calculate_centroid(self) -> Tuple[float, float]:
+    def _calculate_centroid(self) -> tuple[float, float]:
         """Calculate the geographic centroid of the cluster."""
         if not self.pois:
             return (0.0, 0.0)
@@ -175,7 +172,7 @@ class OptimizedPOICluster:
 
         return max_distance
 
-    def _calculate_bbox(self) -> Tuple[float, float, float, float]:
+    def _calculate_bbox(self) -> tuple[float, float, float, float]:
         """Calculate bounding box (min_lat, min_lon, max_lat, max_lon)."""
         if not self.pois:
             return (0.0, 0.0, 0.0, 0.0)
@@ -205,7 +202,7 @@ class OptimizedPOICluster:
 
     def get_network_bbox(
         self, travel_time_minutes: int, buffer_km: float = 2.0
-    ) -> Tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float]:
         """Get optimized bounding box for network download."""
         min_lat, min_lon, max_lat, max_lon = self.bbox
 
@@ -231,13 +228,12 @@ class OptimizedPOICluster:
 
 
 def create_optimized_clusters(
-    pois: List[Dict[str, Any]],
+    pois: list[dict[str, Any]],
     travel_time_minutes: int = 15,
     max_cluster_radius_km: float = 15.0,
     min_cluster_size: int = 2,
-) -> List[OptimizedPOICluster]:
-    """
-    Create optimized POI clusters using intelligent spatial algorithms.
+) -> list[OptimizedPOICluster]:
+    """Create optimized POI clusters using intelligent spatial algorithms.
 
     Args:
         pois: List of POI dictionaries with 'lat' and 'lon' keys
@@ -268,13 +264,12 @@ def create_optimized_clusters(
 
 
 def download_network_for_cluster(
-    cluster: OptimizedPOICluster, 
-    travel_time_minutes: int, 
+    cluster: OptimizedPOICluster,
+    travel_time_minutes: int,
     network_buffer_km: float = 2.0,
-    travel_mode: TravelMode = TravelMode.DRIVE
+    travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> bool:
-    """
-    Download and prepare road network for an optimized cluster.
+    """Download and prepare road network for an optimized cluster.
 
     Args:
         cluster: OptimizedPOICluster to download network for
@@ -290,7 +285,7 @@ def download_network_for_cluster(
         network_type = get_network_type(travel_mode)
         default_speed = get_default_speed(travel_mode)
         highway_speeds = get_highway_speeds(travel_mode)
-        
+
         if len(cluster.pois) == 1:
             # Single POI - use point-based download
             poi = cluster.pois[0]
@@ -336,14 +331,13 @@ def download_network_for_cluster(
 
 
 def create_isochrone_from_poi_with_network(
-    poi: Dict[str, Any], 
-    network: nx.MultiDiGraph, 
-    network_crs: str, 
+    poi: dict[str, Any],
+    network: nx.MultiDiGraph,
+    network_crs: str,
     travel_time_minutes: int,
-    travel_mode: TravelMode = TravelMode.DRIVE
-) -> Optional[gpd.GeoDataFrame]:
-    """
-    Create isochrone for a POI using pre-downloaded network.
+    travel_mode: TravelMode = TravelMode.DRIVE,
+) -> gpd.GeoDataFrame | None:
+    """Create isochrone for a POI using pre-downloaded network.
 
     Args:
         poi: POI dictionary with 'lat' and 'lon'
@@ -437,10 +431,9 @@ def create_isochrone_from_poi_with_network(
 
 
 def benchmark_clustering_performance(
-    pois: List[Dict[str, Any]], travel_time_minutes: int = 15, max_cluster_radius_km: float = 15.0
-) -> Dict[str, Any]:
-    """
-    Benchmark clustering performance and provide optimization recommendations.
+    pois: list[dict[str, Any]], travel_time_minutes: int = 15, max_cluster_radius_km: float = 15.0
+) -> dict[str, Any]:
+    """Benchmark clustering performance and provide optimization recommendations.
 
     Args:
         pois: List of POI dictionaries
@@ -486,7 +479,9 @@ def benchmark_clustering_performance(
             "efficiency_rating": (
                 "Excellent"
                 if metrics.estimated_time_savings_percent > 50
-                else "Good" if metrics.estimated_time_savings_percent > 25 else "Fair"
+                else "Good"
+                if metrics.estimated_time_savings_percent > 25
+                else "Fair"
             ),
         },
     }

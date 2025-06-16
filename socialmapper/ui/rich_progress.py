@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Rich-based Progress Tracking System for SocialMapper.
+"""Rich-based Progress Tracking System for SocialMapper.
 
 Key Features:
 - Beautiful Rich progress bars with real-time metrics
@@ -17,7 +16,6 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Optional
 
 import psutil
 from rich import box
@@ -65,10 +63,10 @@ class RichProgressMetrics:
     stage: ProcessingStage
     start_time: float = field(default_factory=time.time)
     items_processed: int = 0
-    total_items: Optional[int] = None
+    total_items: int | None = None
     throughput_per_second: float = 0.0
     memory_usage_mb: float = 0.0
-    estimated_time_remaining: Optional[float] = None
+    estimated_time_remaining: float | None = None
 
     def get_elapsed_time(self) -> float:
         """Get elapsed time in seconds."""
@@ -87,27 +85,25 @@ class RichProgressMetrics:
 
 
 class RichProgressTracker:
-    """
-    Rich-based progress tracker for SocialMapper.
+    """Rich-based progress tracker for SocialMapper.
 
     Provides beautiful progress bars, status indicators, and console output
     using the Rich library for an excellent user experience.
     """
 
     def __init__(self, enable_performance_metrics: bool = True):
-        """
-        Initialize the Rich progress tracker.
+        """Initialize the Rich progress tracker.
 
         Args:
             enable_performance_metrics: Whether to track performance metrics
         """
         self.console = console
         self.enable_performance_metrics = enable_performance_metrics
-        self.current_stage: Optional[ProcessingStage] = None
-        self.stage_metrics: Dict[ProcessingStage, RichProgressMetrics] = {}
-        self.progress: Optional[Progress] = None
-        self.current_task_id: Optional[int] = None
-        self.live: Optional[Live] = None
+        self.current_stage: ProcessingStage | None = None
+        self.stage_metrics: dict[ProcessingStage, RichProgressMetrics] = {}
+        self.progress: Progress | None = None
+        self.current_task_id: int | None = None
+        self.live: Live | None = None
         self._lock = threading.Lock()
 
         # Stage configurations with emojis and descriptions
@@ -153,7 +149,7 @@ class RichProgressTracker:
             "map_generation": {"emoji": "🗺️", "description": "Creating visualizations"},
         }
 
-    def print_banner(self, title: str, subtitle: Optional[str] = None):
+    def print_banner(self, title: str, subtitle: str | None = None):
         """Print a beautiful banner using Rich."""
         if subtitle:
             banner_text = f"[bold cyan]{title}[/bold cyan]\n[dim]{subtitle}[/dim]"
@@ -179,10 +175,9 @@ class RichProgressTracker:
             return "dev"
 
     def start_stage(
-        self, stage: ProcessingStage, total_items: Optional[int] = None
+        self, stage: ProcessingStage, total_items: int | None = None
     ) -> RichProgressMetrics:
-        """
-        Start tracking a new processing stage with Rich progress.
+        """Start tracking a new processing stage with Rich progress.
 
         Args:
             stage: The processing stage to start
@@ -231,10 +226,9 @@ class RichProgressTracker:
             return metrics
 
     def update_progress(
-        self, advance: int = 1, substage: Optional[str] = None, description: Optional[str] = None
+        self, advance: int = 1, substage: str | None = None, description: str | None = None
     ) -> None:
-        """
-        Update progress for the current stage.
+        """Update progress for the current stage.
 
         Args:
             advance: Number of items to advance
@@ -345,7 +339,7 @@ class RichProgressTracker:
             f"[bold]{total_items:,}[/bold]",
             f"[bold]{total_time:.1f}s[/bold]",
             (
-                f"[bold]{total_items/total_time:.1f}/s[/bold]"
+                f"[bold]{total_items / total_time:.1f}/s[/bold]"
                 if total_time > 0
                 else "[bold]-[/bold]"
             ),
@@ -356,7 +350,7 @@ class RichProgressTracker:
 
 
 # Global tracker instance
-_global_tracker: Optional[RichProgressTracker] = None
+_global_tracker: RichProgressTracker | None = None
 
 
 def get_rich_tracker(enable_performance_metrics: bool = True) -> RichProgressTracker:
@@ -375,7 +369,7 @@ def reset_rich_tracker():
 
 # Convenience context managers
 @contextmanager
-def track_stage(stage: ProcessingStage, total_items: Optional[int] = None):
+def track_stage(stage: ProcessingStage, total_items: int | None = None):
     """Context manager for tracking a processing stage."""
     tracker = get_rich_tracker()
     metrics = tracker.start_stage(stage, total_items)
@@ -385,21 +379,21 @@ def track_stage(stage: ProcessingStage, total_items: Optional[int] = None):
         tracker.complete_stage(stage)
 
 
-def track_poi_processing(total_pois: Optional[int] = None):
+def track_poi_processing(total_pois: int | None = None):
     """Context manager for POI processing stage."""
     return track_stage(ProcessingStage.POI_PROCESSING, total_pois)
 
 
-def track_isochrone_generation(total_pois: Optional[int] = None):
+def track_isochrone_generation(total_pois: int | None = None):
     """Context manager for isochrone generation stage."""
     return track_stage(ProcessingStage.ISOCHRONE_GENERATION, total_pois)
 
 
-def track_census_integration(total_block_groups: Optional[int] = None):
+def track_census_integration(total_block_groups: int | None = None):
     """Context manager for census integration stage."""
     return track_stage(ProcessingStage.CENSUS_INTEGRATION, total_block_groups)
 
 
-def track_export_visualization(total_outputs: Optional[int] = None):
+def track_export_visualization(total_outputs: int | None = None):
     """Context manager for export and visualization stage."""
     return track_stage(ProcessingStage.EXPORT_VISUALIZATION, total_outputs)

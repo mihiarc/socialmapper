@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""
-Core console functionality for SocialMapper.
+"""Core console functionality for SocialMapper.
 
 This module provides the central Rich console instance and basic formatting functions.
 """
 
 from contextlib import contextmanager
-from typing import Any, Optional
+from typing import Any
 
 from rich import box
 from rich.console import Console
@@ -36,8 +35,8 @@ def clear_console_state():
 
 def print_panel(
     content: str,
-    title: Optional[str] = None,
-    subtitle: Optional[str] = None,
+    title: str | None = None,
+    subtitle: str | None = None,
     style: str = "cyan",
     **kwargs,
 ) -> None:
@@ -46,9 +45,8 @@ def print_panel(
     console.print(panel)
 
 
-def print_banner(title: str, subtitle: Optional[str] = None, version: Optional[str] = None):
-    """
-    Print a beautiful banner for SocialMapper.
+def print_banner(title: str, subtitle: str | None = None, version: str | None = None):
+    """Print a beautiful banner for SocialMapper.
 
     Args:
         title: Main title text
@@ -104,7 +102,7 @@ def print_warning(message: str, title: str = "Warning"):
     console.print(panel)
 
 
-def print_info(message: str, title: Optional[str] = None):
+def print_info(message: str, title: str | None = None):
     """Print an info message in a blue panel."""
     if title:
         panel = Panel(
@@ -132,7 +130,7 @@ def status(message: str, spinner: str = "dots"):
         yield status_obj
 
 
-def print_json(data: Any, title: Optional[str] = None):
+def print_json(data: Any, title: str | None = None):
     """Pretty print JSON data with syntax highlighting."""
     if title:
         console.print(f"\n[bold cyan]{title}[/bold cyan]")
@@ -154,7 +152,7 @@ def print_step(step_number: int, total_steps: int, description: str, emoji: str 
     console.print(f"\n{progress_text} {emoji} {description}")
 
 
-def print_divider(title: Optional[str] = None):
+def print_divider(title: str | None = None):
     """Print a visual divider."""
     if title:
         console.print(f"\n[bold blue]{'─' * 20} {title} {'─' * 20}[/bold blue]")

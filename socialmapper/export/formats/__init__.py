@@ -7,6 +7,6 @@ from .parquet import ParquetExporter
 
 __all__ = [
     "CSVExporter",
-    "ParquetExporter", 
     "GeoParquetExporter",
+    "ParquetExporter",
 ]
