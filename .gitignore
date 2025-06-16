@@ -88,6 +88,7 @@ site/
 docs/_build/
 examples/demos/cache/
 examples/demos/output/
+scripts/debug/
 
 # Generated analysis images
 *_analysis_results.png
