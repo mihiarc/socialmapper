@@ -80,7 +80,7 @@ from .result_types import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional
+    from typing import Any, Optional
 
 # Public API
 __all__ = [

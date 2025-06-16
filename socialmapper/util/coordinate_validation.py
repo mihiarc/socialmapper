@@ -25,7 +25,7 @@ class CoordinatePoint(BaseModel):
     @field_validator("lat")
     @classmethod
     def validate_latitude(cls, v):
-        if not isinstance(v, (int, float)):
+        if not isinstance(v, int | float):
             raise ValueError("Latitude must be a number")
         if not -90 <= v <= 90:
             raise ValueError("Latitude must be between -90 and 90 degrees")
@@ -34,7 +34,7 @@ class CoordinatePoint(BaseModel):
     @field_validator("lon")
     @classmethod
     def validate_longitude(cls, v):
-        if not isinstance(v, (int, float)):
+        if not isinstance(v, int | float):
             raise ValueError("Longitude must be a number")
         if not -180 <= v <= 180:
             raise ValueError("Longitude must be between -180 and 180 degrees")
@@ -61,7 +61,7 @@ class POICoordinate(BaseModel):
     @field_validator("lat")
     @classmethod
     def validate_latitude(cls, v):
-        if not isinstance(v, (int, float)):
+        if not isinstance(v, int | float):
             raise ValueError("Latitude must be a number")
         if not -90 <= v <= 90:
             raise ValueError("Latitude must be between -90 and 90 degrees")
@@ -70,7 +70,7 @@ class POICoordinate(BaseModel):
     @field_validator("lon")
     @classmethod
     def validate_longitude(cls, v):
-        if not isinstance(v, (int, float)):
+        if not isinstance(v, int | float):
             raise ValueError("Longitude must be a number")
         if not -180 <= v <= 180:
             raise ValueError("Longitude must be between -180 and 180 degrees")

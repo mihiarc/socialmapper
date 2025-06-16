@@ -17,7 +17,7 @@ import os
 import time
 import warnings
 from collections.abc import Callable
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import geopandas as gpd
 import networkx as nx

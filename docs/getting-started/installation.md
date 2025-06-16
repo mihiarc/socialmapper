@@ -4,20 +4,16 @@ This guide covers multiple ways to install SocialMapper depending on your needs 
 
 ## Quick Installation
 
-=== "pip (Recommended)"
+=== "uv (Recommended)"
+
+    ```bash
+    uv pip install socialmapper
+    ```
+
+=== "pip (Alternative)"
 
     ```bash
     pip install socialmapper
-    ```
-
-=== "uv (Modern & Fast)"
-
-    ```bash
-    # Install uv if you don't have it
-    pip install uv
-    
-    # Install SocialMapper
-    uv add socialmapper
     ```
 
 === "conda"
@@ -54,7 +50,7 @@ This guide covers multiple ways to install SocialMapper depending on your needs 
 For most users, the standard installation provides all core features:
 
 ```bash
-pip install socialmapper
+uv pip install socialmapper
 ```
 
 ### Option 2: Development Installation with Enhanced Features
@@ -62,7 +58,7 @@ pip install socialmapper
 For development work and extended functionality:
 
 ```bash
-pip install socialmapper[dev]
+uv pip install socialmapper[dev]
 ```
 
 This includes additional dependencies for:
@@ -80,7 +76,7 @@ git clone https://github.com/mihiarc/socialmapper.git
 cd socialmapper
 
 # Install in development mode with all dependencies
-pip install -e .[dev]
+uv pip install -e .[dev]
 ```
 
 ### Option 4: Minimal Installation
@@ -128,13 +124,13 @@ Test your installation with these commands:
 
 ```bash
 # Check version
-python -c "import socialmapper; print(socialmapper.__version__)"
+uv run python -c "import socialmapper; print(socialmapper.__version__)"
 
 # Run help command
-socialmapper --help
+uv run socialmapper --help
 
 # Quick test (requires internet)
-python -c "from socialmapper import run_socialmapper; print('✅ Installation successful!')"
+uv run python -c "from socialmapper import run_socialmapper; print('✅ Installation successful!')"
 ```
 
 ## Optional: API Keys

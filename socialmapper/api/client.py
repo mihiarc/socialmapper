@@ -392,7 +392,7 @@ class SocialMapperClient:
             csv_data = result_data["csv_data"]
             if isinstance(csv_data, dict) and "csv_data" in csv_data:
                 files["census_data"] = Path(csv_data["csv_data"])
-            elif isinstance(csv_data, (str, Path)):
+            elif isinstance(csv_data, str | Path):
                 files["census_data"] = Path(csv_data)
 
         # Extract map files

@@ -8,7 +8,7 @@ This module provides export functionality for census data in various formats:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import geopandas as gpd
 import pandas as pd

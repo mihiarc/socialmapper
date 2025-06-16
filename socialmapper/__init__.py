@@ -107,29 +107,29 @@ except ImportError:
 
 # Build __all__ based on available features
 __all__ = [
-    # Modern API (primary interface)
-    "SocialMapperClient",
-    "SocialMapperBuilder",
-    "quick_analysis",
-    "analyze_location",
-    "Result",
-    "Ok",
-    "Err",
-    # Modern census system
-    "get_census_system",
-    "get_legacy_adapter",
+    "CacheStrategy",
     "CensusSystem",
     "CensusSystemBuilder",
-    "StateFormat",
-    "VariableFormat",
-    "CacheStrategy",
-    "RepositoryType",
-    # Neighbor functions
-    "get_geography_from_point",
-    "get_counties_from_pois",
     # Visualization
     "ChoroplethMap",
-    "MapType",
-    "MapConfig",
     "ColorScheme",
+    "Err",
+    "MapConfig",
+    "MapType",
+    "Ok",
+    "RepositoryType",
+    "Result",
+    "SocialMapperBuilder",
+    # Modern API (primary interface)
+    "SocialMapperClient",
+    "StateFormat",
+    "VariableFormat",
+    "analyze_location",
+    # Modern census system
+    "get_census_system",
+    "get_counties_from_pois",
+    # Neighbor functions
+    "get_geography_from_point",
+    "get_legacy_adapter",
+    "quick_analysis",
 ]

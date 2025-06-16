@@ -238,7 +238,7 @@ def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list
         colors = colors[::-1]
 
     # Convert to hex
-    hex_colors = ["#%02x%02x%02x" % tuple(int(c * 255) for c in color[:3]) for color in colors]
+    hex_colors = [f"#{int(color[0] * 255):02x}{int(color[1] * 255):02x}{int(color[2] * 255):02x}" for color in colors]
 
     return hex_colors
 

@@ -43,10 +43,10 @@ We're excited to announce our latest release with these improvements:
 
 ## Installation
 
-SocialMapper is available on PyPI. Install it easily with pip:
+SocialMapper is available on PyPI. Install it easily with uv:
 
 ```bash
-pip install socialmapper
+uv pip install socialmapper
 ```
 
 **Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
@@ -132,23 +132,23 @@ SocialMapper also provides a powerful command-line interface:
 
 ```bash
 # Show help
-socialmapper --help
+uv run socialmapper --help
 
 # Analyze libraries in Chicago
-socialmapper --poi --geocode-area "Chicago" --state "Illinois" \
+uv run socialmapper --poi --geocode-area "Chicago" --state "Illinois" \
     --poi-type "amenity" --poi-name "library" --travel-time 15 \
     --census-variables total_population median_household_income
 
 # Use custom coordinates
-socialmapper --custom-coords "path/to/coordinates.csv" \
+uv run socialmapper --custom-coords "path/to/coordinates.csv" \
     --travel-time 20 --census-variables total_population median_household_income
 
 # Use ZIP codes instead of block groups
-socialmapper --poi --geocode-area "Denver" --state "Colorado" \
+uv run socialmapper --poi --geocode-area "Denver" --state "Colorado" \
     --poi-type "amenity" --poi-name "hospital" --geographic-level zcta
 
 # Analyze walking access to parks
-socialmapper --poi --geocode-area "Portland" --state "Oregon" \
+uv run socialmapper --poi --geocode-area "Portland" --state "Oregon" \
     --poi-type "leisure" --poi-name "park" --travel-time 15 \
     --travel-mode walk
 ```

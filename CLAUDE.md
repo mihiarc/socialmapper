@@ -17,27 +17,27 @@ Key capabilities:
 
 ```bash
 # Install for development with all dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Run tests
-pytest
+uv run pytest
 
 # Format code
-black socialmapper/
-isort socialmapper/
+uv run black socialmapper/
+uv run isort socialmapper/
 
 # Lint code
-ruff check socialmapper/
+uv run ruff check socialmapper/
 
 # Type checking
-mypy socialmapper/
+uv run mypy socialmapper/
 
 # Build package
-hatch build
+uv run hatch build
 
 
 # Run CLI
-socialmapper --help
+uv run socialmapper --help
 ```
 
 ## Architecture Overview

@@ -119,7 +119,7 @@ def create_performance_table(data: dict[str, Any]) -> str:
 
     for key, value in data.items():
         formatted_key = key.replace("_", " ").title()
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             if "time" in key.lower():
                 formatted_value = f"{value:.2f}s"
             elif "count" in key.lower():

@@ -27,7 +27,7 @@ import os
 import re
 import sys
 import time
-from typing import List, Optional
+from typing import Optional
 
 import httpx
 

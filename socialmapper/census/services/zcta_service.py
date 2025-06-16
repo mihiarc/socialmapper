@@ -5,7 +5,8 @@ batch processing, and TIGER/Line shapefile URL generation.
 """
 
 import logging
-from typing import Optional, Callable
+from typing import Optional
+from collections.abc import Callable
 
 import geopandas as gpd
 import pandas as pd

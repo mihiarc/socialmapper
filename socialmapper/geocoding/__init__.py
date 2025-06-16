@@ -17,7 +17,7 @@ Author: SocialMapper Team
 Date: June 2025
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from .engine import AddressGeocodingEngine
 from .models import (

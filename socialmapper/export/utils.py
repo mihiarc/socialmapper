@@ -114,7 +114,7 @@ def validate_export_data(data: pd.DataFrame | gpd.GeoDataFrame) -> None:
     if data is None:
         raise ValueError("Export data cannot be None")
 
-    if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
+    if not isinstance(data, pd.DataFrame | gpd.GeoDataFrame):
         raise ValueError(f"Export data must be DataFrame or GeoDataFrame, got {type(data)}")
 
     if data.empty:

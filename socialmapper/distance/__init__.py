@@ -7,7 +7,7 @@ improvement over legacy systems through JIT compilation and modern algorithms.
 
 import json
 import time
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import geopandas as gpd
 import numpy as np

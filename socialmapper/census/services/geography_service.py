@@ -193,7 +193,7 @@ class GeographyService:
                 return StateFormat.NAME
 
         # Handle numeric (possibly a FIPS code)
-        if isinstance(state, (int, float)):
+        if isinstance(state, int | float):
             state_str = str(int(state)).zfill(2)
             if state_str in self._fips_to_abbr:
                 return StateFormat.FIPS

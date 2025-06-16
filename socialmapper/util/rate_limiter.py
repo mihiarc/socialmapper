@@ -153,7 +153,7 @@ class RetryHandler:
             return False
 
         # Network errors should be retried
-        if isinstance(exception, (httpx.NetworkError, httpx.TimeoutException)):
+        if isinstance(exception, httpx.NetworkError | httpx.TimeoutException):
             return True
 
         # Rate limiting (429) and server errors (5xx) should be retried

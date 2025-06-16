@@ -35,7 +35,7 @@ Usage:
 import os
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 # Import domain entities
 from .domain.entities import (
@@ -173,7 +173,7 @@ class CensusSystem:
         return self._geography_service.create_state_info(state)
 
     def create_county_info(
-        self, state_fips: str, county_fips: str, name: Optional[str] = None
+        self, state_fips: str, county_fips: str, name: str | None = None
     ) -> CountyInfo:
         """Create CountyInfo entity."""
         return self._geography_service.create_county_info(state_fips, county_fips, name)
@@ -214,7 +214,7 @@ class CensusSystem:
         return self._zcta_service.get_zctas_for_counties(counties)
 
     def get_zcta_census_data(
-        self, geoids: list[str], variables: list[str], api_key: Optional[str] = None
+        self, geoids: list[str], variables: list[str], api_key: str | None = None
     ) -> "pd.DataFrame":
         """Get census data for ZCTA GEOIDs."""
         return self._zcta_service.get_census_data(geoids, variables, api_key)
@@ -229,7 +229,7 @@ class CensusSystem:
         self,
         state_fips_list: list[str],
         batch_size: int = 5,
-        progress_callback: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
     ) -> "gpd.GeoDataFrame":
         """Get ZCTAs for multiple states with batching and progress tracking."""
         return self._zcta_service.batch_get_zctas(state_fips_list, batch_size, progress_callback)
@@ -259,7 +259,7 @@ class CensusSystem:
                 self,
                 geoids: list[str],
                 variables: list[str],
-                api_key: Optional[str] = None,
+                api_key: str | None = None,
                 geographic_level: str = "zcta",
             ) -> "pd.DataFrame":
                 """Get census data for ZCTAs."""
@@ -269,7 +269,7 @@ class CensusSystem:
                 self,
                 state_fips_list: list[str],
                 batch_size: int = 5,
-                progress_callback: Optional[Callable] = None,
+                progress_callback: Callable | None = None,
             ) -> "gpd.GeoDataFrame":
                 """Get ZCTAs with batching support."""
                 return self._census_system.batch_get_zctas(
@@ -432,9 +432,9 @@ class CensusSystemBuilder:
     """
 
     def __init__(self):
-        self._api_key: Optional[str] = None
+        self._api_key: str | None = None
         self._cache_strategy: CacheStrategy = CacheStrategy.IN_MEMORY
-        self._cache_dir: Optional[str] = None
+        self._cache_dir: str | None = None
         self._rate_limit: float = 1.0
         self._repository_type: RepositoryType = RepositoryType.IN_MEMORY
         self._api_timeout: int = 30
@@ -462,7 +462,7 @@ class CensusSystemBuilder:
         self._rate_limit = requests_per_second
         return self
 
-    def with_repository_type(self, repo_type: str | RepositoryType) -> "CensusSystemBuilder":
+    def with_repository_type(self, repo_type: Union[str, RepositoryType]) -> "CensusSystemBuilder":
         """Set the repository type for data persistence."""
         if isinstance(repo_type, str):
             repo_type = RepositoryType(repo_type)
@@ -557,7 +557,7 @@ class CensusSystemBuilder:
 
 # Convenience functions for common use cases
 def get_census_system(
-    api_key: Optional[str] = None, cache_strategy: str = "in_memory", cache_dir: Optional[str] = None
+    api_key: str | None = None, cache_strategy: str = "in_memory", cache_dir: str | None = None
 ) -> CensusSystem:
     """Get a configured CensusSystem with sensible defaults.
 
@@ -582,7 +582,7 @@ def get_census_system(
     return builder.build()
 
 
-def get_legacy_adapter(census_system: Optional[CensusSystem] = None):
+def get_legacy_adapter(census_system: CensusSystem | None = None):
     """Legacy adapter functionality has been integrated into the modern CensusSystem.
 
     This function now returns the CensusSystem directly as it provides all
@@ -600,7 +600,7 @@ def get_legacy_adapter(census_system: Optional[CensusSystem] = None):
     return census_system
 
 
-def get_streaming_census_manager(cache_census_data: bool = False, cache_dir: Optional[str] = None):
+def get_streaming_census_manager(cache_census_data: bool = False, cache_dir: str | None = None):
     """Modern replacement for legacy streaming census manager.
 
     This function provides the same interface as the legacy version
