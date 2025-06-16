@@ -68,6 +68,14 @@ from .services.geography_service import GeographyService, StateFormat
 from .services.variable_service import CensusVariableService, VariableFormat
 from .services.zcta_service import ZctaService
 
+# Import TIGER geometry submodule
+from .tiger import (
+    TigerGeometryClient,
+    GeographyLevel,
+    GeometryQuery,
+    GeometryResult,
+)
+
 # Legacy adapters have been removed and integrated into the modern census system
 
 
@@ -665,4 +673,10 @@ __all__ = [
     "HybridCacheProvider",
     "NoOpCacheProvider",
     "TokenBucketRateLimiter",
+    
+    # TIGER geometry submodule
+    "TigerGeometryClient",
+    "GeographyLevel",
+    "GeometryQuery",
+    "GeometryResult",
 ] 
