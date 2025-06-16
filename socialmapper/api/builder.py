@@ -9,7 +9,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Self
 
-# Import travel mode
+# Import constants and travel mode
+from ..constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..isochrone import TravelMode
 
 # Import census variable validation
@@ -33,6 +34,10 @@ class AnalysisResult:
     files_generated: dict[str, Path]
     metadata: dict[str, any]
     warnings: list[str] = field(default_factory=list)
+    # Include the actual data for UI consumption
+    pois: list[dict] = field(default_factory=list)
+    demographics: dict[str, float] = field(default_factory=dict)
+    isochrone_area: float = 0.0
 
     @property
     def success(self) -> bool:
@@ -103,9 +108,9 @@ class SocialMapperBuilder:
 
     def with_travel_time(self, minutes: int) -> Self:
         """Set the travel time for isochrone generation."""
-        if not 1 <= minutes <= 120:
+        if not MIN_TRAVEL_TIME <= minutes <= MAX_TRAVEL_TIME:
             self._validation_errors.append(
-                f"Travel time must be between 1 and 120 minutes, got {minutes}"
+                f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes, got {minutes}"
             )
         self._config["travel_time"] = minutes
         return self

@@ -8,6 +8,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from ...constants import (
+    BLOCK_GROUP_LENGTH,
+    COUNTY_FIPS_LENGTH,
+    FULL_BLOCK_GROUP_GEOID_LENGTH,
+    STATE_FIPS_LENGTH,
+    TRACT_LENGTH,
+)
+
 
 @dataclass(frozen=True)
 class GeographicUnit:
@@ -143,10 +151,10 @@ class StateInfo:
     name: str
 
     def __post_init__(self):
-        if not self.fips or len(self.fips) != 2 or not self.fips.isdigit():
-            raise ValueError("State FIPS must be a 2-digit string")
-        if not self.abbreviation or len(self.abbreviation) != 2:
-            raise ValueError("State abbreviation must be 2 characters")
+        if not self.fips or len(self.fips) != STATE_FIPS_LENGTH or not self.fips.isdigit():
+            raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
+        if not self.abbreviation or len(self.abbreviation) != STATE_FIPS_LENGTH:
+            raise ValueError(f"State abbreviation must be {STATE_FIPS_LENGTH} characters")
         if not self.name:
             raise ValueError("State name cannot be empty")
 
@@ -160,10 +168,10 @@ class CountyInfo:
     name: str | None = None
 
     def __post_init__(self):
-        if not self.state_fips or len(self.state_fips) != 2 or not self.state_fips.isdigit():
-            raise ValueError("State FIPS must be a 2-digit string")
-        if not self.county_fips or len(self.county_fips) != 3 or not self.county_fips.isdigit():
-            raise ValueError("County FIPS must be a 3-digit string")
+        if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
+            raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
+        if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():
+            raise ValueError(f"County FIPS must be a {COUNTY_FIPS_LENGTH}-digit string")
 
     @property
     def full_fips(self) -> str:
@@ -182,14 +190,14 @@ class BlockGroupInfo:
     geoid: str | None = None
 
     def __post_init__(self):
-        if not self.state_fips or len(self.state_fips) != 2 or not self.state_fips.isdigit():
-            raise ValueError("State FIPS must be a 2-digit string")
-        if not self.county_fips or len(self.county_fips) != 3 or not self.county_fips.isdigit():
-            raise ValueError("County FIPS must be a 3-digit string")
-        if not self.tract or len(self.tract) != 6 or not self.tract.isdigit():
-            raise ValueError("Tract must be a 6-digit string")
-        if not self.block_group or len(self.block_group) != 1 or not self.block_group.isdigit():
-            raise ValueError("Block group must be a 1-digit string")
+        if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
+            raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
+        if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():
+            raise ValueError(f"County FIPS must be a {COUNTY_FIPS_LENGTH}-digit string")
+        if not self.tract or len(self.tract) != TRACT_LENGTH or not self.tract.isdigit():
+            raise ValueError(f"Tract must be a {TRACT_LENGTH}-digit string")
+        if not self.block_group or len(self.block_group) != BLOCK_GROUP_LENGTH or not self.block_group.isdigit():
+            raise ValueError(f"Block group must be a {BLOCK_GROUP_LENGTH}-digit string")
 
     @property
     def full_geoid(self) -> str:

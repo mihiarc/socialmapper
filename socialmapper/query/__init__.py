@@ -320,7 +320,7 @@ def format_results(result, config=None):
 
     # Update poi count
     data["poi_count"] = len(data["pois"])
-    
+
     # Log filtering results if bounds were applied
     if bounds:
         total_results = len(result.nodes) + len(result.ways) + len(result.relations)

@@ -9,6 +9,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..constants import SMALL_DATASET_MB
+
 
 @dataclass
 class DistanceConfig:
@@ -87,7 +89,7 @@ class IOConfig:
         """Get optimal format based on data size."""
         if size_mb > self.stream_threshold_mb:
             return "streaming_parquet"
-        elif size_mb > 10.0:
+        elif size_mb > SMALL_DATASET_MB:
             return "parquet"
         else:
             return "memory"

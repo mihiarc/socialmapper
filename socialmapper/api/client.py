@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+from ..constants import COORDINATE_PAIR_PARTS, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..ui.console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
@@ -163,7 +164,7 @@ class SocialMapperClient:
         try:
             # Parse location
             parts = location.split(",")
-            if len(parts) != 2:
+            if len(parts) != COORDINATE_PAIR_PARTS:
                 return Err(
                     Error(
                         type=ErrorType.VALIDATION,
@@ -235,9 +236,38 @@ class SocialMapperClient:
             # Execute with progress tracking
             result_data = orchestrator.run()
 
+            # Extract POIs and demographics from result
+            pois = result_data.get("pois", [])
+
+            # Calculate demographics summary (aggregate from census data)
+            demographics = {}
+            if "census_data" in result_data and hasattr(result_data["census_data"], 'to_dict'):
+                census_df = result_data["census_data"]
+                # Sum up population and average income across all census units
+                for var in config.get("census_variables", []):
+                    if var in census_df.columns:
+                        if var == "B01003_001E":  # Total population - sum
+                            demographics[var] = census_df[var].sum()
+                        elif var == "B19013_001E":  # Median income - weighted average
+                            # For simplicity, just take the mean
+                            demographics[var] = census_df[var].mean()
+                        else:
+                            demographics[var] = census_df[var].sum()
+
+            # Calculate isochrone area if available
+            isochrone_area = 0.0
+            if "isochrones" in result_data and hasattr(result_data["isochrones"], 'geometry'):
+                try:
+                    # Project to equal area projection for accurate area calculation
+                    iso_gdf = result_data["isochrones"].to_crs("EPSG:5070")
+                    # Sum area in square meters and convert to square kilometers
+                    isochrone_area = iso_gdf.geometry.area.sum() / 1_000_000
+                except Exception:
+                    pass
+
             # Convert to structured result
             result = AnalysisResult(
-                poi_count=len(result_data.get("pois", [])),
+                poi_count=len(pois),
                 isochrone_count=len(result_data.get("isochrones", [])),
                 census_units_analyzed=len(result_data.get("census_data", [])),
                 files_generated=self._extract_file_paths(result_data),
@@ -245,7 +275,12 @@ class SocialMapperClient:
                     "travel_time": config.get("travel_time"),
                     "geographic_level": config.get("geographic_level"),
                     "census_variables": config.get("census_variables"),
+                    "center_lat": pois[0]["lat"] if pois else config.get("lat"),
+                    "center_lon": pois[0]["lon"] if pois else config.get("lon"),
                 },
+                pois=pois,
+                demographics=demographics,
+                isochrone_area=isochrone_area,
             )
 
             # Cache result if strategy available
@@ -306,9 +341,9 @@ class SocialMapperClient:
             # Validate travel time
             if "travel_time" in config:
                 travel_time = config["travel_time"]
-                if not isinstance(travel_time, int) or not 1 <= travel_time <= 120:
+                if not isinstance(travel_time, int) or not MIN_TRAVEL_TIME <= travel_time <= MAX_TRAVEL_TIME:
                     validation_errors.append(
-                        "Travel time must be an integer between 1 and 120 minutes"
+                        f"Travel time must be an integer between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"
                     )
 
             # Validate output directory

@@ -11,6 +11,7 @@ import geopandas as gpd
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from shapely.geometry import Point
 
+from ..constants import MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE
 from ..ui.console import get_logger
 
 logger = get_logger(__name__)
@@ -19,16 +20,16 @@ logger = get_logger(__name__)
 class CoordinatePoint(BaseModel):
     """Pydantic model for validating individual coordinate points."""
 
-    lat: float = Field(..., ge=-90, le=90, description="Latitude in decimal degrees")
-    lon: float = Field(..., ge=-180, le=180, description="Longitude in decimal degrees")
+    lat: float = Field(..., ge=MIN_LATITUDE, le=MAX_LATITUDE, description="Latitude in decimal degrees")
+    lon: float = Field(..., ge=MIN_LONGITUDE, le=MAX_LONGITUDE, description="Longitude in decimal degrees")
 
     @field_validator("lat")
     @classmethod
     def validate_latitude(cls, v):
         if not isinstance(v, int | float):
             raise ValueError("Latitude must be a number")
-        if not -90 <= v <= 90:
-            raise ValueError("Latitude must be between -90 and 90 degrees")
+        if not MIN_LATITUDE <= v <= MAX_LATITUDE:
+            raise ValueError(f"Latitude must be between {MIN_LATITUDE} and {MAX_LATITUDE} degrees")
         return float(v)
 
     @field_validator("lon")
@@ -53,8 +54,8 @@ class POICoordinate(BaseModel):
     """Pydantic model for validating POI coordinates with metadata."""
 
     id: str | int | None = None
-    lat: float = Field(..., ge=-90, le=90)
-    lon: float = Field(..., ge=-180, le=180)
+    lat: float = Field(..., ge=MIN_LATITUDE, le=MAX_LATITUDE)
+    lon: float = Field(..., ge=MIN_LONGITUDE, le=MAX_LONGITUDE)
     name: str | None = None
     tags: dict[str, Any] | None = None
 

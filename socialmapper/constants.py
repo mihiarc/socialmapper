@@ -55,7 +55,7 @@ MEMORY_WARNING_THRESHOLD = 75
 
 # Data size thresholds (MB)
 SMALL_DATASET_MB = 10.0
-MEDIUM_DATASET_MB = 100.0  
+MEDIUM_DATASET_MB = 100.0
 LARGE_DATASET_MB = 500.0
 
 # Record count thresholds
@@ -70,7 +70,7 @@ DEFAULT_SPATIAL_BUFFER_KM = 5.0
 
 # Distance thresholds (meters)
 CITY_SCALE_DISTANCE_M = 50000      # ~50km - city scale
-METRO_SCALE_DISTANCE_M = 100000    # ~100km - metro area scale  
+METRO_SCALE_DISTANCE_M = 100000    # ~100km - metro area scale
 REGIONAL_SCALE_DISTANCE_M = 200000 # ~200km - regional scale
 STATE_SCALE_DISTANCE_M = 400000    # ~400km - state scale
 
@@ -95,7 +95,7 @@ WARNING_FILE_SIZE_MB = 50
 
 
 # =============================================================================
-# CENSUS & GEOGRAPHIC IDENTIFIERS  
+# CENSUS & GEOGRAPHIC IDENTIFIERS
 # =============================================================================
 
 # FIPS code lengths
@@ -158,7 +158,7 @@ def validate_travel_time(minutes: int) -> bool:
 
 def validate_coordinates(lat: float, lon: float) -> bool:
     """Validate latitude and longitude are within valid ranges."""
-    return (MIN_LATITUDE <= lat <= MAX_LATITUDE and 
+    return (MIN_LATITUDE <= lat <= MAX_LATITUDE and
             MIN_LONGITUDE <= lon <= MAX_LONGITUDE)
 
 
@@ -180,4 +180,4 @@ def is_large_dataset(size_mb: float = None, record_count: int = None) -> bool:
         return size_mb > LARGE_DATASET_MB
     if record_count is not None:
         return record_count > LARGE_DATASET_RECORDS
-    return False 
+    return False

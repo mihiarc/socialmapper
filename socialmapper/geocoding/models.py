@@ -12,6 +12,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ..constants import MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE
+
 
 class AddressProvider(Enum):
     """Enumeration of supported geocoding providers."""
@@ -129,8 +131,8 @@ class GeocodingResult(BaseModel):
 
     # Geocoding results
     success: bool
-    latitude: float | None = Field(None, ge=-90, le=90)
-    longitude: float | None = Field(None, ge=-180, le=180)
+    latitude: float | None = Field(None, ge=MIN_LATITUDE, le=MAX_LATITUDE)
+    longitude: float | None = Field(None, ge=MIN_LONGITUDE, le=MAX_LONGITUDE)
 
     # Quality and metadata
     quality: AddressQuality

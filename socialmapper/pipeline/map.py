@@ -10,6 +10,12 @@ from typing import Any
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
+from ..constants import (
+    CITY_SCALE_DISTANCE_M,
+    METRO_SCALE_DISTANCE_M,
+    REGIONAL_SCALE_DISTANCE_M,
+    STATE_SCALE_DISTANCE_M,
+)
 from ..progress import get_progress_bar
 from ..visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
 from ..visualization.config import ClassificationScheme, LegendConfig
@@ -315,13 +321,13 @@ def _create_demographic_map(
 
     # Improved zoom level calculation for Web Mercator
     # These values work well for US geography
-    if bbox_diagonal < 50000:  # < 50km - neighborhood/small city
+    if bbox_diagonal < CITY_SCALE_DISTANCE_M:  # neighborhood/small city
         zoom_level = 12
-    elif bbox_diagonal < 100000:  # < 100km - city/metro area
+    elif bbox_diagonal < METRO_SCALE_DISTANCE_M:  # city/metro area
         zoom_level = 11
-    elif bbox_diagonal < 200000:  # < 200km - large metro/small region
+    elif bbox_diagonal < REGIONAL_SCALE_DISTANCE_M:  # large metro/small region
         zoom_level = 10
-    elif bbox_diagonal < 400000:  # < 400km - region/small state
+    elif bbox_diagonal < STATE_SCALE_DISTANCE_M:  # region/small state
         zoom_level = 9
     else:  # Large area - state or bigger
         zoom_level = 8
