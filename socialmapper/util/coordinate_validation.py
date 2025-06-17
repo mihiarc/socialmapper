@@ -5,10 +5,10 @@ This module provides Pydantic-based validation for all coordinate inputs
 to ensure data quality and prevent issues with PyProj transformations.
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import geopandas as gpd
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 from shapely.geometry import Point
 
 from ..constants import (
@@ -81,7 +81,7 @@ class StrictCoordinate(BaseModel):
 class CoordinateCluster(BaseModel):
     """Validates a cluster of coordinates for distance calculations."""
 
-    points: List[Coordinate]
+    points: list[Coordinate]
 
     @field_validator("points")
     @classmethod
@@ -132,15 +132,15 @@ def validate_coordinate_point(
         return None
 
 
-def validate_poi_coordinates(poi_data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> List[Coordinate]:
+def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) -> list[Coordinate]:
     """Validate POI coordinate data and return validated coordinates.
-    
+
     Args:
         poi_data: POI data in various formats (single POI dict or list of POIs)
-        
+
     Returns:
         List of validated Coordinate objects
-        
+
     Raises:
         ValueError: If coordinate data is invalid or missing
     """
@@ -197,16 +197,16 @@ def validate_poi_coordinates(poi_data: Union[Dict[str, Any], List[Dict[str, Any]
     return validated_coords
 
 
-def validate_coordinate_cluster(coordinates: List[Dict[str, Any]], cluster_id: str = None) -> CoordinateCluster:
+def validate_coordinate_cluster(coordinates: list[dict[str, Any]], cluster_id: str | None = None) -> CoordinateCluster:
     """Validate a cluster of coordinates.
-    
+
     Args:
         coordinates: List of coordinate dictionaries
         cluster_id: Optional identifier for the cluster (for logging)
-        
+
     Returns:
         Validated CoordinateCluster object
-        
+
     Raises:
         ValueError: If cluster validation fails
     """

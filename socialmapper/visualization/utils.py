@@ -1,5 +1,7 @@
 """Utility functions for map visualization."""
 
+
+import geopandas as gpd
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -244,7 +246,7 @@ def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list
 
 
 def calculate_map_extent(
-    gdf: "gpd.GeoDataFrame", buffer_factor: float = 0.1
+    gdf: gpd.GeoDataFrame, buffer_factor: float = 0.1
 ) -> tuple[float, float, float, float]:
     """Calculate appropriate map extent with buffer.
 
@@ -265,7 +267,7 @@ def calculate_map_extent(
     return (bounds[0] - buffer_x, bounds[2] + buffer_x, bounds[1] - buffer_y, bounds[3] + buffer_y)
 
 
-def validate_geodataframe(gdf: "gpd.GeoDataFrame") -> None:
+def validate_geodataframe(gdf: gpd.GeoDataFrame) -> None:
     """Validate that a GeoDataFrame is suitable for mapping.
 
     Args:

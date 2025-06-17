@@ -35,9 +35,12 @@ Usage:
 import os
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 # Import domain entities
+import geopandas as gpd
+import pandas as pd
+
 from .domain.entities import (
     BlockGroupInfo,
     CacheEntry,
@@ -179,11 +182,11 @@ class CensusSystem:
         return self._geography_service.create_county_info(state_fips, county_fips, name)
 
     # Block Group Operations
-    def get_block_groups_for_county(self, state_fips: str, county_fips: str) -> "gpd.GeoDataFrame":
+    def get_block_groups_for_county(self, state_fips: str, county_fips: str) -> gpd.GeoDataFrame:
         """Fetch block group boundaries for a county."""
         return self._block_group_service.get_block_groups_for_county(state_fips, county_fips)
 
-    def get_block_groups_for_counties(self, counties: list[tuple[str, str]]) -> "gpd.GeoDataFrame":
+    def get_block_groups_for_counties(self, counties: list[tuple[str, str]]) -> gpd.GeoDataFrame:
         """Fetch block groups for multiple counties."""
         return self._block_group_service.get_block_groups_for_counties(counties)
 
@@ -192,15 +195,15 @@ class CensusSystem:
         return self._block_group_service.get_block_group_urls(state_fips, year)
 
     # ZCTA Operations
-    def get_zctas_for_state(self, state_fips: str) -> "gpd.GeoDataFrame":
+    def get_zctas_for_state(self, state_fips: str) -> gpd.GeoDataFrame:
         """Fetch ZCTA boundaries for a state."""
         return self._zcta_service.get_zctas_for_state(state_fips)
 
-    def get_zctas_for_states(self, state_fips_list: list[str]) -> "gpd.GeoDataFrame":
+    def get_zctas_for_states(self, state_fips_list: list[str]) -> gpd.GeoDataFrame:
         """Fetch ZCTAs for multiple states."""
         return self._zcta_service.get_zctas_for_states(state_fips_list)
 
-    def get_zctas(self, state_fips_list: list[str]) -> "gpd.GeoDataFrame":
+    def get_zctas(self, state_fips_list: list[str]) -> gpd.GeoDataFrame:
         """Legacy compatibility method for get_zctas_for_states."""
         return self.get_zctas_for_states(state_fips_list)
 
@@ -209,19 +212,19 @@ class CensusSystem:
         return self._zcta_service.get_zcta_urls(year)
 
     # Enhanced ZCTA Operations (New methods to replace legacy adapters)
-    def get_zctas_for_counties(self, counties: list[tuple[str, str]]) -> "gpd.GeoDataFrame":
+    def get_zctas_for_counties(self, counties: list[tuple[str, str]]) -> gpd.GeoDataFrame:
         """Get ZCTAs that intersect with specific counties."""
         return self._zcta_service.get_zctas_for_counties(counties)
 
     def get_zcta_census_data(
         self, geoids: list[str], variables: list[str], api_key: str | None = None
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Get census data for ZCTA GEOIDs."""
         return self._zcta_service.get_census_data(geoids, variables, api_key)
 
     def get_zcta_census_data_batch(
         self, state_fips_list: list[str], variables: list[str], batch_size: int = 100
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Get census data for ZCTAs across multiple states with efficient batching."""
         return self._zcta_service.get_zcta_census_data_batch(state_fips_list, variables, batch_size)
 
@@ -230,7 +233,7 @@ class CensusSystem:
         state_fips_list: list[str],
         batch_size: int = 5,
         progress_callback: Callable | None = None,
-    ) -> "gpd.GeoDataFrame":
+    ) -> gpd.GeoDataFrame:
         """Get ZCTAs for multiple states with batching and progress tracking."""
         return self._zcta_service.batch_get_zctas(state_fips_list, batch_size, progress_callback)
 
@@ -251,7 +254,7 @@ class CensusSystem:
             def __init__(self, census_system):
                 self._census_system = census_system
 
-            def get_zctas(self, state_fips_list: list[str]) -> "gpd.GeoDataFrame":
+            def get_zctas(self, state_fips_list: list[str]) -> gpd.GeoDataFrame:
                 """Get ZCTAs for multiple states."""
                 return self._census_system.get_zctas_for_states(state_fips_list)
 
@@ -261,7 +264,7 @@ class CensusSystem:
                 variables: list[str],
                 api_key: str | None = None,
                 geographic_level: str = "zcta",
-            ) -> "pd.DataFrame":
+            ) -> pd.DataFrame:
                 """Get census data for ZCTAs."""
                 return self._census_system.get_zcta_census_data(geoids, variables, api_key)
 
@@ -270,7 +273,7 @@ class CensusSystem:
                 state_fips_list: list[str],
                 batch_size: int = 5,
                 progress_callback: Callable | None = None,
-            ) -> "gpd.GeoDataFrame":
+            ) -> gpd.GeoDataFrame:
                 """Get ZCTAs with batching support."""
                 return self._census_system.batch_get_zctas(
                     state_fips_list, batch_size, progress_callback

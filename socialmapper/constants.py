@@ -206,6 +206,76 @@ INTERSECTION_BUFFER_M = 100       # Small buffer for intersection checks
 
 
 # =============================================================================
+# ADDITIONAL CONSTANTS FOR MAGIC VALUE FIXES
+# =============================================================================
+
+# Data Processing Constants
+CATEGORICAL_CONVERSION_THRESHOLD = 0.5  # Unique ratio threshold for converting to categorical
+DEFAULT_BATCH_SIZE = 1000  # Default batch size for processing
+PROGRESS_UPDATE_INTERVAL = 1000  # How often to update progress bars
+SMALL_DATASET_THRESHOLD = 50  # Threshold for small datasets
+MEDIUM_DATASET_THRESHOLD = 500  # Threshold for medium datasets
+LARGE_DATASET_THRESHOLD = 5000  # Threshold for large datasets
+
+# Travel and Distance Constants
+DEFAULT_TRAVEL_TIME_MINUTES = 30  # Default travel time for isochrones
+DEFAULT_SEARCH_RADIUS_KM = 50  # Default search radius in kilometers
+SHORT_DISTANCE_THRESHOLD_M = 500  # Short distance threshold in meters
+
+# Area Constants
+SMALL_AREA_THRESHOLD_KM2 = 100  # Small area threshold in square kilometers
+MEDIUM_AREA_THRESHOLD_KM2 = 1000  # Medium area threshold in square kilometers
+SMALL_POLYGON_AREA_THRESHOLD_KM2 = 0.01  # Small polygon area threshold
+
+# Rate Limiting Constants
+RATE_LIMIT_ADAPTATION_INTERVAL_S = 60  # Rate limit adaptation interval in seconds
+MIN_REQUESTS_BEFORE_RATE_INCREASE = 10  # Minimum requests before increasing rate
+ERROR_RATE_THRESHOLD = 0.1  # 10% error rate threshold
+
+# Cache Constants
+CACHE_EXPIRY_DAYS = 30  # Cache expiry in days
+RECENT_CACHE_THRESHOLD_DAYS = 7  # Recent cache threshold in days
+CACHE_SIZE_LIMIT_MB = 100  # Cache size limit in MB
+CACHE_REDUCTION_TARGET_RATIO = 0.8  # Target ratio when reducing cache
+
+# Geocoding Constants
+WESTERN_US_LONGITUDE_THRESHOLD = -100  # Longitude threshold for western US states
+
+# Visualization Constants
+SCALE_TEXT_KM_THRESHOLD = 10  # Threshold for scale text formatting in km
+LEGEND_Y_POSITION = 0.2  # Legend position y-coordinate
+LEGEND_ITEM_LIMIT = 100  # Maximum number of legend items
+SUBPLOT_COUNT = 4  # Number of subplots in grid layouts
+
+# POI Constants
+SMALL_POI_COUNT = 10  # Small POI count threshold
+LARGE_POI_COUNT = 100  # Large POI count threshold
+
+# ZCTA Constants
+SMALL_ZCTA_COUNT = 10  # Small ZCTA count threshold
+MEDIUM_ZCTA_COUNT = 50  # Medium ZCTA count threshold
+LARGE_ZCTA_BATCH_SIZE = 2000  # Batch size for large ZCTA queries
+SMALL_ZCTA_BATCH_SIZE = 500  # Batch size for small ZCTA queries
+
+# Network Processing Constants
+NETWORK_BUFFER_SCALE = 0.9  # Network buffer scale factor
+DISSOLVE_BUFFER_FACTOR = 0.99  # Dissolve buffer factor
+SIMPLIFICATION_TOLERANCE = 0.01  # Tolerance for geometry simplification
+AREA_SCALING_FACTOR = 0.5  # Area scaling factor for network processing
+
+# Request Processing Constants
+LARGE_REQUEST_BATCH_SIZE = 10000  # Large request batch size
+CENSUS_REQUEST_BATCH_SIZE = 1000  # Census API request batch size
+SMALL_BATCH_SIZE = 100  # Small batch size for API requests
+TRANSFORM_BATCH_SIZE = 200  # Batch size for transform operations
+
+# HTTP Status Codes (additional)
+HTTP_OK = 200
+HTTP_NOT_FOUND = 404
+HTTP_TOO_MANY_REQUESTS = 429  # Already defined above, but keeping for clarity
+HTTP_SERVER_ERROR = 500
+
+# =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
 

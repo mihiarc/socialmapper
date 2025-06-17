@@ -271,7 +271,7 @@ class ZctaService:
         variables: list[str],
         api_key: str | None = None,
         geographic_level: str = "zcta",
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Get census data for ZCTA geoids.
 
         Args:
