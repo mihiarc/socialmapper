@@ -144,7 +144,11 @@ class ZctaService:
 
         # Combine all ZCTAs
         if all_zctas:
-            zctas = gpd.pd.concat(all_zctas, ignore_index=True)
+            zctas = pd.concat(all_zctas, ignore_index=True)
+            # Ensure result is a GeoDataFrame
+            if not isinstance(zctas, gpd.GeoDataFrame):
+                zctas = gpd.GeoDataFrame(zctas, crs=all_zctas[0].crs)
+
             logger.info(f"Combined {len(zctas)} ZCTAs from {len(all_zctas)} prefixes")
 
             # Standardize column names for consistency
@@ -191,8 +195,12 @@ class ZctaService:
         if not all_zctas:
             raise ValueError("No ZCTA data could be retrieved")
 
-        # Combine all state ZCTAs
-        return pd.concat(all_zctas, ignore_index=True)
+        # Combine all state ZCTAs - preserve GeoDataFrame type
+        combined = pd.concat(all_zctas, ignore_index=True)
+        # Ensure result is a GeoDataFrame
+        if not isinstance(combined, gpd.GeoDataFrame):
+            combined = gpd.GeoDataFrame(combined, crs=all_zctas[0].crs)
+        return combined
 
     def get_zcta_urls(self, year: int = 2020) -> dict[str, str]:
         """Get the download URLs for ZCTA shapefiles from the Census Bureau.
@@ -256,9 +264,13 @@ class ZctaService:
         """
         try:
             # Use Census geocoding API to get ZCTA
-            from ..infrastructure.geocoder import CensusGeocoder
+            # Create logger for geocoder
+            import logging
 
-            geocoder = CensusGeocoder(self._config)
+            from ..infrastructure.geocoder import CensusGeocoder
+            geocoder_logger = logging.getLogger(f"{__name__}.geocoder")
+
+            geocoder = CensusGeocoder(self._config, geocoder_logger)
             result = geocoder.geocode_point(lat, lon)
             return result.zcta_geoid if result else None
         except Exception as e:
@@ -369,15 +381,13 @@ class ZctaService:
 
     def _check_arrow_support(self) -> bool:
         """Check if PyArrow is available for better performance."""
-        try:
-            import os
+        import importlib.util
+        import os
 
-            import pyarrow
-
+        if importlib.util.find_spec("pyarrow") is not None:
             os.environ["PYOGRIO_USE_ARROW"] = "1"
             return True
-        except ImportError:
-            return False
+        return False
 
     def get_zctas_for_counties(self, counties: list[tuple[str, str]]) -> gpd.GeoDataFrame:
         """Get ZCTAs that intersect with specific counties.
@@ -445,10 +455,13 @@ class ZctaService:
             logger.warning("No ZCTA data could be retrieved")
             return gpd.GeoDataFrame()
 
-        # Combine all ZCTAs
+        # Combine all ZCTAs - preserve GeoDataFrame type
         combined_zctas = pd.concat(all_zctas, ignore_index=True)
-        logger.info(f"Successfully retrieved {len(combined_zctas)} total ZCTAs")
+        # Ensure result is a GeoDataFrame
+        if not isinstance(combined_zctas, gpd.GeoDataFrame):
+            combined_zctas = gpd.GeoDataFrame(combined_zctas, crs=all_zctas[0].crs)
 
+        logger.info(f"Successfully retrieved {len(combined_zctas)} total ZCTAs")
         return combined_zctas
 
     def get_zcta_census_data_batch(

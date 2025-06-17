@@ -66,7 +66,7 @@ class CensusGeocoder:
         url = f"{self._geocode_base_url}/geographies/coordinates"
 
         try:
-            response = self._session.get(url, params=params)
+            response = self._session.get(url, params=params, timeout=self._timeout)
             response.raise_for_status()
 
             data = response.json()
@@ -78,9 +78,9 @@ class CensusGeocoder:
             return result
 
         except requests.RequestException as e:
-            raise GeocodingError(f"Geocoding request failed: {e}")
+            raise GeocodingError(f"Geocoding request failed: {e}") from e
         except (ValueError, KeyError) as e:
-            raise GeocodingError(f"Failed to parse geocoding response: {e}")
+            raise GeocodingError(f"Failed to parse geocoding response: {e}") from e
 
     def geocode_address(self, address: str) -> GeocodeResult:
         """Geocode an address to geographic units.
@@ -108,7 +108,7 @@ class CensusGeocoder:
         url = f"{self._geocode_base_url}/geographies/address"
 
         try:
-            response = self._session.get(url, params=params)
+            response = self._session.get(url, params=params, timeout=self._timeout)
             response.raise_for_status()
 
             data = response.json()
@@ -145,9 +145,9 @@ class CensusGeocoder:
             return result
 
         except requests.RequestException as e:
-            raise GeocodingError(f"Address geocoding request failed: {e}")
+            raise GeocodingError(f"Address geocoding request failed: {e}") from e
         except (ValueError, KeyError) as e:
-            raise GeocodingError(f"Failed to parse address geocoding response: {e}")
+            raise GeocodingError(f"Failed to parse address geocoding response: {e}") from e
 
     def batch_geocode_points(self, coordinates: list) -> list:
         """Geocode multiple points in a single request.
@@ -258,9 +258,9 @@ class CensusGeocoder:
         """Create configured requests session."""
         session = requests.Session()
 
-        # Set timeout
-        timeout = self._config.get_setting("api_timeout_seconds", 30)
-        session.timeout = timeout
+        # Store timeout for use in requests
+        # Note: timeout is passed to individual requests, not set on session
+        self._timeout = self._config.get_setting("api_timeout_seconds", 30)
 
         # Set user agent
         session.headers.update({"User-Agent": "SocialMapper/1.0 (Census Geocoder)"})

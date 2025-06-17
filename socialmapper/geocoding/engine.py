@@ -18,8 +18,9 @@ logger = get_logger(__name__)
 
 
 class AddressGeocodingEngine:
-    """High-level geocoding engine orchestrating multiple providers with
-    intelligent fallback, caching, and quality validation.
+    """High-level geocoding engine orchestrating multiple providers.
+    
+    Features intelligent fallback, caching, and quality validation.
     """
 
     def __init__(self, config: GeocodingConfig = None):

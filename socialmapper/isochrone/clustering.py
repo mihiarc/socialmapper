@@ -185,7 +185,7 @@ class OptimizedPOICluster:
     @staticmethod
     def _haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate haversine distance between two points in kilometers."""
-        R = 6371.0  # Earth radius in kilometers
+        earth_radius_km = 6371.0  # Earth radius in kilometers
 
         lat1_rad = np.radians(lat1)
         lon1_rad = np.radians(lon1)
@@ -198,7 +198,7 @@ class OptimizedPOICluster:
         a = np.sin(dlat / 2) ** 2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2) ** 2
         c = 2 * np.arcsin(np.sqrt(a))
 
-        return R * c
+        return earth_radius_km * c
 
     def get_network_bbox(
         self, travel_time_minutes: int, buffer_km: float = 2.0
@@ -221,9 +221,11 @@ class OptimizedPOICluster:
         )
 
     def __len__(self):
+        """Return the number of POIs in this cluster."""
         return len(self.pois)
 
     def __repr__(self):
+        """Return string representation of the cluster."""
         return f"OptimizedPOICluster(id={self.cluster_id}, pois={len(self.pois)}, radius={self.radius_km:.2f}km)"
 
 
@@ -289,7 +291,7 @@ def download_network_for_cluster(
         if len(cluster.pois) == 1:
             # Single POI - use point-based download
             poi = cluster.pois[0]
-            G = ox.graph_from_point(
+            graph = ox.graph_from_point(
                 (poi["lat"], poi["lon"]),
                 network_type=network_type,
                 dist=travel_time_minutes * 1000 + network_buffer_km * 1000,
@@ -302,7 +304,7 @@ def download_network_for_cluster(
 
             # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
             osm_bbox = (min_lon, min_lat, max_lon, max_lat)
-            G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+            graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
         # Add speeds and travel times with mode-specific defaults
         # OSMnx will use:
@@ -310,12 +312,12 @@ def download_network_for_cluster(
         # 2. Highway-type-specific speeds we provide
         # 3. Mean of observed speeds for unmapped highway types
         # 4. Fallback speed as last resort
-        G = ox.add_edge_speeds(G, hwy_speeds=highway_speeds, fallback=default_speed)
-        G = ox.add_edge_travel_times(G)
-        G = ox.project_graph(G)
+        graph = ox.add_edge_speeds(graph, hwy_speeds=highway_speeds, fallback=default_speed)
+        graph = ox.add_edge_travel_times(graph)
+        graph = ox.project_graph(graph)
 
         # Store network in cluster
-        cluster.network = G
+        cluster.network = graph
         cluster.network_crs = G.graph["crs"]
 
         logger.debug(

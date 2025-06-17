@@ -7,7 +7,7 @@ with type safety and validation.
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 # Import constants and travel mode
 from ..constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
@@ -32,7 +32,7 @@ class AnalysisResult:
     isochrone_count: int
     census_units_analyzed: int
     files_generated: dict[str, Path]
-    metadata: dict[str, any]
+    metadata: dict[str, Any]
     warnings: list[str] = field(default_factory=list)
     # Include the actual data for UI consumption
     pois: list[dict] = field(default_factory=list)
@@ -213,7 +213,7 @@ class SocialMapperBuilder:
 
         return errors
 
-    def build(self) -> dict[str, any]:
+    def build(self) -> dict[str, Any]:
         """Build and validate the configuration.
 
         Returns:

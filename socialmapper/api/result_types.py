@@ -148,6 +148,7 @@ class Ok(Result[T, Any]):
         super().__init__(value, True)
 
     def __repr__(self):
+        """Return string representation of Ok result."""
         return f"Ok({self._value!r})"
 
 
@@ -158,6 +159,7 @@ class Err(Result[Any, E]):
         super().__init__(error, False)
 
     def __repr__(self):
+        """Return string representation of Err result."""
         return f"Err({self._value!r})"
 
 
@@ -176,7 +178,7 @@ def collect_results(results: list[Result[T, E]]) -> Result[list[T], E]:
         assert collected.unwrap() == [1, 2, 3]
         ```
     """
-    values = []
+    values: list[T] = []
     for result in results:
         if result.is_err():
             return Err(result.unwrap_err())

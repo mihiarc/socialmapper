@@ -144,14 +144,14 @@ class InvalidDataTracker:
             "processing_errors": self.processing_errors,
         }
 
-        with open(summary_file, "w") as f:
+        with summary_file.open("w") as f:
             json.dump(summary_data, f, indent=2)
         created_files.append(str(summary_file))
 
         # Save invalid points as CSV for easy review
         if self.invalid_points:
             points_csv = self.output_dir / f"{filename_prefix}_points_{timestamp}.csv"
-            with open(points_csv, "w", newline="") as f:
+            with points_csv.open("w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(
                     ["timestamp", "stage", "reason", "lat", "lon", "point_id", "original_data"]
@@ -176,7 +176,7 @@ class InvalidDataTracker:
         # Save processing errors as text log
         if self.processing_errors:
             errors_log = self.output_dir / f"{filename_prefix}_errors_{timestamp}.log"
-            with open(errors_log, "w") as f:
+            with errors_log.open("w") as f:
                 f.write("SocialMapper Processing Errors Report\n")
                 f.write(f"Generated: {datetime.now().isoformat()}\n")
                 f.write(f"Session Start: {self.session_start.isoformat()}\n")

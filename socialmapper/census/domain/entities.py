@@ -28,6 +28,7 @@ class GeographicUnit:
     block_group_code: str | None = None
 
     def __post_init__(self):
+        """Validate GEOID is not empty."""
         if not self.geoid:
             raise ValueError("GEOID cannot be empty")
 
@@ -41,6 +42,7 @@ class CensusVariable:
     description: str | None = None
 
     def __post_init__(self):
+        """Validate census variable code is a non-empty string."""
         if not self.code or not isinstance(self.code, str):
             raise ValueError("Census variable code must be a non-empty string")
         if not self.name or not isinstance(self.name, str):
@@ -59,6 +61,7 @@ class CensusDataPoint:
     dataset: str | None = None
 
     def __post_init__(self):
+        """Validate GEOID is not empty."""
         if not self.geoid:
             raise ValueError("GEOID cannot be empty")
 
@@ -73,6 +76,7 @@ class BoundaryData:
     area_water: float | None = None
 
     def __post_init__(self):
+        """Validate GEOID is not empty."""
         if not self.geoid:
             raise ValueError("GEOID cannot be empty")
 
@@ -87,6 +91,7 @@ class NeighborRelationship:
     shared_boundary_length: float | None = None
 
     def __post_init__(self):
+        """Validate both source and neighbor GEOIDs are provided."""
         if not self.source_geoid or not self.neighbor_geoid:
             raise ValueError("Both GEOIDs must be provided")
         if self.source_geoid == self.neighbor_geoid:
@@ -118,6 +123,7 @@ class CensusRequest:
     dataset: str = "acs/acs5"
 
     def __post_init__(self):
+        """Validate geographic units are provided."""
         if not self.geographic_units:
             raise ValueError("At least one geographic unit must be specified")
         if not self.variables:
@@ -150,6 +156,7 @@ class StateInfo:
     name: str
 
     def __post_init__(self):
+        """Validate state FIPS code format."""
         if not self.fips or len(self.fips) != STATE_FIPS_LENGTH or not self.fips.isdigit():
             raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
         if not self.abbreviation or len(self.abbreviation) != STATE_FIPS_LENGTH:
@@ -167,6 +174,7 @@ class CountyInfo:
     name: str | None = None
 
     def __post_init__(self):
+        """Validate state and county FIPS code formats."""
         if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
             raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
         if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():
@@ -189,6 +197,7 @@ class BlockGroupInfo:
     geoid: str | None = None
 
     def __post_init__(self):
+        """Validate state, county, tract, and block group code formats."""
         if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
             raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
         if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():

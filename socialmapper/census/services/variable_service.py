@@ -5,6 +5,7 @@ human-readable names and census codes.
 """
 
 from enum import Enum
+from typing import ClassVar
 
 from ..domain.entities import CensusVariable
 from ..domain.interfaces import ConfigurationProvider
@@ -22,7 +23,7 @@ class CensusVariableService:
 
     # Standard census variable mappings
     # Can be a single code string or a list of codes for calculated variables
-    VARIABLE_MAPPING: dict[str, str | list[str]] = {
+    VARIABLE_MAPPING: ClassVar[dict[str, str | list[str]]] = {
         "population": "B01003_001E",
         "total_population": "B01003_001E",
         "median_income": "B19013_001E",
@@ -42,7 +43,7 @@ class CensusVariableService:
     }
 
     # Variable-specific color schemes for visualization
-    VARIABLE_COLORMAPS = {
+    VARIABLE_COLORMAPS: ClassVar[dict[str, str]] = {
         "B01003_001E": "viridis",  # Population - blues/greens
         "B19013_001E": "plasma",  # Income - yellows/purples
         "B25077_001E": "inferno",  # Home value - oranges/reds

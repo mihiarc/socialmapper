@@ -118,6 +118,9 @@ def parse_arguments():
     parser.add_argument(
         "--dry-run", action="store_true", help="Print what would be done without actually doing it"
     )
+    parser.add_argument(
+        "--type-check", action="store_true", help="Run ty type checker on the codebase and exit"
+    )
 
     # Output type controls - only CSV enabled by default
     parser.add_argument(
@@ -145,6 +148,28 @@ def parse_arguments():
     )
 
     args = parser.parse_args()
+
+    # Handle type checking first
+    if args.type_check:
+        import subprocess
+
+        console.print("\n[bold cyan]🔍 Running ty type checker...[/bold cyan]")
+        console.print("[dim]Using Astral's ultra-fast Rust-based type checker[/dim]\n")
+
+        try:
+            result = subprocess.run(["uv", "run", "ty", "check", "socialmapper/"], check=False)
+            if result.returncode == 0:
+                console.print("\n[bold green]✅ Type checking passed![/bold green]")
+            else:
+                console.print(f"\n[bold red]❌ Type checking found issues (exit code: {result.returncode})[/bold red]")
+                console.print("[dim]💡 Use 'python scripts/type_check.py' for more options[/dim]")
+            sys.exit(result.returncode)
+        except FileNotFoundError:
+            console.print("[bold red]❌ Error: ty not found. Install with: uv add ty[/bold red]")
+            sys.exit(1)
+        except Exception as e:
+            console.print(f"[bold red]❌ Error running type checker: {e}[/bold red]")
+            sys.exit(1)
 
     # If not listing variables, require input method
     if not args.list_variables and not args.dry_run:

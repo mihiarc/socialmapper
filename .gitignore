@@ -98,6 +98,9 @@ scripts/debug/
 
 # pytest cache
 .pytest_cache/
+
+# ty type checker cache
+.ty_cache/
 .env
 test_testpypi/test_env/pyvenv.cfg
 test_testpypi/test_env/bin/activate

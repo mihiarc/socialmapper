@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from socialmapper.constants import CATEGORICAL_CONVERSION_THRESHOLD
+
 from ...ui.console import get_logger
 from ..base import BaseExporter, ExportError
 
@@ -80,7 +82,7 @@ class ParquetExporter(BaseExporter):
                 else:
                     # Convert to categorical if low cardinality
                     unique_ratio = df_optimized[col].nunique() / len(df_optimized)
-                    if unique_ratio < 0.5:
+                    if unique_ratio < CATEGORICAL_CONVERSION_THRESHOLD:
                         df_optimized[col] = df_optimized[col].astype("category")
 
             elif col_type in ["int64", "float64"]:

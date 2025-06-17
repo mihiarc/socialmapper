@@ -27,13 +27,8 @@ from importlib.metadata import PackageNotFoundError, version
 try:
     __version__ = version("socialmapper")
 except PackageNotFoundError:
-    # Package is not installed
-    try:
-        from . import _version
-
-        __version__ = _version.__version__
-    except (ImportError, AttributeError):
-        __version__ = "0.3.0-alpha"  # fallback
+    # Package is not installed, use fallback
+    __version__ = "0.5.4"  # fallback version from pyproject.toml
 
 # Configure warnings for clean user experience
 # This automatically handles known deprecation warnings from geospatial libraries
@@ -65,14 +60,6 @@ try:
 except ImportError as e:
     print(f"Warning: Modern API not available: {e}")
     _MODERN_API_AVAILABLE = False
-    # Set to None so they're at least defined
-    SocialMapperClient = None
-    SocialMapperBuilder = None
-    quick_analysis = None
-    analyze_location = None
-    Result = None
-    Ok = None
-    Err = None
 
 # Import modern census system
 from .census import (

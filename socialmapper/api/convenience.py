@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .client import SocialMapperClient
-from .result_types import Error, ErrorType, Result
+from .result_types import Err, Error, ErrorType, Result
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -51,7 +51,7 @@ def quick_analysis(
     try:
         poi_type, poi_name = poi_search.split(":", 1)
     except ValueError:
-        return Result.err(
+        return Err(
             Error(
                 type=ErrorType.VALIDATION,
                 message=f"POI search must be in 'type:name' format, got: {poi_search}",

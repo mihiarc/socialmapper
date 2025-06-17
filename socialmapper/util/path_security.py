@@ -81,14 +81,14 @@ def sanitize_path(
             if _contains_symlink(final_path):
                 raise PathSecurityError("Path contains symbolic links")
     except (OSError, RuntimeError) as e:
-        raise PathSecurityError(f"Path resolution failed: {e}")
+        raise PathSecurityError(f"Path resolution failed: {e}") from e
 
     # Ensure the final path is within the base directory
     if not allow_absolute:
         try:
             final_path.relative_to(base_dir)
         except ValueError:
-            raise PathSecurityError(f"Path '{final_path}' is outside base directory '{base_dir}'")
+            raise PathSecurityError(f"Path '{final_path}' is outside base directory '{base_dir}'") from None
 
     return final_path
 

@@ -140,9 +140,9 @@ class CensusAPIClientImpl:
         """Create a configured requests session."""
         session = requests.Session()
 
-        # Set timeout from config
-        timeout = self._config.get_setting("api_timeout_seconds", 30)
-        session.timeout = timeout
+        # Store timeout in instance for use in requests
+        # Note: timeout is passed to individual requests, not set on session
+        self._timeout = self._config.get_setting("api_timeout_seconds", 30)
 
         # Set user agent
         session.headers.update(
@@ -180,7 +180,7 @@ class CensusAPIClientImpl:
                 if self._config.get_setting("log_api_requests", False):
                     self._logger.info(f"API Request (attempt {attempt + 1}): {url}")
 
-                response = self._session.get(url, params=params)
+                response = self._session.get(url, params=params, timeout=self._timeout)
 
                 # Handle rate limiting
                 if response.status_code == HTTP_TOO_MANY_REQUESTS:

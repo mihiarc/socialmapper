@@ -12,7 +12,12 @@ import geopandas as gpd
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+
+try:
+    from requests.packages.urllib3.util.retry import Retry
+except ImportError:
+    # For newer versions of urllib3
+    from urllib3.util.retry import Retry
 from shapely.geometry import shape
 
 from .models import (
@@ -253,7 +258,7 @@ class TigerGeometryClient:
             where_clauses.append(f"{endpoint.id_field} LIKE '{query.zcta_prefix}%'")
 
         # Specific geometry IDs
-        if query.geometry_ids:
+        if query.geometry_ids and len(query.geometry_ids) > 0:
             id_list = ", ".join(f"'{gid}'" for gid in query.geometry_ids)
             where_clauses.append(f"{endpoint.id_field} IN ({id_list})")
 
@@ -331,7 +336,7 @@ class TigerGeometryClient:
             geom = shape(feature["geometry"])
 
             # Simplify if requested
-            if query.simplify_tolerance > 0:
+            if query.simplify_tolerance is not None and query.simplify_tolerance > 0:
                 geom = geom.simplify(query.simplify_tolerance, preserve_topology=True)
 
             geometries.append(geom)
@@ -400,7 +405,7 @@ class TigerGeometryClient:
             f"zcta_{query.zcta_prefix or 'all'}",
         ]
 
-        if query.geometry_ids:
+        if query.geometry_ids and len(query.geometry_ids) > 0:
             # Sort IDs for consistent key
             ids_hash = hash(tuple(sorted(query.geometry_ids)))
             key_parts.append(f"ids_{ids_hash}")
@@ -417,7 +422,7 @@ class TigerGeometryClient:
             return None
 
         try:
-            with open(cache_file, "rb") as f:
+            with cache_file.open("rb") as f:
                 cached_data = pickle.load(f)
 
             # Reconstruct GeoDataFrame from cached data
@@ -450,7 +455,7 @@ class TigerGeometryClient:
                 "metadata": result.metadata,
             }
 
-            with open(cache_file, "wb") as f:
+            with cache_file.open("wb") as f:
                 pickle.dump(cache_data, f)
         except Exception as e:
             logger.warning(f"Failed to cache result: {e}")

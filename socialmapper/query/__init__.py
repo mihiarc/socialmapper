@@ -332,7 +332,7 @@ def save_json(data, output_file):
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-        with open(output_file, "w") as f:
+        with output_file.open("w") as f:
             json.dump(data, f, indent=2)
         logger.info(f"Results saved to {output_file}")
     except Exception as e:
@@ -379,6 +379,7 @@ def query_pois(
 
 
 def main():
+    """Command-line interface for querying POIs from OpenStreetMap."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Query POIs from OpenStreetMap via Overpass API")
     parser.add_argument("config_file", help="YAML configuration file")

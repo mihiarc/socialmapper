@@ -367,19 +367,23 @@ class RichProgressWrapper:
         self.close()
 
     def update(self, n=1):
+        """Update progress by n steps."""
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, advance=n)
             self.position += n
 
     def set_description(self, desc):
+        """Update the progress bar description."""
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, description=desc)
 
     def close(self):
+        """Close the progress bar."""
         if self.progress_instance:
             self.progress_instance.stop()
 
     def write(self, message):
+        """Write a message to the console."""
         console.print(message)
 
 

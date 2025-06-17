@@ -27,7 +27,7 @@ def setup_directory(output_dir: str = "output") -> str:
         safe_output_dir.mkdir(parents=True, exist_ok=True)
         return str(safe_output_dir)
     except PathSecurityError as e:
-        raise PathSecurityError(f"Invalid output directory: {e}")
+        raise PathSecurityError(f"Invalid output directory: {e}") from e
 
 
 def convert_poi_to_geodataframe(poi_data_list):

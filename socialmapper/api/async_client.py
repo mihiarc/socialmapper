@@ -9,7 +9,12 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
-import aiohttp
+try:
+    import aiohttp
+except ImportError:
+    raise ImportError(
+        "aiohttp is required for async functionality. Install with: uv add aiohttp"
+    ) from None
 
 from ..pipeline import PipelineConfig
 from ..ui.console import get_logger

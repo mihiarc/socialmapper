@@ -48,10 +48,6 @@ try:
 except ImportError:
     # Async client requires aiohttp which might not be installed
     _ASYNC_AVAILABLE = False
-    AsyncSocialMapper = None
-    IsochroneResult = None
-    POIResult = None
-    run_async_analysis = None
 from .builder import (
     AnalysisResult,
     GeographicLevel,
@@ -142,12 +138,13 @@ def run_socialmapper(*args, **kwargs):
     import warnings
 
     warnings.warn(
-        "run_socialmapper is deprecated. Use SocialMapperClient instead.",
+        "run_socialmapper is deprecated. Use SocialMapperClient instead. "
+        "The legacy core module has been removed.",
         DeprecationWarning,
         stacklevel=2,
     )
 
-    # Import old function
-    from ..core import run_socialmapper as _old_run
-
-    return _old_run(*args, **kwargs)
+    raise ImportError(
+        "Legacy run_socialmapper function is no longer available. "
+        "Please use SocialMapperClient for modern functionality."
+    )

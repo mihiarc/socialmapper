@@ -109,7 +109,7 @@ def create_isochrone_from_poi(
     )
 
     # Download network with caching
-    G = download_and_cache_network(
+    graph = download_and_cache_network(
         bbox=bbox,
         travel_time_minutes=travel_time_limit,
         cluster_size=1,
@@ -117,14 +117,14 @@ def create_isochrone_from_poi(
         travel_mode=travel_mode,
     )
 
-    if G is None:
+    if graph is None:
         raise RuntimeError(f"Failed to download road network for POI {poi_name}")
 
     # Create isochrone using optimized method
     isochrone_gdf = create_isochrone_from_poi_with_network(
         poi=poi,
-        network=G,
-        network_crs=G.graph["crs"],
+        network=graph,
+        network_crs=graph.graph["crs"],
         travel_time_minutes=travel_time_limit,
         travel_mode=travel_mode,
     )
@@ -429,7 +429,7 @@ def create_isochrones_from_json_file(
         Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
     """
     # Load POI data from JSON file
-    with open(json_file_path) as f:
+    with Path(json_file_path).open() as f:
         poi_data = json.load(f)
 
     return create_isochrones_from_poi_list(

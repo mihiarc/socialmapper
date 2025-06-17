@@ -29,21 +29,25 @@ from typing import Any
 import geopandas as gpd
 import pandas as pd
 
-from ...constants import FULL_BLOCK_GROUP_GEOID_LENGTH
+from ...constants import DEFAULT_BATCH_SIZE, FULL_BLOCK_GROUP_GEOID_LENGTH
 
 # Modern data format imports
 try:
     import pyarrow as pa
-    import pyarrow.compute as pc
     import pyarrow.parquet as pq
+    from pyarrow import csv as pa_csv
 
     ARROW_AVAILABLE = True
 except ImportError:
     ARROW_AVAILABLE = False
+    # Set to None and handle in usage
+    pa = None  # type: ignore
+    pq = None  # type: ignore
+    pa_csv = None  # type: ignore
     warnings.warn("PyArrow not available, falling back to pandas", stacklevel=2)
 
 try:
-    import polars as pl
+    import polars
 
     POLARS_AVAILABLE = True
 except ImportError:
@@ -76,7 +80,7 @@ class StreamingStats:
 class StreamingConfig:
     """Configuration for streaming data pipeline."""
 
-    batch_size: int = 1000
+    batch_size: int = DEFAULT_BATCH_SIZE
     max_memory_mb: float = 2048.0
     enable_compression: bool = True
     compression_level: int = 6
@@ -249,17 +253,21 @@ class StreamingDataPipeline:
     ) -> int:
         """Stream CSV to Parquet using Arrow for maximum performance."""
         try:
+            # Check if PyArrow CSV is available
+            if not ARROW_AVAILABLE or pa_csv is None:
+                raise ImportError("PyArrow CSV not available")
+
             # Read CSV in chunks and convert to Parquet
-            csv_reader = pa.csv.open_csv(
+            csv_reader = pa_csv.open_csv(  # type: ignore
                 csv_path,
-                read_options=pa.csv.ReadOptions(block_size=chunk_size * 1024),  # Approximate
-                parse_options=pa.csv.ParseOptions(
+                read_options=pa_csv.ReadOptions(block_size=chunk_size * 1024),  # type: ignore  # Approximate
+                parse_options=pa_csv.ParseOptions(  # type: ignore
                     delimiter=",", quote_char='"', escape_char="\\", newlines_in_values=False
                 ),
             )
 
             # Convert to Parquet with compression
-            pq.write_table(
+            pq.write_table(  # type: ignore
                 csv_reader.read_all(),
                 output_path,
                 compression="snappy" if self.config.enable_compression else None,
@@ -267,7 +275,7 @@ class StreamingDataPipeline:
             )
 
             # Count rows
-            parquet_file = pq.ParquetFile(output_path)
+            parquet_file = pq.ParquetFile(output_path)  # type: ignore
             return parquet_file.metadata.num_rows
 
         except Exception as e:
@@ -594,7 +602,7 @@ class ModernDataExporter:
         census_data: gpd.GeoDataFrame,
         poi_data: dict | list[dict],
         include_geometry: bool,
-    ) -> gpd.GeoDataFrame:
+    ) -> gpd.GeoDataFrame | pd.DataFrame:
         """Prepare census data for export with optimizations."""
         # Create a copy to avoid modifying original
         df = census_data.copy()
@@ -707,6 +715,8 @@ def get_streaming_pipeline(config: StreamingConfig | None = None) -> StreamingDa
     if _global_pipeline is None:
         _global_pipeline = StreamingDataPipeline(config)
 
+    # _global_pipeline is guaranteed to be non-None here
+    assert _global_pipeline is not None
     return _global_pipeline
 
 

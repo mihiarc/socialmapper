@@ -8,6 +8,8 @@ import threading
 import time
 from dataclasses import dataclass
 
+from ...constants import MIN_REQUESTS_BEFORE_RATE_INCREASE, RATE_LIMIT_ADAPTATION_INTERVAL_S
+
 
 @dataclass
 class TokenBucket:
@@ -259,11 +261,11 @@ class AdaptiveRateLimiter:
         now = time.time()
 
         # Only adapt every 60 seconds
-        if now - self._last_adaptation < 60:
+        if now - self._last_adaptation < RATE_LIMIT_ADAPTATION_INTERVAL_S:
             return
 
         # Only increase if we have enough successful requests
-        if self._recent_requests >= 10 and self._recent_errors == 0:
+        if self._recent_requests >= MIN_REQUESTS_BEFORE_RATE_INCREASE and self._recent_errors == 0:
             new_rate = min(self._max_rate, self._current_rate * (1 + self._adaptation_factor))
             self._update_rate(new_rate)
 

@@ -249,7 +249,7 @@ class ModernNetworkCache:
                     file_path = Path(row[0])
                     if file_path.exists():
                         # Load and decompress network
-                        with open(file_path, "rb") as f:
+                        with file_path.open("rb") as f:
                             compressed_data = f.read()
 
                         network = self._decompress_network(compressed_data)
@@ -287,7 +287,7 @@ class ModernNetworkCache:
             try:
                 file_path = self._get_file_path(best_match.cache_key)
                 if file_path.exists():
-                    with open(file_path, "rb") as f:
+                    with file_path.open("rb") as f:
                         compressed_data = f.read()
 
                     network = self._decompress_network(compressed_data)
@@ -338,7 +338,7 @@ class ModernNetworkCache:
             # Compress and save network
             compressed_data = self._compress_network(network)
 
-            with open(file_path, "wb") as f:
+            with file_path.open("wb") as f:
                 f.write(compressed_data)
 
             # Calculate compression ratio
@@ -556,7 +556,7 @@ def download_and_cache_network(
         min_lat, min_lon, max_lat, max_lon = bbox
         # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
         osm_bbox = (min_lon, min_lat, max_lon, max_lat)
-        G = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+        graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
         # Add speeds and travel times with mode-specific defaults
         # OSMnx will use:
@@ -564,15 +564,15 @@ def download_and_cache_network(
         # 2. Highway-type-specific speeds we provide
         # 3. Mean of observed speeds for unmapped highway types
         # 4. Fallback speed as last resort
-        G = ox.add_edge_speeds(G, hwy_speeds=highway_speeds, fallback=default_speed)
-        G = ox.add_edge_travel_times(G)
-        G = ox.project_graph(G)
+        graph = ox.add_edge_speeds(graph, hwy_speeds=highway_speeds, fallback=default_speed)
+        graph = ox.add_edge_travel_times(graph)
+        graph = ox.project_graph(graph)
 
         # Store in cache
-        cache.store_network(G, bbox, network_type, travel_time_minutes, cluster_size)
+        cache.store_network(graph, bbox, network_type, travel_time_minutes, cluster_size)
 
-        logger.info(f"Downloaded and cached network: {len(G.nodes)} nodes, {len(G.edges)} edges")
-        return G
+        logger.info(f"Downloaded and cached network: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
+        return graph
 
     except Exception as e:
         logger.error(f"Failed to download network for bbox {bbox}: {e}")

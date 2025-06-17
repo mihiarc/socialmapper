@@ -57,7 +57,7 @@ def generate_isochrones(
                 isochrone_gdf = gpd.GeoDataFrame.from_arrow(table)
             except Exception as e2:
                 print(f"Critical error loading isochrones: {e2}")
-                raise ValueError("Failed to load isochrone data")
+                raise ValueError("Failed to load isochrone data") from e2
 
     if isochrone_gdf is None or isochrone_gdf.empty:
         raise ValueError(

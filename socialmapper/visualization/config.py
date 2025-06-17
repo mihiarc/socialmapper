@@ -84,6 +84,7 @@ class LegendConfig(BaseModel):
 
     @field_validator("loc")
     def validate_loc(self, v):
+        """Validate legend location is a valid matplotlib location."""
         valid_locs = [
             "best",
             "upper right",
@@ -163,6 +164,7 @@ class MapConfig(BaseModel):
 
     @field_validator("n_classes")
     def validate_n_classes(self, v):
+        """Validate number of classes is within reasonable bounds."""
         if v < 2 or v > 12:
             raise ValueError("n_classes must be between 2 and 12")
         return v

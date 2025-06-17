@@ -25,7 +25,7 @@ class TravelMode(str, Enum):
             raise ValueError(
                 f"Invalid travel mode: {value}. "
                 f"Supported modes: {', '.join([m.value for m in cls])}"
-            )
+            ) from None
 
 
 @dataclass

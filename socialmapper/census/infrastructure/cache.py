@@ -170,7 +170,7 @@ class FileCacheProvider:
                 return None
 
             try:
-                with open(cache_file, "rb") as f:
+                with cache_file.open("rb") as f:
                     entry = pickle.load(f)
 
                 # Check if expired
@@ -210,7 +210,7 @@ class FileCacheProvider:
             try:
                 # Write to temporary file first, then rename (atomic operation)
                 temp_file = cache_file.with_suffix(".tmp")
-                with open(temp_file, "wb") as f:
+                with temp_file.open("wb") as f:
                     pickle.dump(entry, f)
 
                 temp_file.rename(cache_file)
@@ -250,7 +250,7 @@ class FileCacheProvider:
         with self._lock:
             for cache_file in self._cache_dir.glob("*.cache"):
                 try:
-                    with open(cache_file, "rb") as f:
+                    with cache_file.open("rb") as f:
                         entry = pickle.load(f)
 
                     if entry.is_expired:

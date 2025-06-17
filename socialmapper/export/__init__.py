@@ -148,12 +148,11 @@ def export_census_data(
         exporter = exporter_class(prep_config)
 
         # Handle geometry conversion for GeoParquet
-        if selected_format == "geoparquet" and not isinstance(prepared_data, gpd.GeoDataFrame):
-            if "geometry" in census_data.columns:
-                # Add geometry back to prepared data
-                prepared_data = gpd.GeoDataFrame(
-                    prepared_data, geometry=census_data["geometry"][: len(prepared_data)]
-                )
+        if selected_format == "geoparquet" and not isinstance(prepared_data, gpd.GeoDataFrame) and "geometry" in census_data.columns:
+            # Add geometry back to prepared data
+            prepared_data = gpd.GeoDataFrame(
+                prepared_data, geometry=census_data["geometry"][: len(prepared_data)]
+            )
 
         # Export data
         return exporter.export(prepared_data, output_path)

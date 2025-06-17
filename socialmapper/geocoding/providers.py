@@ -70,6 +70,7 @@ class NominatimProvider(GeocodingProvider):
     BASE_URL = "https://nominatim.openstreetmap.org/search"
 
     def get_provider_name(self) -> AddressProvider:
+        """Return the provider name for this geocoder."""
         return AddressProvider.NOMINATIM
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
@@ -201,6 +202,7 @@ class CensusProvider(GeocodingProvider):
     BASE_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 
     def get_provider_name(self) -> AddressProvider:
+        """Return the provider name for this geocoder."""
         return AddressProvider.CENSUS
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:

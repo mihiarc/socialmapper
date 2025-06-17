@@ -107,7 +107,7 @@ class BlockGroupService:
 
         except Exception as e:
             logger.error(f"Error fetching block groups for county {county_fips}: {e}")
-            raise ValueError(f"Could not fetch block groups: {e!s}")
+            raise ValueError(f"Could not fetch block groups: {e!s}") from e
 
     def get_block_groups_for_counties(self, counties: list[tuple[str, str]]) -> gpd.GeoDataFrame:
         """Fetch block groups for multiple counties and combine them.
@@ -136,8 +136,12 @@ class BlockGroupService:
         if not all_block_groups:
             raise ValueError("No block group data could be retrieved")
 
-        # Combine all county block groups
-        return pd.concat(all_block_groups, ignore_index=True)
+        # Combine all county block groups - use gpd.pd.concat to preserve GeoDataFrame
+        combined = pd.concat(all_block_groups, ignore_index=True)
+        # Ensure result is a GeoDataFrame
+        if not isinstance(combined, gpd.GeoDataFrame):
+            combined = gpd.GeoDataFrame(combined, crs=all_block_groups[0].crs)
+        return combined
 
     def get_block_groups_for_county_info(self, county: CountyInfo) -> gpd.GeoDataFrame:
         """Fetch block groups for a CountyInfo entity.
@@ -234,12 +238,10 @@ class BlockGroupService:
 
     def _check_arrow_support(self) -> bool:
         """Check if PyArrow is available for better performance."""
-        try:
-            import os
+        import importlib.util
+        import os
 
-            import pyarrow
-
+        if importlib.util.find_spec("pyarrow") is not None:
             os.environ["PYOGRIO_USE_ARROW"] = "1"
             return True
-        except ImportError:
-            return False
+        return False

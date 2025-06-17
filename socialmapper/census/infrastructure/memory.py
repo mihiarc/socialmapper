@@ -431,6 +431,8 @@ def get_memory_monitor(config: MemoryConfig | None = None) -> MemoryMonitor:
         _global_monitor = MemoryMonitor(config)
         _global_monitor.start_monitoring()
 
+    # _global_monitor is guaranteed to be non-None here
+    assert _global_monitor is not None
     return _global_monitor
 
 

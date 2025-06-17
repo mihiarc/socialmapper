@@ -125,7 +125,8 @@ class SQLiteRepository:
             # Convert to domain entities
             data_points = []
             for row in rows:
-                variable = CensusVariable(code=row[1], name=row[2], description=row[3], unit=row[4])
+                # Note: row[4] contains unit but CensusVariable doesn't support this field
+                variable = CensusVariable(code=row[1], name=row[2], description=row[3])
 
                 data_point = CensusDataPoint(
                     geoid=row[0],

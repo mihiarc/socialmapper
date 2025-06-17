@@ -5,6 +5,7 @@ FIPS code conversions, format detection, and geographic lookups.
 """
 
 from enum import Enum
+from typing import ClassVar
 
 from ..domain.entities import BlockGroupInfo, CountyInfo, StateInfo
 from ..domain.interfaces import ConfigurationProvider, GeocodeProvider
@@ -22,7 +23,7 @@ class GeographyService:
     """Service for managing geographic information and conversions."""
 
     # State name to abbreviation mapping
-    STATE_NAMES_TO_ABBR = {
+    STATE_NAMES_TO_ABBR: ClassVar[dict[str, str]] = {
         "Alabama": "AL",
         "Alaska": "AK",
         "Arizona": "AZ",
@@ -77,7 +78,7 @@ class GeographyService:
     }
 
     # State abbreviation to FIPS code mapping
-    STATE_ABBR_TO_FIPS = {
+    STATE_ABBR_TO_FIPS: ClassVar[dict[str, str]] = {
         "AL": "01",
         "AK": "02",
         "AZ": "04",
@@ -329,6 +330,9 @@ class GeographyService:
             return sorted(self._fips_to_abbr.keys())
         elif format == StateFormat.NAME:
             return sorted(self.STATE_NAMES_TO_ABBR.keys())
+        else:
+            # Fallback to abbreviation for unknown formats
+            return sorted(self.STATE_ABBR_TO_FIPS.keys())
 
     def normalize_state_list(
         self, states: list[str | int], to_format: StateFormat = StateFormat.ABBREVIATION

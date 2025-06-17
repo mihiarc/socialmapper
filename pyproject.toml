@@ -56,7 +56,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "mypy>=1.0.0",
+    "ty>=0.0.1a10",  # Ultra-fast Rust-based type checker from Astral
     "ruff>=0.11.13",
 ]
 
@@ -169,3 +169,7 @@ filterwarnings = [
     "ignore::FutureWarning:pandas.*",
     "ignore::UserWarning:geopandas.*",
 ]
+
+# ty configuration (ultra-fast Rust-based type checker)
+# Note: ty is pre-alpha and configuration is minimal
+# Most configuration is done via command-line flags

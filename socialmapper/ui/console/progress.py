@@ -76,15 +76,18 @@ class RichProgressWrapper:
             self.task_id = None
 
     def __iter__(self):
+        """Iterate over items while updating progress."""
         if self.iterable:
             for item in self.iterable:
                 yield item
                 self.update(1)
 
     def __enter__(self):
+        """Enter context manager."""
         return self
 
     def __exit__(self, *args):
+        """Exit context manager and close progress bar."""
         self.close()
 
     def update(self, n=1):

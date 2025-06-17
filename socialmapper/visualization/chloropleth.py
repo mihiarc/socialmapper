@@ -1,5 +1,6 @@
 """Chloropleth map creation for socialmapper outputs."""
 
+import contextlib
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -330,20 +331,19 @@ class ChoroplethMap:
     def _add_north_arrow(self) -> None:
         """Add north arrow to the map."""
         if self.config.north_arrow:
-            try:
+            with contextlib.suppress(Exception):
+                # If north arrow fails, continue without it
                 add_north_arrow(
                     self._ax,
                     location=self.config.north_arrow_location,
                     scale=self.config.north_arrow_scale,
                 )
-            except Exception:
-                # If north arrow fails, continue without it
-                pass
 
     def _add_scale_bar(self) -> None:
         """Add scale bar to the map."""
         if self.config.scale_bar:
-            try:
+            with contextlib.suppress(Exception):
+                # If scale bar fails, continue without it
                 add_scale_bar(
                     self._ax,
                     location=self.config.scale_bar_location,
@@ -351,9 +351,6 @@ class ChoroplethMap:
                     box_alpha=self.config.scale_bar_box_alpha,
                     font_size=self.config.scale_bar_font_size,
                 )
-            except Exception:
-                # If scale bar fails, continue without it
-                pass
 
     def _add_basemap(self) -> None:
         """Add contextily basemap to the map."""

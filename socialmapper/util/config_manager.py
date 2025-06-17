@@ -207,7 +207,7 @@ def save_config_to_file(filepath: str) -> None:
     # Ensure directory exists
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
-    with open(filepath, "w") as f:
+    with Path(filepath).open("w") as f:
         json.dump(config_dict, f, indent=2)
 
 
@@ -223,7 +223,7 @@ def load_config_from_file(filepath: str) -> None:
     if not Path(filepath).exists():
         raise FileNotFoundError(f"Configuration file not found: {filepath}")
 
-    with open(filepath) as f:
+    with Path(filepath).open() as f:
         config_dict = json.load(f)
 
     # Apply configuration updates

@@ -90,6 +90,7 @@ class VectorizedDistanceEngine:
         poi_coords: np.ndarray, centroid_coords: np.ndarray
     ) -> np.ndarray:
         """Alternative implementation using manual nearest neighbor search.
+        
         Optimized for cases where BallTree overhead is significant.
         """
         n_centroids = centroid_coords.shape[0]
@@ -194,6 +195,7 @@ class VectorizedDistanceEngine:
         self, poi_points: list[Point], centroids: gpd.GeoSeries
     ) -> np.ndarray:
         """Alternative implementation using BallTree for spatial indexing.
+        
         May be faster for very large datasets with many POIs.
 
         Args:

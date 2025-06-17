@@ -127,9 +127,8 @@ class VisualizationPipeline:
 
         for col in gdf.columns:
             col_lower = col.lower()
-            if any(pattern in col_lower for pattern in descriptive_patterns):
-                if col not in demographic_columns:
-                    demographic_columns.append(col)
+            if any(pattern in col_lower for pattern in descriptive_patterns) and col not in demographic_columns:
+                demographic_columns.append(col)
 
         # Limit to top 5 to avoid too many maps
         return demographic_columns[:5]

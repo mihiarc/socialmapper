@@ -53,6 +53,7 @@ class RunConfig(BaseModel):
     @field_validator("custom_coords_path")
     @classmethod
     def at_least_one_input(cls, v):
+        """Validate that custom_coords_path is provided."""
         if not v:
             raise ValueError("custom_coords_path must be provided")
         return v

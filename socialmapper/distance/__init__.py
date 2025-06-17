@@ -71,8 +71,9 @@ def add_travel_distances(
     chunk_size: int = 5000,
     verbose: bool = False,
 ) -> gpd.GeoDataFrame:
-    """Calculate and add travel distances from block groups to nearest POIs using
-    high-performance vectorized algorithms.
+    """Calculate and add travel distances from block groups to nearest POIs.
+    
+    Uses high-performance vectorized algorithms for efficient distance calculations.
 
     Args:
         block_groups_gdf: GeoDataFrame with block group geometries

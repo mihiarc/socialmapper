@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from ..constants import COORDINATE_PAIR_PARTS, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
+from ..constants import COORDINATE_PAIR_PARTS, DEFAULT_API_TIMEOUT, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..ui.console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
@@ -50,8 +50,8 @@ class ClientConfig:
     user_agent: str = "SocialMapper/0.5.4"
     # Connection pooling settings
     max_connections: int = 100
-    max_connections_per_host: int = 30
-    keepalive_timeout: int = 30
+    max_connections_per_host: int = DEFAULT_API_TIMEOUT
+    keepalive_timeout: int = DEFAULT_API_TIMEOUT
 
 
 class RateLimiter:

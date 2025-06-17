@@ -101,7 +101,7 @@ def create_folium_map(lat, lon, isochrone_data=None):
 
     return m
 
-def format_census_variable(var_code, value):
+def format_census_variable(var_code: str, value: float | int) -> str:
     """Format census variables with human-readable names."""
     variable_names = {
         "B01003_001E": "Total Population",
@@ -111,11 +111,16 @@ def format_census_variable(var_code, value):
         "B08301_021E": "Public Transit Users",
         "B17001_002E": "Population in Poverty"
     }
+    # Ensure name is always a string (fallback to var_code if not found)
     name = variable_names.get(var_code, var_code)
+    
+    # Type safety: name is guaranteed to be a string here since var_code is a string
+    # and dict.get() returns either a string value or the string fallback
+    name_lower = name.lower()
 
-    if "income" in name.lower() or "value" in name.lower():
+    if "income" in name_lower or "value" in name_lower:
         return f"{name}: ${value:,.0f}"
-    elif "population" in name.lower() or "holders" in name.lower() or "users" in name.lower():
+    elif "population" in name_lower or "holders" in name_lower or "users" in name_lower:
         return f"{name}: {value:,.0f}"
     else:
         return f"{name}: {value}"

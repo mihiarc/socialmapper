@@ -85,16 +85,16 @@ def select_export_format(
         return format_preference
 
     # Thresholds for format selection
-    LARGE_DATA_THRESHOLD_MB = 100
-    MEDIUM_DATA_THRESHOLD_MB = 10
+    large_data_threshold_mb = 100
+    medium_data_threshold_mb = 10
 
     if has_geometry:
         # Always use GeoParquet for geospatial data
         return "geoparquet"
-    elif data_size_mb > LARGE_DATA_THRESHOLD_MB:
+    elif data_size_mb > large_data_threshold_mb:
         # Use Parquet for large datasets
         return "parquet"
-    elif data_size_mb > MEDIUM_DATA_THRESHOLD_MB:
+    elif data_size_mb > medium_data_threshold_mb:
         # Use Parquet for medium datasets
         return "parquet"
     else:
