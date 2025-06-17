@@ -461,3 +461,82 @@ def sanitize_filename(filename: str) -> str:
         raise InputValidationError(f"Reserved filename: {filename}")
 
     return filename
+
+
+def sanitize_for_api(value: str) -> str:
+    """Sanitize string value for safe use in API requests.
+    
+    Args:
+        value: String value to sanitize
+        
+    Returns:
+        Sanitized string safe for API use
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    
+    # Remove control characters and clean whitespace
+    value = "".join(char for char in value if ord(char) >= MIN_ASCII_PRINTABLE or char in "\n\t ")
+    value = value.strip()
+    
+    # Limit length for API use
+    if len(value) > 255:
+        value = value[:255]
+        
+    return value
+
+
+def validate_state_name(state: str) -> str:
+    """Validate a US state name or abbreviation.
+    
+    Args:
+        state: State name or abbreviation to validate
+        
+    Returns:
+        Validated state string
+        
+    Raises:
+        InputValidationError: If state is invalid
+    """
+    if not isinstance(state, str):
+        raise InputValidationError("State must be a string")
+        
+    state = state.strip()
+    
+    if not state:
+        raise InputValidationError("State cannot be empty")
+        
+    # List of valid state abbreviations
+    valid_abbrs = {
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+        "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
+        "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+        "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "PR",
+        "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+        "WI", "WY"
+    }
+    
+    # Check if it's a valid abbreviation
+    if state.upper() in valid_abbrs:
+        return state.upper()
+        
+    # List of valid state names (lowercase for comparison)
+    valid_names = {
+        "alabama", "alaska", "arizona", "arkansas", "california",
+        "colorado", "connecticut", "delaware", "district of columbia",
+        "florida", "georgia", "hawaii", "idaho", "illinois", "indiana",
+        "iowa", "kansas", "kentucky", "louisiana", "maine", "maryland",
+        "massachusetts", "michigan", "minnesota", "mississippi", "missouri",
+        "montana", "nebraska", "nevada", "new hampshire", "new jersey",
+        "new mexico", "new york", "north carolina", "north dakota", "ohio",
+        "oklahoma", "oregon", "pennsylvania", "puerto rico", "rhode island",
+        "south carolina", "south dakota", "tennessee", "texas", "utah",
+        "vermont", "virginia", "washington", "west virginia", "wisconsin",
+        "wyoming"
+    }
+    
+    # Check if it's a valid full name
+    if state.lower() in valid_names:
+        return state.title()
+        
+    raise InputValidationError(f"Invalid state: {state}")
