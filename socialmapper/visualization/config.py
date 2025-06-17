@@ -82,8 +82,9 @@ class LegendConfig(BaseModel):
     fmt: str = "{:.0f}"
     labels: list[str] | None = None
 
+    @classmethod
     @field_validator("loc")
-    def validate_loc(self, v):
+    def validate_loc(cls, v):
         """Validate legend location is a valid matplotlib location."""
         valid_locs = [
             "best",
@@ -162,8 +163,9 @@ class MapConfig(BaseModel):
     simplify_tolerance: float | None = 0.01
     aspect: str = "auto"
 
+    @classmethod
     @field_validator("n_classes")
-    def validate_n_classes(self, v):
+    def validate_n_classes(cls, v):
         """Validate number of classes is within reasonable bounds."""
         if v < 2 or v > 12:
             raise ValueError("n_classes must be between 2 and 12")
