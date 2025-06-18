@@ -16,21 +16,20 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ## 🚀 Get Started with SocialMapper
 
+**Example: Total Population Within 15-Minute Walk of Libraries in Fuquay-Varina, NC**
 
-**Total Population Within 15-Minute Travel Time**
+![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-![Total Population Map](output/maps/fuquay-varina_amenity_library_15min_B01003_001E_map.png)
+## What's New in v0.6.0 🎉
 
-## What's New in v0.6.0
+- **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
+- **🏗️ Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
+- **⚡ Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
+- **💾 Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
+- **🗺️ Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
+- **🖥️ Enhanced CLI** - New options for addresses, dry-run mode, and more
 
-We're excited to announce our latest release with these improvements:
-
-- **Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
-- **Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
-- **Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
-- **Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
-- **Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
-- **Enhanced CLI** - New options for addresses, dry-run mode, and more
+📚 **[Full Documentation](https://mihiarc.github.io/socialmapper)** | 🐛 **[Report Issues](https://github.com/mihiarc/socialmapper/issues)**
 
 ## Features
 
@@ -47,6 +46,12 @@ SocialMapper is available on PyPI. Install it easily with uv:
 
 ```bash
 uv pip install socialmapper
+```
+
+Or with pip:
+
+```bash
+pip install socialmapper
 ```
 
 **Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
@@ -303,12 +308,26 @@ Here are some examples of community mapping projects you could create:
    socialmapper --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
    ```
 
+## Learn More
+
+- 📖 **[Documentation](https://mihiarc.github.io/socialmapper)** - Full documentation and tutorials
+- 🎯 **[Examples](https://github.com/mihiarc/socialmapper/tree/main/examples)** - Working code examples
+- 💬 **[Discussions](https://github.com/mihiarc/socialmapper/discussions)** - Ask questions and share ideas
+- 🐛 **[Issues](https://github.com/mihiarc/socialmapper/issues)** - Report bugs or request features
+
 ## Development
 
-For development, install with the development dependencies:
+For development, clone the repository and install with development dependencies:
 
 ```bash
-pip install -e ".[dev]"
+git clone https://github.com/mihiarc/socialmapper.git
+cd socialmapper
+uv pip install -e ".[dev]"
+```
+
+Run tests:
+```bash
+uv run pytest
 ```
 
 ### Troubleshooting
@@ -317,3 +336,24 @@ pip install -e ".[dev]"
 - **Census API errors**: Ensure your API key is valid and properly set as an environment variable.
 - **Isochrone generation issues**: For very large areas, try reducing the travel time to avoid timeouts.
 - **Missing block groups**: The tool should automatically identify the appropriate states based on the POI locations.
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+
+SocialMapper is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you use SocialMapper in your research, please cite:
+
+```bibtex
+@software{socialmapper,
+  title = {SocialMapper: Community Demographic and Accessibility Analysis},
+  author = {mihiarc},
+  year = {2025},
+  url = {https://github.com/mihiarc/socialmapper}
+}
+```
