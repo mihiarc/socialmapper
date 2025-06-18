@@ -318,11 +318,11 @@ def download_network_for_cluster(
 
         # Store network in cluster
         cluster.network = graph
-        cluster.network_crs = G.graph["crs"]
+        cluster.network_crs = graph.graph["crs"]
 
         logger.debug(
             f"Downloaded network for cluster {cluster.cluster_id}: "
-            f"{len(G.nodes)} nodes, {len(G.edges)} edges"
+            f"{len(graph.nodes)} nodes, {len(graph.edges)} edges"
         )
 
         return True

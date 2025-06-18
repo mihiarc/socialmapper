@@ -49,6 +49,11 @@ class Coordinate(BaseModel):
         if not MIN_LONGITUDE <= v <= MAX_LONGITUDE:
             raise ValueError("Longitude must be between -180 and 180 degrees")
         return float(v)
+    
+    def to_point(self):
+        """Convert coordinate to Shapely Point."""
+        from shapely.geometry import Point
+        return Point(self.lon, self.lat)
 
 
 class StrictCoordinate(BaseModel):
@@ -132,22 +137,31 @@ def validate_coordinate_point(
         return None
 
 
-def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) -> list[Coordinate]:
-    """Validate POI coordinate data and return validated coordinates.
+def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) -> ValidationResult:
+    """Validate POI coordinate data and return validation result.
 
     Args:
         poi_data: POI data in various formats (single POI dict or list of POIs)
 
     Returns:
-        List of validated Coordinate objects
+        ValidationResult with details about valid and invalid coordinates
 
     Raises:
         ValueError: If coordinate data is invalid or missing
     """
     if not poi_data:
-        return []
+        return ValidationResult(
+            valid_coordinates=[],
+            invalid_coordinates=[],
+            validation_errors=["No POI data provided"],
+            total_input=0,
+            total_valid=0,
+            total_invalid=0
+        )
 
     validated_coords = []
+    invalid_coords = []
+    validation_errors = []
 
     # Handle single POI or list of POIs
     pois = poi_data if isinstance(poi_data, list) else [poi_data]
@@ -156,14 +170,21 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
         try:
             # Multiple coordinate format possibilities
             coord = None
+            error_msg = None
 
             # Format 1: Direct lat/lon fields
             if "lat" in poi and "lon" in poi:
-                coord = Coordinate(lat=poi["lat"], lon=poi["lon"])
+                try:
+                    coord = Coordinate(lat=poi["lat"], lon=poi["lon"])
+                except ValidationError as e:
+                    error_msg = f"Invalid lat/lon values: {e}"
 
             # Format 2: latitude/longitude fields
             elif "latitude" in poi and "longitude" in poi:
-                coord = Coordinate(lat=poi["latitude"], lon=poi["longitude"])
+                try:
+                    coord = Coordinate(lat=poi["latitude"], lon=poi["longitude"])
+                except ValidationError as e:
+                    error_msg = f"Invalid latitude/longitude values: {e}"
 
             # Format 3: GeoJSON coordinates array [lon, lat]
             elif (
@@ -171,8 +192,11 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
                 and isinstance(poi["coordinates"], list)
                 and len(poi["coordinates"]) >= MIN_GEOJSON_COORDINATES
             ):
-                lon, lat = poi["coordinates"][0], poi["coordinates"][1]  # GeoJSON format
-                coord = Coordinate(lat=lat, lon=lon)
+                try:
+                    lon, lat = poi["coordinates"][0], poi["coordinates"][1]  # GeoJSON format
+                    coord = Coordinate(lat=lat, lon=lon)
+                except (ValidationError, IndexError) as e:
+                    error_msg = f"Invalid GeoJSON coordinates: {e}"
 
             # Format 4: Nested geometry object
             elif "geometry" in poi and isinstance(poi["geometry"], dict):
@@ -182,19 +206,47 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
                     and isinstance(geom["coordinates"], list)
                     and len(geom["coordinates"]) >= MIN_GEOJSON_COORDINATES
                 ):
-                    lon, lat = geom["coordinates"][0], geom["coordinates"][1]
-                    coord = Coordinate(lat=lat, lon=lon)
+                    try:
+                        lon, lat = geom["coordinates"][0], geom["coordinates"][1]
+                        coord = Coordinate(lat=lat, lon=lon)
+                    except (ValidationError, IndexError) as e:
+                        error_msg = f"Invalid geometry coordinates: {e}"
+                else:
+                    error_msg = "Geometry object missing valid coordinates"
+            else:
+                error_msg = f"No recognized coordinate format in keys: {list(poi.keys())}"
 
             if coord:
                 validated_coords.append(coord)
             else:
-                logger.warning(f"POI {i}: No valid coordinates found in format: {list(poi.keys())}")
+                if not error_msg:
+                    error_msg = "Unknown validation error"
+                logger.warning(f"POI {i}: {error_msg}")
+                validation_errors.append(f"POI {i}: {error_msg}")
+                invalid_coords.append({
+                    "index": i,
+                    "data": poi,
+                    "error": error_msg
+                })
 
         except Exception as e:
-            logger.warning(f"POI {i}: Coordinate validation failed: {e}")
-            continue
+            error_msg = f"Unexpected error: {str(e)}"
+            logger.warning(f"POI {i}: {error_msg}")
+            validation_errors.append(f"POI {i}: {error_msg}")
+            invalid_coords.append({
+                "index": i,
+                "data": poi,
+                "error": error_msg
+            })
 
-    return validated_coords
+    return ValidationResult(
+        valid_coordinates=validated_coords,
+        invalid_coordinates=invalid_coords,
+        validation_errors=validation_errors,
+        total_input=len(pois),
+        total_valid=len(validated_coords),
+        total_invalid=len(invalid_coords)
+    )
 
 
 def validate_coordinate_cluster(coordinates: list[dict[str, Any]], cluster_id: str | None = None) -> CoordinateCluster:

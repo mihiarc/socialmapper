@@ -161,6 +161,7 @@ class PipelineOrchestrator:
     def _integrate_census(self):
         """Integrate census data."""
         poi_data = self.stage_outputs["extract"][0]
+        state_abbreviations = self.stage_outputs["extract"][2]
         isochrone_gdf = self.stage_outputs["isochrone"]
 
         return integrate_census_data(
@@ -169,6 +170,7 @@ class PipelineOrchestrator:
             api_key=self.config.api_key,
             poi_data=poi_data,
             geographic_level=self.config.geographic_level,
+            state_abbreviations=state_abbreviations,
         )
 
     def _export_outputs(self):

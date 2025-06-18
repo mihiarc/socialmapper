@@ -51,7 +51,7 @@ def render_sidebar() -> str:
         return selected_page
 
 
-def render_api_key_section():
+def render_api_key_section() -> None:
     """Render the API key configuration section."""
     st.markdown("### 🔑 API Configuration")
     

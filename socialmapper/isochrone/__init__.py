@@ -351,6 +351,9 @@ def create_isochrones_from_poi_list(
     # Handle file saving and combining
     if not isochrone_gdfs:
         logger.warning("No isochrones were successfully generated")
+        # When combine_results is True, we should return an empty GeoDataFrame, not a list
+        if combine_results and not save_individual_files:
+            return gpd.GeoDataFrame()
         return [] if save_individual_files else gpd.GeoDataFrame()
 
     logger.info(f"Successfully generated {len(isochrone_gdfs)} isochrones")

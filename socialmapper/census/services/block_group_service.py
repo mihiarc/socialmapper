@@ -125,13 +125,13 @@ class BlockGroupService:
         ) as pbar:
             for state_fips, county_fips in counties:
                 pbar.update(1)
-            try:
-                county_block_groups = self.get_block_groups_for_county(state_fips, county_fips)
-                all_block_groups.append(county_block_groups)
-            except Exception as e:
-                logger.warning(
-                    f"Error fetching block groups for county {county_fips} in state {state_fips}: {e}"
-                )
+                try:
+                    county_block_groups = self.get_block_groups_for_county(state_fips, county_fips)
+                    all_block_groups.append(county_block_groups)
+                except Exception as e:
+                    logger.warning(
+                        f"Error fetching block groups for county {county_fips} in state {state_fips}: {e}"
+                    )
 
         if not all_block_groups:
             raise ValueError("No block group data could be retrieved")

@@ -24,7 +24,7 @@ def validate_poi_coordinates(poi_data: dict[str, Any]) -> None:
     # Extract POIs from poi_data for validation
     pois_to_validate = poi_data["pois"] if isinstance(poi_data, dict) else poi_data
 
-    # Validate coordinates
+    # Validate coordinates - now returns ValidationResult directly
     validation_result = validate_coords(pois_to_validate)
 
     if validation_result.total_valid == 0:
