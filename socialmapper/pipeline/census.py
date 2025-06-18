@@ -8,6 +8,7 @@ from typing import Any
 
 import geopandas as gpd
 
+from ..census import get_census_system
 from ..progress import get_progress_bar
 
 logger = logging.getLogger(__name__)
@@ -151,54 +152,72 @@ def integrate_census_data(
     print(f"Calculated travel distances for {len(units_with_distances)} {units_label}")
 
     # Fetch census data
-    geoids = units_with_distances["GEOID"].tolist()
+    try:
+        geoids = units_with_distances["GEOID"].tolist()
+    except KeyError as e:
+        logger.error(f"GEOID column not found in units_with_distances. Available columns: {list(units_with_distances.columns)}")
+        raise ValueError(f"Missing GEOID column in geographic units data: {e}") from e
 
     unit_desc = "ZCTA" if geographic_level == "zcta" else "block"
     with get_progress_bar(
         total=len(geoids), desc="📊 Integrating Census Data", unit=unit_desc
     ) as pbar:
-        if geographic_level == "zcta":
-            # Use modern census system for ZCTA data
-            census_data = census_system.get_zcta_census_data(
-                geoids=geoids, variables=census_codes, api_key=api_key
-            )
-            pbar.update(len(geoids) // 2)
+        try:
+            if geographic_level == "zcta":
+                # Use modern census system for ZCTA data
+                census_data = census_system.get_zcta_census_data(
+                    geoids=geoids, variables=census_codes, api_key=api_key
+                )
+                pbar.update(len(geoids) // 2)
 
-            # Merge census data with geographic units
-            census_data_gdf = units_with_distances.copy()
+                # Merge census data with geographic units
+                census_data_gdf = units_with_distances.copy()
 
-            # Add census variables to the GeoDataFrame
-            for _, row in census_data.iterrows():
-                geoid = row["GEOID"]
-                var_code = row["variable_code"]
-                value = row["value"]
+                # Add census variables to the GeoDataFrame
+                for _, row in census_data.iterrows():
+                    geoid = row["GEOID"]
+                    var_code = row["variable_code"]
+                    value = row["value"]
 
-                # Find matching geographic unit and add the variable
-                mask = census_data_gdf["GEOID"] == geoid
-                if mask.any():
-                    census_data_gdf.loc[mask, var_code] = value
+                    # Find matching geographic unit and add the variable
+                    mask = census_data_gdf["GEOID"] == geoid
+                    if mask.any():
+                        census_data_gdf.loc[mask, var_code] = value
 
-            pbar.update(len(geoids) // 2)
-        else:
-            # Use modern census system for block group data
-            census_data_points = census_system.get_census_data(census_codes, geoids, 2023)
-            pbar.update(len(geoids) // 2)
+                pbar.update(len(geoids) // 2)
+            else:
+                # Use modern census system for block group data
+                census_data_points = census_system.get_census_data(census_codes, geoids, 2023)
+                pbar.update(len(geoids) // 2)
 
-            # Merge census data with geographic units
-            census_data_gdf = units_with_distances.copy()
+                # Merge census data with geographic units
+                census_data_gdf = units_with_distances.copy()
 
-            # Add census variables to the GeoDataFrame
-            for data_point in census_data_points:
-                geoid = data_point.geoid
-                var_code = data_point.variable.code
-                value = data_point.value
+                # Add census variables to the GeoDataFrame
+                for data_point in census_data_points:
+                    geoid = data_point.geoid
+                    var_code = data_point.variable.code
+                    value = data_point.value
 
-                # Find matching geographic unit and add the variable
-                mask = census_data_gdf["GEOID"] == geoid
-                if mask.any():
-                    census_data_gdf.loc[mask, var_code] = value
+                    # Find matching geographic unit and add the variable
+                    mask = census_data_gdf["GEOID"] == geoid
+                    if mask.any():
+                        census_data_gdf.loc[mask, var_code] = value
 
-            pbar.update(len(geoids) // 2)
+                pbar.update(len(geoids) // 2)
+        except Exception as e:
+            logger.exception(f"Error fetching census data: {e}")
+            # Add more context about what failed
+            error_details = {
+                "geographic_level": geographic_level,
+                "num_geoids": len(geoids),
+                "sample_geoids": geoids[:5] if geoids else [],
+                "census_codes": census_codes,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }
+            logger.error(f"Census data fetch failed with details: {error_details}")
+            raise ValueError(f"Failed to fetch census data: {e}") from e
 
     # Note: Removed human-readable name conversion to simplify the pipeline
     # Census data will use census codes (e.g., B01003_001E) directly
