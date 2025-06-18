@@ -13,6 +13,8 @@ def format_census_variable(var_code: str, value: Union[float, int]) -> str:
     Returns:
         Formatted string with human-readable name and value
     """
+    from socialmapper.census.utils import clean_census_value, format_monetary_value
+    
     variable_names = {
         "B01003_001E": "Total Population",
         "B19013_001E": "Median Household Income",
@@ -25,15 +27,22 @@ def format_census_variable(var_code: str, value: Union[float, int]) -> str:
     # Get human-readable name or use code as fallback
     name = variable_names.get(var_code, var_code)
     
+    # Clean the value first
+    cleaned_value = clean_census_value(value, var_code)
+    if cleaned_value is None:
+        return f"{name}: N/A"
+    
     # Format based on variable type
     name_lower = name.lower()
     
     if "income" in name_lower or "value" in name_lower:
-        return f"{name}: ${value:,.0f}"
+        # Use the monetary formatter which handles all edge cases
+        formatted_value = format_monetary_value(value, var_code)
+        return f"{name}: {formatted_value}"
     elif "population" in name_lower or "holders" in name_lower or "users" in name_lower:
-        return f"{name}: {value:,.0f}"
+        return f"{name}: {cleaned_value:,.0f}"
     else:
-        return f"{name}: {value}"
+        return f"{name}: {cleaned_value}"
 
 
 def format_distance(meters: float) -> str:

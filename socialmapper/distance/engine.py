@@ -52,7 +52,7 @@ class VectorizedDistanceEngine:
         logger.info(f"Initialized VectorizedDistanceEngine with CRS={crs}, n_jobs={self.n_jobs}")
 
     @staticmethod
-    @numba.jit(nopython=True, parallel=True, cache=True)
+    @numba.jit(nopython=True, parallel=True, cache=False)
     def _calculate_distances_numba(
         poi_coords: np.ndarray, centroid_coords: np.ndarray
     ) -> np.ndarray:
@@ -85,7 +85,7 @@ class VectorizedDistanceEngine:
         return min_distances
 
     @staticmethod
-    @numba.jit(nopython=True, parallel=True, cache=True)
+    @numba.jit(nopython=True, parallel=True, cache=False)
     def _calculate_distances_balltree_numba(
         poi_coords: np.ndarray, centroid_coords: np.ndarray
     ) -> np.ndarray:

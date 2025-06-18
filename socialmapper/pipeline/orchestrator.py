@@ -7,8 +7,20 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..exceptions import (
+    AnalysisError,
+    ConfigurationError,
+    DataProcessingError,
+    ErrorContext,
+    ErrorSeverity,
+    InvalidConfigurationError,
+    InvalidTravelTimeError,
+    NoDataFoundError,
+    handle_with_context,
+)
 from ..isochrone import TravelMode
 from ..ui.console import get_logger, print_error, print_info
+from ..util.error_handling import error_context, ErrorCollector, log_error
 from .census import integrate_census_data
 from .environment import setup_pipeline_environment
 from .export import export_pipeline_outputs
@@ -48,6 +60,45 @@ class PipelineConfig:
     export_csv: bool = True
     export_isochrones: bool = False
     create_maps: bool = True
+    
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        self.validate()
+    
+    def validate(self):
+        """Validate the configuration values."""
+        from ..constants import MIN_TRAVEL_TIME, MAX_TRAVEL_TIME
+        
+        # Validate travel time
+        if not MIN_TRAVEL_TIME <= self.travel_time <= MAX_TRAVEL_TIME:
+            raise InvalidTravelTimeError(
+                self.travel_time, MIN_TRAVEL_TIME, MAX_TRAVEL_TIME
+            )
+        
+        # Validate POI configuration
+        if not self.custom_coords_path:
+            if not self.geocode_area and not (self.city and self.state):
+                raise InvalidConfigurationError(
+                    field="location",
+                    value="None",
+                    reason="Either geocode_area or city/state must be provided"
+                )
+            
+            if not self.poi_type or not self.poi_name:
+                raise InvalidConfigurationError(
+                    field="POI",
+                    value=f"type={self.poi_type}, name={self.poi_name}",
+                    reason="Both poi_type and poi_name must be provided"
+                )
+        
+        # Validate geographic level
+        valid_levels = ["block-group", "tract", "county"]
+        if self.geographic_level not in valid_levels:
+            raise InvalidConfigurationError(
+                field="geographic_level",
+                value=self.geographic_level,
+                reason=f"Must be one of: {', '.join(valid_levels)}"
+            )
 
 
 class PipelineStage:
@@ -64,11 +115,12 @@ class PipelineStage:
         """Execute the stage with error handling."""
         try:
             print_info(f"Starting: {self.description}")
-            self.result = self.function(**kwargs)
+            with error_context(f"Pipeline stage: {self.name}", stage=self.name):
+                self.result = self.function(**kwargs)
             return self.result
         except Exception as e:
             self.error = e
-            logger.error(f"Stage '{self.name}' failed: {e!s}")
+            log_error(e, ErrorSeverity.ERROR, stage=self.name, description=self.description)
             raise
 
 
@@ -240,20 +292,52 @@ class PipelineOrchestrator:
         Returns:
             Dictionary containing all pipeline results
         """
+        error_collector = ErrorCollector()
+        
         for stage in self.stages:
             try:
                 result = stage.execute()
                 self.stage_outputs[stage.name] = result
 
+            except NoDataFoundError as e:
+                # Handle no data found - might be acceptable
+                if skip_on_error:
+                    print_error(f"Stage '{stage.name}' found no data: {e!s}")
+                    print_info("Continuing with next stage...")
+                    error_collector.warnings.append((stage.name, e))
+                    continue
+                else:
+                    self._handle_stage_error(stage.name, e)
+                    raise AnalysisError(
+                        f"Pipeline failed at stage '{stage.name}': No data found",
+                        cause=e,
+                        stage=stage.name,
+                        completed_stages=list(self.stage_outputs.keys())
+                    ).with_operation("pipeline_execution")
+                    
             except Exception as e:
                 if skip_on_error:
                     print_error(f"Stage '{stage.name}' failed: {e!s}")
                     print_info("Continuing with next stage...")
+                    error_collector.errors.append((stage.name, e))
                     continue
                 else:
                     self._handle_stage_error(stage.name, e)
+                    # Wrap non-SocialMapper errors
+                    if not hasattr(e, 'context'):
+                        raise DataProcessingError(
+                            f"Pipeline failed at stage '{stage.name}': {str(e)}",
+                            cause=e,
+                            stage=stage.name,
+                            completed_stages=list(self.stage_outputs.keys()),
+                            config=self.config.__dict__
+                        ).with_operation("pipeline_execution")
                     raise
 
+        # Check if we had critical errors
+        if error_collector.has_errors and not skip_on_error:
+            error_collector.raise_if_errors("Pipeline execution failed with errors")
+            
         # Compile final results
         return self._compile_results()
 

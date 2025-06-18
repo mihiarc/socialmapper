@@ -28,7 +28,7 @@ from pathlib import Path
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper import SocialMapperBuilder, SocialMapperClient
+from socialmapper import SocialMapperBuilder, SocialMapperClient, tutorial_error_handler
 
 
 def main():
@@ -66,7 +66,8 @@ def main():
     print("  📊 Analyzing demographics...")
     print("  🎨 Creating choropleth maps...")
 
-    try:
+    # Use tutorial error handler for better error messages
+    with tutorial_error_handler("Getting Started Tutorial"):
         # Use the modern API with context manager
         with SocialMapperClient() as client:
             # Build configuration using fluent interface
@@ -85,12 +86,8 @@ def main():
             # Handle result using pattern matching
             if result.is_err():
                 error = result.unwrap_err()
-                print(f"\n❌ Error: {error.message}")
-                print("\nTroubleshooting tips:")
-                print("- Ensure you have internet connection")
-                print("- Check if Census API key is set (optional)")
-                print("- Try a different location or POI type")
-                return 1
+                # The error will be handled by tutorial_error_handler
+                raise error.cause if error.cause else ValueError(error.message)
 
             # Get successful result
             analysis_result = result.unwrap()
@@ -126,10 +123,6 @@ def main():
                     print("   - Income distribution")
                     print("   - Age demographics")
                     print("   - Travel distance to libraries")
-
-    except Exception as e:
-        print(f"\n❌ Unexpected error: {e!s}")
-        return 1
 
     print("\n🎉 Tutorial complete! Next steps:")
     print("- View the generated choropleth maps in output/maps/")

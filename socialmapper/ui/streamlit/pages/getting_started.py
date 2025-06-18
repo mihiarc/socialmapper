@@ -318,10 +318,12 @@ def render_metrics(result: Any):
         )
     
     with col4:
-        median_income = safe_get_dict(demographics, 'B19013_001E', 0)
+        from socialmapper.census.utils import format_monetary_value
+        
+        median_income = safe_get_dict(demographics, 'B19013_001E', None)
         st.metric(
             label="Median Income",
-            value=f"${int(median_income):,}",
+            value=format_monetary_value(median_income, 'B19013_001E'),
             help="Median household income in the area"
         )
 

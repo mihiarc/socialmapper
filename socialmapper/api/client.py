@@ -12,9 +12,16 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from ..constants import COORDINATE_PAIR_PARTS, DEFAULT_API_TIMEOUT, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
+from ..exceptions import (
+    InvalidLocationError,
+    InvalidCensusVariableError,
+    InvalidTravelTimeError,
+    SocialMapperError,
+)
 from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..ui.console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
+from ..util.error_handling import error_context, validate_type
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .result_types import Err, Error, ErrorType, Ok, Result
 
@@ -165,11 +172,13 @@ class SocialMapperClient:
             # Parse location
             parts = location.split(",")
             if len(parts) != COORDINATE_PAIR_PARTS:
+                error = InvalidLocationError(location)
                 return Err(
                     Error(
                         type=ErrorType.VALIDATION,
-                        message="Location must be in format 'City, State'",
-                        context={"location": location},
+                        message=str(error),
+                        context={"location": location, "suggestions": error.context.suggestions},
+                        cause=error,
                     )
                 )
 
@@ -192,6 +201,17 @@ class SocialMapperClient:
             config = builder.build()
             return self.run_analysis(config)
 
+        except SocialMapperError as e:
+            # Map our custom exceptions to API error types
+            error_type = self._map_exception_to_error_type(e)
+            return Err(
+                Error(
+                    type=error_type,
+                    message=str(e),
+                    context=e.context.to_dict(),
+                    cause=e,
+                )
+            )
         except ValueError as e:
             return Err(Error(type=ErrorType.VALIDATION, message=str(e), cause=e))
         except Exception as e:
@@ -243,16 +263,34 @@ class SocialMapperClient:
             demographics = {}
             if "census_data" in result_data and hasattr(result_data["census_data"], 'to_dict'):
                 census_df = result_data["census_data"]
+                logger.debug(f"Census DataFrame shape: {census_df.shape}")
+                logger.debug(f"Census DataFrame columns: {list(census_df.columns)}")
+                
                 # Sum up population and average income across all census units
                 for var in config.get("census_variables", []):
                     if var in census_df.columns:
-                        if var == "B01003_001E":  # Total population - sum
-                            demographics[var] = census_df[var].sum()
+                        # Filter out None/NaN values before aggregation
+                        valid_values = census_df[var].dropna()
+                        total_values = len(census_df[var])
+                        valid_count = len(valid_values)
+                        
+                        logger.debug(f"Variable {var}: {valid_count}/{total_values} valid values")
+                        
+                        if len(valid_values) == 0:
+                            # If all values are None/NaN, set to None (will show as N/A)
+                            demographics[var] = None
+                            logger.debug(f"  -> All values are None/NaN")
+                        elif var == "B01003_001E":  # Total population - sum
+                            demographics[var] = valid_values.sum()
+                            logger.debug(f"  -> Sum: {demographics[var]}")
                         elif var == "B19013_001E":  # Median income - weighted average
-                            # For simplicity, just take the mean
-                            demographics[var] = census_df[var].mean()
+                            # For simplicity, just take the mean of valid values
+                            demographics[var] = valid_values.mean()
+                            logger.debug(f"  -> Mean: {demographics[var]}")
                         else:
-                            demographics[var] = census_df[var].sum()
+                            # Default to sum for other variables
+                            demographics[var] = valid_values.sum()
+                            logger.debug(f"  -> Sum: {demographics[var]}")
 
             # Calculate isochrone area if available
             isochrone_area = 0.0
@@ -465,5 +503,34 @@ class SocialMapperClient:
             return ErrorType.CENSUS_API
         elif "osm" in error_msg or "overpass" in error_msg:
             return ErrorType.OSM_API
+        else:
+            return ErrorType.UNKNOWN
+    
+    def _map_exception_to_error_type(self, exception: SocialMapperError) -> ErrorType:
+        """Map SocialMapper exceptions to API error types."""
+        from ..exceptions import (
+            CensusAPIError,
+            ConfigurationError,
+            FileNotFoundError as SMFileNotFoundError,
+            GeocodingError,
+            OSMAPIError,
+            PermissionError as SMPermissionError,
+            ValidationError,
+        )
+        
+        if isinstance(exception, ValidationError):
+            return ErrorType.VALIDATION
+        elif isinstance(exception, ConfigurationError):
+            return ErrorType.CONFIGURATION
+        elif isinstance(exception, CensusAPIError):
+            return ErrorType.CENSUS_API
+        elif isinstance(exception, OSMAPIError):
+            return ErrorType.OSM_API
+        elif isinstance(exception, GeocodingError):
+            return ErrorType.GEOCODING
+        elif isinstance(exception, SMFileNotFoundError):
+            return ErrorType.FILE_NOT_FOUND
+        elif isinstance(exception, SMPermissionError):
+            return ErrorType.PERMISSION_DENIED
         else:
             return ErrorType.UNKNOWN

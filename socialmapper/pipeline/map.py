@@ -107,9 +107,12 @@ def create_pipeline_maps(
                             map_format,
                             dpi,
                         )
-                        output_paths[f"demographic_{variable}"] = map_path
-                        map_count += 1
-                        print(f"✅ Created demographic map: {variable}")
+                        if map_path:  # Only count if map was actually created
+                            output_paths[f"demographic_{variable}"] = map_path
+                            map_count += 1
+                            print(f"✅ Created demographic map: {variable}")
+                        else:
+                            print(f"⚠️ Skipped demographic map for {variable} (no valid data)")
                     except Exception as e:
                         print(f"⚠️ Failed to create demographic map for {variable}: {e}")
                     pbar.update(1)
@@ -298,6 +301,25 @@ def _create_demographic_map(
     dpi: int,
 ) -> Path:
     """Create a demographic choropleth map."""
+    from ..census.utils import clean_census_value
+    
+    # Clean the data before creating the map
+    gdf = gdf.copy()
+    if variable in gdf.columns:
+        # Replace invalid census values with NaN
+        gdf[variable] = gdf[variable].apply(
+            lambda x: clean_census_value(x, variable)
+        )
+        
+        # Drop rows with NaN values for this variable
+        valid_data = gdf[gdf[variable].notna()]
+        
+        if valid_data.empty:
+            print(f"Warning: No valid data for variable {variable} after cleaning")
+            return None
+            
+        gdf = valid_data
+    
     # Get human-readable title
     title = _get_variable_title(variable, geographic_level, travel_time)
 

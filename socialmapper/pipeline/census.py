@@ -143,10 +143,23 @@ def integrate_census_data(
             else:
                 raise
 
+    # Debug: Check what we have before distance calculation
+    logger.info(f"Geographic units GDF shape: {geographic_units_gdf.shape}")
+    logger.info(f"Geographic units columns: {list(geographic_units_gdf.columns)}")
+    logger.info(f"POI data keys: {list(poi_data.keys()) if isinstance(poi_data, dict) else 'Not a dict'}")
+    if not geographic_units_gdf.empty:
+        logger.info(f"First row sample: {geographic_units_gdf.iloc[0].to_dict()}")
+    
     # Calculate travel distances in memory
-    units_with_distances = add_travel_distances(
-        block_groups_gdf=geographic_units_gdf, poi_data=poi_data
-    )
+    try:
+        units_with_distances = add_travel_distances(
+            block_groups_gdf=geographic_units_gdf, poi_data=poi_data
+        )
+    except Exception as e:
+        logger.error(f"Error in add_travel_distances: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        raise
 
     units_label = "ZIP Code Tabulation Areas" if geographic_level == "zcta" else "block groups"
     print(f"Calculated travel distances for {len(units_with_distances)} {units_label}")

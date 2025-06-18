@@ -7,7 +7,13 @@ from typing import Any
 
 import geopandas as gpd
 
+from ..exceptions import (
+    DataProcessingError,
+    IsochroneGenerationError,
+    NetworkAnalysisError,
+)
 from ..isochrone import TravelMode
+from ..util.error_handling import error_context, with_retries
 
 
 def generate_isochrones(
@@ -35,14 +41,30 @@ def generate_isochrones(
     print(f"\n=== Generating {travel_time}-Minute Isochrones ({travel_mode.value} mode) ===")
 
     # Generate isochrones - the function handles its own progress tracking
-    isochrone_result = create_isochrones_from_poi_list(
-        poi_data=poi_data,
-        travel_time_limit=travel_time,
-        combine_results=True,
-        save_individual_files=False,  # We want the GeoDataFrame directly
-        use_parquet=True,
-        travel_mode=travel_mode,
-    )
+    try:
+        with error_context("isochrone generation", travel_time=travel_time, mode=travel_mode.value):
+            isochrone_result = create_isochrones_from_poi_list(
+                poi_data=poi_data,
+                travel_time_limit=travel_time,
+                combine_results=True,
+                save_individual_files=False,  # We want the GeoDataFrame directly
+                use_parquet=True,
+                travel_mode=travel_mode,
+            )
+    except Exception as e:
+        # Check for common network-related errors
+        error_msg = str(e).lower()
+        if "network" in error_msg or "graph" in error_msg:
+            raise NetworkAnalysisError(
+                f"Failed to analyze {travel_mode.value} network",
+                network_type=travel_mode.value,
+                cause=e
+            ).add_suggestion("The area may lack sufficient road/path data for this travel mode")
+        else:
+            raise IsochroneGenerationError(
+                travel_mode=travel_mode.value,
+                cause=e
+            )
 
     # Handle different return types
     if isinstance(isochrone_result, gpd.GeoDataFrame):
@@ -60,22 +82,33 @@ def generate_isochrones(
                 table = pq.read_table(isochrone_result)
                 isochrone_gdf = gpd.GeoDataFrame.from_arrow(table)
             except Exception as e2:
-                print(f"Critical error loading isochrones: {e2}")
-                raise ValueError("Failed to load isochrone data") from e2
+                raise DataProcessingError(
+                    "Failed to load isochrone data from file",
+                    file_path=isochrone_result,
+                    cause=e2
+                ).with_operation("isochrone_file_loading")
     elif isinstance(isochrone_result, list):
         # If it's a list of GeoDataFrames, combine them
         if all(isinstance(gdf, gpd.GeoDataFrame) for gdf in isochrone_result):
             import pandas as pd
             isochrone_gdf = gpd.GeoDataFrame(pd.concat(isochrone_result, ignore_index=True))
         else:
-            raise ValueError(f"Unexpected list content in isochrone result: {type(isochrone_result[0]) if isochrone_result else 'empty list'}")
+            raise DataProcessingError(
+                "Unexpected isochrone result format",
+                result_type="list",
+                content_type=type(isochrone_result[0]).__name__ if isochrone_result else "empty"
+            ).with_operation("isochrone_processing")
     else:
-        raise ValueError(f"Unexpected return type from create_isochrones_from_poi_list: {type(isochrone_result)}")
+        raise DataProcessingError(
+            "Unexpected isochrone result type",
+            result_type=type(isochrone_result).__name__
+        ).with_operation("isochrone_processing")
 
     if isochrone_gdf is None or isochrone_gdf.empty:
-        raise ValueError(
-            "Failed to generate isochrones. This could be due to network issues or invalid POI locations."
-        )
+        raise IsochroneGenerationError(
+            travel_mode=travel_mode.value
+        ).add_suggestion("Check that POI locations are valid and accessible") \
+        .add_suggestion("Verify internet connection for downloading network data")
 
     print(f"Generated isochrones for {len(isochrone_gdf)} locations")
     return isochrone_gdf

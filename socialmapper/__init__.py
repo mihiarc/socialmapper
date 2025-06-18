@@ -101,6 +101,36 @@ try:
 except ImportError:
     _VISUALIZATION_AVAILABLE = False
 
+# Import error handling components
+from .exceptions import (
+    SocialMapperError,
+    ConfigurationError,
+    ValidationError,
+    DataProcessingError,
+    ExternalAPIError,
+    FileSystemError,
+    AnalysisError,
+    VisualizationError,
+    # Specific errors
+    MissingAPIKeyError,
+    InvalidLocationError,
+    InvalidCensusVariableError,
+    InvalidTravelTimeError,
+    NoDataFoundError,
+    CensusAPIError,
+    OSMAPIError,
+    GeocodingError,
+    IsochroneGenerationError,
+    NetworkAnalysisError,
+    MapGenerationError,
+    # Helper functions
+    format_error_for_user,
+    handle_with_context,
+)
+
+# Import tutorial helpers
+from .tutorial_helper import tutorial_error_handler
+
 # Build __all__ based on available features
 __all__ = [
     "CacheStrategy",
@@ -115,6 +145,18 @@ __all__ = [
     # Neighbor functions
     "get_geography_from_point",
     "get_legacy_adapter",
+    # Error handling
+    "SocialMapperError",
+    "ConfigurationError", 
+    "ValidationError",
+    "DataProcessingError",
+    "ExternalAPIError",
+    "MissingAPIKeyError",
+    "InvalidLocationError",
+    "NoDataFoundError",
+    "CensusAPIError",
+    "OSMAPIError",
+    "tutorial_error_handler",
 ]
 
 # Add API items if available

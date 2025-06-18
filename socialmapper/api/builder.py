@@ -11,6 +11,12 @@ from typing import Any, Self
 
 # Import constants and travel mode
 from ..constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
+from ..exceptions import (
+    InvalidConfigurationError,
+    InvalidTravelTimeError,
+    InvalidCensusVariableError,
+    ValidationError,
+)
 from ..isochrone import TravelMode
 
 # Import census variable validation
@@ -66,7 +72,7 @@ class SocialMapperBuilder:
         self._config = {
             "travel_time": 15,
             "travel_mode": TravelMode.DRIVE,
-            "geographic_level": GeographicLevel.BLOCK_GROUP,
+            "geographic_level": GeographicLevel.BLOCK_GROUP.value,  # Use string value
             "census_variables": ["total_population"],
             "export_csv": True,
             "export_isochrones": False,
@@ -109,9 +115,7 @@ class SocialMapperBuilder:
     def with_travel_time(self, minutes: int) -> Self:
         """Set the travel time for isochrone generation."""
         if not MIN_TRAVEL_TIME <= minutes <= MAX_TRAVEL_TIME:
-            self._validation_errors.append(
-                f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes, got {minutes}"
-            )
+            raise InvalidTravelTimeError(minutes, MIN_TRAVEL_TIME, MAX_TRAVEL_TIME)
         self._config["travel_time"] = minutes
         return self
 
@@ -152,7 +156,7 @@ class SocialMapperBuilder:
 
     def with_geographic_level(self, level: GeographicLevel) -> Self:
         """Set the geographic unit for census analysis."""
-        self._config["geographic_level"] = level.value
+        self._config["geographic_level"] = level.value if isinstance(level, GeographicLevel) else level
         return self
 
     def limit_pois(self, max_count: int) -> Self:
@@ -220,11 +224,15 @@ class SocialMapperBuilder:
             Configuration dictionary ready for use
 
         Raises:
-            ValueError: If configuration is invalid
+            InvalidConfigurationError: If configuration is invalid
         """
         errors = self.validate()
         if errors:
-            raise ValueError("Invalid configuration:\n" + "\n".join(f"  - {e}" for e in errors))
+            raise InvalidConfigurationError(
+                field="configuration",
+                value="multiple errors",
+                reason="\n".join(errors)
+            ).add_suggestion("Fix the configuration errors listed above")
 
         return self._config.copy()
 

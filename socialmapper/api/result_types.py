@@ -18,6 +18,7 @@ class ErrorType(Enum):
     """Common error types in SocialMapper."""
 
     VALIDATION = auto()
+    CONFIGURATION = auto()
     NETWORK = auto()
     FILE_NOT_FOUND = auto()
     PERMISSION_DENIED = auto()

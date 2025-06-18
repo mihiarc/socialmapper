@@ -10,7 +10,18 @@ from pathlib import Path
 from typing import Any
 from urllib.error import URLError
 
+from ..exceptions import (
+    DataProcessingError,
+    FileNotFoundError as SocialMapperFileNotFoundError,
+    FileSystemError,
+    GeocodingError,
+    InvalidLocationError,
+    NoDataFoundError,
+    OSMAPIError,
+    ValidationError,
+)
 from ..util import PathSecurityError, sanitize_path
+from ..util.error_handling import error_context, validate_type, with_retries
 
 
 def parse_custom_coordinates(
@@ -27,14 +38,21 @@ def parse_custom_coordinates(
     Returns:
         Dictionary containing POI data in the format expected by the isochrone generator
     """
+    # Validate inputs
+    validate_type(file_path, str, "file_path")
+    
     # Sanitize the file path
     try:
         safe_file_path = sanitize_path(file_path, allow_absolute=True)
     except PathSecurityError as e:
-        raise ValueError(f"Invalid file path: {e}") from e
+        raise FileSystemError(
+            f"Invalid file path: {file_path}",
+            cause=e,
+            file_path=file_path
+        ).add_suggestion("Ensure the file path does not contain '..' or other security risks")
 
     if not safe_file_path.exists():
-        raise FileNotFoundError(f"Custom coordinates file not found: {file_path}")
+        raise SocialMapperFileNotFoundError(str(safe_file_path))
 
     file_extension = safe_file_path.suffix.lower()
 
@@ -97,7 +115,9 @@ def parse_custom_coordinates(
 
                     pois.append(poi)
                 else:
-                    print(f"Warning: Skipping item missing required coordinates: {item}")
+                    # Log warning but don't fail - some POIs might be malformed
+                    from ..ui.console import print_warning
+                    print_warning(f"Skipping item missing required coordinates: {item}")
         elif isinstance(data, dict) and "pois" in data:
             pois = data["pois"]
 
@@ -336,8 +356,16 @@ def extract_poi_data(
 
     # Validate that we have POIs to process
     if not poi_data or "pois" not in poi_data or not poi_data["pois"]:
-        raise ValueError(
-            "No POIs found to analyze. Please try different search criteria or check your input data."
-        )
+        if custom_coords_path:
+            raise NoDataFoundError(
+                "coordinates",
+                location=custom_coords_path
+            ).add_suggestion("Check that the file contains valid lat/lon coordinates")
+        else:
+            raise NoDataFoundError(
+                "POIs",
+                location=geocode_area
+            ).add_suggestion(f"Try a different POI type or expand the search area")\
+            .add_suggestion(f"Verify that {poi_type}:{poi_name} exists in this area")
 
     return poi_data, base_filename, state_abbreviations, sampled_pois
