@@ -4,8 +4,8 @@ Welcome to the SocialMapper tutorials! These hands-on examples will guide you th
 
 ## Available Tutorials
 
-### 1. Getting Started
-**File:** `01_getting_started.py`
+### 1. [Getting Started Tutorial](getting-started-tutorial.md)
+**Example code:** `01_getting_started.py`
 
 Learn the basics of SocialMapper by analyzing library accessibility in Raleigh, NC. This tutorial covers:
 - Finding points of interest (POIs) from OpenStreetMap
@@ -13,8 +13,17 @@ Learn the basics of SocialMapper by analyzing library accessibility in Raleigh, 
 - Creating demographic analysis
 - Exporting results
 
-### 2. Custom Points of Interest
-**File:** `02_custom_pois.py`
+### 2. [Getting Started with Maps](getting-started-with-maps.md)
+**Example code:** `01_getting_started_with_maps.py`
+
+Enhanced version of the getting started tutorial that includes choropleth map generation:
+- Creating professional choropleth maps
+- Visualizing demographic patterns
+- Customizing map appearance
+- Exporting high-quality visualizations
+
+### 3. [Custom Points of Interest](custom-pois-tutorial.md)
+**Example code:** `02_custom_pois.py`
 
 Discover how to work with your own location data instead of OpenStreetMap queries. This tutorial demonstrates:
 - Loading custom POI data from CSV files
@@ -22,8 +31,8 @@ Discover how to work with your own location data instead of OpenStreetMap querie
 - Analyzing accessibility for custom locations
 - Combining custom and OpenStreetMap data
 
-### 3. Travel Modes
-**File:** `03_travel_modes.py`
+### 4. [Travel Modes](travel-modes-tutorial.md)
+**Example code:** `03_travel_modes.py`
 
 Explore different transportation modes for accessibility analysis. This tutorial covers:
 - Walking, driving, and biking isochrones
@@ -31,8 +40,8 @@ Explore different transportation modes for accessibility analysis. This tutorial
 - Understanding mode-specific network constraints
 - Customizing travel parameters
 
-### 4. ZIP Code (ZCTA) Analysis
-**File:** `04_zipcode_analysis.py`
+### 5. [ZIP Code (ZCTA) Analysis](zcta-analysis-tutorial.md)
+**Example code:** `04_zipcode_analysis.py`
 
 Analyze demographics at the ZIP Code Tabulation Area (ZCTA) level. This tutorial covers:
 - Understanding ZCTAs vs block groups
@@ -40,8 +49,8 @@ Analyze demographics at the ZIP Code Tabulation Area (ZCTA) level. This tutorial
 - Batch processing multiple states
 - Choosing the right geographic unit for your analysis
 
-### 5. Address Geocoding
-**File:** `05_address_geocoding.py`
+### 6. [Address Geocoding](address-geocoding-tutorial.md)
+**Example code:** `05_address_geocoding.py`
 
 Convert street addresses into geographic coordinates for analysis. This tutorial demonstrates:
 - Single and batch address geocoding
