@@ -2,66 +2,110 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mihiarc.github.io/socialmapper/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/api-reference/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/error-handling/</loc>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/faq/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/migration-guide/</loc>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/troubleshooting/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/features/address-geocoding/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/features/network-analysis/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/getting-started/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/getting-started/installation/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/getting-started/quick-start/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/reference/census-variables/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/reference/travel-speeds/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/address-geocoding-tutorial/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/custom-pois-tutorial/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/getting-started-tutorial/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/getting-started-with-maps/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/travel-modes-tutorial/</loc>
+         <lastmod>2025-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://mihiarc.github.io/socialmapper/tutorials/zcta-analysis-tutorial/</loc>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/cli-usage/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/custom-locations/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/demographics/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/exporting-results/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/finding-places/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
     <url>
          <loc>https://mihiarc.github.io/socialmapper/user-guide/travel-time/</loc>
-         <lastmod>2025-06-14</lastmod>
+         <lastmod>2025-06-18</lastmod>
     </url>
 </urlset>
