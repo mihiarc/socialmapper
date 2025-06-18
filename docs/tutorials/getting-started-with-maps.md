@@ -234,9 +234,9 @@ The full enhanced tutorial script is available at:
 
 After completing this tutorial, explore:
 
-1. **[Visualization Tutorial](visualization-tutorial.md)**: Deep dive into map customization
-2. **[Multi-Modal Analysis](travel-modes-tutorial.md)**: Compare walk, bike, and drive with side-by-side maps
-3. **[Batch Analysis](batch-analysis-tutorial.md)**: Create map series for multiple locations
+1. **[Custom POIs Tutorial](custom-pois-tutorial.md)**: Analyze your own locations
+2. **[Multi-Modal Analysis](travel-modes-tutorial.md)**: Compare walk, bike, and drive access
+3. **[Address Geocoding](address-geocoding-tutorial.md)**: Work with specific addresses
 
 ## Key Takeaways
 

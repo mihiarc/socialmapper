@@ -292,5 +292,5 @@ with SocialMapperClient() as client:
 ## Need Help?
 
 - Check the [API Reference](api-reference.md) for detailed documentation
-- See [examples/](../examples/) for working code samples
+- See [examples](https://github.com/mihiarc/socialmapper/tree/main/examples) for working code samples
 - Report issues at https://github.com/anthropics/socialmapper/issues

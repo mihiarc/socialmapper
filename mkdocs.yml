@@ -114,6 +114,7 @@ nav:
   - Tutorials:
     - Overview: tutorials/index.md
     - Getting Started: tutorials/getting-started-tutorial.md
+    - Getting Started with Maps: tutorials/getting-started-with-maps.md
     - Custom POIs: tutorials/custom-pois-tutorial.md
     - Travel Modes: tutorials/travel-modes-tutorial.md
     - ZIP Code Analysis: tutorials/zcta-analysis-tutorial.md
@@ -141,3 +142,5 @@ nav:
     - Examples: https://github.com/mihiarc/socialmapper/tree/main/examples
     - FAQ: faq.md
     - Troubleshooting: troubleshooting.md
+    - Error Handling: error-handling.md
+    - Migration Guide: migration-guide.md
