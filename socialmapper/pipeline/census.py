@@ -34,7 +34,6 @@ def integrate_census_data(
     Returns:
         Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
     """
-    from ..census import get_census_system
     from ..distance import add_travel_distances
 
     print("\n=== Integrating Census Data ===")
@@ -111,34 +110,34 @@ def integrate_census_data(
                 raise ValueError("No census block groups found intersecting with isochrones.")
 
             print(f"Found {len(geographic_units_gdf)} intersecting census block groups")
-            
+
         except ValueError as e:
             if "Census TIGER API" in str(e):
                 # Fall back to county-based approach
                 print("⚠️ Spatial query failed, falling back to county-based approach")
-                
+
                 # Get counties from POI locations
                 counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=True)
-                
+
                 if not counties:
                     print("⚠️ Could not determine counties from POI locations")
                     raise ValueError("Failed to determine counties for census data. This may be due to geocoding service issues.")
-                
+
                 with get_progress_bar(
                     total=len(counties), desc="🏛️ Fetching Census Block Groups", unit="county"
                 ) as pbar:
                     geographic_units_gdf = census_system.get_block_groups_for_counties(counties)
                     pbar.update(len(counties))
-                
+
                 if geographic_units_gdf is None or geographic_units_gdf.empty:
                     raise ValueError("No census block groups found.")
-                
+
                 # Filter to only those intersecting isochrones
                 print("Filtering block groups to those intersecting isochrones...")
                 isochrone_union = isochrone_gdf.geometry.union_all()
                 intersecting_mask = geographic_units_gdf.geometry.intersects(isochrone_union)
                 geographic_units_gdf = geographic_units_gdf[intersecting_mask]
-                
+
                 print(f"Found {len(geographic_units_gdf)} intersecting census block groups")
             else:
                 raise
@@ -149,7 +148,7 @@ def integrate_census_data(
     logger.info(f"POI data keys: {list(poi_data.keys()) if isinstance(poi_data, dict) else 'Not a dict'}")
     if not geographic_units_gdf.empty:
         logger.info(f"First row sample: {geographic_units_gdf.iloc[0].to_dict()}")
-    
+
     # Calculate travel distances in memory
     try:
         units_with_distances = add_travel_distances(

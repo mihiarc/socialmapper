@@ -20,7 +20,6 @@ from .exceptions import (
     SocialMapperError,
     format_error_for_user,
 )
-from .util.error_handling import handle_error
 
 
 @contextmanager
@@ -135,7 +134,7 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
         else:
             # Absolute import
             return __import__(module_name)
-    except ImportError as e:
+    except ImportError:
         print(f"\n⚠️  Missing dependency: {module_name}")
         if package:
             print(f"Install it with: pip install {package}")
@@ -158,17 +157,17 @@ def check_dependencies() -> bool:
         ("matplotlib", "matplotlib"),
         ("folium", "folium"),
     ]
-    
+
     missing = []
     for module, package in required:
         if safe_import(module, package) is None:
             missing.append(package)
-    
+
     if missing:
         print("\n📦 Missing dependencies for tutorials:")
         print(f"pip install {' '.join(missing)}")
         return False
-    
+
     return True
 
 
@@ -183,19 +182,19 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
     """
     required_fields = ["location", "poi_type", "poi_name"]
     missing = [field for field in required_fields if not config.get(field)]
-    
+
     if missing:
         raise ConfigurationError(
             f"Missing required configuration: {', '.join(missing)}",
             config=config,
             missing_fields=missing
         ).add_suggestion("Check that all required parameters are provided")
-    
+
     # Validate location format
     location = config["location"]
     if "," not in location:
         raise InvalidLocationError(location)
-    
+
     # Validate travel time if provided
     if "travel_time" in config:
         travel_time = config["travel_time"]

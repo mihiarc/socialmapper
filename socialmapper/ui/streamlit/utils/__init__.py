@@ -2,14 +2,18 @@
 
 from .formatters import (
     format_census_variable,
+    format_currency,
     format_distance,
+    format_number,
+    format_percentage,
     format_time,
-    format_percentage
 )
 
 __all__ = [
     "format_census_variable",
-    "format_distance", 
-    "format_time",
-    "format_percentage"
+    "format_currency",
+    "format_distance",
+    "format_number",
+    "format_percentage",
+    "format_time"
 ]

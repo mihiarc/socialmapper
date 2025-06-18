@@ -1,18 +1,18 @@
 """Reusable UI components for the Streamlit application."""
 
-from .sidebar import render_sidebar, render_api_key_section
 from .maps import (
+    create_comparison_map,
+    create_custom_location_map,
     create_folium_map,
     create_poi_map,
-    create_custom_location_map,
-    create_comparison_map
 )
+from .sidebar import render_api_key_section, render_sidebar
 
 __all__ = [
-    "render_sidebar",
-    "render_api_key_section",
+    "create_comparison_map",
+    "create_custom_location_map",
     "create_folium_map",
     "create_poi_map",
-    "create_custom_location_map",
-    "create_comparison_map"
+    "render_api_key_section",
+    "render_sidebar"
 ]

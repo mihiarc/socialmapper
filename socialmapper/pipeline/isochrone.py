@@ -13,7 +13,7 @@ from ..exceptions import (
     NetworkAnalysisError,
 )
 from ..isochrone import TravelMode
-from ..util.error_handling import error_context, with_retries
+from ..util.error_handling import error_context
 
 
 def generate_isochrones(

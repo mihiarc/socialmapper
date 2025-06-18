@@ -14,14 +14,11 @@ from typing import Any, Protocol, runtime_checkable
 from ..constants import COORDINATE_PAIR_PARTS, DEFAULT_API_TIMEOUT, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..exceptions import (
     InvalidLocationError,
-    InvalidCensusVariableError,
-    InvalidTravelTimeError,
     SocialMapperError,
 )
 from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..ui.console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
-from ..util.error_handling import error_context, validate_type
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .result_types import Err, Error, ErrorType, Ok, Result
 
@@ -265,7 +262,7 @@ class SocialMapperClient:
                 census_df = result_data["census_data"]
                 logger.debug(f"Census DataFrame shape: {census_df.shape}")
                 logger.debug(f"Census DataFrame columns: {list(census_df.columns)}")
-                
+
                 # Sum up population and average income across all census units
                 for var in config.get("census_variables", []):
                     if var in census_df.columns:
@@ -273,13 +270,13 @@ class SocialMapperClient:
                         valid_values = census_df[var].dropna()
                         total_values = len(census_df[var])
                         valid_count = len(valid_values)
-                        
+
                         logger.debug(f"Variable {var}: {valid_count}/{total_values} valid values")
-                        
+
                         if len(valid_values) == 0:
                             # If all values are None/NaN, set to None (will show as N/A)
                             demographics[var] = None
-                            logger.debug(f"  -> All values are None/NaN")
+                            logger.debug("  -> All values are None/NaN")
                         elif var == "B01003_001E":  # Total population - sum
                             demographics[var] = valid_values.sum()
                             logger.debug(f"  -> Sum: {demographics[var]}")
@@ -505,19 +502,23 @@ class SocialMapperClient:
             return ErrorType.OSM_API
         else:
             return ErrorType.UNKNOWN
-    
+
     def _map_exception_to_error_type(self, exception: SocialMapperError) -> ErrorType:
         """Map SocialMapper exceptions to API error types."""
         from ..exceptions import (
             CensusAPIError,
             ConfigurationError,
-            FileNotFoundError as SMFileNotFoundError,
             GeocodingError,
             OSMAPIError,
-            PermissionError as SMPermissionError,
             ValidationError,
         )
-        
+        from ..exceptions import (
+            FileNotFoundError as SMFileNotFoundError,
+        )
+        from ..exceptions import (
+            PermissionError as SMPermissionError,
+        )
+
         if isinstance(exception, ValidationError):
             return ErrorType.VALIDATION
         elif isinstance(exception, ConfigurationError):

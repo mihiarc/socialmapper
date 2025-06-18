@@ -73,7 +73,7 @@ class CensusService:
                 self._cache_data(api_data, year, dataset)
 
         self._logger.info(f"Successfully retrieved {len(api_data)} data points")
-        
+
         # Add summary logging for debugging
         if api_data:
             # Count valid vs null values by variable
@@ -87,7 +87,7 @@ class CensusService:
                     variable_stats[var_code]['valid'] += 1
                 else:
                     variable_stats[var_code]['null'] += 1
-            
+
             self._logger.info("Census data summary by variable:")
             for var_code, stats in variable_stats.items():
                 valid_pct = (stats['valid'] / stats['total'] * 100) if stats['total'] > 0 else 0
@@ -95,7 +95,7 @@ class CensusService:
                     f"  {var_code}: {stats['valid']}/{stats['total']} valid ({valid_pct:.1f}%), "
                     f"{stats['null']} null values"
                 )
-        
+
         return api_data
 
     def get_block_groups(
@@ -234,7 +234,7 @@ class CensusService:
 
         headers = api_response[0]
         rows = api_response[1:]
-        
+
         # Debug log first few rows to see what data we're getting
         self._logger.debug(f"API Response headers: {headers}")
         if rows:
@@ -254,10 +254,10 @@ class CensusService:
                 if var_code in row_dict:
                     try:
                         raw_value = row_dict[var_code]
-                        
+
                         # Add debug logging to trace values
                         self._logger.debug(f"Processing {var_code} for GEOID {geoid}: raw_value={raw_value}")
-                        
+
                         # Handle census placeholder values
                         if raw_value in ["-999999999", "-888888888", "-666666666", "-555555555", "-222222222", "-111111111", "null", ""]:
                             self._logger.debug(f"  -> Filtered as placeholder: {raw_value}")
@@ -265,18 +265,18 @@ class CensusService:
                         else:
                             value = float(raw_value)
                             self._logger.debug(f"  -> Converted to float: {value}")
-                            
+
                             # For income and financial variables, negative values are placeholders
                             if var_code.startswith(('B19', 'B25')) and value < 0:
-                                self._logger.debug(f"  -> Filtered as negative monetary value")
+                                self._logger.debug("  -> Filtered as negative monetary value")
                                 value = None
                             # For most other variables, large negative values are placeholders
                             elif value < -100000:
-                                self._logger.debug(f"  -> Filtered as large negative value")
+                                self._logger.debug("  -> Filtered as large negative value")
                                 value = None
                             else:
                                 self._logger.debug(f"  -> Valid value: {value}")
-                                
+
                     except (ValueError, TypeError) as e:
                         self._logger.debug(f"  -> Error converting value: {e}")
                         value = None

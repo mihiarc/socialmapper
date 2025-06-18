@@ -140,12 +140,12 @@ class SpatialBlockGroupService:
 
         # Execute query
         logger.info(f"Querying TIGER API with polygon ({len(coords)} vertices)")
-        
+
         # Check for test mode
         if os.environ.get('SOCIALMAPPER_TEST_MODE') == '1':
             logger.info("Test mode: returning empty response")
             return gpd.GeoDataFrame()
-            
+
         response = requests.get(self.base_url, params=params, timeout=60)
 
         if response.status_code != 200:
@@ -157,14 +157,14 @@ class SpatialBlockGroupService:
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
             logger.error(f"Response content: {response.text[:500]}...")
-            
+
             # Check if it's an HTML error page
             if 'text/html' in response.headers.get('content-type', ''):
                 if 'Request Rejected' in response.text:
                     raise ValueError("Census TIGER API is currently blocking requests. This may be due to rate limiting or maintenance. Please try again later.")
                 else:
                     raise ValueError("Census TIGER API returned an HTML error page instead of JSON data.")
-            
+
             raise ValueError(f"Invalid JSON response from API: {e}")
 
         if "error" in data:
@@ -228,14 +228,14 @@ class SpatialBlockGroupService:
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
             logger.error(f"Response content: {response.text[:500]}...")
-            
+
             # Check if it's an HTML error page
             if 'text/html' in response.headers.get('content-type', ''):
                 if 'Request Rejected' in response.text:
                     raise ValueError("Census TIGER API is currently blocking requests. This may be due to rate limiting or maintenance. Please try again later.")
                 else:
                     raise ValueError("Census TIGER API returned an HTML error page instead of JSON data.")
-            
+
             raise ValueError(f"Invalid JSON response from API: {e}")
 
         if "error" in data:

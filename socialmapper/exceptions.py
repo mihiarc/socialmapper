@@ -20,7 +20,7 @@ from typing import Any, ClassVar
 
 class ErrorSeverity(Enum):
     """Severity levels for errors."""
-    
+
     INFO = auto()
     WARNING = auto()
     ERROR = auto()
@@ -29,7 +29,7 @@ class ErrorSeverity(Enum):
 
 class ErrorCategory(Enum):
     """Categories of errors for better organization."""
-    
+
     VALIDATION = auto()
     NETWORK = auto()
     DATA_PROCESSING = auto()
@@ -43,7 +43,7 @@ class ErrorCategory(Enum):
 @dataclass
 class ErrorContext:
     """Rich context for error reporting."""
-    
+
     timestamp: datetime = field(default_factory=datetime.now)
     category: ErrorCategory = ErrorCategory.ANALYSIS
     severity: ErrorSeverity = ErrorSeverity.ERROR
@@ -52,7 +52,7 @@ class ErrorContext:
     suggestions: list[str] = field(default_factory=list)
     user_message: str | None = None
     technical_details: str | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -65,7 +65,7 @@ class ErrorContext:
             "user_message": self.user_message,
             "technical_details": self.technical_details,
         }
-    
+
     def to_json(self) -> str:
         """Convert to JSON string."""
         return json.dumps(self.to_dict(), indent=2)
@@ -76,9 +76,9 @@ class SocialMapperError(Exception):
     
     This provides rich error context and chaining support.
     """
-    
+
     default_message: ClassVar[str] = "An error occurred in SocialMapper"
-    
+
     def __init__(
         self,
         message: str | None = None,
@@ -97,38 +97,38 @@ class SocialMapperError(Exception):
         self.message = message or self.default_message
         self.context = context or ErrorContext()
         self.cause = cause
-        
+
         # Add any kwargs to context details
         if kwargs:
             self.context.details.update(kwargs)
-        
+
         # Set user message if not already set
         if not self.context.user_message:
             self.context.user_message = self.message
-        
+
         # Capture technical details if cause is provided
         if cause and not self.context.technical_details:
-            self.context.technical_details = f"{type(cause).__name__}: {str(cause)}"
-        
+            self.context.technical_details = f"{type(cause).__name__}: {cause!s}"
+
         # Chain the exception
         super().__init__(self.message)
         if cause:
             self.__cause__ = cause
-    
+
     def __str__(self) -> str:
         """User-friendly string representation."""
         parts = [self.message]
-        
+
         if self.context.suggestions:
             parts.append("\n\nSuggestions:")
             for i, suggestion in enumerate(self.context.suggestions, 1):
                 parts.append(f"  {i}. {suggestion}")
-        
+
         if self.context.operation:
             parts.append(f"\nOperation: {self.context.operation}")
-        
+
         return "\n".join(parts)
-    
+
     def __repr__(self) -> str:
         """Developer-friendly representation."""
         return (
@@ -137,21 +137,21 @@ class SocialMapperError(Exception):
             f"category={self.context.category.name}, "
             f"severity={self.context.severity.name})"
         )
-    
+
     def get_full_traceback(self) -> str:
         """Get complete traceback including chained exceptions."""
         return "".join(traceback.format_exception(type(self), self, self.__traceback__))
-    
+
     def add_suggestion(self, suggestion: str) -> SocialMapperError:
         """Add a suggestion for resolving the error."""
         self.context.suggestions.append(suggestion)
         return self
-    
+
     def with_operation(self, operation: str) -> SocialMapperError:
         """Set the operation context."""
         self.context.operation = operation
         return self
-    
+
     def with_details(self, **details) -> SocialMapperError:
         """Add additional context details."""
         self.context.details.update(details)
@@ -161,9 +161,9 @@ class SocialMapperError(Exception):
 # Configuration Errors
 class ConfigurationError(SocialMapperError):
     """Raised when there are configuration issues."""
-    
+
     default_message = "Configuration error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.CONFIGURATION,
@@ -174,21 +174,21 @@ class ConfigurationError(SocialMapperError):
 
 class MissingAPIKeyError(ConfigurationError):
     """Raised when required API key is missing."""
-    
+
     default_message = "Required API key is missing"
-    
+
     def __init__(self, api_name: str = "Census", **kwargs):
         message = f"{api_name} API key is required but not provided"
         super().__init__(message, api_name=api_name, **kwargs)
         self.add_suggestion(f"Set the {api_name.upper()}_API_KEY environment variable")
-        self.add_suggestion(f"Or pass the API key directly to the configuration")
+        self.add_suggestion("Or pass the API key directly to the configuration")
 
 
 class InvalidConfigurationError(ConfigurationError):
     """Raised when configuration values are invalid."""
-    
+
     default_message = "Invalid configuration values"
-    
+
     def __init__(self, field: str, value: Any, reason: str, **kwargs):
         message = f"Invalid value for '{field}': {value}. {reason}"
         super().__init__(
@@ -203,9 +203,9 @@ class InvalidConfigurationError(ConfigurationError):
 # Validation Errors
 class ValidationError(SocialMapperError):
     """Raised when input validation fails."""
-    
+
     default_message = "Validation error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.VALIDATION,
@@ -216,9 +216,9 @@ class ValidationError(SocialMapperError):
 
 class InvalidLocationError(ValidationError):
     """Raised when location format is invalid."""
-    
+
     default_message = "Invalid location format"
-    
+
     def __init__(self, location: str, **kwargs):
         message = f"Invalid location format: '{location}'"
         super().__init__(message, location=location, **kwargs)
@@ -228,13 +228,13 @@ class InvalidLocationError(ValidationError):
 
 class InvalidCensusVariableError(ValidationError):
     """Raised when census variable is invalid."""
-    
+
     default_message = "Invalid census variable"
-    
+
     def __init__(self, variable: str, available: list[str] | None = None, **kwargs):
         message = f"Invalid census variable: '{variable}'"
         super().__init__(message, variable=variable, **kwargs)
-        
+
         if available:
             self.add_suggestion(f"Available variables: {', '.join(available[:5])}...")
         self.add_suggestion("Check the census variable documentation")
@@ -242,9 +242,9 @@ class InvalidCensusVariableError(ValidationError):
 
 class InvalidTravelTimeError(ValidationError):
     """Raised when travel time is out of range."""
-    
+
     default_message = "Invalid travel time"
-    
+
     def __init__(self, travel_time: int, min_time: int = 1, max_time: int = 60, **kwargs):
         message = f"Travel time {travel_time} is out of range [{min_time}, {max_time}]"
         super().__init__(
@@ -260,9 +260,9 @@ class InvalidTravelTimeError(ValidationError):
 # Data Processing Errors
 class DataProcessingError(SocialMapperError):
     """Raised during data processing operations."""
-    
+
     default_message = "Data processing error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.DATA_PROCESSING,
@@ -273,24 +273,24 @@ class DataProcessingError(SocialMapperError):
 
 class NoDataFoundError(DataProcessingError):
     """Raised when no data is found for the query."""
-    
+
     default_message = "No data found"
-    
+
     def __init__(self, data_type: str, location: str | None = None, **kwargs):
         message = f"No {data_type} found"
         if location:
             message += f" in {location}"
-        
+
         super().__init__(message, data_type=data_type, location=location, **kwargs)
-        self.add_suggestion(f"Try a different location or expand the search area")
+        self.add_suggestion("Try a different location or expand the search area")
         self.add_suggestion(f"Verify that {data_type} exist in this area")
 
 
 class InsufficientDataError(DataProcessingError):
     """Raised when there's not enough data for analysis."""
-    
+
     default_message = "Insufficient data for analysis"
-    
+
     def __init__(self, required: int, found: int, data_type: str = "points", **kwargs):
         message = f"Need at least {required} {data_type}, but only found {found}"
         super().__init__(
@@ -305,9 +305,9 @@ class InsufficientDataError(DataProcessingError):
 # External API Errors
 class ExternalAPIError(SocialMapperError):
     """Base class for external API errors."""
-    
+
     default_message = "External API error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.EXTERNAL_API,
@@ -318,12 +318,12 @@ class ExternalAPIError(SocialMapperError):
 
 class CensusAPIError(ExternalAPIError):
     """Raised when Census API calls fail."""
-    
+
     default_message = "Census API error"
-    
+
     def __init__(self, message: str | None = None, status_code: int | None = None, **kwargs):
         super().__init__(message, status_code=status_code, **kwargs)
-        
+
         if status_code == 401:
             self.add_suggestion("Check your Census API key")
         elif status_code == 429:
@@ -337,9 +337,9 @@ class CensusAPIError(ExternalAPIError):
 
 class OSMAPIError(ExternalAPIError):
     """Raised when OpenStreetMap/Overpass API calls fail."""
-    
+
     default_message = "OpenStreetMap API error"
-    
+
     def __init__(self, message: str | None = None, query: str | None = None, **kwargs):
         super().__init__(message, query=query, **kwargs)
         self.add_suggestion("Check your internet connection")
@@ -350,22 +350,22 @@ class OSMAPIError(ExternalAPIError):
 
 class GeocodingError(ExternalAPIError):
     """Raised when geocoding fails."""
-    
+
     default_message = "Geocoding error"
-    
+
     def __init__(self, location: str, service: str = "Nominatim", **kwargs):
         message = f"Failed to geocode location: '{location}'"
         super().__init__(message, location=location, service=service, **kwargs)
-        self.add_suggestion(f"Verify the location name is correct")
-        self.add_suggestion(f"Try a more specific location (e.g., add state/country)")
+        self.add_suggestion("Verify the location name is correct")
+        self.add_suggestion("Try a more specific location (e.g., add state/country)")
 
 
 # File System Errors
 class FileSystemError(SocialMapperError):
     """Raised for file system operations."""
-    
+
     default_message = "File system error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.FILE_SYSTEM,
@@ -376,9 +376,9 @@ class FileSystemError(SocialMapperError):
 
 class FileNotFoundError(FileSystemError):
     """Raised when required file is not found."""
-    
+
     default_message = "File not found"
-    
+
     def __init__(self, file_path: str, **kwargs):
         message = f"File not found: {file_path}"
         super().__init__(message, file_path=file_path, **kwargs)
@@ -388,9 +388,9 @@ class FileNotFoundError(FileSystemError):
 
 class PermissionError(FileSystemError):
     """Raised when file permissions prevent operation."""
-    
+
     default_message = "Permission denied"
-    
+
     def __init__(self, file_path: str, operation: str = "access", **kwargs):
         message = f"Permission denied to {operation} file: {file_path}"
         super().__init__(message, file_path=file_path, operation=operation, **kwargs)
@@ -401,9 +401,9 @@ class PermissionError(FileSystemError):
 # Analysis Errors
 class AnalysisError(SocialMapperError):
     """Raised during analysis operations."""
-    
+
     default_message = "Analysis error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.ANALYSIS,
@@ -414,16 +414,16 @@ class AnalysisError(SocialMapperError):
 
 class IsochroneGenerationError(AnalysisError):
     """Raised when isochrone generation fails."""
-    
+
     default_message = "Failed to generate isochrones"
-    
+
     def __init__(self, location: str | None = None, travel_mode: str | None = None, **kwargs):
         message = "Failed to generate travel time areas"
         if location:
             message += f" for {location}"
         if travel_mode:
             message += f" using {travel_mode} mode"
-            
+
         super().__init__(message, location=location, travel_mode=travel_mode, **kwargs)
         self.add_suggestion("Check that the location has a road network")
         self.add_suggestion("Try a different travel mode")
@@ -432,9 +432,9 @@ class IsochroneGenerationError(AnalysisError):
 
 class NetworkAnalysisError(AnalysisError):
     """Raised when network analysis fails."""
-    
+
     default_message = "Network analysis error"
-    
+
     def __init__(self, message: str | None = None, network_type: str | None = None, **kwargs):
         super().__init__(message, network_type=network_type, **kwargs)
         self.add_suggestion("The area may not have sufficient network data")
@@ -444,9 +444,9 @@ class NetworkAnalysisError(AnalysisError):
 # Visualization Errors
 class VisualizationError(SocialMapperError):
     """Raised during visualization operations."""
-    
+
     default_message = "Visualization error"
-    
+
     def __init__(self, message: str | None = None, **kwargs):
         context = ErrorContext(
             category=ErrorCategory.VISUALIZATION,
@@ -457,14 +457,14 @@ class VisualizationError(SocialMapperError):
 
 class MapGenerationError(VisualizationError):
     """Raised when map generation fails."""
-    
+
     default_message = "Failed to generate map"
-    
+
     def __init__(self, map_type: str | None = None, **kwargs):
         message = "Failed to generate map"
         if map_type:
             message += f" of type '{map_type}'"
-            
+
         super().__init__(message, map_type=map_type, **kwargs)
         self.add_suggestion("Check that all required data is available")
         self.add_suggestion("Verify the output directory is writable")
@@ -498,7 +498,7 @@ def format_error_for_user(error: Exception) -> str:
         return str(error)
     else:
         # Generic error formatting
-        return f"An unexpected error occurred: {type(error).__name__}: {str(error)}"
+        return f"An unexpected error occurred: {type(error).__name__}: {error!s}"
 
 
 def format_error_for_log(error: Exception) -> dict[str, Any]:

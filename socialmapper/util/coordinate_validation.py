@@ -49,7 +49,7 @@ class Coordinate(BaseModel):
         if not MIN_LONGITUDE <= v <= MAX_LONGITUDE:
             raise ValueError("Longitude must be between -180 and 180 degrees")
         return float(v)
-    
+
     def to_point(self):
         """Convert coordinate to Shapely Point."""
         from shapely.geometry import Point
@@ -230,7 +230,7 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
                 })
 
         except Exception as e:
-            error_msg = f"Unexpected error: {str(e)}"
+            error_msg = f"Unexpected error: {e!s}"
             logger.warning(f"POI {i}: {error_msg}")
             validation_errors.append(f"POI {i}: {error_msg}")
             invalid_coords.append({

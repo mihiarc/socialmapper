@@ -14,8 +14,6 @@ from ..constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..exceptions import (
     InvalidConfigurationError,
     InvalidTravelTimeError,
-    InvalidCensusVariableError,
-    ValidationError,
 )
 from ..isochrone import TravelMode
 

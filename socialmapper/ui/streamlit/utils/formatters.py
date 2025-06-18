@@ -1,9 +1,8 @@
 """Data formatting utilities for the Streamlit application."""
 
-from typing import Union
 
 
-def format_census_variable(var_code: str, value: Union[float, int]) -> str:
+def format_census_variable(var_code: str, value: float | int) -> str:
     """Format census variables with human-readable names.
     
     Args:
@@ -14,7 +13,7 @@ def format_census_variable(var_code: str, value: Union[float, int]) -> str:
         Formatted string with human-readable name and value
     """
     from socialmapper.census.utils import clean_census_value, format_monetary_value
-    
+
     variable_names = {
         "B01003_001E": "Total Population",
         "B19013_001E": "Median Household Income",
@@ -23,18 +22,18 @@ def format_census_variable(var_code: str, value: Union[float, int]) -> str:
         "B08301_021E": "Public Transit Users",
         "B17001_002E": "Population in Poverty"
     }
-    
+
     # Get human-readable name or use code as fallback
     name = variable_names.get(var_code, var_code)
-    
+
     # Clean the value first
     cleaned_value = clean_census_value(value, var_code)
     if cleaned_value is None:
         return f"{name}: N/A"
-    
+
     # Format based on variable type
     name_lower = name.lower()
-    
+
     if "income" in name_lower or "value" in name_lower:
         # Use the monetary formatter which handles all edge cases
         formatted_value = format_monetary_value(value, var_code)
@@ -91,3 +90,31 @@ def format_percentage(value: float, decimals: int = 1) -> str:
         Formatted percentage string
     """
     return f"{value * 100:.{decimals}f}%"
+
+
+def format_number(value: int | float, decimals: int = 0) -> str:
+    """Format a number with thousands separators.
+    
+    Args:
+        value: Number to format
+        decimals: Number of decimal places
+        
+    Returns:
+        Formatted number string
+    """
+    if isinstance(value, int) or decimals == 0:
+        return f"{value:,.0f}"
+    else:
+        return f"{value:,.{decimals}f}"
+
+
+def format_currency(value: int | float) -> str:
+    """Format a value as currency.
+    
+    Args:
+        value: Monetary value
+        
+    Returns:
+        Formatted currency string
+    """
+    return f"${value:,.0f}"

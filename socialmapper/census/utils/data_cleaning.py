@@ -1,7 +1,5 @@
 """Utility functions for cleaning census data values."""
 
-from typing import Optional, Union
-
 
 # Census placeholder values that indicate missing or suppressed data
 CENSUS_PLACEHOLDER_VALUES = {
@@ -34,11 +32,10 @@ MONETARY_BOUNDS = {
 
 
 def is_valid_census_value(
-    value: Optional[Union[int, float]], 
-    variable_code: Optional[str] = None
+    value: int | float | None,
+    variable_code: str | None = None
 ) -> bool:
-    """
-    Check if a census value is valid (not a placeholder).
+    """Check if a census value is valid (not a placeholder).
     
     Args:
         value: The census data value
@@ -49,25 +46,25 @@ def is_valid_census_value(
     """
     if value is None:
         return False
-        
+
     # Check for known placeholder values
     if value in CENSUS_PLACEHOLDER_VALUES:
         return False
-        
+
     # Check for any large negative value
     if value < -100000:
         return False
-        
+
     # If we have a variable code, apply variable-specific rules
     if variable_code:
         # Check if it's a monetary variable
         prefix = variable_code[:3] if len(variable_code) >= 3 else None
-        
+
         if prefix in MONETARY_VARIABLE_PREFIXES:
             # For monetary variables, any negative is invalid
             if value < 0:
                 return False
-                
+
             # Check reasonable bounds
             if variable_code.startswith('B25077'):  # Home value specifically
                 min_val, max_val = MONETARY_BOUNDS['B25077']
@@ -75,19 +72,18 @@ def is_valid_census_value(
                 min_val, max_val = MONETARY_BOUNDS[prefix]
             else:
                 min_val, max_val = 0, 10000000  # Default max $10M
-                
+
             return min_val <= value <= max_val
-    
+
     return True
 
 
 def clean_census_value(
-    value: Optional[Union[int, float]], 
-    variable_code: Optional[str] = None,
-    default: Optional[Union[int, float]] = None
-) -> Optional[Union[int, float]]:
-    """
-    Clean a census value by replacing invalid values with None or a default.
+    value: int | float | None,
+    variable_code: str | None = None,
+    default: int | float | None = None
+) -> int | float | None:
+    """Clean a census value by replacing invalid values with None or a default.
     
     Args:
         value: The census data value
@@ -103,11 +99,10 @@ def clean_census_value(
 
 
 def clean_monetary_value(
-    value: Optional[Union[int, float]], 
-    variable_code: Optional[str] = None
-) -> Optional[float]:
-    """
-    Clean a monetary census value (income, home value, etc.).
+    value: int | float | None,
+    variable_code: str | None = None
+) -> float | None:
+    """Clean a monetary census value (income, home value, etc.).
     
     Args:
         value: The monetary value
@@ -117,7 +112,7 @@ def clean_monetary_value(
         Cleaned monetary value or None if invalid
     """
     cleaned = clean_census_value(value, variable_code)
-    
+
     # Ensure it's a float for consistency
     if cleaned is not None:
         return float(cleaned)
@@ -125,15 +120,14 @@ def clean_monetary_value(
 
 
 def format_monetary_value(
-    value: Optional[Union[int, float]], 
-    variable_code: Optional[str] = None,
+    value: int | float | None,
+    variable_code: str | None = None,
     prefix: str = "$",
     suffix: str = "",
     decimal_places: int = 0,
     not_available_text: str = "N/A"
 ) -> str:
-    """
-    Format a monetary value for display, handling invalid values gracefully.
+    """Format a monetary value for display, handling invalid values gracefully.
     
     Args:
         value: The monetary value
@@ -147,13 +141,13 @@ def format_monetary_value(
         Formatted string
     """
     cleaned = clean_monetary_value(value, variable_code)
-    
+
     if cleaned is None:
         return not_available_text
-        
+
     if decimal_places == 0:
         formatted = f"{int(cleaned):,}"
     else:
         formatted = f"{cleaned:,.{decimal_places}f}"
-        
+
     return f"{prefix}{formatted}{suffix}"

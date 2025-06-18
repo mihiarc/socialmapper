@@ -11,17 +11,14 @@ from typing import Any
 from urllib.error import URLError
 
 from ..exceptions import (
-    DataProcessingError,
     FileNotFoundError as SocialMapperFileNotFoundError,
+)
+from ..exceptions import (
     FileSystemError,
-    GeocodingError,
-    InvalidLocationError,
     NoDataFoundError,
-    OSMAPIError,
-    ValidationError,
 )
 from ..util import PathSecurityError, sanitize_path
-from ..util.error_handling import error_context, validate_type, with_retries
+from ..util.error_handling import validate_type
 
 
 def parse_custom_coordinates(
@@ -40,7 +37,7 @@ def parse_custom_coordinates(
     """
     # Validate inputs
     validate_type(file_path, str, "file_path")
-    
+
     # Sanitize the file path
     try:
         safe_file_path = sanitize_path(file_path, allow_absolute=True)
@@ -365,7 +362,7 @@ def extract_poi_data(
             raise NoDataFoundError(
                 "POIs",
                 location=geocode_area
-            ).add_suggestion(f"Try a different POI type or expand the search area")\
+            ).add_suggestion("Try a different POI type or expand the search area")\
             .add_suggestion(f"Verify that {poi_type}:{poi_name} exists in this area")
 
     return poi_data, base_filename, state_abbreviations, sampled_pois

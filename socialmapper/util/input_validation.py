@@ -474,15 +474,15 @@ def sanitize_for_api(value: str) -> str:
     """
     if not isinstance(value, str):
         value = str(value)
-    
+
     # Remove control characters and clean whitespace
     value = "".join(char for char in value if ord(char) >= MIN_ASCII_PRINTABLE or char in "\n\t ")
     value = value.strip()
-    
+
     # Limit length for API use
     if len(value) > 255:
         value = value[:255]
-        
+
     return value
 
 
@@ -500,12 +500,12 @@ def validate_state_name(state: str) -> str:
     """
     if not isinstance(state, str):
         raise InputValidationError("State must be a string")
-        
+
     state = state.strip()
-    
+
     if not state:
         raise InputValidationError("State cannot be empty")
-        
+
     # List of valid state abbreviations
     valid_abbrs = {
         "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
@@ -515,11 +515,11 @@ def validate_state_name(state: str) -> str:
         "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
         "WI", "WY"
     }
-    
+
     # Check if it's a valid abbreviation
     if state.upper() in valid_abbrs:
         return state.upper()
-        
+
     # List of valid state names (lowercase for comparison)
     valid_names = {
         "alabama", "alaska", "arizona", "arkansas", "california",
@@ -534,9 +534,9 @@ def validate_state_name(state: str) -> str:
         "vermont", "virginia", "washington", "west virginia", "wisconsin",
         "wyoming"
     }
-    
+
     # Check if it's a valid full name
     if state.lower() in valid_names:
         return state.title()
-        
+
     raise InputValidationError(f"Invalid state: {state}")

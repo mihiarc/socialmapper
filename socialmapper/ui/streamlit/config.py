@@ -1,6 +1,5 @@
 """Configuration settings for the Streamlit application."""
 
-from typing import Dict, List, Any
 
 
 # Page configuration
@@ -15,7 +14,7 @@ PAGE_CONFIG = {
 PAGES = [
     "Getting Started",
     "Custom POIs",
-    "Travel Modes", 
+    "Travel Modes",
     "ZCTA Analysis",
     "Address Geocoding",
     "Batch Analysis",

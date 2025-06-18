@@ -302,7 +302,7 @@ def _create_demographic_map(
 ) -> Path:
     """Create a demographic choropleth map."""
     from ..census.utils import clean_census_value
-    
+
     # Clean the data before creating the map
     gdf = gdf.copy()
     if variable in gdf.columns:
@@ -310,16 +310,16 @@ def _create_demographic_map(
         gdf[variable] = gdf[variable].apply(
             lambda x: clean_census_value(x, variable)
         )
-        
+
         # Drop rows with NaN values for this variable
         valid_data = gdf[gdf[variable].notna()]
-        
+
         if valid_data.empty:
             print(f"Warning: No valid data for variable {variable} after cleaning")
             return None
-            
+
         gdf = valid_data
-    
+
     # Get human-readable title
     title = _get_variable_title(variable, geographic_level, travel_time)
 

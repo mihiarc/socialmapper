@@ -347,20 +347,17 @@ class ZctaService:
                     if variable in row and row[variable] is not None:
                         try:
                             raw_value = row[variable]
-                            
+
                             # Handle census placeholder values
                             if raw_value in ["-999999999", "-888888888", "-666666666", "-555555555", "-222222222", "-111111111", "null", ""]:
                                 value = None
                             else:
                                 value = float(raw_value)
-                                
+
                                 # For income and financial variables, negative values are placeholders
-                                if variable.startswith(('B19', 'B25')) and value < 0:
+                                if (variable.startswith(('B19', 'B25')) and value < 0) or value < -100000:
                                     value = None
-                                # For most other variables, large negative values are placeholders
-                                elif value < -100000:
-                                    value = None
-                                    
+
                         except (ValueError, TypeError):
                             value = None
 
