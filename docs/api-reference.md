@@ -307,10 +307,37 @@ def with_geographic_level(level: Union[str, GeographicLevel]) -> Self
 
 ##### enable_isochrone_export()
 
-Enable saving of isochrone geometries.
+Enable saving of isochrone geometries to GeoParquet files.
 
 ```python
 def enable_isochrone_export() -> Self
+```
+
+When enabled, isochrone polygons are exported to the `output/isochrones/` directory as GeoParquet files. The files are named using the pattern: `{base_filename}_{travel_time}min_isochrones.geoparquet`.
+
+**Example:**
+```python
+config = (SocialMapperBuilder()
+    .with_location("Portland", "OR")
+    .with_osm_pois("amenity", "library")
+    .with_travel_time(15)
+    .enable_isochrone_export()  # Exports isochrones to GeoParquet
+    .build()
+)
+
+# After analysis, the isochrone file will be available at:
+# output/isochrones/portland_amenity_library_15min_isochrones.geoparquet
+```
+
+**Loading exported isochrones:**
+```python
+import geopandas as gpd
+
+# Load the exported isochrone
+isochrones = gpd.read_parquet("output/isochrones/portland_amenity_library_15min_isochrones.geoparquet")
+
+# View the geometry
+isochrones.plot()
 ```
 
 ##### disable_csv_export()
@@ -400,6 +427,30 @@ class AnalysisResult:
     def is_complete(self) -> bool:
         """Check if analysis completed successfully."""
         return self.poi_count > 0 and self.isochrone_count > 0
+```
+
+**Files Generated:**
+
+The `files_generated` dictionary may contain:
+- `census_data`: Path to the CSV file with census demographics
+- `map`: Path to the generated map image (if maps enabled)
+- `isochrone_data`: Path to the GeoParquet file with isochrone geometries (if isochrone export enabled)
+
+**Example:**
+```python
+if result.is_ok():
+    analysis = result.unwrap()
+    
+    # Access generated files
+    if 'census_data' in analysis.files_generated:
+        print(f"Census data: {analysis.files_generated['census_data']}")
+    
+    if 'isochrone_data' in analysis.files_generated:
+        print(f"Isochrone file: {analysis.files_generated['isochrone_data']}")
+        
+        # Load and use the isochrone
+        import geopandas as gpd
+        isochrones = gpd.read_parquet(analysis.files_generated['isochrone_data'])
 ```
 
 ### Error
@@ -813,6 +864,50 @@ result = analyze_custom_pois(
 if result.is_ok():
     analysis = result.unwrap()
     print(f"Analyzed {analysis.poi_count} custom locations")
+```
+
+### Isochrone Export and Visualization
+
+```python
+from socialmapper import SocialMapperClient, SocialMapperBuilder
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Configure analysis with isochrone export
+with SocialMapperClient() as client:
+    config = (SocialMapperBuilder()
+        .with_location("Portland", "OR")
+        .with_osm_pois("amenity", "library")
+        .with_travel_time(15)
+        .with_travel_mode("walk")
+        .with_census_variables("total_population", "median_income")
+        .enable_isochrone_export()  # Enable isochrone export
+        .build()
+    )
+    
+    result = client.run_analysis(config)
+
+# Process results
+if result.is_ok():
+    analysis = result.unwrap()
+    print(f"Found {analysis.poi_count} libraries")
+    print(f"Population within 15-min walk: {analysis.metadata.get('total_population_sum', 'N/A')}")
+    
+    # Load and visualize the exported isochrones
+    if 'isochrone_data' in analysis.files_generated:
+        isochrones = gpd.read_parquet(analysis.files_generated['isochrone_data'])
+        
+        # Create a visualization
+        fig, ax = plt.subplots(figsize=(10, 10))
+        isochrones.plot(ax=ax, alpha=0.5, color='blue', edgecolor='black')
+        ax.set_title("15-minute walking isochrones from libraries in Portland, OR")
+        plt.show()
+        
+        # Export to other formats for GIS software
+        isochrones.to_file("portland_library_isochrones.geojson", driver="GeoJSON")
+        print("Isochrones exported to GeoJSON for use in GIS software")
+else:
+    print(f"Analysis failed: {result.unwrap_err()}")
 ```
 
 ## Version Information

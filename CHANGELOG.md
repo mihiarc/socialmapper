@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-06-19
+
+### 🐛 Bug Fixes
+
+#### **Fixed Isochrone Export Functionality**
+- **Fixed missing implementation** of `enable_isochrone_export()` in the pipeline
+- **Added GeoParquet export** for isochrone geometries when enabled
+- **Updated API client** to properly track exported isochrone files
+- **Files are now saved** to `output/isochrones/` directory as GeoParquet format
+
+### 📚 Documentation Updates
+
+#### **Enhanced API Documentation**
+- **Updated `enable_isochrone_export()` documentation** with detailed usage examples
+- **Added isochrone file path** to `AnalysisResult` documentation
+- **New examples** showing how to load and visualize exported isochrones
+- **Updated exporting guide** with modern API examples and GeoParquet format details
+
+### 🔧 Technical Details
+
+- Isochrones are exported using the naming pattern: `{base_filename}_{travel_time}min_isochrones.geoparquet`
+- GeoParquet format with snappy compression for efficient storage
+- Files can be loaded with GeoPandas and converted to other formats (Shapefile, GeoJSON)
+- Exported isochrone files are included in `analysis.files_generated['isochrone_data']`
+
 ## [0.6.0] - 2025-06-18
 
 ### 🚀 Major Features

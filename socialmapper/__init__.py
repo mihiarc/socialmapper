@@ -28,7 +28,7 @@ try:
     __version__ = version("socialmapper")
 except PackageNotFoundError:
     # Package is not installed, use fallback
-    __version__ = "0.5.4"  # fallback version from pyproject.toml
+    __version__ = "0.6.1"  # fallback version from pyproject.toml
 
 # Configure warnings for clean user experience
 # This automatically handles known deprecation warnings from geospatial libraries

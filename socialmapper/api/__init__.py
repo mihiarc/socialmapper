@@ -30,7 +30,7 @@ Example:
 """
 
 # Version information
-__version__ = "0.5.4"
+__version__ = "0.6.1"
 
 # Builder pattern for configuration
 # Type exports for better IDE support

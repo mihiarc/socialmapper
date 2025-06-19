@@ -20,7 +20,7 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-## What's New in v0.6.0 🎉
+## What's New in v0.6.1 🎉
 
 - **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
 - **🏗️ Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis

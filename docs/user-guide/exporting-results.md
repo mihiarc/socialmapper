@@ -79,6 +79,31 @@ socialmapper --custom-coords locations.csv --travel-time 15 \
 
 Export the actual isochrone geometries for use in GIS software.
 
+### Modern API (Recommended)
+
+```python
+from socialmapper import SocialMapperClient, SocialMapperBuilder
+
+with SocialMapperClient() as client:
+    config = (SocialMapperBuilder()
+        .with_custom_pois("locations.csv")
+        .with_travel_time(15)
+        .with_travel_mode("drive")
+        .enable_isochrone_export()  # Enable isochrone export
+        .build()
+    )
+    
+    result = client.run_analysis(config)
+    
+    if result.is_ok():
+        analysis = result.unwrap()
+        # Access the isochrone file path
+        isochrone_file = analysis.files_generated.get('isochrone_data')
+        print(f"Isochrone saved to: {isochrone_file}")
+```
+
+### Legacy API
+
 ```python
 results = run_socialmapper(
     custom_coords_path="locations.csv",
@@ -86,6 +111,39 @@ results = run_socialmapper(
     export_isochrones=True
 )
 # Creates output/isochrones/*.parquet files
+```
+
+### Output Format
+
+Isochrones are exported as GeoParquet files with the following naming convention:
+- Modern API: `{base_filename}_{travel_time}min_isochrones.geoparquet`
+- Legacy API: `isochrone{time}_{location}.parquet`
+
+Example: `portland_amenity_library_15min_isochrones.geoparquet`
+
+### Working with Exported Isochrones
+
+```python
+import geopandas as gpd
+
+# Load the exported isochrone
+isochrones = gpd.read_parquet("output/isochrones/portland_amenity_library_15min_isochrones.geoparquet")
+
+# View the data structure
+print(isochrones.head())
+print(f"CRS: {isochrones.crs}")
+print(f"Number of isochrones: {len(isochrones)}")
+
+# Plot the isochrones
+isochrones.plot(alpha=0.5, edgecolor='black')
+
+# Calculate total area covered
+total_area_km2 = isochrones.to_crs('EPSG:3857').area.sum() / 1e6
+print(f"Total area covered: {total_area_km2:.2f} km²")
+
+# Export to other formats
+isochrones.to_file("isochrones.shp")  # Shapefile
+isochrones.to_file("isochrones.geojson", driver="GeoJSON")  # GeoJSON
 ```
 
 ## Custom Output Directory
@@ -125,15 +183,19 @@ print(f"Total population: {total_pop:,}")
 
 ### Use in GIS Software
 
-The isochrone parquet files can be loaded in:
-- QGIS (with parquet plugin)
+The isochrone GeoParquet files can be loaded in:
+- QGIS (with GeoParquet support)
 - ArcGIS Pro
 - Python with GeoPandas
+- Any GIS software that supports GeoParquet format
 
 ```python
 import geopandas as gpd
 
-# Load isochrone
+# Load isochrone from modern API
+isochrone = gpd.read_parquet("output/isochrones/portland_amenity_library_15min_isochrones.geoparquet")
+
+# Or from legacy API
 isochrone = gpd.read_parquet("output/isochrones/isochrone15_location.parquet")
 ```
 

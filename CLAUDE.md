@@ -79,7 +79,13 @@ The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
 - **OpenStreetMap**: Uses Overpass API and OSMnx for POI queries
 - **Maps**: Matplotlib for static map generation
 
-### Recent Changes (v0.6.0)
+### Recent Changes (v0.6.1)
+
+- Fixed isochrone export functionality (`enable_isochrone_export()`)
+- Isochrones now properly export to GeoParquet format
+- Enhanced API documentation with isochrone export examples
+
+### Previous Changes (v0.6.0)
 
 - Streamlined codebase by removing experimental features
 - Enhanced core ETL pipeline for better maintainability
