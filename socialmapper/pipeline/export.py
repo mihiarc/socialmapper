@@ -59,10 +59,28 @@ def export_pipeline_outputs(
         print(f"Exported census data to CSV: {csv_output}")
         export_count += 1
 
+    # Export isochrones to GeoParquet (optional)
+    if "isochrones" in directories and isochrone_gdf is not None and not isochrone_gdf.empty:
+        print("\n=== Exporting Isochrones to GeoParquet ===")
+        
+        isochrone_file = os.path.join(
+            directories["isochrones"], f"{base_filename}_{travel_time}min_isochrones.geoparquet"
+        )
+        
+        try:
+            # Save isochrone GeoDataFrame to GeoParquet format
+            isochrone_gdf.to_parquet(isochrone_file, compression="snappy", index=False)
+            result_files["isochrone_data"] = isochrone_file
+            print(f"Exported isochrones to GeoParquet: {isochrone_file}")
+            export_count += 1
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to export isochrones: {e}")
+
     print("\n=== Processing Complete ===")
     print("✅ Census data processed successfully!")
-    print(
-        "📄 CSV export is the primary output - all intermediate files processed in memory for efficiency"
-    )
+    if export_count > 0:
+        print(
+            f"📄 Exported {export_count} file(s) - all intermediate data processed in memory for efficiency"
+        )
 
     return result_files

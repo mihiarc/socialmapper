@@ -477,7 +477,9 @@ class SocialMapperClient:
                     files["maps_directory"] = Path(maps_info["output_directory"])
 
         # Extract isochrone file
-        if "isochrone_file" in result_data:
+        if "isochrone_data" in result_data:
+            files["isochrones"] = Path(result_data["isochrone_data"])
+        elif "isochrone_file" in result_data:
             files["isochrones"] = Path(result_data["isochrone_file"])
 
         return files

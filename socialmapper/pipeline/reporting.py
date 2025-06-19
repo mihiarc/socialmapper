@@ -63,6 +63,10 @@ def generate_final_report(
     if "csv_data" in result_files:
         result["csv_data"] = result_files["csv_data"]
 
+    # Add isochrone export path if applicable
+    if "isochrone_data" in result_files:
+        result["isochrone_data"] = result_files["isochrone_data"]
+
     # Add maps if applicable
     result["maps"] = result_files.get("maps", [])
 
