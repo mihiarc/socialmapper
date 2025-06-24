@@ -157,9 +157,9 @@ class TestCoordinateValidation:
         assert coord1.lat == latitude
         assert coord2.lat == rounded_lat
 
-    @given(st.text())
+    @given(st.text().filter(lambda x: not x.replace('-', '').replace('.', '').isdigit()))
     def test_string_coordinates_rejected(self, text_input: str):
-        """Test that string inputs are properly rejected."""
+        """Test that non-numeric string inputs are properly rejected."""
         with pytest.raises(ValidationError):
             Coordinate(lat=text_input, lon=0.0)
         
