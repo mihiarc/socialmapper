@@ -13,8 +13,6 @@
 # Folders
 /data/
 **/html/
-/tests/
-**/tests/
 /output/*
 
 # Exception: Include the packaged neighbor data
@@ -101,6 +99,10 @@ scripts/debug/
 
 # ty type checker cache
 .ty_cache/
+
+# Testing artifacts
+.hypothesis/
+.mutmut-cache/
 .env
 test_testpypi/test_env/pyvenv.cfg
 test_testpypi/test_env/bin/activate

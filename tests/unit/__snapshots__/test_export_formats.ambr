@@ -1,0 +1,17 @@
+# serializer version: 1
+# name: TestExportFormatSnapshots.test_configuration_serialization
+  dict({
+    'api_timeout': 30,
+    'cache_enabled': True,
+    'census_variables': list([
+      'B01003_001E',
+      'B19013_001E',
+      'B25003_002E',
+      'B25003_003E',
+    ]),
+    'geographic_level': 'block_group',
+    'max_retries': 3,
+    'travel_mode': 'walk',
+    'travel_time': 15,
+  })
+# ---
