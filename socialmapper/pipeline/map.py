@@ -10,6 +10,8 @@ from typing import Any
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
+from ..io import IOManager
+
 from ..constants import (
     CITY_SCALE_DISTANCE_M,
     METRO_SCALE_DISTANCE_M,
@@ -35,6 +37,8 @@ def create_pipeline_maps(
     create_accessibility_map: bool = True,
     map_format: str = "png",
     dpi: int = 300,
+    travel_mode: str | None = None,
+    io_manager: IOManager | None = None,
 ) -> dict[str, Path]:
     """Create comprehensive maps from pipeline outputs.
 
@@ -52,6 +56,8 @@ def create_pipeline_maps(
         create_accessibility_map: Whether to create accessibility map
         map_format: Output format (png, pdf, svg)
         dpi: DPI for raster formats
+        travel_mode: Travel mode (walk, bike, drive)
+        io_manager: Optional IOManager for centralized file tracking
 
     Returns:
         Dictionary mapping map type to output file path
@@ -106,6 +112,8 @@ def create_pipeline_maps(
                             geographic_level,
                             map_format,
                             dpi,
+                            travel_mode,
+                            io_manager,
                         )
                         if map_path:  # Only count if map was actually created
                             output_paths[f"demographic_{variable}"] = map_path
@@ -132,6 +140,8 @@ def create_pipeline_maps(
                         geographic_level,
                         map_format,
                         dpi,
+                        travel_mode,
+                        io_manager,
                     )
                     output_paths["distance"] = map_path
                     map_count += 1
@@ -157,6 +167,8 @@ def create_pipeline_maps(
                         geographic_level,
                         map_format,
                         dpi,
+                        travel_mode,
+                        io_manager,
                     )
                     output_paths["accessibility"] = map_path
                     map_count += 1
@@ -299,6 +311,8 @@ def _create_demographic_map(
     geographic_level: str,
     map_format: str,
     dpi: int,
+    travel_mode: str | None = None,
+    io_manager: IOManager | None = None,
 ) -> Path:
     """Create a demographic choropleth map."""
     from ..census.utils import clean_census_value
@@ -380,14 +394,34 @@ def _create_demographic_map(
     )
 
     # Save map
-    safe_variable_name = variable.replace("/", "_").replace(" ", "_").lower()
-    filename = f"{base_filename}_{travel_time}min_{safe_variable_name}_map.{map_format}"
-    output_file = output_path / filename
+    if io_manager:
+        # Use IOManager for centralized file tracking
+        safe_variable_name = variable.replace("/", "_").replace(" ", "_").lower()
+        
+        # Save the figure using IOManager
+        output_file = io_manager.save_file(
+            content=fig,
+            category="maps",
+            file_type="map",
+            base_name=base_filename,
+            travel_mode=travel_mode,
+            travel_time=travel_time,
+            suffix=f"{safe_variable_name}_demographic",
+            metadata={"variable": variable, "geographic_level": geographic_level, "dpi": dpi},
+        )
+        plt.close(fig)
+        return output_file.path
+    else:
+        # Legacy path handling
+        safe_variable_name = variable.replace("/", "_").replace(" ", "_").lower()
+        mode_suffix = f"_{travel_mode}" if travel_mode else ""
+        filename = f"{base_filename}_{travel_time}min{mode_suffix}_{safe_variable_name}_map.{map_format}"
+        output_file = output_path / filename
 
-    mapper.save(output_file, format=map_format, dpi=dpi)
-    plt.close(fig)
+        mapper.save(output_file, format=map_format, dpi=dpi)
+        plt.close(fig)
 
-    return output_file
+        return output_file
 
 
 def _create_distance_map(
@@ -400,6 +434,8 @@ def _create_distance_map(
     geographic_level: str,
     map_format: str,
     dpi: int,
+    travel_mode: str | None = None,
+    io_manager: IOManager | None = None,
 ) -> Path:
     """Create a distance-based choropleth map."""
     # Determine units from column name
@@ -462,13 +498,30 @@ def _create_distance_map(
     fig, ax = mapper.create_map(gdf, distance_column, map_type=MapType.DISTANCE, poi_gdf=poi_gdf)
 
     # Save map
-    filename = f"{base_filename}_{travel_time}min_distance_map.{map_format}"
-    output_file = output_path / filename
+    if io_manager:
+        # Use IOManager for centralized file tracking
+        output_file = io_manager.save_file(
+            content=fig,
+            category="maps",
+            file_type="map",
+            base_name=base_filename,
+            travel_mode=travel_mode,
+            travel_time=travel_time,
+            suffix="distance",
+            metadata={"distance_column": distance_column, "geographic_level": geographic_level, "dpi": dpi},
+        )
+        plt.close(fig)
+        return output_file.path
+    else:
+        # Legacy path handling
+        mode_suffix = f"_{travel_mode}" if travel_mode else ""
+        filename = f"{base_filename}_{travel_time}min{mode_suffix}_distance_map.{map_format}"
+        output_file = output_path / filename
 
-    mapper.save(output_file, format=map_format, dpi=dpi)
-    plt.close(fig)
+        mapper.save(output_file, format=map_format, dpi=dpi)
+        plt.close(fig)
 
-    return output_file
+        return output_file
 
 
 def _create_accessibility_map(
@@ -482,6 +535,8 @@ def _create_accessibility_map(
     geographic_level: str,
     map_format: str,
     dpi: int,
+    travel_mode: str | None = None,
+    io_manager: IOManager | None = None,
 ) -> Path:
     """Create an accessibility-focused map with isochrones."""
     variable_name = _get_legend_title(variable)
@@ -540,13 +595,30 @@ def _create_accessibility_map(
     )
 
     # Save map
-    filename = f"{base_filename}_{travel_time}min_accessibility_map.{map_format}"
-    output_file = output_path / filename
+    if io_manager:
+        # Use IOManager for centralized file tracking
+        output_file = io_manager.save_file(
+            content=fig,
+            category="maps",
+            file_type="map",
+            base_name=base_filename,
+            travel_mode=travel_mode,
+            travel_time=travel_time,
+            suffix="accessibility",
+            metadata={"variable": variable, "geographic_level": geographic_level, "dpi": dpi},
+        )
+        plt.close(fig)
+        return output_file.path
+    else:
+        # Legacy path handling
+        mode_suffix = f"_{travel_mode}" if travel_mode else ""
+        filename = f"{base_filename}_{travel_time}min{mode_suffix}_accessibility_map.{map_format}"
+        output_file = output_path / filename
 
-    mapper.save(output_file, format=map_format, dpi=dpi)
-    plt.close(fig)
+        mapper.save(output_file, format=map_format, dpi=dpi)
+        plt.close(fig)
 
-    return output_file
+        return output_file
 
 
 def _get_variable_title(variable: str, geographic_level: str, travel_time: int) -> str:
@@ -642,6 +714,8 @@ def generate_pipeline_maps(
     travel_time: int,
     census_codes: list[str],
     geographic_level: str = "block-group",
+    travel_mode: str | None = None,
+    io_manager: IOManager | None = None,
 ) -> dict[str, Any]:
     """Generate maps for pipeline integration.
 
@@ -656,6 +730,8 @@ def generate_pipeline_maps(
         travel_time: Travel time in minutes
         census_codes: List of census variable codes
         geographic_level: Geographic unit type
+        travel_mode: Travel mode (walk, bike, drive)
+        io_manager: Optional IOManager for centralized file tracking
 
     Returns:
         Dictionary of result information
@@ -687,6 +763,8 @@ def generate_pipeline_maps(
             create_accessibility_map=isochrone_gdf is not None,
             map_format="png",
             dpi=300,
+            travel_mode=travel_mode,
+            io_manager=io_manager,
         )
 
         return {

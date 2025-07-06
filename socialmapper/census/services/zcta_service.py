@@ -63,13 +63,64 @@ class ZctaService:
 
         # Map state FIPS to common ZCTA prefixes (postal code patterns)
         state_zcta_prefixes = {
-            "37": ["27", "28"],  # North Carolina: 27xxx, 28xxx
-            "45": ["29"],  # South Carolina: 29xxx
+            # Eastern states
+            "09": ["06"],  # Connecticut: 06xxx
+            "10": ["19"],  # Delaware: 19xxx
+            "11": ["20"],  # District of Columbia: 20xxx
+            "12": ["32", "33", "34"],  # Florida: 32xxx-34xxx
             "13": ["30", "31"],  # Georgia: 30xxx, 31xxx
-            "51": ["22", "23", "24"],  # Virginia: 22xxx, 23xxx, 24xxx
-            "06": ["90", "91", "92", "93", "94", "95", "96"],  # California
-            "36": ["10", "11", "12", "13", "14"],  # New York
-            "48": ["75", "76", "77", "78", "79"],  # Texas
+            "23": ["03", "04"],  # Maine: 03xxx-04xxx
+            "24": ["20", "21"],  # Maryland: 20xxx-21xxx
+            "25": ["01", "02"],  # Massachusetts: 01xxx-02xxx
+            "33": ["03"],  # New Hampshire: 03xxx
+            "34": ["07", "08"],  # New Jersey: 07xxx-08xxx
+            "36": ["10", "11", "12", "13", "14"],  # New York: 10xxx-14xxx
+            "37": ["27", "28"],  # North Carolina: 27xxx, 28xxx
+            "42": ["15", "16", "17", "18", "19"],  # Pennsylvania: 15xxx-19xxx
+            "44": ["02"],  # Rhode Island: 02xxx
+            "45": ["29"],  # South Carolina: 29xxx
+            "50": ["05"],  # Vermont: 05xxx
+            "51": ["20", "22", "23", "24"],  # Virginia: 20xxx, 22xxx-24xxx
+            "54": ["24", "25", "26"],  # West Virginia: 24xxx-26xxx
+            
+            # Midwest states
+            "17": ["60", "61", "62"],  # Illinois: 60xxx-62xxx
+            "18": ["46", "47"],  # Indiana: 46xxx-47xxx
+            "19": ["50", "51", "52"],  # Iowa: 50xxx-52xxx
+            "20": ["66", "67"],  # Kansas: 66xxx-67xxx
+            "21": ["40", "41", "42"],  # Kentucky: 40xxx-42xxx
+            "26": ["48", "49"],  # Michigan: 48xxx-49xxx
+            "27": ["55", "56"],  # Minnesota: 55xxx-56xxx
+            "29": ["63", "64", "65"],  # Missouri: 63xxx-65xxx
+            "38": ["58"],  # North Dakota: 58xxx
+            "39": ["43", "44", "45"],  # Ohio: 43xxx-45xxx
+            "46": ["57"],  # South Dakota: 57xxx
+            "55": ["53", "54"],  # Wisconsin: 53xxx-54xxx
+            
+            # Southern states
+            "01": ["35", "36"],  # Alabama: 35xxx-36xxx
+            "05": ["71", "72"],  # Arkansas: 71xxx-72xxx
+            "22": ["70", "71"],  # Louisiana: 70xxx-71xxx
+            "28": ["38", "39"],  # Mississippi: 38xxx-39xxx
+            "40": ["73", "74"],  # Oklahoma: 73xxx-74xxx
+            "47": ["37", "38"],  # Tennessee: 37xxx-38xxx
+            "48": ["75", "76", "77", "78", "79"],  # Texas: 75xxx-79xxx
+            
+            # Western states
+            "02": ["99"],  # Alaska: 99xxx
+            "04": ["85", "86"],  # Arizona: 85xxx-86xxx
+            "06": ["90", "91", "92", "93", "94", "95", "96"],  # California: 90xxx-96xxx
+            "08": ["80", "81"],  # Colorado: 80xxx-81xxx
+            "15": ["96"],  # Hawaii: 96xxx
+            "16": ["83"],  # Idaho: 83xxx
+            "30": ["59"],  # Montana: 59xxx
+            "31": ["68", "69"],  # Nebraska: 68xxx-69xxx
+            "32": ["88", "89"],  # Nevada: 88xxx-89xxx
+            "35": ["87", "88"],  # New Mexico: 87xxx-88xxx
+            "41": ["97"],  # Oregon: 97xxx
+            "49": ["84"],  # Utah: 84xxx
+            "53": ["98", "99"],  # Washington: 98xxx-99xxx
+            "56": ["82", "83"],  # Wyoming: 82xxx-83xxx
         }
 
         # Get ZCTA prefixes for this state

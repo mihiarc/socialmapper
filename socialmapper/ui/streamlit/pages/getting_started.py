@@ -108,7 +108,8 @@ def render_input_form():
             travel_mode = st.selectbox(
                 "Travel Mode",
                 options=["walk", "bike", "drive"],
-                index=0
+                index=0,
+                help="Walking includes all legally walkable paths (even roads without sidewalks). Each mode uses different speeds and network types."
             )
 
         # Census variables selection

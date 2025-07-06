@@ -144,3 +144,6 @@ OPTIMIZATION_PLAN.md
 uv.lock
 test_cache/
 docs-dev/2023-5yr-api-changes.csv
+node_modules/
+streamlit.log
+*_screenshots/

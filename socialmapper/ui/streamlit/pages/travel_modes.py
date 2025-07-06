@@ -31,6 +31,35 @@ def render_travel_modes_page():
     - 🚗 Driving accessibility (city speeds)
     - 📊 Comparative analysis and equity insights
     """)
+    
+    # Add info about travel modes
+    with st.expander("📖 How Travel Modes Work"):
+        st.markdown("""
+        **Understanding Network Differences:**
+        
+        🚶 **Walking Networks**
+        - Include sidewalks, footpaths, and roads where walking is legal
+        - All paths are bidirectional (ignore one-way streets)
+        - Speed: 5 km/h average (1.5 km/h on stairs, 4.5 km/h on paths)
+        - **Note**: Includes roads without sidewalks if pedestrian access is allowed
+        
+        🚴 **Biking Networks**  
+        - Include bike lanes, roads where cycling is allowed, and shared paths
+        - Respect one-way streets (unless contraflow bike lanes exist)
+        - Speed: 15 km/h average (8 km/h on shared paths, 18 km/h in bike lanes)
+        - Exclude stairs and pedestrian-only areas
+        
+        🚗 **Driving Networks**
+        - Include all roads accessible to cars
+        - Strictly follow one-way restrictions and turn limitations
+        - Speed: Varies by road type (30 km/h residential, 110 km/h highway)
+        - Use actual speed limits when available in OpenStreetMap
+        
+        **Important**: Walking isochrones may appear larger than expected in suburban/rural areas 
+        because they include roads without sidewalks where walking is legally permitted.
+        
+        [Learn more about travel modes →](https://github.com/mihiarc/socialmapper/blob/main/docs/travel_modes_explained.md)
+        """)
 
     # Initialize session state
     if 'travel_mode_results' not in st.session_state:
@@ -347,12 +376,24 @@ def display_map_comparison(modes_data: dict[str, Any]):
     map_files_by_mode = {}
     for mode, data in modes_data.items():
         result = data['result']
-        if result.files_generated:
-            for file_type, file_path in result.files_generated.items():
-                if 'map' in str(file_type).lower() and Path(file_path).is_dir():
-                    map_files = list(Path(file_path).glob("*accessibility*.png"))
-                    if map_files:
-                        map_files_by_mode[mode] = map_files[0]
+        if hasattr(result, 'files_generated') and result.files_generated:
+            # Check if using new IOManager structure
+            if isinstance(result.files_generated, dict) and 'maps' in result.files_generated:
+                if isinstance(result.files_generated['maps'], list):
+                    # New structure - find accessibility map
+                    for file_info in result.files_generated['maps']:
+                        if 'accessibility' in file_info['filename'] and mode in file_info.get('travel_mode', ''):
+                            map_path = Path(file_info['path'])
+                            if map_path.exists():
+                                map_files_by_mode[mode] = map_path
+                                break
+                else:
+                    # Legacy structure
+                    file_path = result.files_generated['maps']
+                    if Path(file_path).is_dir():
+                        map_files = list(Path(file_path).glob(f"*{mode}*accessibility*.png"))
+                        if map_files:
+                            map_files_by_mode[mode] = map_files[0]
 
     if map_files_by_mode:
         # Display maps side by side
@@ -380,37 +421,51 @@ def display_map_comparison(modes_data: dict[str, Any]):
 
         if selected_mode:
             result = modes_data[selected_mode]['result']
-            if result.files_generated:
-                for file_type, file_path in result.files_generated.items():
-                    if 'map' in str(file_type).lower() and Path(file_path).is_dir():
-                        map_files = sorted(Path(file_path).glob("*.png"))
-                        if map_files:
-                            # Map type selector
-                            map_options = {}
-                            for f in map_files:
-                                if 'accessibility' in f.name:
-                                    label = "Accessibility Overview"
-                                elif 'distance' in f.name:
-                                    label = "Distance to POIs"
-                                elif 'b01003' in f.name.lower():
-                                    label = "Population Density"
-                                elif 'b19013' in f.name.lower():
-                                    label = "Median Income"
-                                else:
-                                    label = f.stem
-                                map_options[label] = f
+            if hasattr(result, 'files_generated') and result.files_generated:
+                map_files = []
+                
+                # Check if using new IOManager structure
+                if isinstance(result.files_generated, dict) and 'maps' in result.files_generated:
+                    if isinstance(result.files_generated['maps'], list):
+                        # New structure - collect all maps for this mode
+                        for file_info in result.files_generated['maps']:
+                            if selected_mode in file_info.get('travel_mode', ''):
+                                map_path = Path(file_info['path'])
+                                if map_path.exists():
+                                    map_files.append(map_path)
+                    else:
+                        # Legacy structure
+                        file_path = result.files_generated['maps']
+                        if Path(file_path).is_dir():
+                            map_files = sorted(Path(file_path).glob(f"*{selected_mode}*.png"))
+                
+                if map_files:
+                    # Map type selector
+                    map_options = {}
+                    for f in map_files:
+                        if 'accessibility' in f.name:
+                            label = "Accessibility Overview"
+                        elif 'distance' in f.name:
+                            label = "Distance to POIs"
+                        elif 'b01003' in f.name.lower():
+                            label = "Population Density"
+                        elif 'b19013' in f.name.lower():
+                            label = "Median Income"
+                        else:
+                            label = f.stem.replace('_', ' ').title()
+                        map_options[label] = f
 
-                            if map_options:
-                                selected_map_type = st.selectbox(
-                                    "Select map type:",
-                                    options=list(map_options.keys())
-                                )
+                    if map_options:
+                        selected_map_type = st.selectbox(
+                            "Select map type:",
+                            options=list(map_options.keys())
+                        )
 
-                                st.image(
-                                    str(map_options[selected_map_type]),
-                                    caption=f"{selected_map_type} - {TRAVEL_MODES[selected_mode]['name']}",
-                                    use_container_width=True
-                                )
+                        st.image(
+                            str(map_options[selected_map_type]),
+                            caption=f"{selected_map_type} - {TRAVEL_MODES[selected_mode]['name']}",
+                            use_container_width=True
+                        )
 
 
 def display_demographic_comparison(modes_data: dict[str, Any], census_vars: list[str]):
@@ -421,14 +476,28 @@ def display_demographic_comparison(modes_data: dict[str, Any], census_vars: list
     census_data_by_mode = {}
     for mode, data in modes_data.items():
         result = data['result']
-        if result.files_generated:
-            for file_type, file_path in result.files_generated.items():
-                if 'census' in str(file_type).lower() and str(file_path).endswith('.csv'):
-                    try:
-                        df = pd.read_csv(file_path)
-                        census_data_by_mode[mode] = df
-                    except:
-                        pass
+        if hasattr(result, 'files_generated') and result.files_generated:
+            # Check if using new IOManager structure
+            if isinstance(result.files_generated, dict) and 'census_data' in result.files_generated:
+                if isinstance(result.files_generated['census_data'], list):
+                    # New structure - find CSV file
+                    for file_info in result.files_generated['census_data']:
+                        if file_info['type'] == 'csv' and mode in file_info.get('travel_mode', ''):
+                            try:
+                                df = pd.read_csv(file_info['path'])
+                                census_data_by_mode[mode] = df
+                                break
+                            except:
+                                pass
+                else:
+                    # Legacy structure
+                    file_path = result.files_generated.get('census_data', '')
+                    if str(file_path).endswith('.csv'):
+                        try:
+                            df = pd.read_csv(file_path)
+                            census_data_by_mode[mode] = df
+                        except:
+                            pass
 
     if census_data_by_mode:
         # Summary statistics comparison
@@ -508,14 +577,28 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
     census_data_by_mode = {}
     for mode, data in modes_data.items():
         result = data['result']
-        if result.files_generated:
-            for file_type, file_path in result.files_generated.items():
-                if 'census' in str(file_type).lower() and str(file_path).endswith('.csv'):
-                    try:
-                        df = pd.read_csv(file_path)
-                        census_data_by_mode[mode] = df
-                    except:
-                        pass
+        if hasattr(result, 'files_generated') and result.files_generated:
+            # Check if using new IOManager structure
+            if isinstance(result.files_generated, dict) and 'census_data' in result.files_generated:
+                if isinstance(result.files_generated['census_data'], list):
+                    # New structure - find CSV file
+                    for file_info in result.files_generated['census_data']:
+                        if file_info['type'] == 'csv' and mode in file_info.get('travel_mode', ''):
+                            try:
+                                df = pd.read_csv(file_info['path'])
+                                census_data_by_mode[mode] = df
+                                break
+                            except:
+                                pass
+                else:
+                    # Legacy structure
+                    file_path = result.files_generated.get('census_data', '')
+                    if str(file_path).endswith('.csv'):
+                        try:
+                            df = pd.read_csv(file_path)
+                            census_data_by_mode[mode] = df
+                        except:
+                            pass
 
     if census_data_by_mode and has_income:
         st.markdown("#### Income Distribution by Travel Mode Access")
@@ -622,25 +705,60 @@ def display_export_options(modes_data: dict[str, Any]):
 
         st.markdown(f"#### {mode_info['icon']} {mode_info['name']} Results")
 
-        if result.files_generated:
+        if hasattr(result, 'files_generated') and result.files_generated:
             cols = st.columns(3)
             col_idx = 0
 
-            for file_type, file_path in result.files_generated.items():
-                path_obj = Path(file_path)
+            # Check if using new IOManager structure
+            if isinstance(result.files_generated, dict) and any(isinstance(v, list) for v in result.files_generated.values()):
+                # New structure - iterate through categories
+                for category, files in result.files_generated.items():
+                    if category == 'maps':  # Skip maps - too large for download buttons
+                        continue
+                    
+                    for file_info in files:
+                        if mode in file_info.get('travel_mode', ''):
+                            path_obj = Path(file_info['path'])
+                            if path_obj.exists():
+                                with cols[col_idx % 3]:
+                                    with open(path_obj, 'rb') as f:
+                                        file_data = f.read()
+                                    
+                                    mime_types = {
+                                        '.csv': 'text/csv',
+                                        '.parquet': 'application/octet-stream',
+                                        '.geoparquet': 'application/octet-stream',
+                                        '.geojson': 'application/geo+json',
+                                        '.json': 'application/json'
+                                    }
+                                    
+                                    mime = mime_types.get(path_obj.suffix.lower(), 'application/octet-stream')
+                                    
+                                    st.download_button(
+                                        label=f"Download {category.replace('_', ' ').title()}",
+                                        data=file_data,
+                                        file_name=f"{mode}_{file_info['filename']}",
+                                        mime=mime,
+                                        key=f"export_{mode}_{category}_{file_info['filename']}"
+                                    )
+                                col_idx += 1
+            else:
+                # Legacy structure
+                for file_type, file_path in result.files_generated.items():
+                    path_obj = Path(file_path)
 
-                if path_obj.exists() and path_obj.is_file():
-                    with cols[col_idx % 3]:
-                        with open(file_path, 'rb') as f:
-                            file_data = f.read()
+                    if path_obj.exists() and path_obj.is_file():
+                        with cols[col_idx % 3]:
+                            with open(file_path, 'rb') as f:
+                                file_data = f.read()
 
-                        st.download_button(
-                            label=f"Download {file_type.replace('_', ' ').title()}",
-                            data=file_data,
-                            file_name=f"{mode}_{path_obj.name}",
-                            mime='text/csv' if str(file_path).endswith('.csv') else 'application/octet-stream'
-                        )
-                    col_idx += 1
+                            st.download_button(
+                                label=f"Download {file_type.replace('_', ' ').title()}",
+                                data=file_data,
+                                file_name=f"{mode}_{path_obj.name}",
+                                mime='text/csv' if str(file_path).endswith('.csv') else 'application/octet-stream'
+                            )
+                        col_idx += 1
 
     # Combined comparison report
     st.markdown("#### Combined Analysis Report")

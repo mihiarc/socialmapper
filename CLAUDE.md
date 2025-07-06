@@ -22,19 +22,21 @@ uv pip install -e ".[dev]"
 # Run tests
 uv run pytest
 
-# Format code
-uv run black socialmapper/
-uv run isort socialmapper/
+# Linting and formatting (using Ruff - replaces black, flake8, isort)
+./scripts/ruff_check.sh all  # Run complete linting and formatting
+uv run ruff check socialmapper/  # Lint only
+uv run ruff format socialmapper/  # Format only
 
-# Lint code
-uv run ruff check socialmapper/
-
-# Type checking
-uv run mypy socialmapper/
+# Type checking (using ty - ultra-fast Rust-based type checker)
+uv run python scripts/type_check.py
+uv run python scripts/type_check.py --strict  # Strict mode
 
 # Build package
 uv run hatch build
 
+# Documentation
+uv run mkdocs serve  # Serve docs locally at http://localhost:8000
+uv run mkdocs build  # Build docs
 
 # Run CLI
 uv run socialmapper --help
@@ -42,63 +44,92 @@ uv run socialmapper --help
 
 ## Architecture Overview
 
-The codebase follows an ETL (Extract-Transform-Load) pipeline pattern:
-
-1. **Extract**: Pull data from OpenStreetMap and Census APIs
-2. **Transform**: Generate isochrones, calculate distances, process demographics
-3. **Load**: Create visualizations and export data
+The codebase follows an ETL (Extract-Transform-Load) pipeline pattern with modern API design:
 
 ### Core Components
 
-- `socialmapper/core.py`: Main API entry point that delegates to pipeline components
-- `socialmapper/pipeline/`: Modular ETL pipeline implementation with separate extraction, transformation, and loading stages
-- `socialmapper/data/`: Data management layer including census API integration and neighbor system
-- `socialmapper/data/`: Data management layer including census API integration and neighbor system
-- `socialmapper/ui/`: User interfaces (CLI, Rich terminal UI)
+- `socialmapper/api/`: Modern API with builder pattern and Result types for error handling
+  - `builder.py`: Fluent builder pattern for configuration
+  - `client.py`: Main client interface with context manager support
+  - `models.py`: Pydantic models for type safety
+  - `results.py`: Rust-inspired Ok/Err result types
+- `socialmapper/pipeline/`: Modular ETL pipeline implementation
+  - `extractor.py`: Data extraction from OpenStreetMap and Census
+  - `transformer.py`: Isochrone generation and data processing
+  - `loader.py`: Visualization and export functionality
+- `socialmapper/census/`: Domain-driven census integration
+  - `services/`: Business logic layer
+  - `repositories/`: Data access layer
+  - `infrastructure/`: External API integration
+  - `models/`: Domain models
 - `socialmapper/isochrone/`: Travel time area generation using OSMnx
 - `socialmapper/geocoding/`: Address geocoding with caching
+- `socialmapper/export/`: Multi-format export (CSV, Parquet, GeoParquet, GeoJSON)
+- `socialmapper/ui/`: User interfaces (CLI, Rich terminal UI)
 
 ### Key Architectural Patterns
 
-1. **Neighbor System**: Efficient parquet-based system for census block group lookups that reduces storage from 118MB to ~0.1MB
-2. **Caching**: Extensive caching for geocoding results and isochrone calculations
-3. **Configuration**: Pydantic-based configuration models for type safety
-4. **Progress Tracking**: Rich terminal UI with real-time progress updates
-5. **Error Handling**: Robust error handling for external API failures
+1. **Builder Pattern**: For configuration (`SocialMapperBuilder`)
+2. **Result Types**: Rust-inspired error handling with `Ok`/`Err` types
+3. **Domain-Driven Design**: Especially in the census module
+4. **Neighbor System**: Efficient parquet-based system for census block group lookups that reduces storage from 118MB to ~0.1MB
+5. **Caching**: Extensive caching for geocoding results and isochrone calculations
+6. **Progress Tracking**: Rich terminal UI with real-time progress updates
 
 ### Testing Strategy
 
-- Unit tests in `tests/` directory
-- Use pytest for test execution
-- Mock external API calls (Census, OpenStreetMap)
-- Test data fixtures for reproducible tests
+- Tests are configured in `pyproject.toml` with pytest markers for different test types
+- Test markers include: unit, integration, slow, api, async, performance, external
+- Mock external API calls (Census, OpenStreetMap) in tests
+- Use `uv run pytest -m unit` for fast unit tests only
 
 ### External Dependencies
 
 - **Census API**: Requires `CENSUS_API_KEY` environment variable
 - **OpenStreetMap**: Uses Overpass API and OSMnx for POI queries
-- **Maps**: Matplotlib for static map generation
+- **Maps**: Matplotlib with contextily for static map generation
 
-### Recent Changes (v0.6.1)
+### Environment Variables
 
-- Fixed isochrone export functionality (`enable_isochrone_export()`)
-- Isochrones now properly export to GeoParquet format
-- Enhanced API documentation with isochrone export examples
+Create a `.env` file from `env.example`:
+- `CENSUS_API_KEY`: Required for Census data (get free at https://api.census.gov/data/key_signup.html)
+- `CENSUS_CACHE_ENABLED`: Enable/disable caching (default: true)
+- `CENSUS_RATE_LIMIT`: API rate limit in requests per minute (default: 60)
+- `LOG_LEVEL`: Logging level (default: INFO)
 
-### Previous Changes (v0.6.0)
+## Development Standards
 
-- Streamlined codebase by removing experimental features
-- Enhanced core ETL pipeline for better maintainability
-- Improved neighbor system performance
-- Enhanced Rich terminal UI
-- Focused on core demographic and accessibility analysis
-- Enhanced travel speed handling for more accurate isochrones
+### Code Quality Tools
 
-## Travel Speed Handling
+1. **Ruff** (linting and formatting):
+   - Line length: 100 characters
+   - Comprehensive rule sets enabled (see pyproject.toml)
+   - Google-style docstrings
+   - Use `./scripts/ruff_check.sh all` for complete check
+
+2. **ty** (type checking):
+   - Ultra-fast Rust-based type checker from Astral
+   - Use `uv run python scripts/type_check.py`
+   - Add `--strict` for comprehensive checking
+
+3. **Rich** for terminal output:
+   - Always use Rich for formatted output, never plain print()
+   - Progress bars for long operations
+   - Structured logging with colors
+
+### Modern Python Patterns
+
+- **Python 3.11+** required (supports 3.11, 3.12, 3.13)
+- **Pydantic v2** for all data validation
+- **Async support** where applicable
+- **Type hints** throughout the codebase
+- **Polars** preferred over pandas for data processing
+
+### Travel Speed Handling
 
 SocialMapper uses OSMnx 2.0's sophisticated speed assignment system for accurate travel time calculations:
 
-### Speed Assignment Hierarchy
+#### Speed Assignment Hierarchy
 
 When generating isochrones, OSMnx assigns edge speeds using this priority:
 
@@ -107,7 +138,7 @@ When generating isochrones, OSMnx assigns edge speeds using this priority:
 3. **Statistical imputation**: For unmapped highway types, uses the mean speed of similar roads in the network
 4. **Mode-specific fallback**: As a last resort, uses the travel mode's default speed (walk: 5 km/h, bike: 15 km/h, drive: 50 km/h)
 
-### Highway-Specific Speeds
+#### Highway-Specific Speeds
 
 The system defines realistic speeds for different road types:
 
@@ -131,4 +162,69 @@ The system defines realistic speeds for different road types:
 - Residential: 15
 - Footway: 8 (shared with pedestrians)
 
-These speeds ensure more accurate isochrone boundaries that reflect real-world travel times based on road infrastructure.
+## Recent Changes
+
+### v0.6.1
+- Fixed isochrone export functionality (`enable_isochrone_export()`)
+- Isochrones now properly export to GeoParquet format
+- Enhanced API documentation with isochrone export examples
+
+### v0.6.0
+- Streamlined codebase by removing experimental features
+- Enhanced core ETL pipeline for better maintainability
+- Improved neighbor system performance
+- Enhanced Rich terminal UI
+- Focused on core demographic and accessibility analysis
+- Enhanced travel speed handling for more accurate isochrones
+
+## Example Usage
+
+```python
+# Simple analysis with context manager
+from socialmapper import SocialMapperClient
+
+with SocialMapperClient() as client:
+    result = client.analyze(
+        location="San Francisco, CA",
+        poi_type="amenity",
+        poi_name="library",
+        travel_time=15
+    )
+    
+    if result.is_ok():
+        analysis = result.unwrap()
+        print(f"Found {analysis.poi_count} libraries")
+        print(f"Analyzed {analysis.census_units_analyzed} census units")
+
+# Advanced usage with builder pattern
+from socialmapper import SocialMapperBuilder
+
+analysis = (
+    SocialMapperBuilder()
+    .location("San Francisco, CA")
+    .poi_type("amenity")
+    .poi_name("library")
+    .travel_time(15)
+    .travel_mode("walk")
+    .enable_isochrone_export()
+    .build()
+    .analyze()
+)
+```
+
+## Project Structure
+
+```
+socialmapper/
+├── api/              # Modern API with builder pattern
+├── census/           # Domain-driven census integration
+├── pipeline/         # ETL pipeline components
+├── isochrone/        # Travel time calculations
+├── geocoding/        # Address geocoding
+├── export/           # Multi-format data export
+├── visualization/    # Map generation
+├── ui/               # User interfaces
+├── data/             # Data files and neighbor system
+├── exceptions/       # Custom exception hierarchy
+└── utils/            # Utility functions
+```

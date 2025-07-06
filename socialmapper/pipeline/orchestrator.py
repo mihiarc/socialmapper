@@ -15,6 +15,7 @@ from ..exceptions import (
     InvalidTravelTimeError,
     NoDataFoundError,
 )
+from ..io import IOManager
 from ..isochrone import TravelMode
 from ..ui.console import get_logger, print_error, print_info
 from ..util.error_handling import ErrorCollector, error_context, log_error
@@ -89,7 +90,7 @@ class PipelineConfig:
                 )
 
         # Validate geographic level
-        valid_levels = ["block-group", "tract", "county"]
+        valid_levels = ["block-group", "zcta"]
         if self.geographic_level not in valid_levels:
             raise InvalidConfigurationError(
                 field="geographic_level",
@@ -138,6 +139,7 @@ class PipelineOrchestrator:
         self.stages: list[PipelineStage] = []
         self.results: dict[str, Any] = {}
         self.stage_outputs: dict[str, Any] = {}
+        self.io_manager = IOManager(config.output_dir)
 
         # Define pipeline stages
         self._define_stages()
@@ -163,12 +165,11 @@ class PipelineOrchestrator:
 
     def _setup_environment(self) -> dict[str, str]:
         """Setup pipeline environment."""
-        return setup_pipeline_environment(
-            output_dir=self.config.output_dir,
-            export_csv=self.config.export_csv,
-            export_isochrones=self.config.export_isochrones,
-            create_maps=self.config.create_maps,
-        )
+        # Use IO manager to set up directories
+        directories = self.io_manager.setup_directories(create_all=True)
+        
+        # Convert Path objects to strings for compatibility
+        return {k: str(v) for k, v in directories.items()}
 
     def _extract_poi_data(self) -> tuple[dict[str, Any], str, list[str], bool]:
         """Extract POI data."""
@@ -231,6 +232,9 @@ class PipelineOrchestrator:
         census_codes = self.stage_outputs["census"][2]
         directories = self.stage_outputs["setup"]
 
+        # Get travel mode string
+        travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
+        
         return export_pipeline_outputs(
             census_data_gdf=census_data_gdf,
             poi_data=poi_data,
@@ -241,6 +245,8 @@ class PipelineOrchestrator:
             export_csv=self.config.export_csv,
             census_codes=census_codes,
             geographic_level=self.config.geographic_level,
+            travel_mode=travel_mode_str,
+            io_manager=self.io_manager,
         )
 
     def _generate_maps(self):
@@ -254,6 +260,9 @@ class PipelineOrchestrator:
         census_codes = self.stage_outputs["census"][2]
         directories = self.stage_outputs["setup"]
 
+        # Get travel mode string
+        travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
+        
         return generate_pipeline_maps(
             census_data_gdf=census_data_gdf,
             poi_data=poi_data,
@@ -263,6 +272,8 @@ class PipelineOrchestrator:
             travel_time=self.config.travel_time,
             census_codes=census_codes,
             geographic_level=self.config.geographic_level,
+            travel_mode=travel_mode_str,
+            io_manager=self.io_manager,
         )
 
     def _generate_report(self):
@@ -373,6 +384,13 @@ class PipelineOrchestrator:
         # Add maps if available
         if "maps" in self.stage_outputs:
             result["maps"] = self.stage_outputs["maps"]
+
+        # Add file tracking information from IOManager
+        result["files_generated"] = self.io_manager.get_files_for_ui()
+        result["file_summary"] = self.io_manager.output_tracker.get_summary()
+
+        # Save output manifest
+        self.io_manager.output_tracker.save_manifest(self.config.output_dir)
 
         return result
 

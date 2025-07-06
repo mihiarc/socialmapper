@@ -337,6 +337,12 @@ uv run pytest
 - **Isochrone generation issues**: For very large areas, try reducing the travel time to avoid timeouts.
 - **Missing block groups**: The tool should automatically identify the appropriate states based on the POI locations.
 
+## Documentation
+
+- [Travel Modes Explained](docs/travel_modes_explained.md) - Detailed explanation of how walking, biking, and driving networks differ
+- [API Reference](https://mihiarc.github.io/socialmapper/) - Full API documentation
+- [Examples](examples/) - Sample scripts and use cases
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
