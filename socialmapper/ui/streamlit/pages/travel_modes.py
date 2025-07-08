@@ -1,6 +1,7 @@
 """Travel Modes comparison page for the Streamlit application."""
 
 import logging
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -17,9 +18,134 @@ from socialmapper.ui.streamlit.utils import format_number
 logger = logging.getLogger(__name__)
 
 
+# Debug utilities for travel modes analysis
+class TravelModeDebugger:
+    """Debugging utilities for travel mode analysis."""
+
+    def __init__(self, debug_enabled: bool = False):
+        self.debug_enabled = debug_enabled
+        self.debug_logs = []
+
+    def log(self, message: str, level: str = "info"):
+        """Log a debug message."""
+        timestamp = pd.Timestamp.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {level.upper()}: {message}"
+        self.debug_logs.append(log_entry)
+
+        if self.debug_enabled:
+            if level == "error":
+                st.error(f"🐛 {message}")
+            elif level == "warning":
+                st.warning(f"⚠️ {message}")
+            else:
+                st.info(f"🔍 {message}")
+
+        # Also log to Python logger
+        getattr(logger, level, logger.info)(message)
+
+    def debug_file_structure(self, files_generated: dict[str, Any], mode: str) -> None:
+        """Debug the file structure for a specific mode."""
+        self.log(f"Debugging file structure for mode: {mode}")
+
+        if not files_generated:
+            self.log(f"No files_generated found for {mode}", "warning")
+            return
+
+        self.log(f"files_generated type: {type(files_generated)}")
+        self.log(f"files_generated keys: {list(files_generated.keys())}")
+
+        for category, files in files_generated.items():
+            self.log(f"Category '{category}': {type(files)}")
+
+            if isinstance(files, list):
+                self.log(f"  - {len(files)} files in category")
+                for i, file_info in enumerate(files[:3]):  # Show first 3 files
+                    if isinstance(file_info, dict):
+                        self.log(f"  File {i}: {file_info.get('filename', 'No filename')}")
+                        self.log(f"    travel_mode: {file_info.get('travel_mode', 'None')}")
+                        self.log(f"    type: {file_info.get('type', 'None')}")
+                        self.log(f"    path exists: {Path(file_info.get('path', '')).exists()}")
+                    else:
+                        self.log(f"  File {i}: {type(file_info)} - {file_info}")
+            else:
+                self.log(f"  - Legacy structure: {files}")
+
+    def debug_travel_mode_matching(self, file_info: dict, mode: str, match_result: bool) -> None:
+        """Debug travel mode matching logic."""
+        if not self.debug_enabled:
+            return
+
+        filename = file_info.get("filename", "Unknown")
+        travel_mode = file_info.get("travel_mode", "None")
+
+        self.log(f"Travel mode matching for '{filename}':")
+        self.log(f"  Looking for mode: '{mode}'")
+        self.log(f"  File travel_mode: '{travel_mode}'")
+        self.log(f"  Exact match: {travel_mode == mode}")
+        self.log(f"  Substring match: {mode in travel_mode}")
+        self.log(f"  Filename match: {mode in filename}")
+        self.log(f"  Final result: {match_result}")
+
+    def show_debug_panel(self):
+        """Show debug information in Streamlit."""
+        if self.debug_logs:
+            with st.expander("🐛 Debug Logs", expanded=False):
+                for log in self.debug_logs[-20:]:  # Show last 20 logs
+                    st.text(log)
+
+
+def create_error_handler(operation_name: str):
+    """Create a decorator for error handling with detailed logging."""
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except FileNotFoundError as e:
+                error_msg = f"File not found in {operation_name}: {e}"
+                logger.error(error_msg)
+                st.error(f"📁 {error_msg}")
+                return None
+            except pd.errors.EmptyDataError as e:
+                error_msg = f"Empty data file in {operation_name}: {e}"
+                logger.error(error_msg)
+                st.warning(f"📊 {error_msg}")
+                return None
+            except KeyError as e:
+                error_msg = f"Missing data key in {operation_name}: {e}"
+                logger.error(error_msg)
+                st.warning(f"🔑 {error_msg}")
+                return None
+            except Exception as e:
+                error_msg = f"Unexpected error in {operation_name}: {e}"
+                logger.error(error_msg, exc_info=True)
+                st.error(f"❌ {error_msg}")
+
+                # Show detailed traceback in debug mode
+                if st.session_state.get("debug_mode", False):
+                    st.code(traceback.format_exc())
+                return None
+
+        return wrapper
+
+    return decorator
+
+
 def render_travel_modes_page():
     """Render the Travel Modes tutorial page."""
     st.header("Travel Mode Comparison")
+
+    # Debug mode toggle in sidebar
+    with st.sidebar:
+        debug_mode = st.checkbox(
+            "🐛 Debug Mode",
+            value=st.session_state.get("debug_mode", False),
+            help="Enable detailed debugging information and error traces",
+        )
+        st.session_state["debug_mode"] = debug_mode
+
+        if debug_mode:
+            st.warning("Debug mode enabled - detailed logs will be shown")
 
     st.markdown("""
     Compare accessibility across different modes of transportation to understand how travel 
@@ -31,7 +157,7 @@ def render_travel_modes_page():
     - 🚗 Driving accessibility (city speeds)
     - 📊 Comparative analysis and equity insights
     """)
-    
+
     # Add info about travel modes
     with st.expander("📖 How Travel Modes Work"):
         st.markdown("""
@@ -62,7 +188,7 @@ def render_travel_modes_page():
         """)
 
     # Initialize session state
-    if 'travel_mode_results' not in st.session_state:
+    if "travel_mode_results" not in st.session_state:
         st.session_state.travel_mode_results = {}
 
     # Configuration form
@@ -72,45 +198,33 @@ def render_travel_modes_page():
         col1, col2 = st.columns(2)
 
         with col1:
-            location = st.text_input(
-                "Location",
-                value="Chapel Hill",
-                help="City or area name"
-            )
+            location = st.text_input("Location", value="Chapel Hill", help="City or area name")
 
             state = st.text_input(
-                "State",
-                value="North Carolina",
-                help="Full state name or abbreviation"
+                "State", value="North Carolina", help="Full state name or abbreviation"
             )
 
             # POI selection
             poi_category = st.selectbox(
-                "POI Category",
-                options=list(POI_TYPES.keys()),
-                format_func=lambda x: x.title()
+                "POI Category", options=list(POI_TYPES.keys()), format_func=lambda x: x.title()
             )
 
             poi_type = st.selectbox(
                 "POI Type",
                 options=POI_TYPES[poi_category],
-                format_func=lambda x: x.replace('_', ' ').title()
+                format_func=lambda x: x.replace("_", " ").title(),
             )
 
         with col2:
             travel_time = st.slider(
-                "Travel Time (minutes)",
-                min_value=5,
-                max_value=30,
-                value=15,
-                step=5
+                "Travel Time (minutes)", min_value=5, max_value=30, value=15, step=5
             )
 
             modes = st.multiselect(
                 "Travel Modes to Compare",
                 options=list(TRAVEL_MODES.keys()),
                 default=["walk", "bike", "drive"],
-                format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}"
+                format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}",
             )
 
             # Census variables
@@ -120,9 +234,7 @@ def render_travel_modes_page():
             default_vars = ["B01003_001E", "B19013_001E"]
             for var_code, var_name in list(CENSUS_VARIABLES.items())[:4]:  # Show first 4
                 if st.checkbox(
-                    var_name,
-                    value=var_code in default_vars,
-                    key=f"travel_census_{var_code}"
+                    var_name, value=var_code in default_vars, key=f"travel_census_{var_code}"
                 ):
                     selected_vars.append(var_code)
 
@@ -133,7 +245,7 @@ def render_travel_modes_page():
                 min_value=0,
                 max_value=20,
                 value=5,
-                help="Limit the number of POIs to analyze for faster processing"
+                help="Limit the number of POIs to analyze for faster processing",
             )
 
         submitted = st.form_submit_button("🚀 Compare Travel Modes", type="primary")
@@ -145,8 +257,14 @@ def render_travel_modes_page():
             st.error("Please select at least one census variable")
         else:
             run_travel_mode_comparison(
-                location, state, poi_category, poi_type,
-                travel_time, modes, selected_vars, limit_pois
+                location,
+                state,
+                poi_category,
+                poi_type,
+                travel_time,
+                modes,
+                selected_vars,
+                limit_pois,
             )
 
     # Display results if available
@@ -154,10 +272,30 @@ def render_travel_modes_page():
         display_travel_mode_results()
 
 
-def run_travel_mode_comparison(location: str, state: str, poi_category: str,
-                              poi_type: str, travel_time: int, modes: list[str],
-                              census_vars: list[str], limit_pois: int):
+@create_error_handler("travel_mode_analysis")
+def run_travel_mode_comparison(
+    location: str,
+    state: str,
+    poi_category: str,
+    poi_type: str,
+    travel_time: int,
+    modes: list[str],
+    census_vars: list[str],
+    limit_pois: int,
+):
     """Run analysis for multiple travel modes and store results."""
+    # Initialize debugger
+    debug_mode = st.session_state.get("debug_mode", False)
+    debugger = TravelModeDebugger(debug_enabled=debug_mode)
+
+    debugger.log(f"Starting travel mode comparison analysis")
+    debugger.log(f"Location: {location}, {state}")
+    debugger.log(f"POI: {poi_category}/{poi_type}")
+    debugger.log(f"Travel time: {travel_time} minutes")
+    debugger.log(f"Modes: {modes}")
+    debugger.log(f"Census variables: {census_vars}")
+    debugger.log(f"POI limit: {limit_pois}")
+
     # Clear previous results
     st.session_state.travel_mode_results = {}
 
@@ -167,22 +305,28 @@ def run_travel_mode_comparison(location: str, state: str, poi_category: str,
 
     results_by_mode = {}
     total_modes = len(modes)
+    failed_modes = []
 
     # Run analysis for each mode
     for idx, mode in enumerate(modes):
+        debugger.log(f"Processing mode {idx + 1}/{total_modes}: {mode}")
         status_text.text(f"Analyzing {TRAVEL_MODES[mode]['name']} accessibility...")
         progress = (idx / total_modes) * 0.8  # Reserve 20% for final processing
         progress_bar.progress(progress)
 
         try:
+            debugger.log(f"Creating SocialMapper client for {mode}")
             with SocialMapperClient() as client:
                 # Build configuration
-                builder = (SocialMapperBuilder()
+                builder = (
+                    SocialMapperBuilder()
                     .with_location(location, state)
                     .with_osm_pois(poi_category, poi_type)
                     .with_travel_time(travel_time)
                     .with_travel_mode(mode)
-                    .with_census_variables(*[k for k, v in CENSUS_VARIABLES.items() if k in census_vars])
+                    .with_census_variables(
+                        *[k for k, v in CENSUS_VARIABLES.items() if k in census_vars]
+                    )
                     .with_exports(csv=True, maps=True, isochrones=True)
                 )
 
@@ -192,25 +336,59 @@ def run_travel_mode_comparison(location: str, state: str, poi_category: str,
 
                 config = builder.build()
 
+                debugger.log(f"Executing analysis for {mode}")
                 # Execute analysis
                 result = client.run_analysis(config)
 
                 if result.is_ok():
                     analysis_result = result.unwrap()
+                    debugger.log(f"✅ Analysis successful for {mode}")
+                    debugger.log(f"  POI count: {analysis_result.poi_count}")
+                    debugger.log(f"  Isochrone count: {analysis_result.isochrone_count}")
+                    debugger.log(f"  Census units: {analysis_result.census_units_analyzed}")
+
+                    # Check if files were generated
+                    if (
+                        hasattr(analysis_result, "files_generated")
+                        and analysis_result.files_generated
+                    ):
+                        file_categories = list(analysis_result.files_generated.keys())
+                        debugger.log(f"  Files generated in categories: {file_categories}")
+                    else:
+                        debugger.log("  No files_generated attribute or empty", "warning")
+
                     results_by_mode[mode] = {
-                        'result': analysis_result,
-                        'travel_time': travel_time,
-                        'location': location,
-                        'poi_type': poi_type
+                        "result": analysis_result,
+                        "travel_time": travel_time,
+                        "location": location,
+                        "poi_type": poi_type,
                     }
                 else:
                     error = result.unwrap_err()
-                    st.error(f"Error analyzing {mode}: {error.message}")
-                    logger.error(f"Travel mode analysis error for {mode}: {error}")
+                    error_msg = f"Analysis failed for {mode}: {error.message}"
+                    debugger.log(error_msg, "error")
+                    failed_modes.append(mode)
+                    st.error(f"❌ {error_msg}")
 
         except Exception as e:
-            st.error(f"Error during {mode} analysis: {e!s}")
-            logger.exception(f"Error in travel mode analysis for {mode}")
+            error_msg = f"Unexpected error during {mode} analysis: {e!s}"
+            debugger.log(error_msg, "error")
+            failed_modes.append(mode)
+            st.error(f"❌ {error_msg}")
+
+            if debug_mode:
+                st.code(traceback.format_exc())
+
+    debugger.log(
+        f"Analysis complete. Successful: {len(results_by_mode)}, Failed: {len(failed_modes)}"
+    )
+
+    if failed_modes:
+        debugger.log(f"Failed modes: {failed_modes}", "warning")
+
+    # Show debug panel if enabled
+    if debug_mode:
+        debugger.show_debug_panel()
 
     # Store results
     if results_by_mode:
@@ -218,38 +396,42 @@ def run_travel_mode_comparison(location: str, state: str, poi_category: str,
         progress_bar.progress(0.9)
 
         st.session_state.travel_mode_results = {
-            'modes': results_by_mode,
-            'location': location,
-            'poi_type': poi_type,
-            'travel_time': travel_time,
-            'census_vars': census_vars
+            "modes": results_by_mode,
+            "location": location,
+            "poi_type": poi_type,
+            "travel_time": travel_time,
+            "census_vars": census_vars,
         }
 
         progress_bar.progress(1.0)
         status_text.text("Analysis complete!")
-        st.success(f"✅ Completed analysis for {len(results_by_mode)} travel modes")
+
+        success_msg = f"✅ Completed analysis for {len(results_by_mode)} travel modes"
+        if failed_modes:
+            success_msg += f" (Failed: {len(failed_modes)})"
+        st.success(success_msg)
         st.rerun()
     else:
         progress_bar.progress(0)
-        status_text.text("")
+        status_text.text("❌ All analyses failed")
+        st.error("No successful analyses to display")
 
 
 def display_travel_mode_results():
     """Display comparison results for multiple travel modes."""
     results_data = st.session_state.travel_mode_results
-    modes_data = results_data['modes']
-    location = results_data['location']
-    poi_type = results_data['poi_type']
-    travel_time = results_data['travel_time']
+    modes_data = results_data["modes"]
+    location = results_data["location"]
+    poi_type = results_data["poi_type"]
+    travel_time = results_data["travel_time"]
 
     st.subheader("📊 Travel Mode Comparison Results")
     st.caption(f"{location} • {poi_type.replace('_', ' ').title()} • {travel_time} minutes")
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📈 Overview", "🗺️ Maps", "📊 Demographics",
-        "⚖️ Equity Analysis", "💾 Export"
-    ])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["📈 Overview", "🗺️ Maps", "📊 Demographics", "⚖️ Equity Analysis", "💾 Export"]
+    )
 
     with tab1:
         display_overview_metrics(modes_data)
@@ -258,10 +440,10 @@ def display_travel_mode_results():
         display_map_comparison(modes_data)
 
     with tab3:
-        display_demographic_comparison(modes_data, results_data['census_vars'])
+        display_demographic_comparison(modes_data, results_data["census_vars"])
 
     with tab4:
-        display_equity_analysis(modes_data, results_data['census_vars'])
+        display_equity_analysis(modes_data, results_data["census_vars"])
 
     with tab5:
         display_export_options(modes_data)
@@ -274,14 +456,16 @@ def display_overview_metrics(modes_data: dict[str, Any]):
     # Prepare comparison data
     comparison_data = []
     for mode, data in modes_data.items():
-        result = data['result']
-        comparison_data.append({
-            'Mode': TRAVEL_MODES[mode]['name'],
-            'Icon': TRAVEL_MODES[mode]['icon'],
-            'POIs Accessible': result.poi_count,
-            'Census Units': result.census_units_analyzed,
-            'Population Served': getattr(result, 'total_population_served', 0)
-        })
+        result = data["result"]
+        comparison_data.append(
+            {
+                "Mode": TRAVEL_MODES[mode]["name"],
+                "Icon": TRAVEL_MODES[mode]["icon"],
+                "POIs Accessible": result.poi_count,
+                "Census Units": result.census_units_analyzed,
+                "Population Served": getattr(result, "total_population_served", 0),
+            }
+        )
 
     comparison_df = pd.DataFrame(comparison_data)
 
@@ -289,7 +473,7 @@ def display_overview_metrics(modes_data: dict[str, Any]):
     cols = st.columns(len(modes_data))
     for idx, (mode, data) in enumerate(modes_data.items()):
         with cols[idx]:
-            result = data['result']
+            result = data["result"]
             mode_info = TRAVEL_MODES[mode]
 
             st.markdown(f"### {mode_info['icon']} {mode_info['name']}")
@@ -297,68 +481,72 @@ def display_overview_metrics(modes_data: dict[str, Any]):
             st.metric("Census Units", format_number(result.census_units_analyzed))
 
             # Calculate area if possible
-            if hasattr(result, 'total_area_sqkm'):
+            if hasattr(result, "total_area_sqkm"):
                 st.metric("Coverage Area", f"{result.total_area_sqkm:.1f} km²")
 
     # Comparative bar chart
     st.markdown("### Accessibility by Mode")
 
     fig = make_subplots(
-        rows=1, cols=3,
-        subplot_titles=("POIs Accessible", "Census Units Covered", "Population Served")
+        rows=1,
+        cols=3,
+        subplot_titles=("POIs Accessible", "Census Units Covered", "Population Served"),
     )
 
     # POIs chart
     fig.add_trace(
         go.Bar(
-            x=comparison_df['Mode'],
-            y=comparison_df['POIs Accessible'],
+            x=comparison_df["Mode"],
+            y=comparison_df["POIs Accessible"],
             name="POIs",
-            marker_color=[TRAVEL_MODES[m]['color'] for m in modes_data]
+            marker_color=[TRAVEL_MODES[m]["color"] for m in modes_data],
         ),
-        row=1, col=1
+        row=1,
+        col=1,
     )
 
     # Census units chart
     fig.add_trace(
         go.Bar(
-            x=comparison_df['Mode'],
-            y=comparison_df['Census Units'],
+            x=comparison_df["Mode"],
+            y=comparison_df["Census Units"],
             name="Census Units",
-            marker_color=[TRAVEL_MODES[m]['color'] for m in modes_data],
-            showlegend=False
+            marker_color=[TRAVEL_MODES[m]["color"] for m in modes_data],
+            showlegend=False,
         ),
-        row=1, col=2
+        row=1,
+        col=2,
     )
 
     # Population chart
     fig.add_trace(
         go.Bar(
-            x=comparison_df['Mode'],
-            y=comparison_df['Population Served'],
+            x=comparison_df["Mode"],
+            y=comparison_df["Population Served"],
             name="Population",
-            marker_color=[TRAVEL_MODES[m]['color'] for m in modes_data],
-            showlegend=False
+            marker_color=[TRAVEL_MODES[m]["color"] for m in modes_data],
+            showlegend=False,
         ),
-        row=1, col=3
+        row=1,
+        col=3,
     )
 
     fig.update_layout(height=400, showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 
     # Relative comparison
-    if 'walk' in modes_data and len(modes_data) > 1:
+    if "walk" in modes_data and len(modes_data) > 1:
         st.markdown("### Relative Coverage (vs Walking)")
-        walk_pois = modes_data['walk']['result'].poi_count
-        walk_units = modes_data['walk']['result'].census_units_analyzed
+        walk_pois = modes_data["walk"]["result"].poi_count
+        walk_units = modes_data["walk"]["result"].census_units_analyzed
 
         relative_cols = st.columns(len(modes_data) - 1)
         col_idx = 0
 
         for mode, data in modes_data.items():
-            if mode != 'walk':
+            if mode != "walk":
                 with relative_cols[col_idx]:
-                    result = data['result']
+                    result = data["result"]
                     poi_factor = result.poi_count / walk_pois if walk_pois > 0 else 0
                     unit_factor = result.census_units_analyzed / walk_units if walk_units > 0 else 0
 
@@ -368,32 +556,98 @@ def display_overview_metrics(modes_data: dict[str, Any]):
                 col_idx += 1
 
 
+@create_error_handler("map_comparison")
 def display_map_comparison(modes_data: dict[str, Any]):
     """Display map comparison across travel modes."""
     st.markdown("### Map Comparison")
 
+    # Initialize debugger
+    debug_mode = st.session_state.get("debug_mode", False)
+    debugger = TravelModeDebugger(debug_enabled=debug_mode)
+
+    debugger.log(f"Starting map comparison for {len(modes_data)} modes: {list(modes_data.keys())}")
+
     # Find map files for each mode
     map_files_by_mode = {}
+    files_found_count = 0
+
     for mode, data in modes_data.items():
-        result = data['result']
-        if hasattr(result, 'files_generated') and result.files_generated:
-            # Check if using new IOManager structure
-            if isinstance(result.files_generated, dict) and 'maps' in result.files_generated:
-                if isinstance(result.files_generated['maps'], list):
-                    # New structure - find accessibility map
-                    for file_info in result.files_generated['maps']:
-                        if 'accessibility' in file_info['filename'] and mode in file_info.get('travel_mode', ''):
-                            map_path = Path(file_info['path'])
+        debugger.log(f"Processing maps for mode: {mode}")
+        result = data["result"]
+
+        if not hasattr(result, "files_generated"):
+            debugger.log(f"No files_generated attribute for {mode}", "warning")
+            continue
+
+        if not result.files_generated:
+            debugger.log(f"files_generated is empty for {mode}", "warning")
+            continue
+
+        # Debug the file structure
+        debugger.debug_file_structure(result.files_generated, mode)
+
+        # Check if using new IOManager structure
+        if isinstance(result.files_generated, dict) and "maps" in result.files_generated:
+            maps_data = result.files_generated["maps"]
+            debugger.log(f"Found maps data for {mode}, type: {type(maps_data)}")
+
+            if isinstance(maps_data, list):
+                debugger.log(f"Processing {len(maps_data)} map files for {mode}")
+
+                # New structure - find accessibility map
+                for i, file_info in enumerate(maps_data):
+                    debugger.log(f"Checking file {i}: {file_info.get('filename', 'No filename')}")
+
+                    # Check if this is an accessibility map
+                    if "accessibility" in file_info.get("filename", ""):
+                        debugger.log(f"Found accessibility map: {file_info['filename']}")
+
+                        # More flexible matching - check if mode is in travel_mode or filename
+                        travel_mode_match = (
+                            file_info.get("travel_mode") == mode
+                            or mode in file_info.get("travel_mode", "")
+                            or mode in file_info["filename"]
+                        )
+
+                        debugger.debug_travel_mode_matching(file_info, mode, travel_mode_match)
+
+                        if travel_mode_match:
+                            map_path = Path(file_info["path"])
                             if map_path.exists():
                                 map_files_by_mode[mode] = map_path
+                                files_found_count += 1
+                                debugger.log(
+                                    f"✅ Successfully found map file for {mode}: {map_path.name}"
+                                )
                                 break
-                else:
-                    # Legacy structure
-                    file_path = result.files_generated['maps']
-                    if Path(file_path).is_dir():
-                        map_files = list(Path(file_path).glob(f"*{mode}*accessibility*.png"))
-                        if map_files:
-                            map_files_by_mode[mode] = map_files[0]
+                            else:
+                                debugger.log(f"Map file path does not exist: {map_path}", "warning")
+                        else:
+                            debugger.log(f"Travel mode did not match for {file_info['filename']}")
+
+                if mode not in map_files_by_mode:
+                    debugger.log(f"❌ No matching accessibility map found for {mode}", "warning")
+            else:
+                # Legacy structure
+                debugger.log(f"Using legacy structure for {mode}")
+                file_path = maps_data
+                if Path(file_path).is_dir():
+                    map_files = list(Path(file_path).glob(f"*{mode}*accessibility*.png"))
+                    debugger.log(f"Found {len(map_files)} legacy map files for {mode}")
+                    if map_files:
+                        map_files_by_mode[mode] = map_files[0]
+                        files_found_count += 1
+                        debugger.log(f"✅ Using legacy map file for {mode}: {map_files[0].name}")
+        else:
+            debugger.log(f"No maps category found in files_generated for {mode}", "warning")
+
+    debugger.log(
+        f"Map file discovery complete. Found {files_found_count} map files out of {len(modes_data)} modes"
+    )
+
+    # Show debug panel if enabled
+    if debug_mode:
+        debugger.show_debug_panel()
 
     if map_files_by_mode:
         # Display maps side by side
@@ -404,7 +658,7 @@ def display_map_comparison(modes_data: dict[str, Any]):
                 st.image(
                     str(map_file),
                     caption=f"{mode_info['icon']} {mode_info['name']}",
-                    use_container_width=True
+                    use_container_width=True,
                 )
     else:
         st.info("Map visualizations will be available after analysis completes.")
@@ -416,83 +670,134 @@ def display_map_comparison(modes_data: dict[str, Any]):
         selected_mode = st.selectbox(
             "Select mode for detailed maps:",
             options=list(modes_data.keys()),
-            format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}"
+            format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}",
         )
 
         if selected_mode:
-            result = modes_data[selected_mode]['result']
-            if hasattr(result, 'files_generated') and result.files_generated:
+            result = modes_data[selected_mode]["result"]
+            if hasattr(result, "files_generated") and result.files_generated:
                 map_files = []
-                
+
                 # Check if using new IOManager structure
-                if isinstance(result.files_generated, dict) and 'maps' in result.files_generated:
-                    if isinstance(result.files_generated['maps'], list):
+                if isinstance(result.files_generated, dict) and "maps" in result.files_generated:
+                    if isinstance(result.files_generated["maps"], list):
                         # New structure - collect all maps for this mode
-                        for file_info in result.files_generated['maps']:
-                            if selected_mode in file_info.get('travel_mode', ''):
-                                map_path = Path(file_info['path'])
+                        for file_info in result.files_generated["maps"]:
+                            # More flexible matching for travel mode
+                            travel_mode_match = (
+                                file_info.get("travel_mode") == selected_mode
+                                or selected_mode in file_info.get("travel_mode", "")
+                                or selected_mode in file_info["filename"]
+                            )
+
+                            if travel_mode_match:
+                                map_path = Path(file_info["path"])
                                 if map_path.exists():
                                     map_files.append(map_path)
                     else:
                         # Legacy structure
-                        file_path = result.files_generated['maps']
+                        file_path = result.files_generated["maps"]
                         if Path(file_path).is_dir():
                             map_files = sorted(Path(file_path).glob(f"*{selected_mode}*.png"))
-                
+
                 if map_files:
                     # Map type selector
                     map_options = {}
                     for f in map_files:
-                        if 'accessibility' in f.name:
+                        if "accessibility" in f.name:
                             label = "Accessibility Overview"
-                        elif 'distance' in f.name:
+                        elif "distance" in f.name:
                             label = "Distance to POIs"
-                        elif 'b01003' in f.name.lower():
+                        elif "b01003" in f.name.lower():
                             label = "Population Density"
-                        elif 'b19013' in f.name.lower():
+                        elif "b19013" in f.name.lower():
                             label = "Median Income"
                         else:
-                            label = f.stem.replace('_', ' ').title()
+                            label = f.stem.replace("_", " ").title()
                         map_options[label] = f
 
                     if map_options:
                         selected_map_type = st.selectbox(
-                            "Select map type:",
-                            options=list(map_options.keys())
+                            "Select map type:", options=list(map_options.keys())
                         )
 
                         st.image(
                             str(map_options[selected_map_type]),
                             caption=f"{selected_map_type} - {TRAVEL_MODES[selected_mode]['name']}",
-                            use_container_width=True
+                            use_container_width=True,
                         )
 
 
+@create_error_handler("demographic_comparison")
 def display_demographic_comparison(modes_data: dict[str, Any], census_vars: list[str]):
     """Display demographic comparison across travel modes."""
     st.markdown("### Demographic Comparison")
 
+    # Initialize debugger
+    debug_mode = st.session_state.get("debug_mode", False)
+    debugger = TravelModeDebugger(debug_enabled=debug_mode)
+
+    debugger.log(
+        f"Loading demographic data for {len(modes_data)} modes with variables: {census_vars}"
+    )
+
     # Load census data for each mode
     census_data_by_mode = {}
     for mode, data in modes_data.items():
-        result = data['result']
-        if hasattr(result, 'files_generated') and result.files_generated:
-            # Check if using new IOManager structure
-            if isinstance(result.files_generated, dict) and 'census_data' in result.files_generated:
-                if isinstance(result.files_generated['census_data'], list):
-                    # New structure - find CSV file
-                    for file_info in result.files_generated['census_data']:
-                        if file_info['type'] == 'csv' and mode in file_info.get('travel_mode', ''):
+        debugger.log(f"Processing demographic data for mode: {mode}")
+        result = data["result"]
+
+        if not hasattr(result, "files_generated") or not result.files_generated:
+            debugger.log(f"No files_generated found for {mode}", "warning")
+            continue
+
+        # Check if using new IOManager structure
+        if isinstance(result.files_generated, dict) and "census_data" in result.files_generated:
+            census_files = result.files_generated["census_data"]
+
+            if isinstance(census_files, list):
+                debugger.log(f"Found {len(census_files)} census files for {mode}")
+
+                # New structure - find CSV file
+                for file_info in census_files:
+                    if file_info.get("type") == "csv":
+                        # More flexible matching for travel mode
+                        travel_mode_match = (
+                            file_info.get("travel_mode") == mode
+                            or mode in file_info.get("travel_mode", "")
+                            or mode in file_info.get("filename", "")
+                        )
+
+                        if travel_mode_match:
+                            csv_path = file_info["path"]
+                            debugger.log(f"Loading CSV file: {csv_path}")
+
                             try:
-                                df = pd.read_csv(file_info['path'])
+                                if not Path(csv_path).exists():
+                                    debugger.log(f"CSV file does not exist: {csv_path}", "error")
+                                    continue
+
+                                df = pd.read_csv(csv_path)
+                                debugger.log(
+                                    f"✅ Successfully loaded CSV with {len(df)} rows for {mode}"
+                                )
                                 census_data_by_mode[mode] = df
                                 break
-                            except:
-                                pass
+
+                            except FileNotFoundError:
+                                debugger.log(f"CSV file not found: {csv_path}", "error")
+                            except pd.errors.EmptyDataError:
+                                debugger.log(f"CSV file is empty: {csv_path}", "warning")
+                            except pd.errors.ParserError as e:
+                                debugger.log(f"Error parsing CSV file {csv_path}: {e}", "error")
+                            except Exception as e:
+                                debugger.log(
+                                    f"Unexpected error loading CSV {csv_path}: {e}", "error"
+                                )
                 else:
                     # Legacy structure
-                    file_path = result.files_generated.get('census_data', '')
-                    if str(file_path).endswith('.csv'):
+                    file_path = result.files_generated.get("census_data", "")
+                    if str(file_path).endswith(".csv"):
                         try:
                             df = pd.read_csv(file_path)
                             census_data_by_mode[mode] = df
@@ -511,25 +816,31 @@ def display_demographic_comparison(modes_data: dict[str, Any], census_vars: list
                 if var_code in df.columns:
                     col_data = df[var_code].dropna()
                     if len(col_data) > 0:
-                        summary_data.append({
-                            'Variable': var_name,
-                            'Mode': TRAVEL_MODES[mode]['name'],
-                            'Total': col_data.sum() if 'population' in var_name.lower() else len(col_data),
-                            'Average': col_data.mean(),
-                            'Median': col_data.median()
-                        })
+                        summary_data.append(
+                            {
+                                "Variable": var_name,
+                                "Mode": TRAVEL_MODES[mode]["name"],
+                                "Total": col_data.sum()
+                                if "population" in var_name.lower()
+                                else len(col_data),
+                                "Average": col_data.mean(),
+                                "Median": col_data.median(),
+                            }
+                        )
 
         if summary_data:
             summary_df = pd.DataFrame(summary_data)
 
             # Pivot for better comparison
-            for metric in ['Average', 'Median']:
+            for metric in ["Average", "Median"]:
                 st.markdown(f"##### {metric} Values by Mode")
-                pivot_df = summary_df.pivot(index='Variable', columns='Mode', values=metric)
+                pivot_df = summary_df.pivot(index="Variable", columns="Mode", values=metric)
 
                 # Format values
                 for col in pivot_df.columns:
-                    pivot_df[col] = pivot_df[col].apply(lambda x: format_number(x) if pd.notna(x) else "N/A")
+                    pivot_df[col] = pivot_df[col].apply(
+                        lambda x: format_number(x) if pd.notna(x) else "N/A"
+                    )
 
                 st.dataframe(pivot_df, use_container_width=True)
 
@@ -538,22 +849,21 @@ def display_demographic_comparison(modes_data: dict[str, Any], census_vars: list
 
         distance_data = []
         for mode, df in census_data_by_mode.items():
-            if 'travel_distance_km' in df.columns:
-                distances = df['travel_distance_km'].dropna()
-                distance_data.extend([{
-                    'Mode': TRAVEL_MODES[mode]['name'],
-                    'Distance (km)': d
-                } for d in distances])
+            if "travel_distance_km" in df.columns:
+                distances = df["travel_distance_km"].dropna()
+                distance_data.extend(
+                    [{"Mode": TRAVEL_MODES[mode]["name"], "Distance (km)": d} for d in distances]
+                )
 
         if distance_data:
             distance_df = pd.DataFrame(distance_data)
 
             fig = px.box(
                 distance_df,
-                x='Mode',
-                y='Distance (km)',
-                color='Mode',
-                title='Travel Distance Distribution to Nearest POI'
+                x="Mode",
+                y="Distance (km)",
+                color="Mode",
+                title="Travel Distance Distribution to Nearest POI",
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -566,8 +876,8 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
     st.markdown("### Equity Analysis")
 
     # Check if we have income data
-    has_income = 'B19013_001E' in census_vars
-    has_poverty = 'B17001_002E' in census_vars
+    has_income = "B19013_001E" in census_vars
+    has_poverty = "B17001_002E" in census_vars
 
     if not (has_income or has_poverty):
         st.info("Add income or poverty census variables to enable equity analysis.")
@@ -576,24 +886,32 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
     # Load census data
     census_data_by_mode = {}
     for mode, data in modes_data.items():
-        result = data['result']
-        if hasattr(result, 'files_generated') and result.files_generated:
+        result = data["result"]
+        if hasattr(result, "files_generated") and result.files_generated:
             # Check if using new IOManager structure
-            if isinstance(result.files_generated, dict) and 'census_data' in result.files_generated:
-                if isinstance(result.files_generated['census_data'], list):
+            if isinstance(result.files_generated, dict) and "census_data" in result.files_generated:
+                if isinstance(result.files_generated["census_data"], list):
                     # New structure - find CSV file
-                    for file_info in result.files_generated['census_data']:
-                        if file_info['type'] == 'csv' and mode in file_info.get('travel_mode', ''):
-                            try:
-                                df = pd.read_csv(file_info['path'])
-                                census_data_by_mode[mode] = df
-                                break
-                            except:
-                                pass
+                    for file_info in result.files_generated["census_data"]:
+                        if file_info["type"] == "csv":
+                            # More flexible matching for travel mode
+                            travel_mode_match = (
+                                file_info.get("travel_mode") == mode
+                                or mode in file_info.get("travel_mode", "")
+                                or mode in file_info["filename"]
+                            )
+
+                            if travel_mode_match:
+                                try:
+                                    df = pd.read_csv(file_info["path"])
+                                    census_data_by_mode[mode] = df
+                                    break
+                                except:
+                                    pass
                 else:
                     # Legacy structure
-                    file_path = result.files_generated.get('census_data', '')
-                    if str(file_path).endswith('.csv'):
+                    file_path = result.files_generated.get("census_data", "")
+                    if str(file_path).endswith(".csv"):
                         try:
                             df = pd.read_csv(file_path)
                             census_data_by_mode[mode] = df
@@ -606,12 +924,15 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
         # Prepare income data
         income_data = []
         for mode, df in census_data_by_mode.items():
-            if 'B19013_001E' in df.columns:
-                income_values = df['B19013_001E'].dropna()
-                income_data.extend([{
-                    'Mode': TRAVEL_MODES[mode]['name'],
-                    'Median Household Income': income
-                } for income in income_values if income > 0])
+            if "B19013_001E" in df.columns:
+                income_values = df["B19013_001E"].dropna()
+                income_data.extend(
+                    [
+                        {"Mode": TRAVEL_MODES[mode]["name"], "Median Household Income": income}
+                        for income in income_values
+                        if income > 0
+                    ]
+                )
 
         if income_data:
             income_df = pd.DataFrame(income_data)
@@ -619,11 +940,11 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
             # Violin plot for income distribution
             fig = px.violin(
                 income_df,
-                x='Mode',
-                y='Median Household Income',
-                color='Mode',
-                title='Income Distribution of Areas Served by Each Mode',
-                box=True
+                x="Mode",
+                y="Median Household Income",
+                color="Mode",
+                title="Income Distribution of Areas Served by Each Mode",
+                box=True,
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -633,8 +954,8 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
 
             equity_metrics = []
             for mode, df in census_data_by_mode.items():
-                if 'B19013_001E' in df.columns:
-                    income_data = df['B19013_001E'].dropna()
+                if "B19013_001E" in df.columns:
+                    income_data = df["B19013_001E"].dropna()
                     if len(income_data) > 0:
                         # Calculate percentage of low-income areas served
                         # Using $50,000 as threshold
@@ -642,12 +963,14 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
                         low_income_areas = (income_data < low_income_threshold).sum()
                         pct_low_income = (low_income_areas / len(income_data)) * 100
 
-                        equity_metrics.append({
-                            'Mode': TRAVEL_MODES[mode]['name'],
-                            'Avg Income': f"${income_data.mean():,.0f}",
-                            'Low Income Areas': f"{pct_low_income:.1f}%",
-                            'Income Range': f"${income_data.min():,.0f} - ${income_data.max():,.0f}"
-                        })
+                        equity_metrics.append(
+                            {
+                                "Mode": TRAVEL_MODES[mode]["name"],
+                                "Avg Income": f"${income_data.mean():,.0f}",
+                                "Low Income Areas": f"{pct_low_income:.1f}%",
+                                "Income Range": f"${income_data.min():,.0f} - ${income_data.max():,.0f}",
+                            }
+                        )
 
             if equity_metrics:
                 equity_df = pd.DataFrame(equity_metrics)
@@ -659,21 +982,25 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
     insights = []
 
     # Compare walking vs driving access
-    if 'walk' in modes_data and 'drive' in modes_data:
-        walk_pois = modes_data['walk']['result'].poi_count
-        drive_pois = modes_data['drive']['result'].poi_count
+    if "walk" in modes_data and "drive" in modes_data:
+        walk_pois = modes_data["walk"]["result"].poi_count
+        drive_pois = modes_data["drive"]["result"].poi_count
 
         if walk_pois > 0:
             accessibility_gap = ((drive_pois - walk_pois) / walk_pois) * 100
-            poi_type = st.session_state.travel_mode_results.get('poi_type', 'services')
-            insights.append(f"🚗 Driving provides {accessibility_gap:.0f}% more access to {poi_type} than walking")
+            poi_type = st.session_state.travel_mode_results.get("poi_type", "services")
+            insights.append(
+                f"🚗 Driving provides {accessibility_gap:.0f}% more access to {poi_type} than walking"
+            )
 
     # Population without car access insight
-    if 'walk' in census_data_by_mode:
-        walk_df = census_data_by_mode['walk']
-        if 'B01003_001E' in walk_df.columns:
-            walk_only_pop = walk_df['B01003_001E'].sum()
-            insights.append(f"🚶 {format_number(walk_only_pop)} people rely on walking distance to access services")
+    if "walk" in census_data_by_mode:
+        walk_df = census_data_by_mode["walk"]
+        if "B01003_001E" in walk_df.columns:
+            walk_only_pop = walk_df["B01003_001E"].sum()
+            insights.append(
+                f"🚶 {format_number(walk_only_pop)} people rely on walking distance to access services"
+            )
 
     # Display insights
     if insights:
@@ -687,7 +1014,7 @@ def display_equity_analysis(modes_data: dict[str, Any], census_vars: list[str]):
         "🚲 Invest in bike infrastructure to bridge the gap between walking and driving access",
         "🚌 Consider transit routes connecting underserved areas to essential services",
         "🏗️ Prioritize new facilities in areas with limited walking/biking access",
-        "🌳 Create pedestrian-friendly corridors to improve walkability"
+        "🌳 Create pedestrian-friendly corridors to improve walkability",
     ]
 
     for rec in recommendations:
@@ -700,46 +1027,57 @@ def display_export_options(modes_data: dict[str, Any]):
 
     # Create download buttons for each mode
     for mode, data in modes_data.items():
-        result = data['result']
+        result = data["result"]
         mode_info = TRAVEL_MODES[mode]
 
         st.markdown(f"#### {mode_info['icon']} {mode_info['name']} Results")
 
-        if hasattr(result, 'files_generated') and result.files_generated:
+        if hasattr(result, "files_generated") and result.files_generated:
             cols = st.columns(3)
             col_idx = 0
 
             # Check if using new IOManager structure
-            if isinstance(result.files_generated, dict) and any(isinstance(v, list) for v in result.files_generated.values()):
+            if isinstance(result.files_generated, dict) and any(
+                isinstance(v, list) for v in result.files_generated.values()
+            ):
                 # New structure - iterate through categories
                 for category, files in result.files_generated.items():
-                    if category == 'maps':  # Skip maps - too large for download buttons
+                    if category == "maps":  # Skip maps - too large for download buttons
                         continue
-                    
+
                     for file_info in files:
-                        if mode in file_info.get('travel_mode', ''):
-                            path_obj = Path(file_info['path'])
+                        # More flexible matching for travel mode
+                        travel_mode_match = (
+                            file_info.get("travel_mode") == mode
+                            or mode in file_info.get("travel_mode", "")
+                            or mode in file_info["filename"]
+                        )
+
+                        if travel_mode_match:
+                            path_obj = Path(file_info["path"])
                             if path_obj.exists():
                                 with cols[col_idx % 3]:
-                                    with open(path_obj, 'rb') as f:
+                                    with open(path_obj, "rb") as f:
                                         file_data = f.read()
-                                    
+
                                     mime_types = {
-                                        '.csv': 'text/csv',
-                                        '.parquet': 'application/octet-stream',
-                                        '.geoparquet': 'application/octet-stream',
-                                        '.geojson': 'application/geo+json',
-                                        '.json': 'application/json'
+                                        ".csv": "text/csv",
+                                        ".parquet": "application/octet-stream",
+                                        ".geoparquet": "application/octet-stream",
+                                        ".geojson": "application/geo+json",
+                                        ".json": "application/json",
                                     }
-                                    
-                                    mime = mime_types.get(path_obj.suffix.lower(), 'application/octet-stream')
-                                    
+
+                                    mime = mime_types.get(
+                                        path_obj.suffix.lower(), "application/octet-stream"
+                                    )
+
                                     st.download_button(
                                         label=f"Download {category.replace('_', ' ').title()}",
                                         data=file_data,
                                         file_name=f"{mode}_{file_info['filename']}",
                                         mime=mime,
-                                        key=f"export_{mode}_{category}_{file_info['filename']}"
+                                        key=f"export_{mode}_{category}_{file_info['filename']}",
                                     )
                                 col_idx += 1
             else:
@@ -749,14 +1087,16 @@ def display_export_options(modes_data: dict[str, Any]):
 
                     if path_obj.exists() and path_obj.is_file():
                         with cols[col_idx % 3]:
-                            with open(file_path, 'rb') as f:
+                            with open(file_path, "rb") as f:
                                 file_data = f.read()
 
                             st.download_button(
                                 label=f"Download {file_type.replace('_', ' ').title()}",
                                 data=file_data,
                                 file_name=f"{mode}_{path_obj.name}",
-                                mime='text/csv' if str(file_path).endswith('.csv') else 'application/octet-stream'
+                                mime="text/csv"
+                                if str(file_path).endswith(".csv")
+                                else "application/octet-stream",
                             )
                         col_idx += 1
 
@@ -764,25 +1104,27 @@ def display_export_options(modes_data: dict[str, Any]):
     st.markdown("#### Combined Analysis Report")
 
     comparison_summary = {
-        'analysis_type': 'travel_mode_comparison',
-        'location': st.session_state.travel_mode_results['location'],
-        'poi_type': st.session_state.travel_mode_results['poi_type'],
-        'travel_time': st.session_state.travel_mode_results['travel_time'],
-        'modes_analyzed': list(modes_data.keys()),
-        'results': {}
+        "analysis_type": "travel_mode_comparison",
+        "location": st.session_state.travel_mode_results["location"],
+        "poi_type": st.session_state.travel_mode_results["poi_type"],
+        "travel_time": st.session_state.travel_mode_results["travel_time"],
+        "modes_analyzed": list(modes_data.keys()),
+        "results": {},
     }
 
     for mode, data in modes_data.items():
-        result = data['result']
-        comparison_summary['results'][mode] = {
-            'poi_count': result.poi_count,
-            'census_units_analyzed': result.census_units_analyzed,
-            'files_generated': list(result.files_generated.keys()) if result.files_generated else []
+        result = data["result"]
+        comparison_summary["results"][mode] = {
+            "poi_count": result.poi_count,
+            "census_units_analyzed": result.census_units_analyzed,
+            "files_generated": list(result.files_generated.keys())
+            if result.files_generated
+            else [],
         }
 
     st.download_button(
         label="📄 Download Comparison Summary (JSON)",
         data=pd.Series(comparison_summary).to_json(indent=2),
         file_name="travel_mode_comparison_summary.json",
-        mime="application/json"
+        mime="application/json",
     )
