@@ -52,10 +52,10 @@ def setup_pipeline_environment(
 
     # Create subdirectories only for enabled outputs
     if export_csv:
-        # Create csv subdirectory directly
-        csv_path = Path(output_dir) / "csv"
-        csv_path.mkdir(exist_ok=True)
-        directories["csv"] = str(csv_path)
+        # Create census_data subdirectory for CSV files
+        census_data_path = Path(output_dir) / "census_data"
+        census_data_path.mkdir(exist_ok=True)
+        directories["census_data"] = str(census_data_path)
 
     if export_isochrones:
         # Create isochrones subdirectory directly

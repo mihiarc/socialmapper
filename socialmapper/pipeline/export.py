@@ -4,7 +4,6 @@ This module handles exporting pipeline outputs to various formats.
 """
 
 import os
-from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
@@ -44,7 +43,6 @@ def export_pipeline_outputs(
         Dictionary of result files and metadata
     """
     from ..export import export_census_data_to_csv
-    from ..io.writers import write_csv
 
     result_files = {}
     export_count = 0
@@ -57,10 +55,10 @@ def export_pipeline_outputs(
             # Use IOManager for centralized file tracking
             # First prepare the data for CSV export
             from ..export.preparation import prepare_census_data
-            
+
             # Prepare census data with POI information
             prepared_df = prepare_census_data(census_data_gdf, poi_data)
-            
+
             output_file = io_manager.save_file(
                 content=prepared_df,
                 category="census_data",
@@ -77,7 +75,7 @@ def export_pipeline_outputs(
             # Legacy path handling
             mode_suffix = f"_{travel_mode}" if travel_mode else ""
             csv_file = os.path.join(
-                directories["csv"], f"{base_filename}_{travel_time}min{mode_suffix}_census_data.csv"
+                directories.get("census_data", directories["base"]), f"{base_filename}_{travel_time}min{mode_suffix}_census_data.csv"
             )
 
             csv_output = export_census_data_to_csv(
@@ -88,13 +86,13 @@ def export_pipeline_outputs(
             )
             result_files["csv_data"] = csv_output
             print(f"Exported census data to CSV: {csv_output}")
-        
+
         export_count += 1
 
     # Export isochrones to GeoParquet (optional)
     if "isochrones" in directories and isochrone_gdf is not None and not isochrone_gdf.empty:
         print("\n=== Exporting Isochrones to GeoParquet ===")
-        
+
         try:
             if io_manager:
                 # Use IOManager for centralized file tracking
@@ -115,12 +113,12 @@ def export_pipeline_outputs(
                 isochrone_file = os.path.join(
                     directories["isochrones"], f"{base_filename}_{travel_time}min{mode_suffix}_isochrones.geoparquet"
                 )
-                
+
                 # Save isochrone GeoDataFrame to GeoParquet format
                 isochrone_gdf.to_parquet(isochrone_file, compression="snappy", index=False)
                 result_files["isochrone_data"] = isochrone_file
                 print(f"Exported isochrones to GeoParquet: {isochrone_file}")
-            
+
             export_count += 1
         except Exception as e:
             print(f"⚠️ Warning: Failed to export isochrones: {e}")
