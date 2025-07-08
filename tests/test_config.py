@@ -26,7 +26,7 @@ class TestOptimizationConfig:
         # Check some default values
         assert config.distance.engine == "vectorized_numba"
         assert config.isochrone.enable_caching is True
-        assert config.memory.enable_monitoring is True
+        assert config.memory.enable_memory_monitoring is True
 
     def test_custom_distance_config(self):
         """Test custom distance configuration."""
@@ -57,26 +57,26 @@ class TestOptimizationConfig:
     def test_memory_config(self):
         """Test memory configuration."""
         memory_config = MemoryConfig(
-            enable_monitoring=False,
-            small_dataset_mb=100.0,
-            max_concurrent_io=8
+            enable_memory_monitoring=False,
+            max_memory_gb=4.0,
+            streaming_batch_size=2000
         )
         
-        assert memory_config.enable_monitoring is False
-        assert memory_config.small_dataset_mb == 100.0
-        assert memory_config.max_concurrent_io == 8
+        assert memory_config.enable_memory_monitoring is False
+        assert memory_config.max_memory_gb == 4.0
+        assert memory_config.streaming_batch_size == 2000
 
     def test_io_config(self):
         """Test IO configuration."""
         io_config = IOConfig(
-            file_reader="polars",
-            enable_compression=True,
-            parquet_engine="pyarrow"
+            default_format="parquet",
+            use_polars=True,
+            enable_arrow=True
         )
         
-        assert io_config.file_reader == "polars"
-        assert io_config.enable_compression is True
-        assert io_config.parquet_engine == "pyarrow"
+        assert io_config.default_format == "parquet"
+        assert io_config.use_polars is True
+        assert io_config.enable_arrow is True
 
     def test_optimization_config_defaults(self):
         """Test optimization config has sensible defaults."""
@@ -85,5 +85,5 @@ class TestOptimizationConfig:
         # Test defaults exist and are reasonable
         assert config.distance.parallel_processes >= 0
         assert config.isochrone.max_cache_size_gb > 0
-        assert config.memory.small_dataset_mb > 0
-        assert config.io.batch_size > 0
+        assert config.memory.max_memory_gb > 0
+        assert config.io.streaming_batch_size > 0

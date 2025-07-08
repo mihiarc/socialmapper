@@ -20,7 +20,7 @@ class TestResultTypes:
         result = Err(error)
         assert result.is_ok() is False
         assert result.is_err() is True
-        assert result.value.message == "Something went wrong"
+        assert result._value.message == "Something went wrong"
 
     def test_ok_unwrap(self):
         """Test unwrapping an Ok result."""
@@ -31,7 +31,7 @@ class TestResultTypes:
         """Test that unwrapping an Err raises exception."""
         error = Error(ErrorType.VALIDATION, "error message")
         result = Err(error)
-        with pytest.raises(ValueError, match="Called unwrap on an Err value"):
+        with pytest.raises(RuntimeError, match="Called unwrap on an Err value"):
             result.unwrap()
 
     def test_ok_unwrap_or(self):
@@ -54,7 +54,8 @@ class TestResultTypes:
         """Test unwrap_or_else on Err result."""
         error = Error(ErrorType.VALIDATION, "error")
         result = Err(error)
-        assert result.unwrap_or_else(lambda: 50) == 50
+        # unwrap_or_else passes the error value to the function
+        assert result.unwrap_or_else(lambda e: 50) == 50
 
     def test_ok_map(self):
         """Test map on Ok result."""
@@ -69,7 +70,7 @@ class TestResultTypes:
         result = Err(error)
         mapped = result.map(lambda x: x * 2)
         assert mapped.is_err()
-        assert mapped.value.message == "error"
+        assert mapped._value.message == "error"
 
     def test_ok_map_err(self):
         """Test map_err on Ok result."""
@@ -84,7 +85,7 @@ class TestResultTypes:
         result = Err(error)
         mapped = result.map_err(lambda e: Error(ErrorType.PROCESSING, f"Error: {e.message}"))
         assert mapped.is_err()
-        assert mapped.value.message == "Error: fail"
+        assert mapped._value.message == "Error: fail"
 
     def test_ok_and_then(self):
         """Test and_then on Ok result."""
@@ -99,7 +100,7 @@ class TestResultTypes:
         result = Err(error)
         chained = result.and_then(lambda x: Ok(x * 2))
         assert chained.is_err()
-        assert chained.value.message == "error"
+        assert chained._value.message == "error"
 
     def test_ok_or_else(self):
         """Test or_else on Ok result."""
@@ -129,7 +130,7 @@ class TestResultTypes:
         
         result2 = divide(10, 0)
         assert result2.is_err()
-        assert result2.value.message == "Division by zero"
+        assert result2._value.message == "Division by zero"
 
     def test_result_chaining(self):
         """Test chaining multiple operations."""

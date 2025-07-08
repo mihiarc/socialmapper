@@ -26,7 +26,7 @@ class TestSocialMapperBuilder:
         """Test POI configuration."""
         builder = (
             SocialMapperBuilder()
-            .with_osm_pois(poi_type="amenity", poi_value="library")
+            .with_osm_pois(poi_type="amenity", poi_name="library")
         )
         # Builder pattern should return self
         assert isinstance(builder, SocialMapperBuilder)
@@ -44,8 +44,10 @@ class TestSocialMapperBuilder:
     def test_invalid_travel_mode(self):
         """Test that invalid travel mode raises error."""
         builder = SocialMapperBuilder()
-        with pytest.raises(ValueError, match="Invalid travel mode"):
-            builder.with_travel_mode("teleport")
+        # Invalid travel mode doesn't raise immediately, but adds to validation errors
+        result = builder.with_travel_mode("teleport")
+        assert result is builder  # Still returns self for chaining
+        assert len(builder._validation_errors) > 0
 
     def test_census_variables_configuration(self):
         """Test census variables configuration."""
@@ -62,7 +64,7 @@ class TestSocialMapperBuilder:
         builder = (
             SocialMapperBuilder()
             .with_location("Chicago, IL")
-            .with_osm_pois(poi_type="shop", poi_value="supermarket")
+            .with_osm_pois(poi_type="shop", poi_name="supermarket")
             .with_travel_time(10)
             .with_travel_mode("drive")
             .with_census_variables("B01001_001E")
@@ -77,11 +79,15 @@ class TestSocialMapperBuilder:
         builder = (
             SocialMapperBuilder()
             .with_location("Boston, MA")
-            .with_osm_pois(poi_type="amenity", poi_value="school")
+            .with_osm_pois(poi_type="amenity", poi_name="school")
         )
         
-        client = builder.build()
-        assert isinstance(client, SocialMapperClient)
+        # build() returns the config dict, not a client instance
+        config = builder.build()
+        assert isinstance(config, dict)
+        assert "geocode_area" in config
+        assert "poi_type" in config
+        assert "poi_name" in config
 
     def test_exports_configuration(self):
         """Test exports configuration."""
@@ -90,6 +96,7 @@ class TestSocialMapperBuilder:
 
     def test_invalid_travel_time(self):
         """Test invalid travel time raises error."""
+        from socialmapper.exceptions import InvalidTravelTimeError
         builder = SocialMapperBuilder()
         with pytest.raises(InvalidTravelTimeError):
             builder.with_travel_time(0)  # Too low
@@ -104,9 +111,6 @@ class TestSocialMapperBuilder:
 
     def test_custom_pois(self):
         """Test custom POIs configuration."""
-        custom_pois = [
-            {"name": "Store 1", "lat": 37.7749, "lon": -122.4194},
-            {"name": "Store 2", "lat": 37.7849, "lon": -122.4094}
-        ]
-        builder = SocialMapperBuilder().with_custom_pois(custom_pois)
+        # with_custom_pois takes a file path, not a list
+        builder = SocialMapperBuilder().with_custom_pois("/path/to/pois.csv")
         assert isinstance(builder, SocialMapperBuilder)
