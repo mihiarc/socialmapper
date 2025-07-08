@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test the cache manager functionality."""
 
+import json as json_lib
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -88,7 +89,7 @@ def test_cache_operations():
     # Test cleanup of expired entries
     console.print("\n[bold]Testing Cleanup of Expired Entries:[/bold]")
     cleanup_result = cleanup_expired_cache_entries()
-    console.print(JSON(data=cleanup_result))
+    console.print(JSON(json_lib.dumps(cleanup_result, indent=2)))
     
     # Test individual cache clearing
     console.print("\n[bold]Testing Individual Cache Clearing:[/bold]")
