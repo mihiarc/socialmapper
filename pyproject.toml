@@ -50,6 +50,7 @@ dependencies = [
     "pydantic>=2.11.7",  # Latest version as of 2025
     "rich>=14.0.0",  # Latest version as of Mar 2025
     "matplotlib>=3.10.3",  # Latest version as of May 2025
+    "seaborn>=0.13.2",  # Latest version as of 2025
     "contextily>=1.6.2",  # Latest version as of 2025
     "mkdocs>=1.6.1",  # Latest version as of 2025
     "mkdocs-material-extensions>=1.3.1",  # Fixed typo in package name
