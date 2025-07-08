@@ -20,14 +20,14 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-## What's New in v0.6.1 🎉
+## What's New in v0.6.2 🎉
 
+- **🐛 Fixed Travel Time Bug** - Census data exports now correctly show actual travel time instead of defaulting to 15 minutes
 - **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
 - **🏗️ Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
 - **⚡ Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
 - **💾 Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
 - **🗺️ Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
-- **🖥️ Enhanced CLI** - New options for addresses, dry-run mode, and more
 
 📚 **[Full Documentation](https://mihiarc.github.io/socialmapper)** | 🐛 **[Report Issues](https://github.com/mihiarc/socialmapper/issues)**
 

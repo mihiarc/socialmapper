@@ -1,0 +1,1 @@
+"""SocialMapper test package."""
