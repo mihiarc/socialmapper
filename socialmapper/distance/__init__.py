@@ -70,6 +70,7 @@ def add_travel_distances(
     n_jobs: int = -1,
     chunk_size: int = 5000,
     verbose: bool = False,
+    travel_time: int = 15,
 ) -> gpd.GeoDataFrame:
     """Calculate and add travel distances from block groups to nearest POIs.
     
@@ -81,6 +82,7 @@ def add_travel_distances(
         n_jobs: Number of parallel jobs (-1 for all cores)
         chunk_size: Chunk size for parallel processing
         verbose: If True, print detailed debug information
+        travel_time: Travel time in minutes for the analysis
 
     Returns:
         GeoDataFrame with travel distance information added
@@ -101,15 +103,15 @@ def add_travel_distances(
     # Add POI metadata
     poi_name = "unknown"
     poi_id = "unknown"
-    travel_time_minutes = 15  # Default value
+    travel_time_minutes = travel_time  # Use the parameter passed in
 
-    # Try to extract the travel time and POI info from the first POI
+    # Try to extract the POI info from the first POI
     if pois and len(pois) > 0:
         first_poi = pois[0]
         poi_id = first_poi.get("id", poi_id)
         poi_name = first_poi.get("name", first_poi.get("tags", {}).get("name", poi_name))
 
-        # Try to extract travel time from various possible sources
+        # Override travel_time only if explicitly set in POI data (for backward compatibility)
         if "travel_time" in first_poi:
             travel_time_minutes = first_poi["travel_time"]
         elif "travel_time_minutes" in first_poi:

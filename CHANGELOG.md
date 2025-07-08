@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2025-07-08
+
+### 🐛 Bug Fixes
+
+#### **Fixed Travel Time Propagation in Census Data Export**
+- **Fixed incorrect travel_time_minutes** in exported census CSV files
+- **Travel time now correctly propagates** from pipeline configuration to census data
+- **Previously defaulted to 15 minutes** regardless of actual isochrone travel time
+- **Now accurately reflects** the travel time used for isochrone generation (e.g., 60, 120 minutes)
+
+### 🔧 Technical Details
+
+- Added `travel_time` parameter to `integrate_census_data()` function
+- Updated `PipelineOrchestrator` to pass travel_time to census integration  
+- Modified `add_travel_distances()` to accept and use travel_time parameter
+- Maintains backward compatibility while fixing the metadata accuracy
+
 ## [0.6.1] - 2025-06-19
 
 ### 🐛 Bug Fixes
