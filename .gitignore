@@ -145,3 +145,8 @@ docs-dev/2023-5yr-api-changes.csv
 node_modules/
 streamlit.log
 *_screenshots/
+
+# Kansas Walmart Accessibility Analysis outputs and scripts
+isochrone_demo/
+kansas_bulk_analysis_results/
+kansas_case_studies/
