@@ -13,8 +13,6 @@
 # Folders
 /data/
 **/html/
-/tests/
-**/tests/
 /output/*
 
 # Exception: Include the packaged neighbor data
