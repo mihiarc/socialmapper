@@ -221,6 +221,7 @@ class PipelineOrchestrator:
             poi_data=poi_data,
             geographic_level=self.config.geographic_level,
             state_abbreviations=state_abbreviations,
+            travel_time=self.config.travel_time,
         )
 
     def _export_outputs(self):

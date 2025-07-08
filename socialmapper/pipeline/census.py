@@ -21,6 +21,7 @@ def integrate_census_data(
     poi_data: dict[str, Any],
     geographic_level: str = "block-group",
     state_abbreviations: list[str] | None = None,
+    travel_time: int = 15,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, list[str]]:
     """Integrate census data with isochrones.
 
@@ -30,6 +31,8 @@ def integrate_census_data(
         api_key: Census API key
         poi_data: POI data for distance calculations
         geographic_level: Geographic unit ('block-group' or 'zcta')
+        state_abbreviations: List of state abbreviations
+        travel_time: Travel time in minutes for the isochrones
 
     Returns:
         Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
@@ -152,7 +155,7 @@ def integrate_census_data(
     # Calculate travel distances in memory
     try:
         units_with_distances = add_travel_distances(
-            block_groups_gdf=geographic_units_gdf, poi_data=poi_data
+            block_groups_gdf=geographic_units_gdf, poi_data=poi_data, travel_time=travel_time
         )
     except Exception as e:
         logger.error(f"Error in add_travel_distances: {type(e).__name__}: {e}")
