@@ -65,7 +65,21 @@ def render_custom_pois_page():
             missing_cols = [col for col in required_cols if col not in df.columns]
 
             if not missing_cols:
-                # Clean data - remove any rows with missing coordinates
+                # Store original length
+                original_len = len(df)
+                
+                # Convert lat/lon columns to numeric, coercing errors to NaN
+                df['lat'] = pd.to_numeric(df['lat'], errors='coerce')
+                df['lon'] = pd.to_numeric(df['lon'], errors='coerce')
+                
+                # Check for rows with non-numeric coordinates
+                non_numeric_coords = df[df['lat'].isna() | df['lon'].isna()].copy()
+                if len(non_numeric_coords) > 0:
+                    st.warning(f"⚠️ Found {len(non_numeric_coords)} rows with non-numeric coordinates. These will be skipped.")
+                    with st.expander("Show invalid rows"):
+                        st.dataframe(non_numeric_coords)
+                
+                # Clean data - remove any rows with missing or non-numeric coordinates
                 df = df.dropna(subset=['lat', 'lon'])
 
                 # Validate coordinate ranges
@@ -79,7 +93,12 @@ def render_custom_pois_page():
                     st.dataframe(invalid_coords)
                     return
 
-                st.success(f"✅ Loaded {len(df)} valid locations")
+                if len(df) == 0:
+                    st.error("❌ No valid locations found after validation. Please check your CSV file.")
+                    st.info("💡 Tip: Ensure coordinates are numeric values (e.g., 35.7796, -78.6382)")
+                    return
+
+                st.success(f"✅ Loaded {len(df)} valid locations" + (f" (skipped {original_len - len(df)} invalid rows)" if original_len > len(df) else ""))
                 st.session_state.custom_poi_data = df
 
                 # Preview data
