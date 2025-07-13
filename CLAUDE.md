@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**WRITE DETAILED DOCSTRINGS**
+**FIGURES SHOULD BE PIBLICATION QUALITY**
+
 ## Project Overview
 
 SocialMapper is an open-source Python toolkit that analyzes community connections by mapping demographics and access to points of interest (POIs). It creates isochrones (travel time areas) and integrates census data to provide insights about equitable access to community resources.
