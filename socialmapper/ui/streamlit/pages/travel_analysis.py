@@ -166,14 +166,14 @@ def main():
                             census_vars=["B01003_001E", "B19013_001E", "B25077_001E"]
                         )
                     
-                    if result.get('success'):
-                        results_by_mode[mode] = result['data']
-                    else:
-                        analysis_errors.append(f"{mode.title()}: {result.get('error', 'Unknown error')}")
+                        if result.get('success'):
+                            results_by_mode[mode] = result['data']
+                        else:
+                            analysis_errors.append(f"{mode.title()}: {result.get('error', 'Unknown error')}")
                         
-                except Exception as e:
-                    analysis_errors.append(f"{mode.title()}: {str(e)}")
-                    logger.error(f"Analysis failed for {mode}: {e}")
+                    except Exception as e:
+                        analysis_errors.append(f"{mode.title()}: {str(e)}")
+                        logger.error(f"Analysis failed for {mode}: {e}")
             
             # Display results if we have any successful analyses
             if results_by_mode:

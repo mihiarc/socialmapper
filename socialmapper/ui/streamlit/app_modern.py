@@ -12,7 +12,7 @@ from .pages import (
     render_travel_modes_page,
     render_zcta_analysis_page,
 )
-from .pages.travel_analysis_simple import main as render_travel_analysis_page
+from .pages.travel_analysis import main as render_travel_analysis_page
 from .styles import get_custom_css
 
 
