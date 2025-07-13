@@ -51,12 +51,15 @@ class BlockGroupService:
         # Check cache first
         cache_key = f"block_groups_{state_fips}_{county_fips}"
         if self._cache:
-            cached_data = self._cache.get(cache_key)
-            if cached_data:
+            cached_entry = self._cache.get(cache_key)
+            if cached_entry:
                 logger.info(
                     f"Loaded cached block groups for county {county_fips} in state {state_fips}"
                 )
-                return cached_data
+                # Extract data from CacheEntry if needed
+                if hasattr(cached_entry, 'data'):
+                    return cached_entry.data
+                return cached_entry
 
         # Fetch from Census API
         logger.info(f"Fetching block groups for county {county_fips} in state {state_fips}")
