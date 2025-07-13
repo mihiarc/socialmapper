@@ -1,0 +1,15 @@
+# Kansas Grocery Analysis Requirements
+# Python 3.11+ required
+
+# Core dependencies - using parent socialmapper installation
+-e ../..
+
+# Additional analysis-specific dependencies
+matplotlib>=3.7.0
+seaborn>=0.13.0
+contextily>=1.5.0  # For basemap tiles
+requests>=2.31.0   # For Overpass API queries
+
+# Optional dependencies for enhanced functionality
+# jupyter>=1.0.0  # For notebook-based exploration
+# ipywidgets>=8.0.0  # For interactive visualizations
