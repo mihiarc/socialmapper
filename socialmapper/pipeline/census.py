@@ -38,11 +38,25 @@ def integrate_census_data(
         Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
     """
     from ..distance import add_travel_distances
+    import os
+
+    # Enable debug mode if environment variable is set
+    debug_mode = os.environ.get("SOCIALMAPPER_DEBUG_CENSUS", "").lower() in ("true", "1", "yes")
+    if debug_mode:
+        logger.setLevel(logging.DEBUG)
+        logger.info("Census debug mode enabled")
 
     print("\n=== Integrating Census Data ===")
 
     # Get census system
     census_system = get_census_system()
+    
+    if debug_mode:
+        logger.debug(f"Isochrone GDF shape: {isochrone_gdf.shape}")
+        logger.debug(f"POI data keys: {list(poi_data.keys())}")
+        logger.debug(f"Number of POIs: {len(poi_data.get('pois', []))}")
+        logger.debug(f"Census variables requested: {census_variables}")
+        logger.debug(f"Geographic level: {geographic_level}")
 
     # Process variables - normalize them to census codes
     census_codes = []
@@ -120,9 +134,16 @@ def integrate_census_data(
                 print("⚠️ Spatial query failed, falling back to county-based approach")
 
                 # Get counties from POI locations
+                logger.info(f"Getting counties from {len(poi_data.get('pois', []))} POIs")
                 counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=True)
 
                 if not counties:
+                    # Log more details about the failure
+                    logger.error("Failed to determine counties from POI locations")
+                    logger.error(f"POI count: {len(poi_data.get('pois', []))}")
+                    if poi_data.get("pois"):
+                        sample_poi = poi_data["pois"][0]
+                        logger.error(f"Sample POI: lat={sample_poi.get('lat')}, lon={sample_poi.get('lon')}")
                     print("⚠️ Could not determine counties from POI locations")
                     raise ValueError("Failed to determine counties for census data. This may be due to geocoding service issues.")
 

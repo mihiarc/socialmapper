@@ -135,18 +135,6 @@ def render_travel_modes_page():
     """Render the Travel Modes tutorial page."""
     st.header("Travel Mode Comparison")
 
-    # Debug mode toggle in sidebar
-    with st.sidebar:
-        debug_mode = st.checkbox(
-            "🐛 Debug Mode",
-            value=st.session_state.get("debug_mode", False),
-            help="Enable detailed debugging information and error traces",
-        )
-        st.session_state["debug_mode"] = debug_mode
-
-        if debug_mode:
-            st.warning("Debug mode enabled - detailed logs will be shown")
-
     st.markdown("""
     Compare accessibility across different modes of transportation to understand how travel 
     options affect access to community resources.
@@ -186,6 +174,18 @@ def render_travel_modes_page():
         
         [Learn more about travel modes →](https://github.com/mihiarc/socialmapper/blob/main/docs/travel_modes_explained.md)
         """)
+
+    # Advanced options in expander
+    with st.expander("⚙️ Advanced Options"):
+        debug_mode = st.checkbox(
+            "🐛 Enable Debug Mode",
+            value=st.session_state.get("debug_mode", False),
+            help="Show detailed debugging information and error traces",
+        )
+        st.session_state["debug_mode"] = debug_mode
+        
+        if debug_mode:
+            st.info("Debug mode enabled - detailed logs will be shown below")
 
     # Initialize session state
     if "travel_mode_results" not in st.session_state:

@@ -35,12 +35,56 @@ CENSUS_VARIABLES = {
 DEFAULT_CENSUS_VARS = ["B01003_001E", "B19013_001E", "B25077_001E"]
 
 # POI type options
+# Based on OpenStreetMap tagging standards: https://wiki.openstreetmap.org/wiki/Map_features
 POI_TYPES = {
-    "amenity": ["library", "school", "hospital", "community_centre", "park"],
-    "shop": ["supermarket", "convenience", "mall"],
-    "leisure": ["park", "playground", "sports_centre"],
-    "healthcare": ["hospital", "clinic", "pharmacy"],
-    "education": ["school", "university", "kindergarten"]
+    "amenity": [
+        "library",           # amenity=library - public libraries
+        "school",            # amenity=school - primary/secondary schools (ages ~6-18)
+        "hospital",          # amenity=hospital - facilities with inpatient care
+        "community_centre",  # amenity=community_centre - public community facilities
+        "pharmacy",          # amenity=pharmacy - shops dispensing medications
+        "clinic",            # amenity=clinic - medical facilities without inpatient care
+        "doctors",           # amenity=doctors - doctor's offices
+        "university",        # amenity=university - higher education institutions
+        "kindergarten",      # amenity=kindergarten - pre-school education
+        "bank",              # amenity=bank - financial institutions
+        "post_office",       # amenity=post_office - postal services
+        "police",            # amenity=police - police stations
+        "fire_station",      # amenity=fire_station - fire departments
+        "parking"            # amenity=parking - parking facilities (for park_and_ride)
+    ],
+    "shop": [
+        "supermarket",       # shop=supermarket - large grocery stores with full service
+        "convenience",       # shop=convenience - small stores, limited hours/selection
+        "mall",              # shop=mall - indoor shopping centers
+        "grocery",           # shop=grocery - traditional/specialized grocery stores
+        "department_store",  # shop=department_store - large stores with many departments
+        "bakery",            # shop=bakery - shops selling bread and cakes
+        "butcher"            # shop=butcher - shops selling meat
+    ],
+    "leisure": [
+        "park",              # leisure=park - municipal parks (NOT amenity=park which is deprecated)
+        "playground",        # leisure=playground - children's play areas
+        "sports_centre",     # leisure=sports_centre - indoor sports facilities
+        "swimming_pool",     # leisure=swimming_pool - swimming facilities
+        "fitness_centre",    # leisure=fitness_centre - gyms and fitness facilities
+        "stadium",           # leisure=stadium - large sports venues
+        "garden"             # leisure=garden - botanical/ornamental gardens
+    ],
+    "public_transport": [
+        "station",           # public_transport=station - train/metro stations
+        "stop_position",     # public_transport=stop_position - bus/tram stops
+        "platform"           # public_transport=platform - boarding platforms
+    ],
+    "railway": [
+        "station",           # railway=station - train stations
+        "halt",              # railway=halt - small train stops
+        "tram_stop"          # railway=tram_stop - tram/light rail stops
+    ]
+    # Note: 'healthcare' and 'education' are not primary OSM keys
+    # Healthcare facilities use amenity=hospital/clinic/doctors/pharmacy
+    # Education facilities use amenity=school/university/kindergarten
+    # Transit stations can be tagged as public_transport=station or railway=station
 }
 
 # Travel mode configurations
@@ -75,19 +119,43 @@ FILE_UPLOAD_CONFIG = {
 ANALYSIS_TEMPLATES = {
     "Equity Assessment": {
         "description": "Analyze equitable access to essential services",
-        "poi_types": ["library", "hospital", "school", "park"],
+        "poi_types": [
+            ("amenity", "library"),
+            ("amenity", "hospital"),
+            ("amenity", "school"),
+            ("leisure", "park")  # Corrected from amenity to leisure
+        ],
+        "census_vars": ["B01003_001E", "B19013_001E", "B17001_002E"],
+        "travel_time": 15
+    },
+    "Healthcare Access": {
+        "description": "Evaluate access to healthcare facilities",
+        "poi_types": [
+            ("amenity", "hospital"),
+            ("amenity", "clinic"),
+            ("amenity", "doctors"),
+            ("amenity", "pharmacy")
+        ],
         "census_vars": ["B01003_001E", "B19013_001E", "B17001_002E"],
         "travel_time": 15
     },
     "Site Selection": {
         "description": "Evaluate potential locations for new facilities",
-        "poi_types": ["supermarket", "pharmacy", "bank"],
+        "poi_types": [
+            ("shop", "supermarket"),
+            ("amenity", "pharmacy"),
+            ("amenity", "bank")
+        ],
         "census_vars": ["B01003_001E", "B19013_001E", "B25077_001E"],
         "travel_time": 10
     },
     "Transportation Planning": {
-        "description": "Assess multi-modal accessibility",
-        "poi_types": ["transit_station", "park_and_ride"],
+        "description": "Assess multi-modal accessibility to transit",
+        "poi_types": [
+            ("public_transport", "station"),
+            ("railway", "station"),
+            ("amenity", "parking")  # For park-and-ride facilities
+        ],
         "census_vars": ["B08301_021E", "B08301_001E"],
         "travel_time": 20
     }

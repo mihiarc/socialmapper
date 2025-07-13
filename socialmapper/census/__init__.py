@@ -306,21 +306,32 @@ class CensusSystem:
         self, pois: list[dict[str, Any]], include_neighbors: bool = True
     ) -> list[tuple[str, str]]:
         """Get counties for a list of POIs."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         counties = set()
         failed_pois = 0
+        
+        logger.info(f"Processing {len(pois)} POIs to determine counties")
 
-        for poi in pois:
+        for i, poi in enumerate(pois):
             if "lat" in poi and "lon" in poi:
-                geo_info = self.get_geography_from_point(poi["lat"], poi["lon"])
-                if geo_info and geo_info.get("state_fips") and geo_info.get("county_fips"):
-                    counties.add((geo_info["state_fips"], geo_info["county_fips"]))
-                else:
+                try:
+                    geo_info = self.get_geography_from_point(poi["lat"], poi["lon"])
+                    if geo_info and geo_info.get("state_fips") and geo_info.get("county_fips"):
+                        county_tuple = (geo_info["state_fips"], geo_info["county_fips"])
+                        counties.add(county_tuple)
+                        if i < 3:  # Log first few for debugging
+                            logger.debug(f"POI {i}: lat={poi['lat']}, lon={poi['lon']} -> state={geo_info['state_fips']}, county={geo_info['county_fips']}")
+                    else:
+                        failed_pois += 1
+                        if failed_pois <= 3:  # Log first few failures
+                            logger.warning(f"Failed to geocode POI {i}: lat={poi.get('lat')}, lon={poi.get('lon')}, geo_info={geo_info}")
+                except Exception as e:
                     failed_pois += 1
+                    logger.error(f"Exception geocoding POI {i}: {type(e).__name__}: {e}")
 
         if failed_pois > 0:
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.warning(f"Failed to geocode {failed_pois} out of {len(pois)} POIs")
 
         # TODO: Add neighbor functionality when neighbor system is integrated

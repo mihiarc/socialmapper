@@ -30,6 +30,17 @@ def initialize_session_state():
 
 def main():
     """Main application entry point."""
+    # Check if modern navigation is available (Streamlit 2025+)
+    if hasattr(st, 'navigation'):
+        # Use modern top navigation
+        main_modern()
+    else:
+        # Use traditional sidebar navigation
+        main_traditional()
+
+
+def main_traditional():
+    """Traditional application with sidebar navigation."""
     # Configure page
     st.set_page_config(**PAGE_CONFIG)
 
@@ -62,6 +73,13 @@ def main():
         page_renderers[selected_page]()
     else:
         st.error(f"Page '{selected_page}' not found!")
+
+
+def main_modern():
+    """Modern application with top navigation."""
+    # Import modern app
+    from .app_modern import main as modern_main
+    modern_main()
 
 
 if __name__ == "__main__":

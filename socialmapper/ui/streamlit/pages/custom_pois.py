@@ -126,7 +126,7 @@ def render_custom_pois_page():
                     ne = [df['lat'].max(), df['lon'].max()]
                     m.fit_bounds([sw, ne])
 
-                    st_folium(m, height=400, returned_objects=[])
+                    st_folium(m, height=400, width=None, returned_objects=[])
 
                 # Analysis configuration
                 st.subheader("Configure Analysis")
@@ -391,7 +391,7 @@ def display_custom_analysis_results():
                     center_lat=poi_data['lat'].mean(),
                     center_lon=poi_data['lon'].mean()
                 )
-                st_folium(map_obj, height=500, returned_objects=[])
+                st_folium(map_obj, height=500, width=None, returned_objects=[])
             except:
                 st.info("Map visualization not available.")
         else:

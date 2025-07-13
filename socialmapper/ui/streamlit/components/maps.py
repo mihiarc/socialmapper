@@ -23,7 +23,16 @@ def create_folium_map(
     Returns:
         Configured folium Map object
     """
-    m = folium.Map(location=[lat, lon], zoom_start=zoom_start)
+    m = folium.Map(
+        location=[lat, lon], 
+        zoom_start=zoom_start,
+        scrollWheelZoom=False,
+        doubleClickZoom=True,
+        touchZoom=True,
+        boxZoom=True,
+        keyboard=True,
+        zoomControl=True
+    )
 
     # Add center marker
     folium.Marker(
@@ -52,27 +61,86 @@ def create_poi_map(
     center_lon: float,
     pois: pd.DataFrame,
     isochrone_data: Any | None = None,
-    zoom_start: int = 13
+    isochrone_bounds: list[list[float]] | None = None,
+    zoom_start: int = 13,
+    tiles: str = "OpenStreetMap",
+    show_poi_labels: bool = True
 ) -> folium.Map:
-    """Create a map with POI markers.
+    """Create a map with POI markers and locked zoom.
+    
+    The map has scroll wheel zoom disabled to prevent accidental zoom changes.
+    Users can still zoom using:
+    - Zoom control buttons (+/- in top-left)
+    - Double-click to zoom in
+    - Shift+drag to zoom to area (box zoom)
+    - Keyboard +/- keys
+    - Touch gestures on mobile
     
     Args:
         center_lat: Center latitude
         center_lon: Center longitude
         pois: DataFrame with POI data (must have lat, lon, name columns)
         isochrone_data: Optional isochrone overlay
-        zoom_start: Initial zoom level
+        isochrone_bounds: Optional bounds [[south, west], [north, east]] for map extent
+        zoom_start: Initial zoom level (used if no bounds provided)
+        tiles: Map tile style
+        show_poi_labels: Whether to show POI labels
         
     Returns:
-        Configured folium Map object with POI markers
+        Configured folium Map object with POI markers and zoom controls
     """
-    m = create_folium_map(center_lat, center_lon, isochrone_data, zoom_start)
+    # Create base map with specified tiles and disabled scroll wheel zoom
+    m = folium.Map(
+        location=[center_lat, center_lon], 
+        zoom_start=zoom_start, 
+        tiles=tiles,
+        scrollWheelZoom=False,  # Disable mouse wheel zoom
+        doubleClickZoom=True,   # Keep double-click zoom enabled
+        touchZoom=True,         # Keep touch zoom for mobile
+        boxZoom=True,           # Keep box zoom (shift+drag)
+        keyboard=True,          # Keep keyboard zoom (+/- keys)
+        zoomControl=True        # Show zoom control buttons
+    )
+    
+    # Add isochrone if available
+    if isochrone_data:
+        folium.GeoJson(
+            isochrone_data,
+            style_function=lambda x: {
+                'fillColor': '#3388ff',
+                'color': '#3388ff', 
+                'weight': 2,
+                'fillOpacity': 0.3
+            },
+            tooltip="Travel Time Area"
+        ).add_to(m)
+    
+    # Fit map to isochrone bounds if available, otherwise use default zoom
+    if isochrone_bounds:
+        # Add small padding to bounds for better visualization
+        south, west = isochrone_bounds[0]
+        north, east = isochrone_bounds[1]
+        
+        # Add 5% padding around the bounds
+        lat_padding = (north - south) * 0.05
+        lon_padding = (east - west) * 0.05
+        
+        padded_bounds = [
+            [south - lat_padding, west - lon_padding],
+            [north + lat_padding, east + lon_padding]
+        ]
+        
+        m.fit_bounds(padded_bounds)
 
     # Add POI markers
     for _, poi in pois.iterrows():
+        popup_text = poi['name'] if show_poi_labels else f"POI ({poi.get('type', 'Unknown')})"
+        tooltip_text = poi['name'] if show_poi_labels else None
+        
         folium.Marker(
             [poi['lat'], poi['lon']],
-            popup=poi['name'],
+            popup=popup_text,
+            tooltip=tooltip_text,
             icon=folium.Icon(color='green', icon='location-dot')
         ).add_to(m)
 
@@ -97,7 +165,16 @@ def create_custom_location_map(
     if not locations:
         # Default to US center if no locations
         center = (39.8283, -98.5795) if center is None else center
-        return folium.Map(location=center, zoom_start=4)
+        return folium.Map(
+            location=center, 
+            zoom_start=4,
+            scrollWheelZoom=False,
+            doubleClickZoom=True,
+            touchZoom=True,
+            boxZoom=True,
+            keyboard=True,
+            zoomControl=True
+        )
 
     # Calculate center from locations if not provided
     if center is None:
@@ -105,7 +182,16 @@ def create_custom_location_map(
         lons = [loc['lon'] for loc in locations]
         center = (sum(lats) / len(lats), sum(lons) / len(lons))
 
-    m = folium.Map(location=center, zoom_start=zoom_start)
+    m = folium.Map(
+        location=center, 
+        zoom_start=zoom_start,
+        scrollWheelZoom=False,
+        doubleClickZoom=True,
+        touchZoom=True,
+        boxZoom=True,
+        keyboard=True,
+        zoomControl=True
+    )
 
     # Add markers for each location
     for idx, loc in enumerate(locations):
@@ -135,7 +221,16 @@ def create_comparison_map(
     Returns:
         Configured folium Map object with multiple isochrones
     """
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start)
+    m = folium.Map(
+        location=[center_lat, center_lon], 
+        zoom_start=zoom_start,
+        scrollWheelZoom=False,
+        doubleClickZoom=True,
+        touchZoom=True,
+        boxZoom=True,
+        keyboard=True,
+        zoomControl=True
+    )
 
     # Add center marker
     folium.Marker(
@@ -190,7 +285,16 @@ def create_isochrone_map(
     Returns:
         Configured folium Map object with isochrones and POIs
     """
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start)
+    m = folium.Map(
+        location=[center_lat, center_lon], 
+        zoom_start=zoom_start,
+        scrollWheelZoom=False,
+        doubleClickZoom=True,
+        touchZoom=True,
+        boxZoom=True,
+        keyboard=True,
+        zoomControl=True
+    )
 
     # Add isochrone overlay
     if geojson_data:
