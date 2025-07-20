@@ -42,6 +42,7 @@ class AnalysisResult:
     pois: list[dict] = field(default_factory=list)
     demographics: dict[str, float] = field(default_factory=dict)
     isochrone_area: float = 0.0
+    isochrones: Any = None  # GeoDataFrame with isochrone geometries
 
     @property
     def success(self) -> bool:
