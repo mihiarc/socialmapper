@@ -228,3 +228,27 @@ socialmapper/
 ├── exceptions/       # Custom exception hierarchy
 └── utils/            # Utility functions
 ```
+
+## Planning Documents
+
+The project maintains comprehensive planning documentation in the `.kiro/` directory:
+
+### Streamlit App Redesign Plans
+Located in `.kiro/specs/streamlit-app-fixes/`:
+- **requirements.md**: Transform Streamlit app into 5 interactive tutorial pages matching documentation
+- **tasks.md**: Detailed implementation plan with 10 task groups and 25 subtasks
+- **design.md**: Architecture specifications, component design, and testing strategy
+
+### Project Steering Documents
+Located in `.kiro/steering/`:
+- **product.md**: Product vision, target users, and educational focus
+- **structure.md**: Project organization and architectural patterns
+- **tech.md**: Technology stack, dependencies, and development commands
+
+### Development Architecture Plans
+Located in `docs-dev/`:
+- **ARCHITECTURE.md**: ETL-based architecture refactoring with implementation phases
+- **API_MODERNIZATION_RECOMMENDATIONS.md**: Modern API patterns and improvements
+- **DOCUMENTATION_AUDIT.md**: Documentation coverage and improvement plans
+
+These planning documents guide the ongoing development and should be referenced when making architectural decisions or implementing new features.
