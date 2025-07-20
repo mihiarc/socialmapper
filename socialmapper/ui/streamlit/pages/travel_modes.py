@@ -1,4 +1,8 @@
-"""Travel Modes comparison page for the Streamlit application."""
+"""Travel Modes Tutorial - Interactive Version
+
+This page mirrors the [Travel Modes Tutorial](https://mihiarc.github.io/socialmapper/tutorials/travel-modes-tutorial/) documentation example,
+demonstrating multi-modal accessibility analysis.
+"""
 
 import logging
 import traceback
@@ -133,68 +137,230 @@ def create_error_handler(operation_name: str):
 
 def render_travel_modes_page():
     """Render the Travel Modes tutorial page."""
-    st.header("Travel Mode Comparison")
+    # Header with tutorial reference
+    col1, col2, col3 = st.columns([4, 1, 1])
+
+    with col1:
+        st.header("🚴 Travel Modes Tutorial")
+
+    with col2:
+        if st.button("📖 View Tutorial", use_container_width=True):
+            st.info(
+                "This page mirrors: [Travel Modes Tutorial](https://mihiarc.github.io/socialmapper/tutorials/travel-modes-tutorial/)"
+            )
+
+    with col3:
+        if st.button("✅ Mark Complete", use_container_width=True):
+            st.session_state.tutorial_progress["Travel Modes"] = True
+            st.success("Tutorial marked as complete!")
+            st.rerun()
 
     st.markdown("""
-    Compare accessibility across different modes of transportation to understand how travel 
-    options affect access to community resources.
+    ## Multi-Modal Accessibility Analysis
     
-    **What you'll learn:**
-    - 🚶 Walking accessibility (5 km/h)
-    - 🚴 Biking accessibility (15 km/h) 
-    - 🚗 Driving accessibility (city speeds)
-    - 📊 Comparative analysis and equity insights
+    This tutorial demonstrates how to use different travel modes (walk, bike, drive) in 
+    SocialMapper to analyze accessibility. Different modes create different isochrone 
+    shapes based on the available transportation networks.
+    
+    ### What You'll Learn
+    
+    - 🚶 Using walk, bike, and drive travel modes
+    - 🗺️ Understanding how travel modes affect isochrone shapes
+    - ⏱️ Choosing appropriate travel times for each mode
+    - 📊 Comparing accessibility across different transportation options
+    - 🔄 Combining travel modes with custom POIs
     """)
 
-    # Add info about travel modes
-    with st.expander("📖 How Travel Modes Work"):
+    # Tutorial reference
+    with st.expander("📖 Tutorial Reference"):
         st.markdown("""
-        **Understanding Network Differences:**
+        This interactive page follows the exact workflow from the [Travel Modes Tutorial](https://mihiarc.github.io/socialmapper/tutorials/travel-modes-tutorial/):
         
-        🚶 **Walking Networks**
-        - Include sidewalks, footpaths, and roads where walking is legal
-        - All paths are bidirectional (ignore one-way streets)
-        - Speed: 5 km/h average (1.5 km/h on stairs, 4.5 km/h on paths)
-        - **Note**: Includes roads without sidewalks if pedestrian access is allowed
+        1. **Location**: Chapel Hill, NC
+        2. **Examples**: 
+           - Walking to parks (15 minutes)
+           - Biking to libraries (10 minutes)
+           - Driving to hospitals (20 minutes)
+        3. **Analysis**: Side-by-side comparison of travel modes
         
-        🚴 **Biking Networks**  
-        - Include bike lanes, roads where cycling is allowed, and shared paths
-        - Respect one-way streets (unless contraflow bike lanes exist)
-        - Speed: 15 km/h average (8 km/h on shared paths, 18 km/h in bike lanes)
-        - Exclude stairs and pedestrian-only areas
-        
-        🚗 **Driving Networks**
-        - Include all roads accessible to cars
-        - Strictly follow one-way restrictions and turn limitations
-        - Speed: Varies by road type (30 km/h residential, 110 km/h highway)
-        - Use actual speed limits when available in OpenStreetMap
-        
-        **Important**: Walking isochrones may appear larger than expected in suburban/rural areas 
-        because they include roads without sidewalks where walking is legally permitted.
-        
-        [Learn more about travel modes →](https://github.com/mihiarc/socialmapper/blob/main/docs/travel_modes_explained.md)
+        The tutorial demonstrates how different transportation options affect access to services.
         """)
 
-    # Advanced options in expander
-    with st.expander("⚙️ Advanced Options"):
-        debug_mode = st.checkbox(
-            "🐛 Enable Debug Mode",
-            value=st.session_state.get("debug_mode", False),
-            help="Show detailed debugging information and error traces",
-        )
-        st.session_state["debug_mode"] = debug_mode
+    # Understanding Travel Modes
+    st.markdown("### Understanding Travel Modes")
+    st.markdown("SocialMapper supports three travel modes, each using different network data:")
+
+    # Travel modes table
+    mode_data = pd.DataFrame(
+        {
+            "Mode": ["🚶 Walk", "🚴 Bike", "🚗 Drive"],
+            "Network Types": [
+                "Sidewalks, crosswalks, pedestrian paths",
+                "Bike lanes, shared roads, trails",
+                "Roads accessible by cars",
+            ],
+            "Typical Speed": ["3-4 mph", "10-15 mph", "Variable"],
+            "Common Use Cases": [
+                "Neighborhood services, parks, schools",
+                "Recreation, commuting, local services",
+                "Regional services, hospitals, shopping",
+            ],
+        }
+    )
+    st.dataframe(mode_data, use_container_width=True, hide_index=True)
+
+    # Detailed explanations
+    with st.expander("📖 Detailed Travel Mode Information"):
+        st.markdown("""
+        **Walking Isochrones:**
+        - Cover 0.5-1 mile radius (15 minutes)
+        - Follow sidewalks and pedestrian paths
+        - Stop at major barriers (highways, rivers)
+        - Best for neighborhood-level analysis
         
-        if debug_mode:
-            st.info("Debug mode enabled - detailed logs will be shown below")
+        **Biking Isochrones:**
+        - Cover 2-3 mile radius (10 minutes)
+        - Use bike lanes, trails, and bike-friendly roads
+        - Avoid highways but can cross at designated points
+        - Good for local commuting analysis
+        
+        **Driving Isochrones:**
+        - Cover 5-15 mile radius (20 minutes)
+        - Follow road network with speed limits
+        - Account for one-way streets and turn restrictions
+        - Essential for regional service analysis
+        """)
+
+    # Step 1: Configure Analysis Examples
+    st.markdown("### Step 1: Configure Tutorial Examples")
+    st.markdown("""
+    The tutorial demonstrates three different scenarios, each using the appropriate travel 
+    mode for the type of service being analyzed.
+    """)
+
+    # Tutorial code examples
+    with st.expander("📝 View Tutorial Code"):
+        tab1, tab2, tab3 = st.tabs(
+            ["Walking to Parks", "Biking to Libraries", "Driving to Hospitals"]
+        )
+
+        with tab1:
+            st.code(
+                """
+# Example 1: Walking to Parks
+config = (
+    SocialMapperBuilder()
+    .with_location("Chapel Hill", "NC")
+    .with_osm_pois("leisure", "park")
+    .with_travel_time(15)
+    .with_travel_mode("walk")  # Walking mode
+    .with_census_variables("total_population", "median_age")
+    .limit_pois(3)  # Limit for demo
+    .build()
+)
+""",
+                language="python",
+            )
+
+        with tab2:
+            st.code(
+                """
+# Example 2: Biking to Libraries  
+config = (
+    SocialMapperBuilder()
+    .with_location("Chapel Hill", "NC")
+    .with_osm_pois("amenity", "library")
+    .with_travel_time(10)
+    .with_travel_mode("bike")  # Biking mode
+    .with_census_variables("total_population", "median_household_income")
+    .limit_pois(3)
+    .build()
+)
+""",
+                language="python",
+            )
+
+        with tab3:
+            st.code(
+                """
+# Example 3: Driving to Hospitals
+config = (
+    SocialMapperBuilder()
+    .with_location("Chapel Hill", "NC")
+    .with_osm_pois("amenity", "hospital")
+    .with_travel_time(20)
+    .with_travel_mode("drive")  # Driving mode
+    .with_census_variables("total_population", "median_age")
+    .limit_pois(2)
+    .build()
+)
+""",
+                language="python",
+            )
 
     # Initialize session state
     if "travel_mode_results" not in st.session_state:
         st.session_state.travel_mode_results = {}
+    if "selected_example" not in st.session_state:
+        st.session_state.selected_example = None
+
+    # Step 2: Choose an Example or Configure Custom Analysis
+    st.markdown("### Step 2: Choose a Tutorial Example")
+
+    # Example selector
+    example_options = {
+        "Walking to Parks": {
+            "location": "Chapel Hill",
+            "state": "North Carolina",
+            "poi_category": "leisure",
+            "poi_type": "park",
+            "travel_time": 15,
+            "modes": ["walk"],
+            "description": "15-minute walk to parks - neighborhood accessibility",
+        },
+        "Biking to Libraries": {
+            "location": "Chapel Hill",
+            "state": "North Carolina",
+            "poi_category": "amenity",
+            "poi_type": "library",
+            "travel_time": 10,
+            "modes": ["bike"],
+            "description": "10-minute bike to libraries - local service access",
+        },
+        "Driving to Hospitals": {
+            "location": "Chapel Hill",
+            "state": "North Carolina",
+            "poi_category": "amenity",
+            "poi_type": "hospital",
+            "travel_time": 20,
+            "modes": ["drive"],
+            "description": "20-minute drive to hospitals - regional healthcare access",
+        },
+        "Multi-Modal Comparison": {
+            "location": "Chapel Hill",
+            "state": "North Carolina",
+            "poi_category": "amenity",
+            "poi_type": "library",
+            "travel_time": 15,
+            "modes": ["walk", "bike", "drive"],
+            "description": "Compare all three modes for the same POI type",
+        },
+    }
+
+    st.radio(
+        "Select a tutorial example:",
+        options=list(example_options.keys()),
+        format_func=lambda x: f"{x} - {example_options[x]['description']}",
+    )
 
     # Configuration form
-    st.subheader("Configure Multi-Modal Analysis")
+    st.markdown("### Step 3: Run the Analysis")
 
     with st.form("travel_mode_analysis"):
+        st.info(
+            "💡 **Tutorial Mode**: The form is pre-populated with values from the selected example."
+        )
+
         col1, col2 = st.columns(2)
 
         with col1:
@@ -288,7 +454,7 @@ def run_travel_mode_comparison(
     debug_mode = st.session_state.get("debug_mode", False)
     debugger = TravelModeDebugger(debug_enabled=debug_mode)
 
-    debugger.log(f"Starting travel mode comparison analysis")
+    debugger.log("Starting travel mode comparison analysis")
     debugger.log(f"Location: {location}, {state}")
     debugger.log(f"POI: {poi_category}/{poi_type}")
     debugger.log(f"Travel time: {travel_time} minutes")
@@ -418,19 +584,34 @@ def run_travel_mode_comparison(
 
 
 def display_travel_mode_results():
-    """Display comparison results for multiple travel modes."""
+    """Display comparison results for multiple travel modes matching tutorial format."""
     results_data = st.session_state.travel_mode_results
     modes_data = results_data["modes"]
     location = results_data["location"]
     poi_type = results_data["poi_type"]
     travel_time = results_data["travel_time"]
 
-    st.subheader("📊 Travel Mode Comparison Results")
-    st.caption(f"{location} • {poi_type.replace('_', ' ').title()} • {travel_time} minutes")
+    # Step 4: Understanding the Results
+    st.markdown("### Step 4: Understanding the Results")
+    st.markdown("""
+    The analysis shows how different travel modes affect access to services. Compare isochrone 
+    shapes, population reach, and demographic patterns across modes.
+    """)
 
-    # Tabs for different views
+    # Tutorial completion tracker
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.subheader("📊 Travel Mode Comparison Results")
+        st.caption(f"{location} • {poi_type.replace('_', ' ').title()} • {travel_time} minutes")
+    with col2:
+        if st.button("✅ Complete Tutorial", use_container_width=True):
+            st.session_state.tutorial_progress["Travel Modes"] = True
+            st.success("Tutorial completed! 🎉")
+            st.balloons()
+
+    # Tutorial-style results display
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["📈 Overview", "🗺️ Maps", "📊 Demographics", "⚖️ Equity Analysis", "💾 Export"]
+        ["📈 Overview", "🗺️ Maps", "📊 Demographics", "⚖️ Comparison", "💾 Export"]
     )
 
     with tab1:
@@ -447,6 +628,51 @@ def display_travel_mode_results():
 
     with tab5:
         display_export_options(modes_data)
+
+    # Tutorial completion and next steps
+    st.markdown("---")
+    st.markdown("### 🎯 Tutorial Complete!")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.success("""
+        **Congratulations!** You've completed the Travel Modes tutorial and learned:
+        - ✅ How to use walk, bike, and drive travel modes
+        - ✅ How travel modes affect isochrone shapes
+        - ✅ How to choose appropriate travel times
+        - ✅ How to compare accessibility across modes
+        """)
+
+    with col2:
+        st.info("""
+        **Next Steps:**
+        - 📊 Try **ZCTA Analysis** for ZIP code-level insights
+        - 📮 Learn **Address Geocoding** for precise locations
+        - 🎯 Combine travel modes with custom POIs
+        - 📦 Analyze transportation equity in your community
+        """)
+
+    # Advanced examples
+    with st.expander("🚀 Advanced: Combining Travel Modes with Custom Analysis"):
+        st.markdown("""
+        The tutorial concepts can be extended for advanced analysis:
+        """)
+        st.code(
+            """
+# Analyze transit deserts by comparing modes
+walk_result = analyze_mode("walk", 15)
+bus_result = analyze_mode("transit", 30)
+drive_result = analyze_mode("drive", 15)
+
+# Find areas only accessible by car
+car_only_areas = drive_result.coverage - (walk_result.coverage + bus_result.coverage)
+
+# Identify affected populations
+affected_pop = census_data[car_only_areas]['total_population'].sum()
+print(f"Population in car-dependent areas: {affected_pop:,}")
+""",
+            language="python",
+        )
 
 
 def display_overview_metrics(modes_data: dict[str, Any]):
@@ -1057,7 +1283,7 @@ def display_export_options(modes_data: dict[str, Any]):
                             path_obj = Path(file_info["path"])
                             if path_obj.exists():
                                 with cols[col_idx % 3]:
-                                    with open(path_obj, "rb") as f:
+                                    with path_obj.open("rb") as f:
                                         file_data = f.read()
 
                                     mime_types = {
@@ -1087,7 +1313,7 @@ def display_export_options(modes_data: dict[str, Any]):
 
                     if path_obj.exists() and path_obj.is_file():
                         with cols[col_idx % 3]:
-                            with open(file_path, "rb") as f:
+                            with path_obj.open("rb") as f:
                                 file_data = f.read()
 
                             st.download_button(

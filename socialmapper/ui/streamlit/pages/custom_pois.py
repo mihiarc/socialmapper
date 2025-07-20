@@ -1,8 +1,14 @@
-"""Custom POIs page for the Streamlit application."""
+"""Custom POIs Tutorial - Interactive Version
 
+This page mirrors the [Custom POIs Tutorial](https://mihiarc.github.io/socialmapper/tutorials/custom-pois-tutorial/) documentation example,
+demonstrating how to analyze your own points of interest.
+"""
+
+import io
 import logging
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import folium
 import pandas as pd
@@ -19,18 +25,50 @@ logger = logging.getLogger(__name__)
 
 def render_custom_pois_page():
     """Render the Custom POIs tutorial page."""
-    st.header("Custom Points of Interest")
+    # Header with tutorial reference
+    col1, col2, col3 = st.columns([4, 1, 1])
+    
+    with col1:
+        st.header("📍 Custom POIs Tutorial")
+    
+    with col2:
+        if st.button("📖 View Tutorial", use_container_width=True):
+            st.info("This page mirrors: [Custom POIs Tutorial](https://mihiarc.github.io/socialmapper/tutorials/custom-pois-tutorial/)")
+    
+    with col3:
+        if st.button("✅ Mark Complete", use_container_width=True):
+            st.session_state.tutorial_progress["Custom POIs"] = True
+            st.success("Tutorial marked as complete!")
+            st.rerun()
 
     st.markdown("""
-    This tutorial demonstrates how to analyze accessibility for your own custom locations, 
-    such as specific addresses, facilities, or points of interest not available in OpenStreetMap.
+    ## Analyzing Your Own Points of Interest
     
-    **What you'll learn:**
-    - 📤 Upload custom location data via CSV
-    - 🗺️ Visualize custom points on a map
-    - 🔍 Analyze accessibility from these locations
-    - 📊 Compare multiple custom locations
+    This tutorial demonstrates how to analyze your own points of interest instead of relying 
+    on OpenStreetMap data. This is particularly useful when you have specific locations like 
+    company offices, service locations, or custom datasets.
+    
+    ### What You'll Learn
+    
+    - 📄 How to format your location data for SocialMapper
+    - 📤 Loading POIs from CSV files
+    - 📦 Analyzing multiple custom locations simultaneously
+    - 🔄 Batch processing different POI types
+    - 📊 Comparing accessibility across custom locations
     """)
+    
+    # Tutorial reference
+    with st.expander("📖 Tutorial Reference"):
+        st.markdown("""
+        This interactive page follows the exact workflow from the [Custom POIs Tutorial](https://mihiarc.github.io/socialmapper/tutorials/custom-pois-tutorial/):
+        
+        1. **CSV Format**: name, latitude, longitude columns (+ optional type, address)
+        2. **Travel Time**: 10-minute walk analysis
+        3. **Census Variables**: Total population, median age, percent poverty
+        4. **Output**: Accessibility comparison table for all custom POIs
+        
+        The example analyzes community resources like libraries, parks, and social services.
+        """)
 
     # Initialize session state for this page
     if 'custom_poi_data' not in st.session_state:
@@ -38,13 +76,63 @@ def render_custom_pois_page():
     if 'custom_analysis_results' not in st.session_state:
         st.session_state.custom_analysis_results = None
 
-    # File upload section
-    st.subheader("Upload Custom Locations")
+    # Step 1: CSV Format Requirements
+    st.markdown("### Step 1: Understand the CSV Format")
+    st.markdown("""
+    SocialMapper expects custom POI data in CSV format with specific columns:
+    """)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        **Required Columns:**
+        - `name`: The name of your point of interest
+        - `latitude`: Decimal latitude (e.g., 35.7796)
+        - `longitude`: Decimal longitude (e.g., -78.6382)
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Optional Columns:**
+        - `type`: Category or type of POI
+        - `address`: Street address for reference
+        """)
+    
+    # Example CSV
+    st.markdown("#### Example CSV File")
+    example_csv = """name,latitude,longitude,type,address
+Central Library,35.7796,-78.6382,library,"201 E Main St"
+City Park,35.7821,-78.6589,park,"500 Park Ave"
+Community Center,35.7754,-78.6434,community_center,"100 Community Dr"
+Food Bank,35.7889,-78.6444,social_service,"456 Help St"
+Senior Center,35.7701,-78.6521,social_service,"789 Elder Way\""""
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.code(example_csv, language="csv")
+    
+    with col2:
+        # Download example CSV
+        st.download_button(
+            label="📥 Download Example CSV",
+            data=example_csv,
+            file_name="custom_pois_example.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+        
+        st.info("""
+        💡 **Tip**: Download this example file as a template 
+        for your own custom POI data.
+        """)
 
+    # Step 2: Upload Your Data
+    st.markdown("### Step 2: Upload Your Location Data")
+    
     uploaded_file = st.file_uploader(
         "Choose a CSV file",
         type="csv",
-        help="CSV should have columns: name, lat (or latitude), lon (or longitude)"
+        help="Upload your custom POI data in CSV format"
     )
 
     if uploaded_file is not None:
@@ -128,8 +216,30 @@ def render_custom_pois_page():
 
                     st_folium(m, height=400, width=None, returned_objects=[])
 
-                # Analysis configuration
-                st.subheader("Configure Analysis")
+                # Step 3: Configure Analysis
+                st.markdown("### Step 3: Configure Your Analysis")
+                
+                # Tutorial code example
+                with st.expander("📝 View Tutorial Code"):
+                    st.code("""
+# Tutorial code from the Custom POIs Tutorial
+with SocialMapperClient() as client:
+    # Build configuration for custom POIs
+    config = (SocialMapperBuilder()
+        .with_custom_pois("custom_pois.csv")
+        .with_travel_time(10)
+        .with_census_variables(
+            "total_population",
+            "median_age",
+            "percent_poverty"
+        )
+        .with_exports(csv=True, isochrones=True)
+        .build()
+    )
+    
+    # Run analysis
+    result = client.run_analysis(config)
+""", language="python")
 
                 with st.form("custom_analysis"):
                     col1, col2 = st.columns(2)
@@ -140,23 +250,35 @@ def render_custom_pois_page():
                             min_value=5,
                             max_value=30,
                             value=10,
-                            help="How far can people travel from these locations?"
+                            help="Tutorial uses 10-minute walk"
                         )
 
                         travel_mode = st.selectbox(
                             "Travel Mode",
                             options=list(TRAVEL_MODES.keys()),
-                            format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}"
+                            format_func=lambda x: f"{TRAVEL_MODES[x]['icon']} {TRAVEL_MODES[x]['name']}",
+                            index=0  # Default to walk
                         )
 
                     with col2:
-                        # Census variable selection
-                        st.markdown("**Select Census Variables:**")
+                        # Tutorial-specific census variables
+                        st.markdown("**Census Variables (Tutorial Selection):**")
+                        
+                        # Pre-select tutorial variables
+                        tutorial_vars = {
+                            "B01003_001E": "Total Population",
+                            "B08301_010E": "Median Age", 
+                            "B17001_002E": "Percent Poverty"
+                        }
+                        
                         selected_vars = []
                         for var_code, var_name in CENSUS_VARIABLES.items():
+                            # Check if this is a tutorial variable
+                            is_tutorial_var = any(tv in var_name.lower() for tv in ["total population", "median age", "poverty"])
+                            
                             if st.checkbox(
                                 var_name,
-                                value=var_code in DEFAULT_CENSUS_VARS,
+                                value=is_tutorial_var,
                                 key=f"custom_census_{var_code}"
                             ):
                                 selected_vars.append(var_code)
@@ -303,15 +425,30 @@ def run_custom_poi_analysis(df: pd.DataFrame, travel_time: int, travel_mode: str
 
 
 def display_custom_analysis_results():
-    """Display the results of custom POI analysis."""
+    """Display the results of custom POI analysis matching tutorial format."""
     results_data = st.session_state.custom_analysis_results
     result = results_data['result']
     poi_data = results_data['poi_data']
     travel_time = results_data['travel_time']
     travel_mode = results_data['travel_mode']
     census_vars = results_data['census_vars']
-
-    st.subheader("📊 Analysis Results")
+    
+    # Step 4: Understanding the Results
+    st.markdown("### Step 4: Understanding the Results")
+    st.markdown("""
+    The analysis generates a comparison table showing demographic data for each custom POI, 
+    helping you understand accessibility patterns across your locations.
+    """)
+    
+    # Tutorial completion tracker
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.subheader("📊 Analysis Results")
+    with col2:
+        if st.button("✅ Complete Tutorial", use_container_width=True):
+            st.session_state.tutorial_progress["Custom POIs"] = True
+            st.success("Tutorial completed! 🎉")
+            st.balloons()
 
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -592,3 +729,52 @@ def display_custom_analysis_results():
                 "census_variables": [CENSUS_VARIABLES.get(v, v) for v in census_vars],
                 "files_generated": list(result.files_generated.keys()) if result.files_generated else []
             })
+    
+    # Tutorial completion and next steps
+    st.markdown("---")
+    st.markdown("### 🎯 Tutorial Complete!")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.success("""
+        **Congratulations!** You've completed the Custom POIs tutorial and learned:
+        - ✅ How to format location data for SocialMapper
+        - ✅ How to upload and validate CSV files
+        - ✅ How to analyze multiple custom locations
+        - ✅ How to compare accessibility across POIs
+        """)
+    
+    with col2:
+        st.info("""
+        **Next Steps:**
+        - 🚴 Try the **Travel Modes** tutorial for multi-modal analysis
+        - 📊 Explore **ZCTA Analysis** for ZIP code-level insights
+        - 📮 Learn **Address Geocoding** to convert addresses to coordinates
+        - 📦 Try **Batch Processing** for analyzing different POI types
+        """)
+    
+    # Advanced batch processing example
+    with st.expander("🚀 Advanced: Batch Processing Multiple POI Types"):
+        st.markdown("""
+        The tutorial also demonstrates batch processing for different POI types:
+        """)
+        st.code("""
+# Define POI types and their analysis parameters
+poi_configs = {
+    'social_services': {
+        'file': 'social_service_pois.csv',
+        'travel_time': 15,  # Longer travel time for services
+        'variables': ['total_population', 'percent_poverty', 'percent_no_vehicle']
+    },
+    'parks': {
+        'file': 'park_pois.csv',
+        'travel_time': 10,  # Shorter walk to parks
+        'variables': ['total_population', 'median_age', 'percent_children']
+    }
+}
+
+# Run batch analysis
+for poi_type, config in poi_configs.items():
+    result = analyze_custom_pois(config)
+    print(f"Analyzed {poi_type}: {result.poi_count} locations")
+""", language="python")
