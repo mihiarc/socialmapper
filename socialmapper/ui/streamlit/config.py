@@ -10,7 +10,7 @@ PAGE_CONFIG = {
     "initial_sidebar_state": "expanded"
 }
 
-# Available pages in the application
+# Available pages in the application (legacy)
 PAGES = [
     "Getting Started",
     "Custom POIs",
@@ -21,10 +21,55 @@ PAGES = [
     "Settings"
 ]
 
+# Tutorial pages configuration for the new tutorial-based structure
+TUTORIAL_PAGES = {
+    "Getting Started": {
+        "title": "Getting Started Tutorial",
+        "icon": "🚀",
+        "description": "Learn the basics with Wake County library accessibility analysis",
+        "doc_reference": "[Getting Started Tutorial](https://mihiarc.github.io/socialmapper/tutorials/getting-started-tutorial/)",
+        "example_code": "examples/tutorials/01_getting_started.py",
+        "url_path": "getting-started"
+    },
+    "Custom POIs": {
+        "title": "Custom POIs Tutorial", 
+        "icon": "📍",
+        "description": "Work with your own location data instead of OpenStreetMap queries",
+        "doc_reference": "[Custom POIs Tutorial](https://mihiarc.github.io/socialmapper/tutorials/custom-pois-tutorial/)",
+        "example_code": "examples/tutorials/02_custom_pois.py",
+        "url_path": "custom-pois"
+    },
+    "Travel Modes": {
+        "title": "Travel Modes Tutorial",
+        "icon": "🚴",
+        "description": "Compare walking, biking, and driving accessibility",
+        "doc_reference": "[Travel Modes Tutorial](https://mihiarc.github.io/socialmapper/tutorials/travel-modes-tutorial/)", 
+        "example_code": "examples/tutorials/03_travel_modes.py",
+        "url_path": "travel-modes"
+    },
+    "ZCTA Analysis": {
+        "title": "ZIP Code Analysis Tutorial",
+        "icon": "📊", 
+        "description": "Analyze demographics at the ZIP Code Tabulation Area level",
+        "doc_reference": "[ZCTA Analysis Tutorial](https://mihiarc.github.io/socialmapper/tutorials/zcta-analysis-tutorial/)",
+        "example_code": "examples/tutorials/04_zipcode_analysis.py",
+        "url_path": "zcta-analysis"
+    },
+    "Address Geocoding": {
+        "title": "Address Geocoding Tutorial",
+        "icon": "📮",
+        "description": "Convert addresses to coordinates for analysis",
+        "doc_reference": "[Address Geocoding Tutorial](https://mihiarc.github.io/socialmapper/tutorials/address-geocoding-tutorial/)", 
+        "example_code": "examples/tutorials/05_address_geocoding.py",
+        "url_path": "address-geocoding"
+    }
+}
+
 # Census variables with human-readable names
 CENSUS_VARIABLES = {
     "B01003_001E": "Total Population",
     "B19013_001E": "Median Household Income",
+    "B01002_001E": "Median Age",
     "B25077_001E": "Median Home Value",
     "B15003_022E": "Bachelor's Degree Holders",
     "B08301_021E": "Public Transit Users",
@@ -32,7 +77,7 @@ CENSUS_VARIABLES = {
 }
 
 # Default census variables for quick analysis
-DEFAULT_CENSUS_VARS = ["B01003_001E", "B19013_001E", "B25077_001E"]
+DEFAULT_CENSUS_VARS = ["B01003_001E", "B19013_001E", "B01002_001E"]
 
 # POI type options
 # Based on OpenStreetMap tagging standards: https://wiki.openstreetmap.org/wiki/Map_features
