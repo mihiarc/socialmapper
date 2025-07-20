@@ -145,3 +145,14 @@ docs-dev/2023-5yr-api-changes.csv
 node_modules/
 streamlit.log
 *_screenshots/
+.kiro/hooks/source-docs-sync.kiro.hook
+.kiro/specs/streamlit-app-fixes/design.md
+.kiro/specs/streamlit-app-fixes/implementation-notes-address-geocoding.md
+.kiro/specs/streamlit-app-fixes/implementation-notes-zcta.md
+.kiro/specs/streamlit-app-fixes/progress-update.md
+.kiro/specs/streamlit-app-fixes/PROGRESS.md
+.kiro/specs/streamlit-app-fixes/requirements.md
+.kiro/specs/streamlit-app-fixes/tasks.md
+.kiro/steering/product.md
+.kiro/steering/structure.md
+.kiro/steering/tech.md
