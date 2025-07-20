@@ -74,6 +74,18 @@ See `env.example` for all available configuration options.
 
 ## Using SocialMapper
 
+SocialMapper offers multiple ways to perform your analysis:
+
+### Web Interface (Streamlit Dashboard)
+
+For an interactive, visual experience, launch the web dashboard:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+This provides a user-friendly interface for configuring analyses, viewing results, and exporting data without writing code.
+
 ### Quick Start with Python API
 
 ```python
