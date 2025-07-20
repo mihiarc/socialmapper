@@ -21,7 +21,7 @@ from .maps import (
     create_folium_map,
     create_poi_map,
 )
-from .sidebar import render_api_key_section, render_sidebar
+# Sidebar components removed - navigation now handled in main app
 
 __all__ = [
     # Dialog components
@@ -42,7 +42,4 @@ __all__ = [
     "create_custom_location_map",
     "create_folium_map",
     "create_poi_map",
-    # Sidebar components
-    "render_api_key_section",
-    "render_sidebar"
 ]

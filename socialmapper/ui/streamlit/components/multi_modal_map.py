@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-from ..utils import get_map_base_config
+from ..utils.cache import get_map_base_config
 
 logger = logging.getLogger(__name__)
 
