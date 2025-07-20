@@ -1,6 +1,5 @@
 """UI module for SocialMapper."""
 
-# This module now contains only CLI and Rich terminal UI components
-# Streamlit web UI has been removed
+# This module contains CLI, Rich terminal UI, and Streamlit web UI components
 
 __all__ = []
