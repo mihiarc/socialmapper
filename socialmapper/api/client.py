@@ -188,6 +188,9 @@ class SocialMapperClient:
             builder.with_osm_pois(poi_type, poi_name)
             builder.with_travel_time(travel_time)
 
+            # Always enable isochrone generation for UI
+            builder.enable_isochrone_export()
+
             if census_variables:
                 builder.with_census_variables(*census_variables)
 
@@ -316,6 +319,7 @@ class SocialMapperClient:
                 pois=pois,
                 demographics=demographics,
                 isochrone_area=isochrone_area,
+                isochrones=result_data.get("isochrones"),  # Include the actual isochrone GeoDataFrame
             )
 
             # Cache result if strategy available
