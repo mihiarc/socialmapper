@@ -22,7 +22,10 @@ from ..util.error_handling import validate_type
 
 
 def parse_custom_coordinates(
-    file_path: str, name_field: str | None = None, type_field: str | None = None, preserve_original: bool = True
+    file_path: str,
+    name_field: str | None = None,
+    type_field: str | None = None,
+    preserve_original: bool = True,
 ) -> dict:
     """Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
 
@@ -43,9 +46,7 @@ def parse_custom_coordinates(
         safe_file_path = sanitize_path(file_path, allow_absolute=True)
     except PathSecurityError as e:
         raise FileSystemError(
-            f"Invalid file path: {file_path}",
-            cause=e,
-            file_path=file_path
+            f"Invalid file path: {file_path}", cause=e, file_path=file_path
         ).add_suggestion("Ensure the file path does not contain '..' or other security risks")
 
     if not safe_file_path.exists():
@@ -114,6 +115,7 @@ def parse_custom_coordinates(
                 else:
                     # Log warning but don't fail - some POIs might be malformed
                     from ..ui.console import print_warning
+
                     print_warning(f"Skipping item missing required coordinates: {item}")
         elif isinstance(data, dict) and "pois" in data:
             pois = data["pois"]
@@ -354,15 +356,35 @@ def extract_poi_data(
     # Validate that we have POIs to process
     if not poi_data or "pois" not in poi_data or not poi_data["pois"]:
         if custom_coords_path:
-            raise NoDataFoundError(
-                "coordinates",
-                location=custom_coords_path
-            ).add_suggestion("Check that the file contains valid lat/lon coordinates")
+            raise NoDataFoundError("coordinates", location=custom_coords_path).add_suggestion(
+                "Check that the file contains valid lat/lon coordinates"
+            )
         else:
-            raise NoDataFoundError(
-                "POIs",
-                location=geocode_area
-            ).add_suggestion("Try a different POI type or expand the search area")\
-            .add_suggestion(f"Verify that {poi_type}:{poi_name} exists in this area")
+            error = NoDataFoundError("POIs", location=geocode_area)
+            error.add_suggestion("Try a different POI type or expand the search area")
+            error.add_suggestion(f"Verify that {poi_type}:{poi_name} exists in this area")
+
+            # Add specific suggestions for common naming issues
+            if " " in geocode_area and "-" not in geocode_area:
+                # Suggest hyphenated version for multi-word city names
+                hyphenated = geocode_area.replace(" ", "-")
+                error.add_suggestion(f"Try using the hyphenated form: {hyphenated}")
+
+            # Check for specific known cities with different OSM names
+            known_variations = {
+                "fuquay varina": "Fuquay-Varina",
+                "winston salem": "Winston-Salem",
+                "chapel hill": "Chapel Hill",
+                "kitty hawk": "Kitty Hawk",
+                "kill devil hills": "Kill Devil Hills",
+            }
+
+            location_lower = geocode_area.lower()
+            if location_lower in known_variations:
+                error.add_suggestion(
+                    f"Try using: {known_variations[location_lower]}, {state or 'NC'}"
+                )
+
+            raise error
 
     return poi_data, base_filename, state_abbreviations, sampled_pois
