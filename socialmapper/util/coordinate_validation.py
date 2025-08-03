@@ -19,7 +19,7 @@ from ..constants import (
     MIN_LATITUDE,
     MIN_LONGITUDE,
 )
-from ..ui.console import get_logger
+from ..console import get_logger
 
 logger = get_logger(__name__)
 

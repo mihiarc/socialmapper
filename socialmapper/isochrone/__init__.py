@@ -28,7 +28,7 @@ from shapely.geometry import Point
 
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
-from socialmapper.ui.console import get_logger
+from socialmapper.console import get_logger
 
 from .cache import ModernNetworkCache, download_and_cache_network, get_global_cache
 

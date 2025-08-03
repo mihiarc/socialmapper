@@ -25,7 +25,7 @@ from pathlib import Path
 import networkx as nx
 import osmnx as ox
 
-from ..ui.console import get_logger
+from ..console import get_logger
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
 logger = get_logger(__name__)

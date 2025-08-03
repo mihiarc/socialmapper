@@ -8,7 +8,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
-from ..ui.console import get_logger
+from ..console import get_logger
 
 logger = get_logger(__name__)
 

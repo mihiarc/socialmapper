@@ -9,7 +9,7 @@ import time
 from typing import Any
 
 from ..progress import get_progress_bar
-from ..ui.console import get_logger
+from ..console import get_logger
 from .cache import AddressCache
 from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 from .providers import CensusProvider, GeocodingProvider, NominatimProvider

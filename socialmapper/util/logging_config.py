@@ -6,7 +6,7 @@ This module sets up Rich-enhanced logging for the entire package.
 import logging
 import os
 
-from ..ui.console import setup_rich_logging
+from ..console import setup_rich_logging
 
 
 def configure_logging(level=None):

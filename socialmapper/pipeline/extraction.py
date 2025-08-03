@@ -114,7 +114,7 @@ def parse_custom_coordinates(
                     pois.append(poi)
                 else:
                     # Log warning but don't fail - some POIs might be malformed
-                    from ..ui.console import print_warning
+                    from ..console import print_warning
 
                     print_warning(f"Skipping item missing required coordinates: {item}")
         elif isinstance(data, dict) and "pois" in data:

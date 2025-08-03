@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 import geopandas as gpd
 
-from ..ui.console import get_logger
+from ..console import get_logger
 
 logger = get_logger(__name__)
 

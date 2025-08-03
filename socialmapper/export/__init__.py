@@ -16,7 +16,7 @@ import pandas as pd
 from ..census.infrastructure import ModernDataExporter, get_streaming_pipeline
 from ..config.optimization import OptimizationConfig
 from ..constants import LARGE_DATASET_MB
-from ..ui.console import get_logger
+from ..console import get_logger
 from .base import DataPrepConfig, ExportError
 from .formats import CSVExporter, GeoParquetExporter, ParquetExporter
 from .preparation import prepare_census_data
