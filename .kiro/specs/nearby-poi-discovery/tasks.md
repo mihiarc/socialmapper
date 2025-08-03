@@ -14,12 +14,12 @@
   - ✅ Write unit tests for POI categorization logic with various OSM tag combinations
   - _Requirements: 4.1, 4.2, 6.1, 6.2_
 
-- [ ] 3. Extend Overpass query system for polygon-based POI discovery
-  - Implement `build_poi_discovery_query()` function to create Overpass queries for polygon areas
-  - Implement `query_pois_in_polygon()` function to execute polygon-based POI queries
-  - Extend existing query system to handle isochrone geometry as search boundary
-  - Add support for category filtering in Overpass queries
-  - Write unit tests for query generation and execution
+- [x] 3. Extend Overpass query system for polygon-based POI discovery
+  - ✅ Implement `build_poi_discovery_query()` function to create Overpass queries for polygon areas
+  - ✅ Implement `query_pois_in_polygon()` function to execute polygon-based POI queries
+  - ✅ Extend existing query system to handle isochrone geometry as search boundary
+  - ✅ Add support for category filtering in Overpass queries
+  - ✅ Write unit tests for query generation and execution
   - _Requirements: 3.1, 3.2, 6.1, 6.2_
 
 - [ ] 4. Create nearby POI discovery pipeline stage
