@@ -41,6 +41,7 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ## Features
 
+- **🔍 Nearby POI Discovery** - Discover Points of Interest within travel time constraints from any location, with 10 categories and 338+ OSM tag mappings
 - **Finding Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
 - **Generating Travel Time Areas** - Create isochrones showing areas reachable within a certain travel time by walking, biking, or driving
 - **Identifying Census Block Groups** - Determine which census block groups intersect with these areas
@@ -128,6 +129,31 @@ streamlit run streamlit_app.py
 
 ### Quick Start with Python API
 
+#### POI Discovery (New!)
+
+Discover what's around any location within realistic travel constraints:
+
+```python
+from socialmapper import SocialMapperClient
+
+# Discover POIs within a 20-minute walk
+with SocialMapperClient() as client:
+    result = client.discover_nearby_pois(
+        location="Chapel Hill, NC",
+        travel_time=20,
+        travel_mode="walk",
+        poi_categories=["food_and_drink", "healthcare", "education"]
+    )
+    
+    if result.is_ok():
+        poi_result = result.unwrap()
+        print(f"Found {poi_result.total_poi_count} POIs")
+        for category, count in poi_result.category_counts.items():
+            print(f"  {category}: {count}")
+```
+
+#### Traditional Census Analysis
+
 ```python
 from socialmapper import SocialMapperClient
 
@@ -147,6 +173,26 @@ with SocialMapperClient() as client:
 ```
 
 ### Advanced Usage with Builder Pattern
+
+#### POI Discovery with Builder
+
+```python
+from socialmapper import SocialMapperBuilder
+from socialmapper.isochrone import TravelMode
+
+# Advanced POI discovery configuration
+result = (
+    SocialMapperBuilder()
+    .with_nearby_poi_discovery("Boston, MA", 25, TravelMode.BIKE)
+    .with_poi_categories("food_and_drink", "healthcare", "education")
+    .exclude_poi_categories("utilities")
+    .limit_pois_per_category(30)
+    .with_export_options(csv=True, geojson=True, maps=True)
+    .execute()
+)
+```
+
+#### Traditional Census Analysis with Builder
 
 ```python
 from socialmapper import SocialMapperClient, SocialMapperBuilder
@@ -391,6 +437,12 @@ uv run pytest
 
 ## Documentation
 
+### POI Discovery
+- **[POI Discovery Overview](docs/features/nearby_poi_discovery.md)** - Comprehensive feature overview and capabilities
+- **[POI Discovery API Reference](docs/api/poi_discovery.md)** - Complete API documentation for POI discovery
+- **[POI Discovery Usage Guide](docs/guides/poi_discovery_guide.md)** - Step-by-step tutorials and examples
+
+### General Documentation
 - [Travel Modes Explained](docs/travel_modes_explained.md) - Detailed explanation of how walking, biking, and driving networks differ
 - [API Reference](https://mihiarc.github.io/socialmapper/) - Full API documentation
 - [Examples](examples/) - Sample scripts and use cases

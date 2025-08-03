@@ -7,6 +7,26 @@ import os
 import sys
 from typing import Any, Optional
 
+# Export polygon query functions
+from .polygon_queries import (
+    build_poi_discovery_query,
+    query_pois_in_polygon,
+    query_pois_from_isochrone,
+)
+
+__all__ = [
+    "build_poi_discovery_query",
+    "query_pois_in_polygon", 
+    "query_pois_from_isochrone",
+    "create_poi_config",
+    "load_poi_config",
+    "build_overpass_query",
+    "query_overpass",
+    "format_results",
+    "save_json",
+    "query_pois",
+]
+
 import overpy
 import yaml
 
