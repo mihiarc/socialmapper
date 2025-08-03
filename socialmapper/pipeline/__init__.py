@@ -12,14 +12,24 @@ from .helpers import convert_poi_to_geodataframe, setup_directory
 from .isochrone import generate_isochrones
 from .map import create_pipeline_maps, generate_pipeline_maps
 from .orchestrator import PipelineConfig, PipelineOrchestrator
+from .poi_discovery import (
+    NearbyPOIDiscoveryStage,
+    discover_pois_near_address,
+    discover_pois_near_coordinates,
+    execute_poi_discovery_pipeline,
+)
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
 __all__ = [
     "PipelineConfig",
     "PipelineOrchestrator",
+    "NearbyPOIDiscoveryStage",
     "convert_poi_to_geodataframe",
     "create_pipeline_maps",
+    "discover_pois_near_address",
+    "discover_pois_near_coordinates",
+    "execute_poi_discovery_pipeline",
     "export_pipeline_outputs",
     "extract_poi_data",
     "generate_final_report",
