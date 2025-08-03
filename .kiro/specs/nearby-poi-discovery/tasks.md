@@ -22,13 +22,13 @@
   - ✅ Write unit tests for query generation and execution
   - _Requirements: 3.1, 3.2, 6.1, 6.2_
 
-- [ ] 4. Create nearby POI discovery pipeline stage
-  - Implement `NearbyPOIDiscoveryStage` class following existing pipeline patterns
-  - Add geocoding logic to convert addresses to coordinates
-  - Integrate isochrone generation for the origin location
-  - Implement POI querying within the generated isochrone
-  - Add result processing and organization logic
-  - Write integration tests for the complete pipeline stage
+- [x] 4. Create nearby POI discovery pipeline stage
+  - ✅ Implement `NearbyPOIDiscoveryStage` class following existing pipeline patterns
+  - ✅ Add geocoding logic to convert addresses to coordinates
+  - ✅ Integrate isochrone generation for the origin location
+  - ✅ Implement POI querying within the generated isochrone
+  - ✅ Add result processing and organization logic
+  - ✅ Write integration tests for the complete pipeline stage
   - _Requirements: 1.1, 2.1, 2.2, 3.1, 3.2, 7.3_
 
 - [ ] 5. Extend SocialMapperBuilder with nearby POI discovery methods
