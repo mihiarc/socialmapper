@@ -1,0 +1,257 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: socialmapper
+---
+# ConfigMap for environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: socialmapper-config
+  namespace: socialmapper
+data:
+  SOCIALMAPPER_API_HOST: "0.0.0.0"
+  SOCIALMAPPER_API_PORT: "8000"
+  SOCIALMAPPER_API_WORKERS: "4"
+  SOCIALMAPPER_API_LOG_LEVEL: "info"
+  SOCIALMAPPER_API_CORS_ORIGINS: "https://yourdomain.com"
+  SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE: "100"
+  SOCIALMAPPER_API_API_AUTH_ENABLED: "true"
+  SOCIALMAPPER_API_RESULT_STORAGE_PATH: "/app/results"
+  SOCIALMAPPER_API_MAX_CONCURRENT_JOBS: "20"
+  SOCIALMAPPER_API_RESULT_TTL_HOURS: "48"
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: socialmapper-secrets
+  namespace: socialmapper
+type: Opaque
+stringData:
+  CENSUS_API_KEY: "your_census_api_key_here"
+  API_KEYS: "key1,key2,key3"
+---
+# PersistentVolumeClaim for results storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: api-results-pvc
+  namespace: socialmapper
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Backend API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-api
+  namespace: socialmapper
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: socialmapper-api
+  template:
+    metadata:
+      labels:
+        app: socialmapper-api
+    spec:
+      containers:
+      - name: api
+        image: socialmapper-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: socialmapper-config
+        - secretRef:
+            name: socialmapper-secrets
+        volumeMounts:
+        - name: results-storage
+          mountPath: /app/results
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: results-storage
+        persistentVolumeClaim:
+          claimName: api-results-pvc
+---
+# Backend API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-api-service
+  namespace: socialmapper
+spec:
+  selector:
+    app: socialmapper-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Frontend UI Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-ui
+  namespace: socialmapper
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: socialmapper-ui
+  template:
+    metadata:
+      labels:
+        app: socialmapper-ui
+    spec:
+      containers:
+      - name: ui
+        image: socialmapper-ui:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+# Frontend UI Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-ui-service
+  namespace: socialmapper
+spec:
+  selector:
+    app: socialmapper-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-ingress
+  namespace: socialmapper
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - yourdomain.com
+    secretName: socialmapper-tls
+  rules:
+  - host: yourdomain.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: socialmapper-api-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: socialmapper-ui-service
+            port:
+              number: 80
+---
+# HorizontalPodAutoscaler for API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: socialmapper-api-hpa
+  namespace: socialmapper
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: socialmapper-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# HorizontalPodAutoscaler for UI
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: socialmapper-ui-hpa
+  namespace: socialmapper
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: socialmapper-ui
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
