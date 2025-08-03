@@ -1,4 +1,4 @@
-"""CLI commands for managing feature flags."""
+"""CLI commands for managing backend configuration."""
 
 import typer
 from typing import Optional
@@ -7,53 +7,53 @@ from rich.table import Table
 from rich.panel import Panel
 
 from ..config.feature_flags import (
-    get_feature_flags,
-    UIMode,
+    get_backend_config,
     get_runtime_config,
     get_api_base_url,
-    get_ui_base_url
 )
 
 console = Console()
-app = typer.Typer(help="Manage SocialMapper feature flags")
+app = typer.Typer(help="Manage SocialMapper backend configuration")
 
 
 @app.command()
 def status():
-    """Show current feature flag status."""
-    flags = get_feature_flags()
-    config = get_runtime_config()
+    """Show current backend configuration status."""
+    config = get_backend_config()
+    runtime_config = get_runtime_config()
     
     # Create status table
-    table = Table(title="SocialMapper Feature Flags Status")
+    table = Table(title="SocialMapper Backend Configuration")
     table.add_column("Setting", style="cyan")
     table.add_column("Value", style="green")
     table.add_column("Description", style="dim")
     
-    table.add_row("UI Mode", flags.ui_mode.value, "Current UI deployment mode")
-    table.add_row("API Server", "✓" if flags.enable_api_server else "✗", "FastAPI backend server")
-    table.add_row("Separated UI", "✓" if flags.enable_separated_ui else "✗", "Standalone Streamlit frontend")
-    table.add_row("Legacy Imports", "✓" if flags.allow_legacy_imports else "✗", "Allow deprecated UI imports")
-    table.add_row("Migration Notice", "✓" if flags.show_migration_notice else "✗", "Show migration information")
-    table.add_row("Debug Mode", "✓" if flags.debug_mode else "✗", "Enable debug logging")
+    table.add_row("API Server", "✓" if config.enable_api_server else "✗", "FastAPI backend server")
+    table.add_row("Debug Mode", "✓" if config.debug_mode else "✗", "Enable debug logging")
+    table.add_row("Caching", "✓" if config.enable_caching else "✗", "Enable result caching")
+    table.add_row("Cache TTL", f"{config.cache_ttl_seconds}s", "Cache time-to-live")
+    table.add_row("Rate Limit", f"{config.rate_limit_requests_per_second} rps", "Requests per second limit")
+    table.add_row("Census API Key", "✓" if config.census_api_key else "✗", "Census API key configured")
     
     console.print(table)
     
-    # Show URLs if in separated mode
-    if flags.ui_mode in [UIMode.SEPARATED, UIMode.HYBRID]:
+    # Show API URL if enabled
+    if config.enable_api_server:
         console.print("\n" + "="*50)
         console.print(f"🔗 API Server: {get_api_base_url()}")
-        console.print(f"🖥️  Frontend UI: {get_ui_base_url()}")
         console.print("="*50)
 
 
 @app.command()
-def set_mode(
-    mode: UIMode = typer.Argument(..., help="UI mode to set"),
+def configure(
     enable_api: bool = typer.Option(None, "--api/--no-api", help="Enable/disable API server"),
-    enable_ui: bool = typer.Option(None, "--ui/--no-ui", help="Enable/disable separated UI")
+    debug: bool = typer.Option(None, "--debug/--no-debug", help="Enable/disable debug mode"),
+    enable_cache: bool = typer.Option(None, "--cache/--no-cache", help="Enable/disable caching"),
+    cache_ttl: int = typer.Option(None, "--cache-ttl", help="Cache TTL in seconds"),
+    api_host: str = typer.Option(None, "--api-host", help="API server host"),
+    api_port: int = typer.Option(None, "--api-port", help="API server port"),
 ):
-    """Set the UI mode and related flags."""
+    """Configure backend settings."""
     import os
     from pathlib import Path
     
@@ -69,81 +69,104 @@ def set_mode(
                     key, value = line.split('=', 1)
                     env_vars[key] = value
     
-    # Update mode
-    env_vars["SOCIALMAPPER_UI_MODE"] = mode.value
+    # Update configuration
+    changes = []
     
-    # Set API and UI flags based on mode
-    if mode == UIMode.SEPARATED:
-        env_vars["SOCIALMAPPER_ENABLE_API_SERVER"] = "true"
-        env_vars["SOCIALMAPPER_ENABLE_SEPARATED_UI"] = "true"
-    elif mode == UIMode.HYBRID:
-        env_vars["SOCIALMAPPER_ENABLE_API_SERVER"] = "true"
-        env_vars["SOCIALMAPPER_ENABLE_SEPARATED_UI"] = "true"
-    elif mode == UIMode.MONOLITHIC:
-        env_vars["SOCIALMAPPER_ENABLE_API_SERVER"] = "false"
-        env_vars["SOCIALMAPPER_ENABLE_SEPARATED_UI"] = "false"
-    
-    # Override with explicit flags if provided
     if enable_api is not None:
         env_vars["SOCIALMAPPER_ENABLE_API_SERVER"] = "true" if enable_api else "false"
-    if enable_ui is not None:
-        env_vars["SOCIALMAPPER_ENABLE_SEPARATED_UI"] = "true" if enable_ui else "false"
+        changes.append(f"API Server: {'enabled' if enable_api else 'disabled'}")
+    
+    if debug is not None:
+        env_vars["SOCIALMAPPER_DEBUG_MODE"] = "true" if debug else "false"
+        changes.append(f"Debug Mode: {'enabled' if debug else 'disabled'}")
+    
+    if enable_cache is not None:
+        env_vars["SOCIALMAPPER_ENABLE_CACHING"] = "true" if enable_cache else "false"
+        changes.append(f"Caching: {'enabled' if enable_cache else 'disabled'}")
+    
+    if cache_ttl is not None:
+        env_vars["SOCIALMAPPER_CACHE_TTL"] = str(cache_ttl)
+        changes.append(f"Cache TTL: {cache_ttl}s")
+    
+    if api_host is not None:
+        env_vars["SOCIALMAPPER_API_SERVER_HOST"] = api_host
+        changes.append(f"API Host: {api_host}")
+    
+    if api_port is not None:
+        env_vars["SOCIALMAPPER_API_SERVER_PORT"] = str(api_port)
+        changes.append(f"API Port: {api_port}")
+    
+    if not changes:
+        console.print("[yellow]No changes specified. Use --help to see available options.[/yellow]")
+        return
     
     # Write back to .env file
     with open(env_file, 'w') as f:
-        f.write("# SocialMapper Feature Flags\n")
-        f.write("# Generated by: socialmapper feature-flags set-mode\n\n")
+        f.write("# SocialMapper Backend Configuration\n")
+        f.write("# Generated by: socialmapper config configure\n\n")
         for key, value in env_vars.items():
             f.write(f"{key}={value}\n")
     
-    console.print(f"✅ Set UI mode to: {mode.value}")
+    console.print("✅ Configuration updated:")
+    for change in changes:
+        console.print(f"  • {change}")
     console.print(f"📝 Updated .env file")
     
-    # Show next steps
-    if mode in [UIMode.SEPARATED, UIMode.HYBRID]:
+    # Show next steps if API enabled
+    current_config = get_backend_config()
+    if current_config.enable_api_server:
         panel = Panel.fit(
-            f"[bold green]Next Steps:[/bold green]\n\n"
-            f"1. Start backend API:\n"
-            f"   cd socialmapper-api && ./setup-dev.sh\n\n"
-            f"2. Start frontend UI:\n"
-            f"   cd socialmapper-ui && ./setup-dev.sh\n\n"
-            f"3. Access the separated UI at: {get_ui_base_url()}",
-            title="Setup Instructions"
+            f"[bold green]Start the API Server:[/bold green]\n\n"
+            f"cd socialmapper-api && ./setup-dev.sh\n\n"
+            f"API will be available at: {get_api_base_url()}",
+            title="Next Steps"
         )
         console.print(panel)
 
 
 @app.command()
 def validate():
-    """Validate current feature flag configuration."""
-    flags = get_feature_flags()
+    """Validate current backend configuration."""
+    config = get_backend_config()
     issues = []
+    warnings = []
     
     # Check for configuration issues
-    if flags.ui_mode == UIMode.SEPARATED:
-        if not flags.enable_api_server:
-            issues.append("API server should be enabled in separated mode")
-        if not flags.enable_separated_ui:
-            issues.append("Separated UI should be enabled in separated mode")
+    if config.enable_api_server:
+        if config.api_server_port < 1024 and config.api_server_host == "0.0.0.0":
+            warnings.append("Running on privileged port (< 1024) as host 0.0.0.0 may require sudo")
+        
+        if config.api_server_port == 8000 and config.api_server_host == "0.0.0.0":
+            warnings.append("Default port 8000 on all interfaces may conflict with other services")
     
-    if flags.ui_mode == UIMode.HYBRID:
-        if not flags.enable_api_server:
-            issues.append("API server should be enabled in hybrid mode")
-        if not flags.enable_separated_ui:
-            issues.append("Separated UI should be enabled in hybrid mode")
+    if config.enable_caching and config.cache_ttl_seconds < 60:
+        warnings.append("Cache TTL is very low (< 60s), may cause excessive API calls")
     
-    if flags.ui_mode == UIMode.MONOLITHIC:
-        if flags.enable_api_server:
-            issues.append("API server is not needed in monolithic mode")
-        if flags.enable_separated_ui:
-            issues.append("Separated UI is not needed in monolithic mode")
+    if config.rate_limit_requests_per_second > 100:
+        warnings.append("High rate limit (> 100 rps) may overwhelm external APIs")
+    
+    if not config.census_api_key:
+        warnings.append("Census API key not configured - some features may be limited")
+    
+    # Validate API host format
+    if config.api_server_host not in ["localhost", "127.0.0.1", "0.0.0.0"] and not config.api_server_host.replace(".", "").isdigit():
+        issues.append(f"Invalid API host format: {config.api_server_host}")
+    
+    # Validate port range
+    if not 1 <= config.api_server_port <= 65535:
+        issues.append(f"API port must be between 1-65535, got: {config.api_server_port}")
     
     # Show results
     if issues:
         console.print("[red]⚠️  Configuration Issues Found:[/red]")
         for issue in issues:
             console.print(f"  • {issue}")
-        console.print("\n[yellow]Run 'socialmapper feature-flags set-mode' to fix configuration[/yellow]")
+        console.print("\n[yellow]Run 'socialmapper config configure' to fix configuration[/yellow]")
+    elif warnings:
+        console.print("[yellow]⚠️  Configuration Warnings:[/yellow]")
+        for warning in warnings:
+            console.print(f"  • {warning}")
+        console.print("\n[green]✅ No critical issues found[/green]")
     else:
         console.print("[green]✅ Configuration is valid[/green]")
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "socialmapper"
 version = "0.7.0"
-description = "An open-source Python toolkit that helps understand community connections through mapping demographics and access to points of interest"
+description = "An open-source Python backend toolkit for spatial analysis, demographic mapping, and geospatial data processing"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = {file = "LICENSE"}
@@ -60,12 +60,12 @@ dev = [
     "mkdocs>=1.6.1",  # Latest version as of 2025
     "mkdocs-material-extensions>=1.3.1",  # Documentation theme
 ]
-# UI dependencies moved to optional to support backend-only installations
-ui = [
-    "streamlit>=1.46.1",  # Latest version as of Jun 2025
-    "streamlit-folium>=0.25.0",  # Latest version as of Apr 2025
-    "folium>=0.20.0",  # Latest version as of Jun 2025
-    "plotly>=6.2.0",  # Latest version as of Jun 2025
+# API server dependencies (optional for backend service deployment)
+api = [
+    "fastapi>=0.115.6",  # Latest version as of 2025
+    "uvicorn[standard]>=0.32.1",  # Latest version as of 2025
+    "python-multipart>=0.0.20",  # For file uploads
+    "slowapi>=0.1.9",  # Rate limiting
 ]
 
 [project.urls]

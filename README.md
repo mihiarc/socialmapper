@@ -1,4 +1,4 @@
-# 🏘️ SocialMapper: Explore Community Connections
+# 🏘️ SocialMapper: Backend Toolkit for Spatial Analysis
 
 [![PyPI version](https://badge.fury.io/py/socialmapper.svg)](https://badge.fury.io/py/socialmapper)
 [![Python Versions](https://img.shields.io/pypi/pyversions/socialmapper.svg)](https://pypi.org/project/socialmapper/)
@@ -6,13 +6,26 @@
 [![PyPI Status](https://img.shields.io/pypi/status/socialmapper.svg)](https://pypi.org/project/socialmapper/)
 [![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
 
-SocialMapper is an open-source Python toolkit that helps you understand how people connect with the important places in their community. Imagine taking a key spot like your local shopping center or school and seeing exactly what areas are within a certain travel time – whether it's a quick walk or a longer drive. SocialMapper does just that.
+SocialMapper is an open-source Python **backend toolkit** for spatial analysis, demographic mapping, and geospatial data processing. It provides comprehensive APIs and services for understanding community connections, accessibility patterns, and demographic insights.
 
-But it doesn't stop at travel time. SocialMapper also shows you the characteristics of the people who live within these accessible areas, like how many people live there and what the average income is. This helps you see who can easily reach vital community resources and identify any gaps in access.
+This repository contains the **core backend functionality** and API services. For frontend applications, see [socialmapper-frontend](https://github.com/mihiarc/socialmapper-frontend).
 
-Whether you're looking at bustling city neighborhoods or more spread-out rural areas, SocialMapper provides clear insights for making communities better, planning services, and ensuring everyone has good access to the places that matter.
+## 🏗️ Repository Structure
 
-SocialMapper is a focused tool for understanding people, places, and accessibility patterns in your community.
+- **🔧 Core Backend Package** (`socialmapper/`) - Python toolkit for spatial analysis
+- **🚀 API Service** (`socialmapper-api/`) - FastAPI REST service for web applications
+- **📚 Documentation** (`docs/`) - Comprehensive guides and API reference
+- **🧪 Examples** (`examples/`) - Python usage examples and tutorials
+
+## 🌟 Key Capabilities
+
+SocialMapper helps you understand how people connect with important places in their community by:
+
+- **Analyzing Points of Interest** - Query OpenStreetMap for libraries, schools, parks, healthcare facilities, etc.
+- **Generating Travel Time Areas** - Create isochrones showing areas reachable within travel time constraints
+- **Processing Demographic Data** - Integrate with US Census data for community insights  
+- **Calculating Accessibility** - Measure travel distances and identify access patterns
+- **Supporting Multiple Formats** - Export data as CSV, GeoJSON, Parquet, and more
 
 ## 🚀 Get Started with SocialMapper
 
@@ -22,13 +35,13 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ## What's New in v0.7.0 🎉
 
-### Major Architecture Update: Frontend-Backend Separation
+### Major Architecture Update: Complete Backend-Only Design
 
-- **🏗️ Separated Architecture** - UI components are now optional, allowing backend-only installations
-- **🚀 Modern React Frontend** - New React-based UI available separately at [socialmapper-ui](https://github.com/mihiarc/socialmapper-ui)
-- **🔌 REST API** - Full-featured FastAPI backend with comprehensive REST endpoints
-- **📦 Flexible Installation** - Install just the backend (`pip install socialmapper`) or with UI (`pip install socialmapper[ui]`)
-- **🔄 Backward Compatible** - Existing Streamlit UI still available during transition period
+- **🏗️ Backend-Only Repository** - This repository now contains only backend components and APIs
+- **🚀 Separate Frontend Repository** - Modern React frontend available at [socialmapper-frontend](https://github.com/mihiarc/socialmapper-frontend)
+- **🔌 Enhanced REST API** - Full-featured FastAPI backend service in `socialmapper-api/`
+- **📦 Clean Installation** - Simple backend installation with `pip install socialmapper`
+- **🔧 API Server Support** - Optional API server dependencies with `pip install socialmapper[api]`
 
 ### Previous v0.6.2 Updates
 

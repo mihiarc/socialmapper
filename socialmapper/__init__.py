@@ -1,7 +1,7 @@
-"""SocialMapper: Explore Community Connections.
+"""SocialMapper: Backend Toolkit for Spatial Analysis.
 
-An open-source Python toolkit that helps understand
-community connections through mapping demographics and access to points of interest.
+An open-source Python backend toolkit for spatial analysis, demographic mapping, 
+and geospatial data processing. Provides APIs and services for community mapping.
 """
 
 # Load environment variables from .env file as early as possible
@@ -101,6 +101,14 @@ try:
 except ImportError:
     _VISUALIZATION_AVAILABLE = False
 
+# Import backend configuration
+from .config.feature_flags import (
+    BackendConfig,
+    get_backend_config,
+    get_api_base_url,
+    get_runtime_config,
+)
+
 # Import error handling components
 from .exceptions import (
     AnalysisError,
@@ -145,6 +153,11 @@ __all__ = [
     # Neighbor functions
     "get_geography_from_point",
     "get_legacy_adapter",
+    # Backend configuration
+    "BackendConfig",
+    "get_backend_config",
+    "get_api_base_url",
+    "get_runtime_config",
     # Error handling
     "SocialMapperError",
     "ConfigurationError",

@@ -146,7 +146,7 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
 
 
 def check_dependencies() -> bool:
-    """Check if all tutorial dependencies are available.
+    """Check if all backend tutorial dependencies are available.
     
     Returns:
         True if all dependencies are available
@@ -155,7 +155,6 @@ def check_dependencies() -> bool:
         ("pandas", "pandas"),
         ("geopandas", "geopandas"),
         ("matplotlib", "matplotlib"),
-        ("folium", "folium"),
     ]
 
     missing = []
@@ -164,7 +163,7 @@ def check_dependencies() -> bool:
             missing.append(package)
 
     if missing:
-        print("\n📦 Missing dependencies for tutorials:")
+        print("\n📦 Missing dependencies for backend tutorials:")
         print(f"pip install {' '.join(missing)}")
         return False
 
