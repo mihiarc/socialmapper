@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.0] - 2025-08-03
+## [0.8.0] - 2025-08-03
 
 ### 🚀 Major Features
 
@@ -111,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚧 Migration Guide
 
-For users upgrading from v0.6.x:
+For users upgrading from v0.7.x:
 1. **Update import statements** to reflect new module structure
 2. **Review API client usage** for backend separation changes  
 3. **Update deployment configurations** if using Docker/Kubernetes
@@ -130,6 +130,14 @@ For users upgrading from v0.6.x:
 - **Rate limiting** to prevent abuse
 - **CORS policies** for secure cross-origin requests
 - **Environment variable security** for sensitive configurations
+
+---
+
+## [0.7.0] - 2025-07-XX
+
+### Previous Release
+- Previous version released on PyPI
+- For v0.7.0 features, see the PyPI package description
 
 ---
 

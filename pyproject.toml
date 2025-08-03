@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "socialmapper"
-version = "0.7.0"
+version = "0.8.0"
 description = "An open-source Python backend toolkit for spatial analysis, demographic mapping, and geospatial data processing"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
