@@ -20,14 +20,22 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-## What's New in v0.6.2 🎉
+## What's New in v0.7.0 🎉
 
-- **🐛 Fixed Travel Time Bug** - Census data exports now correctly show actual travel time instead of defaulting to 15 minutes
-- **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving with mode-specific speeds
-- **🏗️ Streamlined Architecture** - Simplified codebase focused on core demographic and accessibility analysis
-- **⚡ Enhanced Pipeline** - Refactored core functionality into modular ETL pipeline for better maintainability
+### Major Architecture Update: Frontend-Backend Separation
+
+- **🏗️ Separated Architecture** - UI components are now optional, allowing backend-only installations
+- **🚀 Modern React Frontend** - New React-based UI available separately at [socialmapper-ui](https://github.com/mihiarc/socialmapper-ui)
+- **🔌 REST API** - Full-featured FastAPI backend with comprehensive REST endpoints
+- **📦 Flexible Installation** - Install just the backend (`pip install socialmapper`) or with UI (`pip install socialmapper[ui]`)
+- **🔄 Backward Compatible** - Existing Streamlit UI still available during transition period
+
+### Previous v0.6.2 Updates
+
+- **🐛 Fixed Travel Time Bug** - Census data exports now correctly show actual travel time
+- **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving
 - **💾 Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
-- **🗺️ Geographic Level Support** - Choose between census block groups or ZIP Code Tabulation Areas (ZCTAs)
+- **🗺️ Geographic Level Support** - Choose between census block groups or ZCTAs
 
 📚 **[Full Documentation](https://mihiarc.github.io/socialmapper)** | 🐛 **[Report Issues](https://github.com/mihiarc/socialmapper/issues)**
 
@@ -42,16 +50,26 @@ SocialMapper is a focused tool for understanding people, places, and accessibili
 
 ## Installation
 
-SocialMapper is available on PyPI. Install it easily with uv:
+SocialMapper is available on PyPI with flexible installation options:
 
+### Backend Only (Recommended for API/CLI usage)
 ```bash
-uv pip install socialmapper
+# Install core functionality without UI dependencies
+pip install socialmapper
 ```
 
-Or with pip:
-
+### Backend + Streamlit UI (For backward compatibility)
 ```bash
-pip install socialmapper
+# Install with optional UI components
+pip install socialmapper[ui]
+```
+
+### Development Installation
+```bash
+# Clone and install in development mode
+git clone https://github.com/mihiarc/socialmapper.git
+cd socialmapper
+pip install -e ".[dev]"
 ```
 
 **Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
@@ -76,15 +94,37 @@ See `env.example` for all available configuration options.
 
 SocialMapper offers multiple ways to perform your analysis:
 
-### Web Interface (Streamlit Dashboard)
+### Web Interface Options
 
-For an interactive, visual experience, launch the web dashboard:
+#### Modern React UI (Recommended)
+
+For the best interactive experience, use the new React-based frontend:
+
+1. **Start the API Server**:
+   ```bash
+   cd socialmapper-api
+   uvicorn main:app --reload
+   ```
+
+2. **Start the React Frontend** (in a separate terminal):
+   ```bash
+   cd socialmapper-ui
+   npm install
+   npm run dev
+   ```
+
+3. **Access the UI** at http://localhost:3000
+
+#### Legacy Streamlit Dashboard
+
+The Streamlit interface is still available if you installed with UI support:
 
 ```bash
+# Requires: pip install socialmapper[ui]
 streamlit run streamlit_app.py
 ```
 
-This provides a user-friendly interface for configuring analyses, viewing results, and exporting data without writing code.
+**Note**: The Streamlit UI is deprecated and will be removed in a future version.
 
 ### Quick Start with Python API
 
@@ -354,6 +394,57 @@ uv run pytest
 - [Travel Modes Explained](docs/travel_modes_explained.md) - Detailed explanation of how walking, biking, and driving networks differ
 - [API Reference](https://mihiarc.github.io/socialmapper/) - Full API documentation
 - [Examples](examples/) - Sample scripts and use cases
+
+## Migration Guide
+
+### Migrating to v0.7.0
+
+The v0.7.0 release introduces a separated architecture with optional UI components. Here's how to migrate:
+
+#### For CLI/API Users
+No changes needed! The core functionality remains the same:
+```bash
+# Continue using the CLI as before
+socialmapper --poi --geocode-area "NYC" --poi-type "amenity" --poi-name "library"
+
+# Or the Python API
+from socialmapper import SocialMapperClient
+```
+
+#### For Streamlit UI Users
+The Streamlit UI is now optional and will be removed in a future version. You have three options:
+
+1. **Continue using Streamlit** (temporary):
+   ```bash
+   pip install socialmapper[ui]
+   streamlit run streamlit_app.py
+   ```
+
+2. **Switch to the new React UI** (recommended):
+   - Backend: See [socialmapper-api/README.md](socialmapper-api/README.md)
+   - Frontend: Visit [socialmapper-ui](https://github.com/mihiarc/socialmapper-ui)
+
+3. **Use the REST API directly**:
+   ```python
+   import httpx
+   
+   # Start analysis via API
+   response = httpx.post("http://localhost:8000/api/v1/analysis/location", json={
+       "latitude": 40.7128,
+       "longitude": -74.0060,
+       "poi_types": ["library"]
+   })
+   ```
+
+#### For Package Developers
+If you're importing SocialMapper in your package:
+```python
+# Old (will show deprecation warning)
+from socialmapper.ui import some_function
+
+# New (console utilities moved)
+from socialmapper.console import print_info, get_logger
+```
 
 ## Contributing
 
