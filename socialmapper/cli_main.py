@@ -23,12 +23,12 @@ from . import __version__
 from .api import SocialMapperBuilder, SocialMapperClient
 from .census import get_census_system
 from .census.services.geography_service import StateFormat
-from .progress import get_progress_tracker
 from .console import (
     console,
     get_logger,
     setup_rich_logging,
 )
+from .progress import get_progress_tracker
 from .util import CENSUS_VARIABLE_MAPPING
 
 # Setup Rich logging for the entire application
@@ -45,11 +45,11 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description=f"SocialMapper v{__version__}: Tool for mapping community resources and demographics"
     )
-    
+
     # Check if this is a feature-flags command
     if len(sys.argv) > 1 and sys.argv[1] == 'feature-flags':
         return _handle_feature_flags_command()
-    
+
     # Otherwise, handle as regular analysis command
     return _add_analysis_arguments(parser)
 
@@ -57,7 +57,7 @@ def parse_arguments():
 def _handle_feature_flags_command():
     """Handle feature flags subcommands."""
     from .cli.feature_flags import app as feature_flags_app
-    
+
     # Remove 'feature-flags' from sys.argv and run the typer app
     sys.argv = [sys.argv[0]] + sys.argv[2:]
     feature_flags_app()
@@ -66,7 +66,6 @@ def _handle_feature_flags_command():
 
 def _add_analysis_arguments(parser):
     """Add analysis-specific arguments to a parser."""
-
     # Input source group
     input_group = parser.add_mutually_exclusive_group(
         required=False

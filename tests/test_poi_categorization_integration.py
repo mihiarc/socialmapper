@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 """Integration tests for POI categorization with query module."""
 
-import pytest
-from typing import Dict, List, Any
 
-from socialmapper.poi_categorization import (
-    categorize_poi,
-    organize_pois_by_category
-)
+from socialmapper.poi_categorization import categorize_poi, organize_pois_by_category
 
 
 class TestPOICategorationIntegration:
     """Test POI categorization integration with actual OSM query data format."""
-    
+
     def test_categorize_actual_osm_poi_format(self):
         """Test categorization with actual POI format from query module."""
         # Sample POI data matching the format from format_results() in query module
@@ -30,11 +25,11 @@ class TestPOICategorationIntegration:
             },
             "state": "NC"
         }
-        
+
         # Extract tags and categorize
         category = categorize_poi(poi["tags"])
         assert category == "food_and_drink"
-    
+
     def test_organize_query_results(self):
         """Test organizing POIs from a simulated query result."""
         # Simulate output from query_pois() function
@@ -91,10 +86,10 @@ class TestPOICategorationIntegration:
                 }
             ]
         }
-        
+
         # Organize POIs by category
         categorized = organize_pois_by_category(query_result["pois"])
-        
+
         # Verify categories
         assert "food_and_drink" in categorized
         assert "shopping" in categorized
@@ -102,7 +97,7 @@ class TestPOICategorationIntegration:
         assert "education" in categorized
         assert "healthcare" in categorized
         assert "other" in categorized
-        
+
         # Verify counts
         assert len(categorized["food_and_drink"]) == 1
         assert len(categorized["shopping"]) == 1
@@ -110,13 +105,13 @@ class TestPOICategorationIntegration:
         assert len(categorized["education"]) == 1
         assert len(categorized["healthcare"]) == 1
         assert len(categorized["other"]) == 1
-        
+
         # Verify specific POIs retained their data
         restaurant = categorized["food_and_drink"][0]
         assert restaurant["id"] == 1001
         assert restaurant["state"] == "NC"
         assert restaurant["tags"]["name"] == "The Corner Bistro"
-    
+
     def test_categorize_complex_osm_tags(self):
         """Test categorization with complex OSM tag combinations."""
         # Test cases with multiple potential categorization tags
@@ -168,12 +163,12 @@ class TestPOICategorationIntegration:
                 "expected": "services"
             }
         ]
-        
+
         for test_case in test_cases:
             category = categorize_poi(test_case["tags"])
             assert category == test_case["expected"], \
                 f"Expected {test_case['expected']} for tags {test_case['tags']}, got {category}"
-    
+
     def test_handle_different_osm_element_types(self):
         """Test that categorization works for all OSM element types."""
         # Node
@@ -185,7 +180,7 @@ class TestPOICategorationIntegration:
             "tags": {"amenity": "cafe"}
         }
         assert categorize_poi(node_poi["tags"]) == "food_and_drink"
-        
+
         # Way
         way_poi = {
             "id": 2,
@@ -195,7 +190,7 @@ class TestPOICategorationIntegration:
             "tags": {"leisure": "park"}
         }
         assert categorize_poi(way_poi["tags"]) == "recreation"
-        
+
         # Relation
         relation_poi = {
             "id": 3,
@@ -205,7 +200,7 @@ class TestPOICategorationIntegration:
             "tags": {"amenity": "university"}
         }
         assert categorize_poi(relation_poi["tags"]) == "education"
-    
+
     def test_categorize_with_missing_fields(self):
         """Test categorization robustness with missing or malformed data."""
         # POI without tags field
@@ -213,7 +208,7 @@ class TestPOICategorationIntegration:
         organized = organize_pois_by_category([poi_no_tags])
         assert "other" in organized
         assert len(organized["other"]) == 1
-        
+
         # POI with empty tags
         poi_empty_tags = {
             "id": 2,
@@ -223,7 +218,7 @@ class TestPOICategorationIntegration:
             "tags": {}
         }
         assert categorize_poi(poi_empty_tags["tags"]) == "other"
-        
+
         # POI with None tags
         poi_none_tags = {
             "id": 3,

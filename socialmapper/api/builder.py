@@ -17,11 +17,11 @@ from ..exceptions import (
 )
 from ..isochrone import TravelMode
 
+# Import POI categorization for validation
+from ..poi_categorization import get_poi_category_info, is_valid_category
+
 # Import census variable validation
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable, validate_census_variable
-
-# Import POI categorization for validation
-from ..poi_categorization import is_valid_category, get_poi_category_info
 
 # Import POI discovery config
 from .result_types import NearbyPOIDiscoveryConfig
@@ -262,15 +262,15 @@ class SocialMapperBuilder:
 
         if has_osm and "geocode_area" not in self._config:
             errors.append("Location required for OSM search (use with_location)")
-        
+
         # POI discovery specific validation
         if has_poi_discovery:
             if not self._config.get("poi_discovery_location"):
                 errors.append("POI discovery location is required when POI discovery is enabled")
-            
+
             if not self._config.get("poi_discovery_travel_time"):
                 errors.append("POI discovery travel time is required when POI discovery is enabled")
-            
+
             # Check for conflicting category specifications
             poi_cats = self._config.get("poi_categories")
             exclude_cats = self._config.get("exclude_poi_categories")
@@ -301,7 +301,7 @@ class SocialMapperBuilder:
             ).add_suggestion("Fix the configuration errors listed above")
 
         config = self._config.copy()
-        
+
         # If POI discovery is enabled, create the POI discovery config object
         if config.get("poi_discovery_enabled", False):
             poi_config = NearbyPOIDiscoveryConfig(
@@ -316,7 +316,7 @@ class SocialMapperBuilder:
                 create_map=config["create_maps"],
             )
             config["poi_discovery_config"] = poi_config
-        
+
         return config
 
     def with_nearby_poi_discovery(
@@ -343,7 +343,7 @@ class SocialMapperBuilder:
                 f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"
             )
             return self
-        
+
         # Validate location if coordinates
         if isinstance(location, tuple):
             lat, lon = location
@@ -359,7 +359,7 @@ class SocialMapperBuilder:
                 "Location must be either an address string or (lat, lon) tuple"
             )
             return self
-        
+
         # Validate travel mode
         if isinstance(travel_mode, str):
             try:
@@ -367,7 +367,7 @@ class SocialMapperBuilder:
             except ValueError as e:
                 self._validation_errors.append(str(e))
                 return self
-        
+
         # Validate POI categories if provided
         if poi_categories:
             invalid_categories = [cat for cat in poi_categories if not is_valid_category(cat)]
@@ -378,7 +378,7 @@ class SocialMapperBuilder:
                     f"Available categories: {available_cats}"
                 )
                 return self
-        
+
         # Configure POI discovery
         self._config["poi_discovery_enabled"] = True
         self._config["poi_discovery_location"] = location
@@ -386,9 +386,9 @@ class SocialMapperBuilder:
         self._config["poi_discovery_travel_mode"] = travel_mode
         if poi_categories:
             self._config["poi_categories"] = poi_categories.copy()
-        
+
         return self
-    
+
     def with_poi_categories(self, *categories: str) -> Self:
         """Set POI categories to include in discovery.
         
@@ -401,7 +401,7 @@ class SocialMapperBuilder:
         if not categories:
             self._validation_errors.append("At least one POI category must be specified")
             return self
-        
+
         # Validate all categories
         invalid_categories = [cat for cat in categories if not is_valid_category(cat)]
         if invalid_categories:
@@ -411,10 +411,10 @@ class SocialMapperBuilder:
                 f"Available categories: {available_cats}"
             )
             return self
-        
+
         self._config["poi_categories"] = list(categories)
         return self
-    
+
     def exclude_poi_categories(self, *categories: str) -> Self:
         """Set POI categories to exclude from discovery.
         
@@ -427,7 +427,7 @@ class SocialMapperBuilder:
         if not categories:
             self._validation_errors.append("At least one POI category must be specified for exclusion")
             return self
-        
+
         # Validate all categories
         invalid_categories = [cat for cat in categories if not is_valid_category(cat)]
         if invalid_categories:
@@ -437,10 +437,10 @@ class SocialMapperBuilder:
                 f"Available categories: {available_cats}"
             )
             return self
-        
+
         self._config["exclude_poi_categories"] = list(categories)
         return self
-    
+
     def limit_pois_per_category(self, max_count: int) -> Self:
         """Set maximum number of POIs per category.
         
@@ -453,14 +453,14 @@ class SocialMapperBuilder:
         if max_count < 1:
             self._validation_errors.append(f"POI limit per category must be positive, got {max_count}")
             return self
-        
+
         self._config["max_pois_per_category"] = max_count
         return self
-    
+
     def list_available_census_variables(self) -> dict[str, str]:
         """List available census variables with their codes."""
         return CENSUS_VARIABLE_MAPPING.copy()
-    
+
     def list_available_poi_categories(self) -> dict[str, Any]:
         """List available POI categories with details.
         

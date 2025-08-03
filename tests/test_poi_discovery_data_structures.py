@@ -1,16 +1,17 @@
 """Tests for POI discovery data structures."""
 
-import pytest
-from pathlib import Path
 from dataclasses import FrozenInstanceError
+from pathlib import Path
+
+import pytest
 
 from socialmapper.api.result_types import (
     DiscoveredPOI,
     NearbyPOIDiscoveryConfig,
     NearbyPOIResult,
 )
+from socialmapper.constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from socialmapper.isochrone.travel_modes import TravelMode
-from socialmapper.constants import MIN_TRAVEL_TIME, MAX_TRAVEL_TIME
 
 
 class TestDiscoveredPOI:
@@ -35,7 +36,7 @@ class TestDiscoveredPOI:
             website="https://example.com",
             opening_hours="Mo-Fr 07:00-20:00",
         )
-        
+
         assert poi.id == "poi_123"
         assert poi.name == "Test Coffee Shop"
         assert poi.category == "food"
@@ -65,7 +66,7 @@ class TestDiscoveredPOI:
             osm_type="way",
             osm_id=67890,
         )
-        
+
         assert poi.id == "poi_456"
         assert poi.name == "Simple Store"
         assert poi.address is None
@@ -88,10 +89,10 @@ class TestDiscoveredPOI:
             osm_type="node",
             osm_id=111,
         )
-        
+
         with pytest.raises(FrozenInstanceError):
             poi.name = "New Name"
-        
+
         with pytest.raises(FrozenInstanceError):
             poi.latitude = 45.0
 
@@ -140,7 +141,7 @@ class TestDiscoveredPOI:
                 osm_type="node",
                 osm_id=123,
             )
-        
+
         # Latitude too low
         with pytest.raises(ValueError, match="Invalid coordinates"):
             DiscoveredPOI(
@@ -170,7 +171,7 @@ class TestDiscoveredPOI:
                 osm_type="node",
                 osm_id=123,
             )
-        
+
         # Longitude too low
         with pytest.raises(ValueError, match="Invalid coordinates"):
             DiscoveredPOI(
@@ -200,7 +201,7 @@ class TestDiscoveredPOI:
             osm_id=123,
         )
         assert poi_north.latitude == 90.0
-        
+
         # South pole
         poi_south = DiscoveredPOI(
             id="poi_south",
@@ -214,7 +215,7 @@ class TestDiscoveredPOI:
             osm_id=123,
         )
         assert poi_south.latitude == -90.0
-        
+
         # Date line
         poi_dateline = DiscoveredPOI(
             id="poi_dateline",
@@ -228,7 +229,7 @@ class TestDiscoveredPOI:
             osm_id=123,
         )
         assert poi_dateline.longitude == 180.0
-        
+
         # Anti-meridian
         poi_antimeridian = DiscoveredPOI(
             id="poi_antimeridian",
@@ -310,7 +311,7 @@ class TestNearbyPOIDiscoveryConfig:
             max_pois_per_category=50,
             include_poi_details=True,
         )
-        
+
         assert config.location == "123 Main St, New York, NY"
         assert config.travel_time == 30
         assert config.travel_mode == TravelMode.DRIVE
@@ -330,11 +331,11 @@ class TestNearbyPOIDiscoveryConfig:
             travel_time=15,
             travel_mode=TravelMode.WALK,
         )
-        
+
         assert config.location == (40.7128, -74.0060)
         assert config.travel_time == 15
         assert config.travel_mode == TravelMode.WALK
-        
+
         # Check defaults
         assert config.poi_categories is None
         assert config.exclude_categories is None
@@ -351,7 +352,7 @@ class TestNearbyPOIDiscoveryConfig:
             location="New York, NY",
             travel_time=30,
         )
-        
+
         assert config.location == "New York, NY"
         assert config.travel_time == 30
         assert config.travel_mode == TravelMode.DRIVE  # default
@@ -380,7 +381,7 @@ class TestNearbyPOIDiscoveryConfig:
             travel_time=MIN_TRAVEL_TIME,
         )
         assert config_min.travel_time == MIN_TRAVEL_TIME
-        
+
         # Maximum allowed
         config_max = NearbyPOIDiscoveryConfig(
             location="Test Location",
@@ -396,7 +397,7 @@ class TestNearbyPOIDiscoveryConfig:
                 location=(91.0, 0.0),  # latitude > 90
                 travel_time=30,
             )
-        
+
         # Invalid longitude
         with pytest.raises(ValueError, match="Invalid coordinates"):
             NearbyPOIDiscoveryConfig(
@@ -411,7 +412,7 @@ class TestNearbyPOIDiscoveryConfig:
                 location="",
                 travel_time=30,
             )
-        
+
         # Whitespace-only string
         with pytest.raises(ValueError, match="Location address cannot be empty"):
             NearbyPOIDiscoveryConfig(
@@ -426,7 +427,7 @@ class TestNearbyPOIDiscoveryConfig:
                 location=123,  # Invalid type
                 travel_time=30,
             )
-        
+
         with pytest.raises(ValueError, match="Location must be either an address string or \\(lat, lon\\) tuple"):
             NearbyPOIDiscoveryConfig(
                 location=["New York"],  # Invalid type
@@ -441,7 +442,7 @@ class TestNearbyPOIDiscoveryConfig:
                 travel_time=30,
                 max_pois_per_category=0,
             )
-        
+
         with pytest.raises(ValueError, match="max_pois_per_category must be positive"):
             NearbyPOIDiscoveryConfig(
                 location="Test Location",
@@ -476,7 +477,7 @@ class TestNearbyPOIResult:
             osm_type="node",
             osm_id=123,
         )
-        
+
         poi2 = DiscoveredPOI(
             id="poi_2",
             name="Grocery Store",
@@ -488,7 +489,7 @@ class TestNearbyPOIResult:
             osm_type="way",
             osm_id=456,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 40.7100, "lon": -74.0050},
             travel_time=30,
@@ -507,7 +508,7 @@ class TestNearbyPOIResult:
             metadata={"processing_time": 5.2},
             warnings=["Some POIs may be missing"],
         )
-        
+
         assert result.origin_location == {"lat": 40.7100, "lon": -74.0050}
         assert result.travel_time == 30
         assert result.travel_mode == TravelMode.DRIVE
@@ -527,7 +528,7 @@ class TestNearbyPOIResult:
             travel_mode=TravelMode.WALK,
             isochrone_area_km2=2.5,
         )
-        
+
         assert result.origin_location == {"lat": 0.0, "lon": 0.0}
         assert result.travel_time == 15
         assert result.travel_mode == TravelMode.WALK
@@ -554,7 +555,7 @@ class TestNearbyPOIResult:
             osm_type="node",
             osm_id=123,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 0.0, "lon": 0.0},
             travel_time=30,
@@ -563,7 +564,7 @@ class TestNearbyPOIResult:
             pois_by_category={"test": [poi]},
             total_poi_count=1,
         )
-        
+
         assert result.success is True
 
     def test_success_property_without_pois(self):
@@ -575,7 +576,7 @@ class TestNearbyPOIResult:
             isochrone_area_km2=10.0,
             total_poi_count=0,
         )
-        
+
         assert result.success is False
 
     def test_get_all_pois(self):
@@ -595,7 +596,7 @@ class TestNearbyPOIResult:
             latitude=0.0, longitude=0.0, straight_line_distance_m=300.0,
             osm_type="node", osm_id=3,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 0.0, "lon": 0.0},
             travel_time=30,
@@ -606,7 +607,7 @@ class TestNearbyPOIResult:
                 "cat2": [poi3],
             },
         )
-        
+
         all_pois = result.get_all_pois()
         assert len(all_pois) == 3
         assert poi1 in all_pois
@@ -621,7 +622,7 @@ class TestNearbyPOIResult:
             travel_mode=TravelMode.DRIVE,
             isochrone_area_km2=10.0,
         )
-        
+
         all_pois = result.get_all_pois()
         assert all_pois == []
 
@@ -642,7 +643,7 @@ class TestNearbyPOIResult:
             latitude=0.0, longitude=0.0, straight_line_distance_m=500.0,
             osm_type="node", osm_id=3,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 0.0, "lon": 0.0},
             travel_time=30,
@@ -650,7 +651,7 @@ class TestNearbyPOIResult:
             isochrone_area_km2=10.0,
             pois_by_category={"test": [poi1, poi2, poi3]},
         )
-        
+
         sorted_pois = result.get_pois_by_distance()
         assert len(sorted_pois) == 3
         assert sorted_pois[0] == poi2  # 100m
@@ -674,7 +675,7 @@ class TestNearbyPOIResult:
             latitude=0.0, longitude=0.0, straight_line_distance_m=500.0,
             osm_type="node", osm_id=3,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 0.0, "lon": 0.0},
             travel_time=30,
@@ -682,7 +683,7 @@ class TestNearbyPOIResult:
             isochrone_area_km2=10.0,
             pois_by_category={"test": [poi1, poi2, poi3]},
         )
-        
+
         # Filter to POIs within 600m
         filtered_pois = result.get_pois_by_distance(max_distance_m=600.0)
         assert len(filtered_pois) == 2
@@ -707,7 +708,7 @@ class TestNearbyPOIResult:
             latitude=0.0, longitude=0.0, straight_line_distance_m=300.0,
             osm_type="node", osm_id=3,
         )
-        
+
         result = NearbyPOIResult(
             origin_location={"lat": 0.0, "lon": 0.0},
             travel_time=30,
@@ -718,7 +719,7 @@ class TestNearbyPOIResult:
                 "cat2": [poi3],
             },
         )
-        
+
         stats = result.get_summary_stats()
         assert stats["total_pois"] == 3
         assert stats["categories"] == 2
@@ -735,7 +736,7 @@ class TestNearbyPOIResult:
             travel_mode=TravelMode.DRIVE,
             isochrone_area_km2=10.0,
         )
-        
+
         stats = result.get_summary_stats()
         assert stats["total_pois"] == 0
         assert stats["categories"] == 0
@@ -753,7 +754,7 @@ class TestNearbyPOIResult:
             isochrone_geometry="placeholder_geodataframe",  # In real usage, this would be a GeoDataFrame
             poi_points="placeholder_geodataframe",  # In real usage, this would be a GeoDataFrame
         )
-        
+
         assert result.isochrone_geometry == "placeholder_geodataframe"
         assert result.poi_points == "placeholder_geodataframe"
 
@@ -765,7 +766,7 @@ class TestNearbyPOIResult:
             travel_mode=TravelMode.DRIVE,
             isochrone_area_km2=10.0,
         )
-        
+
         # Add POI to category
         poi = DiscoveredPOI(
             id="poi_1", name="New POI", category="test", subcategory="test",
@@ -774,15 +775,15 @@ class TestNearbyPOIResult:
         )
         result.pois_by_category["test"] = [poi]
         assert len(result.pois_by_category) == 1
-        
+
         # Add warning
         result.warnings.append("New warning")
         assert len(result.warnings) == 1
-        
+
         # Add metadata
         result.metadata["new_key"] = "new_value"
         assert result.metadata["new_key"] == "new_value"
-        
+
         # Add file
         result.files_generated["map"] = Path("/tmp/map.html")
         assert result.files_generated["map"] == Path("/tmp/map.html")
@@ -801,7 +802,7 @@ class TestIntegration:
             poi_categories=["food", "retail", "entertainment"],
             max_pois_per_category=10,
         )
-        
+
         # Simulate discovered POIs
         pois = []
         categories = ["food", "retail", "entertainment"]
@@ -821,7 +822,7 @@ class TestIntegration:
                 tags={"name": f"Place {i}", "category": category},
             )
             pois.append(poi)
-        
+
         # Create result
         result = NearbyPOIResult(
             origin_location={"lat": 40.7589, "lon": -73.9851},
@@ -845,21 +846,21 @@ class TestIntegration:
                 "map": Path("output/map.html"),
             },
         )
-        
+
         # Verify integration
         assert result.success is True
         assert result.total_poi_count == 15
         assert len(result.get_all_pois()) == 15
-        
+
         # Check sorting
         sorted_pois = result.get_pois_by_distance()
         assert sorted_pois[0].straight_line_distance_m == 100.0
         assert sorted_pois[-1].straight_line_distance_m == 1500.0
-        
+
         # Check filtering
         nearby_pois = result.get_pois_by_distance(max_distance_m=500.0)
         assert len(nearby_pois) == 5  # POIs 0-4 with distances 100-500m
-        
+
         # Check statistics
         stats = result.get_summary_stats()
         assert stats["total_pois"] == 15
@@ -870,7 +871,7 @@ class TestIntegration:
         """Test that data structures can be serialized (for API responses)."""
         import json
         from dataclasses import asdict
-        
+
         # Create POI
         poi = DiscoveredPOI(
             id="poi_123",
@@ -883,28 +884,28 @@ class TestIntegration:
             osm_type="node",
             osm_id=12345,
         )
-        
+
         # Convert to dict (simulating API serialization)
         poi_dict = asdict(poi)
         poi_json = json.dumps(poi_dict)
-        
+
         # Verify it can be serialized and deserialized
         poi_data = json.loads(poi_json)
         assert poi_data["id"] == "poi_123"
         assert poi_data["latitude"] == 40.7128
-        
+
         # Test config serialization
         config = NearbyPOIDiscoveryConfig(
             location="New York, NY",
             travel_time=30,
             travel_mode=TravelMode.DRIVE,
         )
-        
+
         # Need special handling for Path and Enum
         config_dict = asdict(config)
         config_dict["output_dir"] = str(config_dict["output_dir"])
         config_dict["travel_mode"] = config_dict["travel_mode"].value
-        
+
         config_json = json.dumps(config_dict)
         config_data = json.loads(config_json)
         assert config_data["location"] == "New York, NY"

@@ -16,8 +16,8 @@ except ImportError:
         "aiohttp is required for async functionality. Install with: uv add aiohttp"
     ) from None
 
-from ..pipeline import PipelineConfig
 from ..console import get_logger
+from ..pipeline import PipelineConfig
 from .builder import AnalysisResult
 
 logger = get_logger(__name__)

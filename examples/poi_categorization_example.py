@@ -7,8 +7,8 @@ from rich.tree import Tree
 
 from socialmapper.poi_categorization import (
     categorize_poi,
+    get_poi_category_info,
     organize_pois_by_category,
-    get_poi_category_info
 )
 
 console = Console()
@@ -16,7 +16,7 @@ console = Console()
 
 def main():
     """Demonstrate POI categorization functionality."""
-    
+
     # Example POIs from OpenStreetMap
     sample_pois = [
         {
@@ -108,29 +108,29 @@ def main():
             }
         }
     ]
-    
+
     console.print("[bold blue]POI Categorization Example[/bold blue]\n")
-    
+
     # Show individual categorization
     console.print("[yellow]Individual POI Categorization:[/yellow]")
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("POI Name", style="cyan", width=30)
     table.add_column("OSM Tags", style="green")
     table.add_column("Category", style="yellow")
-    
+
     for poi in sample_pois:
         name = poi["tags"].get("name", "Unnamed")
         # Format tags for display
         tags_str = ", ".join([f"{k}={v}" for k, v in poi["tags"].items() if k != "name"][:2])
         category = categorize_poi(poi["tags"])
         table.add_row(name, tags_str, category)
-    
+
     console.print(table)
-    
+
     # Organize POIs by category
     console.print("\n[yellow]POIs Organized by Category:[/yellow]")
     categorized = organize_pois_by_category(sample_pois)
-    
+
     tree = Tree("[bold]Categories[/bold]")
     for category, pois in sorted(categorized.items()):
         category_branch = tree.add(f"[magenta]{category}[/magenta] ({len(pois)} POIs)")
@@ -138,23 +138,23 @@ def main():
             name = poi["tags"].get("name", "Unnamed")
             poi_type = poi["tags"].get("amenity") or poi["tags"].get("shop") or poi["tags"].get("leisure") or poi["tags"].get("tourism")
             category_branch.add(f"[cyan]{name}[/cyan] [dim]({poi_type})[/dim]")
-    
+
     console.print(tree)
-    
+
     # Show category information
     console.print("\n[yellow]Category Information:[/yellow]")
     info = get_poi_category_info()
-    
+
     info_table = Table(show_header=True, header_style="bold magenta")
     info_table.add_column("Category", style="cyan")
     info_table.add_column("Total Values", justify="right")
     info_table.add_column("Example Values", style="green")
-    
+
     for category in sorted(info["categories"]):
         details = info["category_details"][category]
         examples = ", ".join(details["sample_values"])
         info_table.add_row(category, str(details["value_count"]), examples)
-    
+
     console.print(info_table)
     console.print(f"\n[dim]Total categories: {info['total_categories']}[/dim]")
 

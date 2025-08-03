@@ -37,8 +37,9 @@ def integrate_census_data(
     Returns:
         Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
     """
-    from ..distance import add_travel_distances
     import os
+
+    from ..distance import add_travel_distances
 
     # Enable debug mode if environment variable is set
     debug_mode = os.environ.get("SOCIALMAPPER_DEBUG_CENSUS", "").lower() in ("true", "1", "yes")
@@ -50,7 +51,7 @@ def integrate_census_data(
 
     # Get census system
     census_system = get_census_system()
-    
+
     if debug_mode:
         logger.debug(f"Isochrone GDF shape: {isochrone_gdf.shape}")
         logger.debug(f"POI data keys: {list(poi_data.keys())}")

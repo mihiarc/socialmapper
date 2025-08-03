@@ -1,9 +1,8 @@
 """Tests for the API builder pattern."""
 
 import pytest
+
 from socialmapper.api.builder import SocialMapperBuilder
-from socialmapper.api.client import SocialMapperClient
-from socialmapper.exceptions import ConfigurationError
 
 
 class TestSocialMapperBuilder:
@@ -70,7 +69,7 @@ class TestSocialMapperBuilder:
             .with_census_variables("B01001_001E")
             .with_output_directory("/tmp/test")
         )
-        
+
         # Verify builder chain works
         assert isinstance(builder, SocialMapperBuilder)
 
@@ -81,7 +80,7 @@ class TestSocialMapperBuilder:
             .with_location("Boston, MA")
             .with_osm_pois(poi_type="amenity", poi_name="school")
         )
-        
+
         # build() returns the config dict, not a client instance
         config = builder.build()
         assert isinstance(config, dict)

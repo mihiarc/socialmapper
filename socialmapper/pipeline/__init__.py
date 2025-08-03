@@ -22,9 +22,9 @@ from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
 __all__ = [
+    "NearbyPOIDiscoveryStage",
     "PipelineConfig",
     "PipelineOrchestrator",
-    "NearbyPOIDiscoveryStage",
     "convert_poi_to_geodataframe",
     "create_pipeline_maps",
     "discover_pois_near_address",

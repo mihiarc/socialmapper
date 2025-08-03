@@ -37,13 +37,13 @@ class CensusGeocoder:
         # Census geocoding API endpoints
         self._geocode_base_url = "https://geocoding.geo.census.gov/geocoder"
         self._session = self._create_session()
-        
+
         # Known city fallbacks for common problematic locations
         # Format: (lat_min, lat_max, lon_min, lon_max) -> (state_fips, county_fips)
         self._known_regions = {
             # Salem, Oregon - Marion County
             (44.8, 45.1, -123.2, -122.8): ("41", "047"),
-            # Portland, Oregon - Multnomah County  
+            # Portland, Oregon - Multnomah County
             (45.4, 45.6, -122.8, -122.5): ("41", "051"),
             # Eugene, Oregon - Lane County
             (43.9, 44.2, -123.3, -122.8): ("41", "039"),
@@ -238,7 +238,7 @@ class CensusGeocoder:
         # Extract county information
         counties = geographies.get("Counties", [])
         county_fips = counties[0].get("COUNTY") if counties else None
-        
+
         # If we didn't get state/county from API, try fallback
         if not state_fips or not county_fips:
             fallback = self._try_known_region_fallback(latitude, longitude)
@@ -297,7 +297,7 @@ class CensusGeocoder:
             lat_min, lat_max, lon_min, lon_max = bounds
             if lat_min <= latitude <= lat_max and lon_min <= longitude <= lon_max:
                 self._logger.info(f"Using fallback for known region: state={state_fips}, county={county_fips}")
-                
+
                 # Create a basic result with state and county info
                 # We don't have tract/block group info but at least we have county
                 return GeocodeResult(
@@ -311,7 +311,7 @@ class CensusGeocoder:
                     confidence=0.8,  # Lower confidence for fallback
                     source="census_geocoder_fallback",
                 )
-        
+
         return None
 
     def _create_session(self) -> requests.Session:

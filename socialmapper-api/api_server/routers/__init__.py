@@ -1,10 +1,6 @@
-"""
-API routers for different endpoint groups.
+"""API routers for different endpoint groups.
 """
 
-from . import health
-from . import analysis
-from . import results
-from . import metadata
+from . import analysis, health, metadata, results
 
-__all__ = ["health", "analysis", "results", "metadata"]
+__all__ = ["analysis", "health", "metadata", "results"]

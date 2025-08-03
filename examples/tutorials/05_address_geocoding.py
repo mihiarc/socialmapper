@@ -38,6 +38,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper import SocialMapperBuilder, SocialMapperClient
+from socialmapper.console import console, print_banner, print_panel, print_success
 from socialmapper.geocoding import (
     AddressInput,
     AddressProvider,
@@ -46,7 +47,6 @@ from socialmapper.geocoding import (
     geocode_address,
     geocode_addresses,
 )
-from socialmapper.console import console, print_banner, print_panel, print_success
 
 
 def explain_geocoding():

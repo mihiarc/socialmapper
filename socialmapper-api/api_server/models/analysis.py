@@ -1,36 +1,33 @@
+"""Analysis request and response models for the SocialMapper API.
 """
-Analysis request and response models for the SocialMapper API.
-"""
+
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
-from datetime import datetime
-from typing import Optional, Dict, Any, List, Union
-from uuid import UUID
 
 from .base import (
-    JobStatusEnum, 
-    TravelMode, 
-    GeographicLevel, 
-    BaseResponse, 
+    BaseResponse,
     ExportFormat,
-    APIError,
-    ValidationError
+    GeographicLevel,
+    JobStatusEnum,
+    TravelMode,
 )
 
 
 class BaseAnalysisRequest(BaseModel):
     """Base class for all analysis requests."""
     travel_time: int = Field(15, ge=1, le=120, description="Travel time in minutes")
-    census_variables: List[str] = Field(
-        default=["B01003_001E"], 
+    census_variables: list[str] = Field(
+        default=["B01003_001E"],
         description="List of Census variable codes"
     )
     geographic_level: GeographicLevel = Field(
-        GeographicLevel.BLOCK_GROUP, 
+        GeographicLevel.BLOCK_GROUP,
         description="Geographic analysis level"
     )
     travel_mode: TravelMode = Field(
-        TravelMode.WALK, 
+        TravelMode.WALK,
         description="Mode of transportation"
     )
     include_isochrones: bool = Field(True, description="Include isochrone polygons in results")
@@ -85,8 +82,8 @@ class CustomPOILocation(BaseModel):
     name: str = Field(..., description="POI name")
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
     longitude: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
-    address: Optional[str] = Field(None, description="Optional address")
-    category: Optional[str] = Field(None, description="Optional POI category")
+    address: str | None = Field(None, description="Optional address")
+    category: str | None = Field(None, description="Optional POI category")
 
     @validator('name')
     def validate_name(cls, v):
@@ -99,9 +96,9 @@ class CustomPOILocation(BaseModel):
 class CustomPOIAnalysisRequest(BaseAnalysisRequest):
     """Request model for custom POI analysis."""
     location: str = Field(..., description="Analysis area location (city, state format)")
-    custom_pois: List[CustomPOILocation] = Field(
-        ..., 
-        min_items=1, 
+    custom_pois: list[CustomPOILocation] = Field(
+        ...,
+        min_items=1,
         description="List of custom POI locations"
     )
 
@@ -125,8 +122,8 @@ class CustomPOIAnalysisRequest(BaseAnalysisRequest):
 class BatchAnalysisItem(BaseModel):
     """Single item in a batch analysis request."""
     id: str = Field(..., description="Unique identifier for this analysis item")
-    request: Union[LocationAnalysisRequest, CustomPOIAnalysisRequest] = Field(
-        ..., 
+    request: LocationAnalysisRequest | CustomPOIAnalysisRequest = Field(
+        ...,
         description="Analysis request"
     )
 
@@ -140,10 +137,10 @@ class BatchAnalysisItem(BaseModel):
 
 class BatchAnalysisRequest(BaseModel):
     """Request model for batch analysis processing."""
-    items: List[BatchAnalysisItem] = Field(
-        ..., 
-        min_items=1, 
-        max_items=50, 
+    items: list[BatchAnalysisItem] = Field(
+        ...,
+        min_items=1,
+        max_items=50,
         description="List of analysis items to process"
     )
     priority: int = Field(1, ge=1, le=5, description="Processing priority (1=highest, 5=lowest)")
@@ -153,12 +150,12 @@ class BatchAnalysisRequest(BaseModel):
         """Validate batch items."""
         if not v:
             raise ValueError("At least one analysis item must be provided")
-        
+
         # Check for duplicate IDs
         ids = [item.id for item in v]
         if len(ids) != len(set(ids)):
             raise ValueError("Duplicate item IDs found in batch request")
-        
+
         return v
 
 
@@ -171,11 +168,11 @@ class AnalysisResponse(BaseResponse):
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Current job status")
     created_at: datetime = Field(..., description="Job creation timestamp")
-    estimated_completion: Optional[datetime] = Field(
-        None, 
+    estimated_completion: datetime | None = Field(
+        None,
         description="Estimated completion time"
     )
-    message: Optional[str] = Field(None, description="Status message")
+    message: str | None = Field(None, description="Status message")
 
     @validator('job_id')
     def validate_job_id(cls, v):
@@ -188,11 +185,11 @@ class AnalysisResponse(BaseResponse):
 class BatchAnalysisResponse(BaseResponse):
     """Response model for batch analysis submission."""
     batch_id: str = Field(..., description="Unique batch identifier")
-    job_ids: List[str] = Field(..., description="List of individual job identifiers")
+    job_ids: list[str] = Field(..., description="List of individual job identifiers")
     status: JobStatusEnum = Field(..., description="Overall batch status")
     created_at: datetime = Field(..., description="Batch creation timestamp")
-    estimated_completion: Optional[datetime] = Field(
-        None, 
+    estimated_completion: datetime | None = Field(
+        None,
         description="Estimated completion time for entire batch"
     )
     total_items: int = Field(..., description="Total number of items in batch")
@@ -220,15 +217,15 @@ class JobStatus(BaseResponse):
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Current job status")
     progress: float = Field(0.0, ge=0.0, le=1.0, description="Job progress (0.0 to 1.0)")
-    message: Optional[str] = Field(None, description="Current status message")
+    message: str | None = Field(None, description="Current status message")
     created_at: datetime = Field(..., description="Job creation timestamp")
-    started_at: Optional[datetime] = Field(None, description="Job start timestamp")
+    started_at: datetime | None = Field(None, description="Job start timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    estimated_completion: Optional[datetime] = Field(
-        None, 
+    estimated_completion: datetime | None = Field(
+        None,
         description="Estimated completion time"
     )
-    error: Optional[str] = Field(None, description="Error message if job failed")
+    error: str | None = Field(None, description="Error message if job failed")
 
 
 class ExportRequest(BaseModel):
@@ -252,9 +249,9 @@ class ExportResponse(BaseResponse):
     job_id: str = Field(..., description="Source job identifier")
     format: ExportFormat = Field(..., description="Export format")
     status: JobStatusEnum = Field(..., description="Export status")
-    download_url: Optional[str] = Field(None, description="Download URL when ready")
-    expires_at: Optional[datetime] = Field(None, description="Download URL expiration")
-    file_size_bytes: Optional[int] = Field(None, description="File size in bytes")
+    download_url: str | None = Field(None, description="Download URL when ready")
+    expires_at: datetime | None = Field(None, description="Download URL expiration")
+    file_size_bytes: int | None = Field(None, description="File size in bytes")
 
 
 class BatchJobStatus(BaseResponse):
@@ -265,63 +262,63 @@ class BatchJobStatus(BaseResponse):
     completed_items: int = Field(0, description="Number of completed items")
     failed_items: int = Field(0, description="Number of failed items")
     progress: float = Field(0.0, ge=0.0, le=1.0, description="Overall progress")
-    job_statuses: List[JobStatus] = Field(..., description="Individual job statuses")
+    job_statuses: list[JobStatus] = Field(..., description="Individual job statuses")
     created_at: datetime = Field(..., description="Batch creation timestamp")
-    estimated_completion: Optional[datetime] = Field(None, description="Estimated completion")
+    estimated_completion: datetime | None = Field(None, description="Estimated completion")
 
 
 class AnalysisResult(BaseResponse):
     """Complete analysis result model."""
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Job status")
-    request: Union[LocationAnalysisRequest, CustomPOIAnalysisRequest] = Field(
-        ..., 
+    request: LocationAnalysisRequest | CustomPOIAnalysisRequest = Field(
+        ...,
         description="Original analysis request"
     )
-    
+
     # Results data
-    poi_count: Optional[int] = Field(None, ge=0, description="Number of POIs found")
-    demographics: Optional[Dict[str, Any]] = Field(
-        None, 
+    poi_count: int | None = Field(None, ge=0, description="Number of POIs found")
+    demographics: dict[str, Any] | None = Field(
+        None,
         description="Demographic analysis results"
     )
-    isochrones: Optional[Dict[str, Any]] = Field(
-        None, 
+    isochrones: dict[str, Any] | None = Field(
+        None,
         description="Isochrone polygon data (GeoJSON format)"
     )
-    
+
     # Analysis metadata
-    analysis_area_km2: Optional[float] = Field(
-        None, 
-        ge=0, 
+    analysis_area_km2: float | None = Field(
+        None,
+        ge=0,
         description="Total analysis area in square kilometers"
     )
-    population_covered: Optional[int] = Field(
-        None, 
-        ge=0, 
+    population_covered: int | None = Field(
+        None,
+        ge=0,
         description="Total population in analysis area"
     )
-    
+
     # Processing metadata
-    processing_time_seconds: Optional[float] = Field(
-        None, 
-        ge=0, 
+    processing_time_seconds: float | None = Field(
+        None,
+        ge=0,
         description="Total processing time in seconds"
     )
     created_at: datetime = Field(..., description="Job creation timestamp")
-    started_at: Optional[datetime] = Field(None, description="Job start timestamp")
-    completed_at: Optional[datetime] = Field(None, description="Job completion timestamp")
-    
+    started_at: datetime | None = Field(None, description="Job start timestamp")
+    completed_at: datetime | None = Field(None, description="Job completion timestamp")
+
     # Export information
-    export_urls: Optional[Dict[ExportFormat, str]] = Field(
-        None, 
+    export_urls: dict[ExportFormat, str] | None = Field(
+        None,
         description="URLs for downloading results in different formats"
     )
-    
+
     # Error information
-    error: Optional[str] = Field(None, description="Error message if job failed")
-    error_details: Optional[Dict[str, Any]] = Field(
-        None, 
+    error: str | None = Field(None, description="Error message if job failed")
+    error_details: dict[str, Any] | None = Field(
+        None,
         description="Detailed error information"
     )
 
@@ -338,9 +335,9 @@ class CensusVariable(BaseModel):
     code: str = Field(..., description="Census variable code (e.g., 'B01003_001E')")
     name: str = Field(..., description="Human-readable variable name")
     concept: str = Field(..., description="Census concept/table name")
-    group: Optional[str] = Field(None, description="Variable group/category")
-    universe: Optional[str] = Field(None, description="Universe description")
-    
+    group: str | None = Field(None, description="Variable group/category")
+    universe: str | None = Field(None, description="Universe description")
+
     @validator('code')
     def validate_code(cls, v):
         """Validate census variable code format."""
@@ -358,18 +355,18 @@ class CensusVariable(BaseModel):
 
 class CensusVariablesResponse(BaseResponse):
     """Response model for census variables endpoint."""
-    variables: List[CensusVariable] = Field(..., description="Available census variables")
+    variables: list[CensusVariable] = Field(..., description="Available census variables")
     total_count: int = Field(..., description="Total number of variables")
-    categories: List[str] = Field(..., description="Available variable categories")
+    categories: list[str] = Field(..., description="Available variable categories")
 
 
 class POIType(BaseModel):
     """Model for POI type information."""
     type: str = Field(..., description="OpenStreetMap POI type (e.g., 'amenity')")
     name: str = Field(..., description="POI name (e.g., 'library')")
-    description: Optional[str] = Field(None, description="Description of this POI type")
-    category: Optional[str] = Field(None, description="POI category")
-    common_names: Optional[List[str]] = Field(None, description="Common alternative names")
+    description: str | None = Field(None, description="Description of this POI type")
+    category: str | None = Field(None, description="POI category")
+    common_names: list[str] | None = Field(None, description="Common alternative names")
 
     @validator('type')
     def validate_type(cls, v):
@@ -388,21 +385,21 @@ class POIType(BaseModel):
 
 class POITypesResponse(BaseResponse):
     """Response model for POI types endpoint."""
-    poi_types: List[POIType] = Field(..., description="Available POI types")
+    poi_types: list[POIType] = Field(..., description="Available POI types")
     total_count: int = Field(..., description="Total number of POI types")
-    categories: List[str] = Field(..., description="Available POI categories")
+    categories: list[str] = Field(..., description="Available POI categories")
 
 
 class LocationSearchResult(BaseModel):
     """Model for location search result."""
     display_name: str = Field(..., description="Full display name of location")
-    city: Optional[str] = Field(None, description="City name")
-    state: Optional[str] = Field(None, description="State name")
+    city: str | None = Field(None, description="City name")
+    state: str | None = Field(None, description="State name")
     country: str = Field(..., description="Country name")
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
     longitude: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
-    importance: Optional[float] = Field(None, description="Search result importance score")
-    place_type: Optional[str] = Field(None, description="Type of place (city, town, etc.)")
+    importance: float | None = Field(None, description="Search result importance score")
+    place_type: str | None = Field(None, description="Type of place (city, town, etc.)")
 
     @validator('display_name')
     def validate_display_name(cls, v):
@@ -422,35 +419,35 @@ class LocationSearchResult(BaseModel):
 class LocationSearchResponse(BaseResponse):
     """Response model for location search endpoint."""
     query: str = Field(..., description="Original search query")
-    results: List[LocationSearchResult] = Field(..., description="Search results")
+    results: list[LocationSearchResult] = Field(..., description="Search results")
     total_count: int = Field(..., description="Total number of results")
 
 
 class ProcessingJob(BaseModel):
     """Internal job tracking model."""
     id: str = Field(..., description="Unique job identifier")
-    request: Union[LocationAnalysisRequest, CustomPOIAnalysisRequest, BatchAnalysisRequest] = Field(
-        ..., 
+    request: LocationAnalysisRequest | CustomPOIAnalysisRequest | BatchAnalysisRequest = Field(
+        ...,
         description="Analysis request"
     )
     status: JobStatusEnum = Field(JobStatusEnum.PENDING, description="Current status")
     progress: float = Field(0.0, ge=0.0, le=1.0, description="Progress percentage")
-    message: Optional[str] = Field(None, description="Current status message")
-    
+    message: str | None = Field(None, description="Current status message")
+
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    started_at: Optional[datetime] = None
+    started_at: datetime | None = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
-    
+    completed_at: datetime | None = None
+
     # Results
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    error_details: Optional[Dict[str, Any]] = None
-    
+    result: dict[str, Any] | None = None
+    error: str | None = None
+    error_details: dict[str, Any] | None = None
+
     # Processing metadata
-    processing_time_seconds: Optional[float] = None
-    
+    processing_time_seconds: float | None = None
+
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()

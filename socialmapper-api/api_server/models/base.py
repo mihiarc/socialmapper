@@ -1,11 +1,11 @@
-"""
-Base models and common types for the SocialMapper API.
+"""Base models and common types for the SocialMapper API.
 """
 
-from pydantic import BaseModel, Field, validator
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Literal
 from enum import Enum
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field, validator
 
 
 class JobStatusEnum(str, Enum):
@@ -56,9 +56,9 @@ class APIError(BaseModel):
     """Standard API error response model."""
     error_code: ErrorCode = Field(..., description="Machine-readable error code")
     message: str = Field(..., description="Human-readable error message")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    details: dict[str, Any] | None = Field(None, description="Additional error details")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
-    request_id: Optional[str] = Field(None, description="Request identifier for tracking")
+    request_id: str | None = Field(None, description="Request identifier for tracking")
 
     @validator('message')
     def validate_message(cls, v):
@@ -71,8 +71,8 @@ class APIError(BaseModel):
 class ValidationError(APIError):
     """Validation error response model."""
     error_code: Literal[ErrorCode.VALIDATION_ERROR] = Field(ErrorCode.VALIDATION_ERROR, description="Machine-readable error code")
-    field_errors: Optional[List[Dict[str, str]]] = Field(
-        None, 
+    field_errors: list[dict[str, str]] | None = Field(
+        None,
         description="Field-specific validation errors"
     )
 
@@ -80,8 +80,8 @@ class ValidationError(APIError):
 class BaseResponse(BaseModel):
     """Base response model with common fields."""
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Response timestamp")
-    request_id: Optional[str] = Field(None, description="Request identifier for tracking")
-    
+    request_id: str | None = Field(None, description="Request identifier for tracking")
+
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()
@@ -93,7 +93,7 @@ class HealthResponse(BaseResponse):
     status: str = Field("healthy", description="Service health status")
     version: str = Field(..., description="API version")
     uptime_seconds: float = Field(..., description="Service uptime in seconds")
-    dependencies: Optional[Dict[str, str]] = Field(
-        None, 
+    dependencies: dict[str, str] | None = Field(
+        None,
         description="Status of external dependencies"
     )

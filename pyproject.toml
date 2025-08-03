@@ -178,6 +178,12 @@ filterwarnings = [
     "ignore::UserWarning:geopandas.*",
 ]
 
+[dependency-groups]
+dev = [
+    "build>=1.3.0",
+    "twine>=6.1.0",
+]
+
 # ty configuration (ultra-fast Rust-based type checker)
 # Note: ty is pre-alpha and configuration is minimal
 # Most configuration is done via command-line flags

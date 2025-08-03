@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Comprehensive test for the core API data models implementation.
+"""Comprehensive test for the core API data models implementation.
 This test validates that task 4 requirements have been met:
 - Create Pydantic models for analysis requests and responses
 - Define job status and result models with proper validation
@@ -9,67 +8,47 @@ This test validates that task 4 requirements have been met:
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent))
 
-from datetime import datetime
-from pydantic import ValidationError
 import json
+from datetime import datetime
 
 # Import all the models we need to test
 from api_server.models import (
-    # Request models
-    LocationAnalysisRequest,
-    CustomPOIAnalysisRequest,
-    CustomPOILocation,
-    BatchAnalysisRequest,
-    BatchAnalysisItem,
-    ExportRequest,
-    
     # Response models
     AnalysisResponse,
-    BatchAnalysisResponse,
-    JobStatus,
-    BatchJobStatus,
     AnalysisResult,
-    ExportResponse,
-    
-    # Metadata models
+    BatchAnalysisItem,
+    BatchAnalysisRequest,
     CensusVariable,
-    CensusVariablesResponse,
-    POIType,
-    POITypesResponse,
-    LocationSearchResult,
-    LocationSearchResponse,
-    
+    CustomPOIAnalysisRequest,
+    CustomPOILocation,
     # Error models
     DetailedValidationError,
-    ValidationErrorDetail,
-    ResourceNotFoundError,
-    ProcessingError,
-    RateLimitError,
-    AuthenticationError,
-    AuthorizationError,
-    InternalServerError,
-    ServiceUnavailableError,
-    TimeoutError,
-    InvalidRequestError,
-    
+    ErrorCode,
+    ExportFormat,
+    GeographicLevel,
+    JobStatus,
     # Enums and base models
     JobStatusEnum,
+    # Request models
+    LocationAnalysisRequest,
+    LocationSearchResult,
+    POIType,
+    ProcessingError,
+    RateLimitError,
+    ResourceNotFoundError,
     TravelMode,
-    GeographicLevel,
-    ExportFormat,
-    ErrorCode,
-    APIError,
-    BaseResponse,
-    HealthResponse
+    ValidationErrorDetail,
 )
+from pydantic import ValidationError
 
 
 def test_analysis_request_models():
     """Test analysis request models with proper validation."""
     print("Testing analysis request models...")
-    
+
     # Test LocationAnalysisRequest
     location_request = LocationAnalysisRequest(
         location="Portland, OR",
@@ -86,7 +65,7 @@ def test_analysis_request_models():
     assert location_request.travel_time == 15
     assert len(location_request.census_variables) == 2
     print("✓ LocationAnalysisRequest created and validated")
-    
+
     # Test CustomPOIAnalysisRequest
     custom_poi = CustomPOILocation(
         name="Central Library",
@@ -95,7 +74,7 @@ def test_analysis_request_models():
         address="801 SW 10th Ave, Portland, OR",
         category="library"
     )
-    
+
     custom_request = CustomPOIAnalysisRequest(
         location="Portland, OR",
         custom_pois=[custom_poi],
@@ -105,13 +84,13 @@ def test_analysis_request_models():
     assert len(custom_request.custom_pois) == 1
     assert custom_request.custom_pois[0].name == "Central Library"
     print("✓ CustomPOIAnalysisRequest created and validated")
-    
+
     # Test BatchAnalysisRequest
     batch_item = BatchAnalysisItem(
         id="item-1",
         request=location_request
     )
-    
+
     batch_request = BatchAnalysisRequest(
         items=[batch_item],
         priority=1
@@ -119,7 +98,7 @@ def test_analysis_request_models():
     assert len(batch_request.items) == 1
     assert batch_request.priority == 1
     print("✓ BatchAnalysisRequest created and validated")
-    
+
     # Test validation failures
     try:
         LocationAnalysisRequest(
@@ -130,7 +109,7 @@ def test_analysis_request_models():
         assert False, "Should have failed validation"
     except ValidationError:
         print("✓ Location validation working correctly")
-    
+
     try:
         CustomPOILocation(
             name="Test",
@@ -145,7 +124,7 @@ def test_analysis_request_models():
 def test_response_models():
     """Test response models with proper structure."""
     print("\nTesting response models...")
-    
+
     # Test AnalysisResponse
     analysis_response = AnalysisResponse(
         job_id="job-123",
@@ -156,7 +135,7 @@ def test_response_models():
     assert analysis_response.job_id == "job-123"
     assert analysis_response.status == JobStatusEnum.PENDING
     print("✓ AnalysisResponse created and validated")
-    
+
     # Test JobStatus
     job_status = JobStatus(
         job_id="job-123",
@@ -169,14 +148,14 @@ def test_response_models():
     assert job_status.progress == 0.5
     assert job_status.status == JobStatusEnum.RUNNING
     print("✓ JobStatus created and validated")
-    
+
     # Test AnalysisResult
     location_request = LocationAnalysisRequest(
         location="Portland, OR",
         poi_type="amenity",
         poi_name="library"
     )
-    
+
     analysis_result = AnalysisResult(
         job_id="job-123",
         status=JobStatusEnum.COMPLETED,
@@ -196,7 +175,7 @@ def test_response_models():
 def test_metadata_models():
     """Test metadata models for census variables and POI types."""
     print("\nTesting metadata models...")
-    
+
     # Test CensusVariable
     census_var = CensusVariable(
         code="B01003_001E",
@@ -208,7 +187,7 @@ def test_metadata_models():
     assert census_var.code == "B01003_001E"
     assert census_var.name == "Total Population"
     print("✓ CensusVariable created and validated")
-    
+
     # Test POIType
     poi_type = POIType(
         type="amenity",
@@ -221,7 +200,7 @@ def test_metadata_models():
     assert poi_type.name == "library"
     assert len(poi_type.common_names) == 3
     print("✓ POIType created and validated")
-    
+
     # Test LocationSearchResult
     location_result = LocationSearchResult(
         display_name="Portland, Oregon, United States",
@@ -241,7 +220,7 @@ def test_metadata_models():
 def test_error_models():
     """Test comprehensive error response models."""
     print("\nTesting error models...")
-    
+
     # Test ValidationErrorDetail
     validation_detail = ValidationErrorDetail(
         field="location",
@@ -252,7 +231,7 @@ def test_error_models():
     assert validation_detail.field == "location"
     assert validation_detail.invalid_value == "NY"
     print("✓ ValidationErrorDetail created and validated")
-    
+
     # Test DetailedValidationError
     detailed_error = DetailedValidationError(
         error_code=ErrorCode.VALIDATION_ERROR,
@@ -262,7 +241,7 @@ def test_error_models():
     assert detailed_error.error_code == ErrorCode.VALIDATION_ERROR
     assert len(detailed_error.field_errors) == 1
     print("✓ DetailedValidationError created and validated")
-    
+
     # Test ResourceNotFoundError
     not_found_error = ResourceNotFoundError(
         error_code=ErrorCode.RESOURCE_NOT_FOUND,
@@ -273,7 +252,7 @@ def test_error_models():
     assert not_found_error.resource_type == "job"
     assert not_found_error.resource_id == "job-123"
     print("✓ ResourceNotFoundError created and validated")
-    
+
     # Test RateLimitError
     rate_limit_error = RateLimitError(
         error_code=ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -286,7 +265,7 @@ def test_error_models():
     assert rate_limit_error.limit == 100
     assert rate_limit_error.retry_after_seconds == 30
     print("✓ RateLimitError created and validated")
-    
+
     # Test ProcessingError
     processing_error = ProcessingError(
         error_code=ErrorCode.PROCESSING_ERROR,
@@ -301,7 +280,7 @@ def test_error_models():
 def test_json_serialization():
     """Test JSON serialization and deserialization."""
     print("\nTesting JSON serialization...")
-    
+
     # Test request serialization
     request = LocationAnalysisRequest(
         location="Portland, OR",
@@ -309,31 +288,31 @@ def test_json_serialization():
         poi_name="library",
         travel_time=15
     )
-    
+
     # Serialize to JSON
     json_str = request.model_dump_json()
     assert isinstance(json_str, str)
-    
+
     # Deserialize from JSON
     json_dict = json.loads(json_str)
     restored_request = LocationAnalysisRequest(**json_dict)
     assert restored_request.location == request.location
     assert restored_request.travel_time == request.travel_time
     print("✓ Request JSON serialization working")
-    
+
     # Test response serialization
     response = AnalysisResponse(
         job_id="job-123",
         status=JobStatusEnum.PENDING,
         created_at=datetime.now()
     )
-    
+
     json_str = response.model_dump_json()
     json_dict = json.loads(json_str)
     assert json_dict["job_id"] == "job-123"
     assert json_dict["status"] == "pending"
     print("✓ Response JSON serialization working")
-    
+
     # Test error serialization
     error = DetailedValidationError(
         error_code=ErrorCode.VALIDATION_ERROR,
@@ -345,7 +324,7 @@ def test_json_serialization():
             )
         ]
     )
-    
+
     json_str = error.model_dump_json()
     json_dict = json.loads(json_str)
     assert json_dict["error_code"] == "validation_error"
@@ -356,7 +335,7 @@ def test_json_serialization():
 def test_enum_values():
     """Test that all enums have correct values."""
     print("\nTesting enum values...")
-    
+
     # Test JobStatusEnum
     assert JobStatusEnum.PENDING == "pending"
     assert JobStatusEnum.RUNNING == "running"
@@ -364,25 +343,25 @@ def test_enum_values():
     assert JobStatusEnum.FAILED == "failed"
     assert JobStatusEnum.CANCELLED == "cancelled"
     print("✓ JobStatusEnum values correct")
-    
+
     # Test TravelMode
     assert TravelMode.WALK == "walk"
     assert TravelMode.BIKE == "bike"
     assert TravelMode.DRIVE == "drive"
     print("✓ TravelMode values correct")
-    
+
     # Test GeographicLevel
     assert GeographicLevel.BLOCK_GROUP == "block_group"
     assert GeographicLevel.ZCTA == "zcta"
     print("✓ GeographicLevel values correct")
-    
+
     # Test ExportFormat
     assert ExportFormat.CSV == "csv"
     assert ExportFormat.GEOJSON == "geojson"
     assert ExportFormat.PARQUET == "parquet"
     assert ExportFormat.GEOPARQUET == "geoparquet"
     print("✓ ExportFormat values correct")
-    
+
     # Test ErrorCode
     assert ErrorCode.VALIDATION_ERROR == "validation_error"
     assert ErrorCode.RESOURCE_NOT_FOUND == "resource_not_found"
@@ -396,7 +375,7 @@ def main():
     print("=" * 60)
     print("COMPREHENSIVE API DATA MODELS TEST")
     print("=" * 60)
-    
+
     try:
         test_analysis_request_models()
         test_response_models()
@@ -404,7 +383,7 @@ def main():
         test_error_models()
         test_json_serialization()
         test_enum_values()
-        
+
         print("\n" + "=" * 60)
         print("✅ ALL TESTS PASSED!")
         print("✅ Task 4 requirements have been successfully implemented:")
@@ -412,9 +391,9 @@ def main():
         print("   • Job status and result models with proper validation ✓")
         print("   • Error response models with standardized format ✓")
         print("=" * 60)
-        
+
         return True
-        
+
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")
         import traceback

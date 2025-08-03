@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..console import get_logger, print_error, print_info
 from ..exceptions import (
     AnalysisError,
     DataProcessingError,
@@ -17,10 +18,8 @@ from ..exceptions import (
 )
 from ..io import IOManager
 from ..isochrone import TravelMode
-from ..console import get_logger, print_error, print_info
 from ..util.error_handling import ErrorCollector, error_context, log_error
 from .census import integrate_census_data
-from .environment import setup_pipeline_environment
 from .export import export_pipeline_outputs
 from .extraction import extract_poi_data
 from .isochrone import generate_isochrones
@@ -167,7 +166,7 @@ class PipelineOrchestrator:
         """Setup pipeline environment."""
         # Use IO manager to set up directories
         directories = self.io_manager.setup_directories(create_all=True)
-        
+
         # Convert Path objects to strings for compatibility
         return {k: str(v) for k, v in directories.items()}
 
@@ -235,7 +234,7 @@ class PipelineOrchestrator:
 
         # Get travel mode string
         travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
-        
+
         return export_pipeline_outputs(
             census_data_gdf=census_data_gdf,
             poi_data=poi_data,
@@ -263,7 +262,7 @@ class PipelineOrchestrator:
 
         # Get travel mode string
         travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
-        
+
         return generate_pipeline_maps(
             census_data_gdf=census_data_gdf,
             poi_data=poi_data,

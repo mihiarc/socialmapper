@@ -1,7 +1,8 @@
 """Tests for the Result types (Ok/Err pattern)."""
 
 import pytest
-from socialmapper.api.result_types import Ok, Err, Result, Error, ErrorType
+
+from socialmapper.api.result_types import Err, Error, ErrorType, Ok, Result
 
 
 class TestResultTypes:
@@ -123,11 +124,11 @@ class TestResultTypes:
             if b == 0:
                 return Err(Error(ErrorType.VALIDATION, "Division by zero"))
             return Ok(a / b)
-        
+
         result1 = divide(10, 2)
         assert result1.is_ok()
         assert result1.unwrap() == 5.0
-        
+
         result2 = divide(10, 0)
         assert result2.is_err()
         assert result2._value.message == "Division by zero"

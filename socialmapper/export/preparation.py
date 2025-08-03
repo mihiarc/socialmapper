@@ -7,8 +7,8 @@ This module contains common data preparation functions used across different exp
 import geopandas as gpd
 import pandas as pd
 
-from ..constants import FULL_BLOCK_GROUP_GEOID_LENGTH
 from ..console import get_logger
+from ..constants import FULL_BLOCK_GROUP_GEOID_LENGTH
 from .base import DataPrepConfig
 
 logger = get_logger(__name__)

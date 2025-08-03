@@ -1,23 +1,19 @@
-"""
-Analysis endpoints for the SocialMapper API.
+"""Analysis endpoints for the SocialMapper API.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import JSONResponse
-from typing import Dict, Any
 import logging
 
-from ..models import (
-    LocationAnalysisRequest,
-    AnalysisRequest,  # Backward compatibility alias
-    AnalysisResponse, 
-    JobStatus, 
-    AnalysisResult,
-    JobStatusEnum,
-    APIError
-)
-from ..services.job_manager import get_job_manager, JobManager
+from fastapi import APIRouter, Depends, HTTPException
+
 from ..config import Settings, get_settings
+from ..models import (
+    AnalysisRequest,  # Backward compatibility alias
+    AnalysisResponse,
+    AnalysisResult,
+    JobStatus,
+    JobStatusEnum,
+)
+from ..services.job_manager import JobManager, get_job_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,8 +25,7 @@ async def submit_location_analysis(
     job_manager: JobManager = Depends(get_job_manager),
     settings: Settings = Depends(get_settings)
 ):
-    """
-    Submit a location-based accessibility analysis request.
+    """Submit a location-based accessibility analysis request.
     
     This endpoint accepts analysis parameters and returns a job ID for tracking
     the analysis progress. The analysis runs in the background and results can
@@ -49,10 +44,10 @@ async def submit_location_analysis(
     """
     try:
         logger.info(f"Received analysis request for location: {request.location}")
-        
+
         # Create and start the background job
         job_id = job_manager.create_job(request)
-        
+
         # Return job submission response
         response = AnalysisResponse(
             job_id=job_id,
@@ -60,17 +55,17 @@ async def submit_location_analysis(
             created_at=job_manager.get_job(job_id).created_at,
             message="Analysis job submitted successfully"
         )
-        
+
         logger.info(f"Created analysis job {job_id}")
         return response
-        
+
     except ValueError as e:
         logger.warning(f"Invalid request parameters: {e}")
         raise HTTPException(
             status_code=422,
             detail={
                 "error_code": "INVALID_REQUEST",
-                "message": f"Invalid request parameters: {str(e)}",
+                "message": f"Invalid request parameters: {e!s}",
                 "timestamp": "2024-01-01T00:00:00Z"
             }
         )
@@ -92,8 +87,7 @@ async def get_job_status(
     job_id: str,
     job_manager: JobManager = Depends(get_job_manager)
 ):
-    """
-    Get the current status of an analysis job.
+    """Get the current status of an analysis job.
     
     Args:
         job_id: Unique job identifier
@@ -116,7 +110,7 @@ async def get_job_status(
                     "timestamp": "2024-01-01T00:00:00Z"
                 }
             )
-            
+
         return JobStatus(
             job_id=job.id,
             status=job.status,
@@ -128,7 +122,7 @@ async def get_job_status(
             estimated_completion=None,  # TODO: Implement estimation logic
             error=job.error
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -148,8 +142,7 @@ async def get_analysis_result(
     job_id: str,
     job_manager: JobManager = Depends(get_job_manager)
 ):
-    """
-    Get the complete results of a completed analysis job.
+    """Get the complete results of a completed analysis job.
     
     Args:
         job_id: Unique job identifier
@@ -172,7 +165,7 @@ async def get_analysis_result(
                     "timestamp": "2024-01-01T00:00:00Z"
                 }
             )
-            
+
         if job.status == JobStatusEnum.PENDING:
             raise HTTPException(
                 status_code=202,
@@ -202,7 +195,7 @@ async def get_analysis_result(
                     "timestamp": "2024-01-01T00:00:00Z"
                 }
             )
-            
+
         # Job completed successfully
         result = AnalysisResult(
             job_id=job.id,
@@ -219,9 +212,9 @@ async def get_analysis_result(
             error=job.error,
             error_details=job.error_details
         )
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -241,8 +234,7 @@ async def delete_analysis_job(
     job_id: str,
     job_manager: JobManager = Depends(get_job_manager)
 ):
-    """
-    Delete an analysis job and its results.
+    """Delete an analysis job and its results.
     
     Args:
         job_id: Unique job identifier
@@ -265,13 +257,13 @@ async def delete_analysis_job(
                     "timestamp": "2024-01-01T00:00:00Z"
                 }
             )
-            
+
         return {
             "message": f"Job {job_id} deleted successfully",
             "job_id": job_id,
             "timestamp": "2024-01-01T00:00:00Z"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -290,8 +282,7 @@ async def delete_analysis_job(
 async def list_all_jobs(
     job_manager: JobManager = Depends(get_job_manager)
 ):
-    """
-    List all jobs (for debugging/admin purposes).
+    """List all jobs (for debugging/admin purposes).
     
     Args:
         job_manager: Job manager dependency
@@ -301,7 +292,7 @@ async def list_all_jobs(
     """
     try:
         jobs = job_manager.get_all_jobs()
-        
+
         job_summaries = {}
         for job_id, job in jobs.items():
             job_summaries[job_id] = {
@@ -312,13 +303,13 @@ async def list_all_jobs(
                 "poi_type": job.request.poi_type,
                 "poi_name": job.request.poi_name
             }
-            
+
         return {
             "total_jobs": len(jobs),
             "jobs": job_summaries,
             "timestamp": "2024-01-01T00:00:00Z"
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to list jobs: {e}")
         raise HTTPException(

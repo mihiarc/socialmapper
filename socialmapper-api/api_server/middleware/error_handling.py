@@ -1,35 +1,34 @@
-"""
-Error handling middleware for the SocialMapper API.
+"""Error handling middleware for the SocialMapper API.
 
 This middleware provides centralized error handling, logging, and
 standardized error responses for all API endpoints.
 """
 
 import logging
-import traceback
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Union
-from fastapi import Request, Response, status
-from fastapi.exceptions import RequestValidationError, HTTPException
+from datetime import UTC, datetime
+from typing import Any
+
+from fastapi import Request, status
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..models.errors import (
     APIError,
-    DetailedValidationError,
-    ResourceNotFoundError,
-    ProcessingError,
-    RateLimitError,
     AuthenticationError,
     AuthorizationError,
+    DetailedValidationError,
+    ErrorCode,
     InternalServerError,
+    InvalidRequestError,
+    ProcessingError,
+    RateLimitError,
+    ResourceNotFoundError,
     ServiceUnavailableError,
     TimeoutError,
-    InvalidRequestError,
     ValidationErrorDetail,
-    ErrorCode
 )
 
 logger = logging.getLogger(__name__)
@@ -37,13 +36,13 @@ logger = logging.getLogger(__name__)
 
 class APIException(Exception):
     """Custom API exception with structured error response."""
-    
+
     def __init__(
         self,
         status_code: int,
         error_code: ErrorCode,
         message: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         self.status_code = status_code
         self.error_code = error_code
@@ -53,8 +52,7 @@ class APIException(Exception):
 
 
 async def error_handling_middleware(request: Request, call_next):
-    """
-    Global error handling middleware.
+    """Global error handling middleware.
     
     This middleware catches all exceptions and returns standardized
     error responses. It also logs errors appropriately.
@@ -67,8 +65,7 @@ async def error_handling_middleware(request: Request, call_next):
 
 
 async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Handle exceptions and return appropriate error responses.
+    """Handle exceptions and return appropriate error responses.
     
     Args:
         request: The incoming request
@@ -79,7 +76,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
     """
     # Generate incident ID for tracking
     incident_id = str(uuid.uuid4())
-    
+
     # Log the error with context
     logger.error(
         f"Error handling request {request.method} {request.url.path}",
@@ -93,7 +90,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
         },
         exc_info=True
     )
-    
+
     # Handle different exception types
     if isinstance(exc, APIException):
         return create_error_response(
@@ -103,7 +100,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details=exc.details,
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, RequestValidationError):
         # Handle FastAPI validation errors
         field_errors = []
@@ -113,7 +110,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
                 "message": error["msg"],
                 "type": error["type"]
             })
-        
+
         return create_error_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             error_code=ErrorCode.VALIDATION_ERROR,
@@ -121,7 +118,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={"field_errors": field_errors},
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, HTTPException):
         # Handle FastAPI HTTPException
         error_code = ErrorCode.INTERNAL_ERROR
@@ -137,7 +134,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code = ErrorCode.RATE_LIMIT_EXCEEDED
         elif exc.status_code == 503:
             error_code = ErrorCode.SERVICE_UNAVAILABLE
-            
+
         return create_error_response(
             status_code=exc.status_code,
             error_code=error_code,
@@ -145,7 +142,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={},
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, StarletteHTTPException):
         # Handle Starlette HTTPException (similar to above)
         error_code = ErrorCode.INTERNAL_ERROR
@@ -153,7 +150,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code = ErrorCode.RESOURCE_NOT_FOUND
         elif exc.status_code == 405:
             error_code = ErrorCode.METHOD_NOT_ALLOWED
-            
+
         return create_error_response(
             status_code=exc.status_code,
             error_code=error_code,
@@ -161,7 +158,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={},
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, ValidationError):
         # Handle Pydantic validation errors
         return create_error_response(
@@ -171,7 +168,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={"errors": exc.errors()},
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, TimeoutError):
         return create_error_response(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
@@ -180,7 +177,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={"operation": str(exc)},
             incident_id=incident_id
         )
-    
+
     elif isinstance(exc, ConnectionError):
         return create_error_response(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -189,7 +186,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             details={"reason": "Connection error"},
             incident_id=incident_id
         )
-    
+
     else:
         # Generic internal server error
         return create_error_response(
@@ -204,7 +201,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
 def handle_validation_error(exc: RequestValidationError, incident_id: str) -> JSONResponse:
     """Handle request validation errors."""
     field_errors = []
-    
+
     for error in exc.errors():
         field_path = ".".join(str(loc) for loc in error["loc"])
         field_errors.append(
@@ -215,14 +212,14 @@ def handle_validation_error(exc: RequestValidationError, incident_id: str) -> JS
                 constraint=error.get("type")
             )
         )
-    
+
     error_response = DetailedValidationError(
         message="Validation error in request",
         details={"request_errors": exc.errors()},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         field_errors=field_errors
     )
-    
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=error_response.model_dump()
@@ -242,9 +239,9 @@ def handle_http_exception(exc: HTTPException, incident_id: str) -> JSONResponse:
         503: ErrorCode.SERVICE_UNAVAILABLE,
         504: ErrorCode.TIMEOUT_ERROR
     }
-    
+
     error_code = error_code_map.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
-    
+
     # Handle detail that might be a dict
     if isinstance(exc.detail, dict):
         message = exc.detail.get("message", str(exc.detail))
@@ -252,7 +249,7 @@ def handle_http_exception(exc: HTTPException, incident_id: str) -> JSONResponse:
     else:
         message = str(exc.detail)
         details = {}
-    
+
     return create_error_response(
         status_code=exc.status_code,
         error_code=error_code,
@@ -273,7 +270,7 @@ def handle_starlette_http_exception(exc: StarletteHTTPException, incident_id: st
 def handle_pydantic_validation_error(exc: ValidationError, incident_id: str) -> JSONResponse:
     """Handle Pydantic validation errors."""
     field_errors = []
-    
+
     for error in exc.errors():
         field_path = ".".join(str(loc) for loc in error["loc"])
         field_errors.append(
@@ -284,14 +281,14 @@ def handle_pydantic_validation_error(exc: ValidationError, incident_id: str) -> 
                 constraint=error.get("type")
             )
         )
-    
+
     error_response = DetailedValidationError(
         message="Data validation error",
         details={"validation_errors": exc.errors()},
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         field_errors=field_errors
     )
-    
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=error_response.model_dump()
@@ -302,11 +299,10 @@ def create_error_response(
     status_code: int,
     error_code: ErrorCode,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    incident_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    incident_id: str | None = None
 ) -> JSONResponse:
-    """
-    Create a standardized error response.
+    """Create a standardized error response.
     
     Args:
         status_code: HTTP status code
@@ -331,21 +327,21 @@ def create_error_response(
         ErrorCode.INVALID_REQUEST: InvalidRequestError,
         ErrorCode.INTERNAL_ERROR: InternalServerError
     }
-    
+
     error_class = error_class_map.get(error_code, APIError)
-    
+
     # Build error response
     error_data = {
         "error_code": error_code,
         "message": message,
-        "timestamp": datetime.now(timezone.utc),
+        "timestamp": datetime.now(UTC),
         "details": details or {}
     }
-    
+
     # Add incident ID for internal errors
     if error_code == ErrorCode.INTERNAL_ERROR and incident_id:
         error_data["incident_id"] = incident_id
-    
+
     # Create error instance
     if error_class == APIError:
         error_response = error_class(**error_data)
@@ -359,13 +355,13 @@ def create_error_response(
             error_data["window_seconds"] = details.get("window_seconds", 60)
             error_data["retry_after_seconds"] = details.get("retry_after_seconds", 30)
             error_data["remaining_requests"] = details.get("remaining_requests", 0)
-        
+
         try:
             error_response = error_class(**error_data)
         except:
             # Fallback to generic error if specific model fails
             error_response = APIError(**error_data)
-    
+
     return JSONResponse(
         status_code=status_code,
         content=error_response.model_dump(mode='json'),
@@ -377,20 +373,19 @@ def create_error_response(
 
 
 def setup_error_handling(app):
-    """
-    Set up error handling for the FastAPI application.
+    """Set up error handling for the FastAPI application.
     
     Args:
         app: FastAPI application instance
     """
     # Add middleware
     app.middleware("http")(error_handling_middleware)
-    
+
     # Add exception handlers
     app.add_exception_handler(RequestValidationError, handle_exception)
     app.add_exception_handler(HTTPException, handle_exception)
     app.add_exception_handler(StarletteHTTPException, handle_exception)
     app.add_exception_handler(ValidationError, handle_exception)
     app.add_exception_handler(Exception, handle_exception)
-    
+
     logger.info("Error handling middleware configured")

@@ -23,9 +23,9 @@ from typing import Any
 import geopandas as gpd
 import psutil
 
+from ..console import get_logger
 from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
 from ..progress import get_progress_bar
-from ..console import get_logger
 from .cache import ModernNetworkCache, download_and_cache_network
 from .clustering import (
     OptimizedPOICluster,

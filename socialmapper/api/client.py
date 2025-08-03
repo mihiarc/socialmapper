@@ -11,13 +11,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+from ..console import get_logger
 from ..constants import COORDINATE_PAIR_PARTS, DEFAULT_API_TIMEOUT, MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 from ..exceptions import (
     InvalidLocationError,
     SocialMapperError,
 )
 from ..pipeline import PipelineConfig, PipelineOrchestrator
-from ..console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .result_types import Err, Error, ErrorType, NearbyPOIResult, Ok, Result
@@ -274,10 +274,10 @@ class SocialMapperClient:
         try:
             # Validate travel mode
             from ..isochrone import TravelMode
-            
-            valid_modes = {"drive": TravelMode.DRIVE, "walk": TravelMode.WALK, 
+
+            valid_modes = {"drive": TravelMode.DRIVE, "walk": TravelMode.WALK,
                           "bike": TravelMode.BIKE}
-            
+
             if travel_mode not in valid_modes:
                 return Err(
                     Error(
@@ -295,7 +295,7 @@ class SocialMapperClient:
                 travel_mode=valid_modes[travel_mode],
                 poi_categories=poi_categories,
             )
-            
+
             # Apply optional parameters
             if exclude_categories:
                 builder.exclude_poi_categories(*exclude_categories)
@@ -303,7 +303,7 @@ class SocialMapperClient:
                 builder.limit_pois_per_category(max_pois_per_category)
             if output_dir:
                 builder.with_output_directory(output_dir)
-            
+
             # Apply export options
             if not export_csv:
                 builder.disable_csv_export()
@@ -314,10 +314,10 @@ class SocialMapperClient:
 
         except Exception as e:
             logger.error(f"POI discovery failed: {e!s}")
-            
+
             # Determine error type based on exception
             error_type = self._classify_error(e)
-            
+
             return Err(
                 Error(
                     type=error_type,
@@ -369,7 +369,7 @@ class SocialMapperClient:
                 return self._run_poi_discovery_analysis(config, on_progress)
 
             # Run standard pipeline - filter out POI discovery specific config
-            pipeline_config_dict = {k: v for k, v in config.items() 
+            pipeline_config_dict = {k: v for k, v in config.items()
                                    if not k.startswith('poi_discovery')}
             pipeline_config = PipelineConfig(**pipeline_config_dict)
             orchestrator = PipelineOrchestrator(pipeline_config)
@@ -471,7 +471,7 @@ class SocialMapperClient:
         """
         try:
             from ..pipeline.poi_discovery import execute_poi_discovery_pipeline
-            
+
             # Extract POI discovery configuration
             poi_config = config.get("poi_discovery_config")
             if not poi_config:
@@ -489,7 +489,7 @@ class SocialMapperClient:
                 on_progress(10.0)  # Starting
 
             result = execute_poi_discovery_pipeline(poi_config)
-            
+
             if on_progress:
                 on_progress(90.0)  # Nearly complete
 
@@ -497,7 +497,7 @@ class SocialMapperClient:
                 return result
 
             poi_result = result.unwrap()
-            
+
             # Cache result if strategy available
             if self.config.cache_strategy:
                 cache_key = self._generate_cache_key(config)
@@ -510,10 +510,10 @@ class SocialMapperClient:
 
         except Exception as e:
             logger.error(f"POI discovery analysis failed: {e!s}")
-            
+
             # Determine error type based on exception
             error_type = self._classify_error(e)
-            
+
             return Err(
                 Error(
                     type=error_type,

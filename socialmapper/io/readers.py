@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 import geopandas as gpd
+import pandas as pd
 
 from ..console import get_logger
 
@@ -16,12 +16,12 @@ logger = get_logger(__name__)
 def read_poi_data(filepath: Path | str) -> dict[str, Any]:
     """Read POI data from various file formats."""
     filepath = Path(filepath)
-    
+
     if not filepath.exists():
         raise FileNotFoundError(f"File not found: {filepath}")
-    
+
     file_extension = filepath.suffix.lower()
-    
+
     if file_extension == ".json":
         return read_poi_json(filepath)
     elif file_extension == ".csv":
@@ -34,9 +34,9 @@ def read_poi_data(filepath: Path | str) -> dict[str, Any]:
 
 def read_poi_json(filepath: Path) -> dict[str, Any]:
     """Read POI data from JSON file."""
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         data = json.load(f)
-    
+
     # Ensure proper structure
     if "pois" not in data:
         # If it's a list, wrap it
@@ -44,7 +44,7 @@ def read_poi_json(filepath: Path) -> dict[str, Any]:
             data = {"pois": data}
         else:
             raise ValueError("JSON file must contain 'pois' key or be a list")
-    
+
     logger.info(f"Read {len(data['pois'])} POIs from {filepath}")
     return data
 
@@ -52,31 +52,31 @@ def read_poi_json(filepath: Path) -> dict[str, Any]:
 def read_poi_csv(filepath: Path) -> dict[str, Any]:
     """Read POI data from CSV file."""
     pois = []
-    
+
     with open(filepath, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        
+
         for i, row in enumerate(reader):
             # Try to find lat/lon in different possible column names
             lat = None
             lon = None
-            
+
             for lat_key in ["lat", "latitude", "y", "LAT", "LATITUDE", "Y"]:
-                if lat_key in row and row[lat_key]:
+                if row.get(lat_key):
                     try:
                         lat = float(row[lat_key])
                         break
                     except ValueError:
                         continue
-            
+
             for lon_key in ["lon", "lng", "longitude", "x", "LON", "LNG", "LONGITUDE", "X"]:
-                if lon_key in row and row[lon_key]:
+                if row.get(lon_key):
                     try:
                         lon = float(row[lon_key])
                         break
                     except ValueError:
                         continue
-            
+
             if lat is not None and lon is not None:
                 poi = {
                     "id": row.get("id", f"poi_{i}"),
@@ -88,7 +88,7 @@ def read_poi_csv(filepath: Path) -> dict[str, Any]:
                 pois.append(poi)
             else:
                 logger.warning(f"Skipping row {i} - missing valid coordinates")
-    
+
     logger.info(f"Read {len(pois)} POIs from {filepath}")
     return {"pois": pois}
 
@@ -97,7 +97,7 @@ def read_poi_geojson(filepath: Path) -> dict[str, Any]:
     """Read POI data from GeoJSON file."""
     gdf = gpd.read_file(filepath)
     pois = []
-    
+
     for idx, row in gdf.iterrows():
         # Extract coordinates from geometry
         if row.geometry.geom_type == "Point":
@@ -106,7 +106,7 @@ def read_poi_geojson(filepath: Path) -> dict[str, Any]:
             # Use centroid for non-point geometries
             centroid = row.geometry.centroid
             lon, lat = centroid.x, centroid.y
-        
+
         # Create POI dict
         poi = {
             "id": row.get("id", f"poi_{idx}"),
@@ -116,7 +116,7 @@ def read_poi_geojson(filepath: Path) -> dict[str, Any]:
             "tags": {k: v for k, v in row.items() if k not in ["id", "name", "geometry"]},
         }
         pois.append(poi)
-    
+
     logger.info(f"Read {len(pois)} POIs from {filepath}")
     return {"pois": pois}
 
@@ -129,7 +129,7 @@ def read_custom_pois(
     """Read custom POI coordinates from CSV."""
     filepath = Path(filepath)
     df = pd.read_csv(filepath)
-    
+
     # Normalize column names
     column_mapping = {
         'latitude': 'lat',
@@ -139,15 +139,15 @@ def read_custom_pois(
         'x': 'lon',
         'y': 'lat',
     }
-    
+
     df.columns = [column_mapping.get(col.lower(), col.lower()) for col in df.columns]
-    
+
     # Validate required columns
     required_cols = ['lat', 'lon']
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"CSV must contain columns: {', '.join(missing_cols)}")
-    
+
     # Create POI list
     pois = []
     for idx, row in df.iterrows():
@@ -157,7 +157,7 @@ def read_custom_pois(
             "lon": float(row['lon']),
             "tags": {}
         }
-        
+
         # Add name
         if name_field and name_field in row:
             poi["name"] = row[name_field]
@@ -165,20 +165,20 @@ def read_custom_pois(
             poi["name"] = row['name']
         else:
             poi["name"] = f"Custom POI {idx}"
-        
+
         # Add type
         if type_field and type_field in row:
             poi["type"] = row[type_field]
         elif 'type' in row:
             poi["type"] = row['type']
-        
+
         # Add all other fields to tags
         for col in df.columns:
             if col not in ['lat', 'lon', 'name', 'type']:
                 poi["tags"][col] = row[col]
-        
+
         pois.append(poi)
-    
+
     logger.info(f"Read {len(pois)} custom POIs from {filepath}")
     return pois
 
@@ -186,7 +186,7 @@ def read_custom_pois(
 def read_census_data(filepath: Path | str) -> pd.DataFrame:
     """Read census data from CSV or Parquet."""
     filepath = Path(filepath)
-    
+
     if filepath.suffix.lower() == ".csv":
         return pd.read_csv(filepath)
     elif filepath.suffix.lower() in [".parquet", ".pq"]:
@@ -198,7 +198,7 @@ def read_census_data(filepath: Path | str) -> pd.DataFrame:
 def read_geospatial_data(filepath: Path | str) -> gpd.GeoDataFrame:
     """Read geospatial data from various formats."""
     filepath = Path(filepath)
-    
+
     if filepath.suffix.lower() == ".geojson":
         return gpd.read_file(filepath)
     elif filepath.suffix.lower() in [".geoparquet", ".parquet"]:

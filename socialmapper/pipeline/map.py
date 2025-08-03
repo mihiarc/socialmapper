@@ -10,14 +10,13 @@ from typing import Any
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
-from ..io import IOManager
-
 from ..constants import (
     CITY_SCALE_DISTANCE_M,
     METRO_SCALE_DISTANCE_M,
     REGIONAL_SCALE_DISTANCE_M,
     STATE_SCALE_DISTANCE_M,
 )
+from ..io import IOManager
 from ..progress import get_progress_bar
 from ..visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
 from ..visualization.config import ClassificationScheme, LegendConfig
@@ -397,7 +396,7 @@ def _create_demographic_map(
     if io_manager:
         # Use IOManager for centralized file tracking
         safe_variable_name = variable.replace("/", "_").replace(" ", "_").lower()
-        
+
         # Save the figure using IOManager
         output_file = io_manager.save_file(
             content=fig,

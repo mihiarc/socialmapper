@@ -19,7 +19,7 @@ from socialmapper.pipeline import (
 def basic_poi_discovery_example():
     """Basic example using the main pipeline function."""
     print("=== Basic POI Discovery Example ===\n")
-    
+
     # Create configuration
     config = NearbyPOIDiscoveryConfig(
         location="Chapel Hill, NC",
@@ -33,10 +33,10 @@ def basic_poi_discovery_example():
         max_pois_per_category=20,
         include_poi_details=True,
     )
-    
+
     # Execute pipeline
     result = execute_poi_discovery_pipeline(config)
-    
+
     match result:
         case result if result.is_ok():
             poi_result = result.unwrap()
@@ -47,26 +47,26 @@ def basic_poi_discovery_example():
             print("\n📊 POIs by category:")
             for category, count in poi_result.category_counts.items():
                 print(f"  {category}: {count}")
-            
+
             # Show closest POIs
             print("\n🏆 Top 5 closest POIs:")
             closest_pois = poi_result.get_pois_by_distance()[:5]
             for i, poi in enumerate(closest_pois, 1):
                 distance_km = poi.straight_line_distance_m / 1000
                 print(f"  {i}. {poi.name} ({poi.category}) - {distance_km:.1f} km")
-            
+
             # Show summary statistics
             stats = poi_result.get_summary_stats()
-            print(f"\n📈 Summary:")
+            print("\n📈 Summary:")
             print(f"  Average distance: {stats['avg_distance_m']:.0f} m")
             print(f"  Distance range: {stats['min_distance_m']:.0f} - {stats['max_distance_m']:.0f} m")
-            
+
             # Show generated files
             if poi_result.files_generated:
-                print(f"\n📄 Generated files:")
+                print("\n📄 Generated files:")
                 for file_type, path in poi_result.files_generated.items():
                     print(f"  {file_type}: {path}")
-        
+
         case result if result.is_err():
             error = result.unwrap_err()
             print(f"❌ Error: {error.message}")
@@ -77,7 +77,7 @@ def basic_poi_discovery_example():
 def convenience_functions_example():
     """Example using convenience functions."""
     print("\n=== Convenience Functions Example ===\n")
-    
+
     # Example 1: POI discovery near an address
     print("Example 1: Finding restaurants near Duke University")
     result = discover_pois_near_address(
@@ -87,7 +87,7 @@ def convenience_functions_example():
         categories=["food_and_drink"],
         output_dir=Path("output/duke_restaurants"),
     )
-    
+
     if result.is_ok():
         poi_result = result.unwrap()
         print(f"✅ Found {poi_result.total_poi_count} restaurants within 10-minute walk")
@@ -96,7 +96,7 @@ def convenience_functions_example():
             print(f"  • {poi.name} - {distance_km:.1f} km")
     else:
         print(f"❌ Error: {result.unwrap_err().message}")
-    
+
     # Example 2: POI discovery near coordinates
     print("\nExample 2: Finding shops near specific coordinates")
     result = discover_pois_near_coordinates(
@@ -107,7 +107,7 @@ def convenience_functions_example():
         categories=["shopping"],
         output_dir=Path("output/durham_shops"),
     )
-    
+
     if result.is_ok():
         poi_result = result.unwrap()
         print(f"✅ Found {poi_result.total_poi_count} shops within 20-minute bike ride")
@@ -121,7 +121,7 @@ def convenience_functions_example():
 def advanced_filtering_example():
     """Example with advanced filtering options."""
     print("\n=== Advanced Filtering Example ===\n")
-    
+
     config = NearbyPOIDiscoveryConfig(
         location="Carrboro, NC",
         travel_time=30,
@@ -134,13 +134,13 @@ def advanced_filtering_example():
         create_map=False,  # Skip map creation for this example
         output_dir=Path("output/carrboro_filtered"),
     )
-    
+
     result = execute_poi_discovery_pipeline(config)
-    
+
     if result.is_ok():
         poi_result = result.unwrap()
         print(f"✅ Found {poi_result.total_poi_count} POIs with filtering")
-        
+
         # Show POIs with details
         print("\n📋 POIs with details:")
         for category, pois in poi_result.pois_by_category.items():
@@ -164,7 +164,7 @@ def advanced_filtering_example():
 def error_handling_example():
     """Example demonstrating error handling."""
     print("\n=== Error Handling Example ===\n")
-    
+
     # Example with invalid location
     config = NearbyPOIDiscoveryConfig(
         location="Nonexistent Place, XX",
@@ -172,12 +172,12 @@ def error_handling_example():
         travel_mode=TravelMode.WALK,
         output_dir=Path("output/error_test"),
     )
-    
+
     result = execute_poi_discovery_pipeline(config)
-    
+
     if result.is_err():
         error = result.unwrap_err()
-        print(f"Expected error for invalid location:")
+        print("Expected error for invalid location:")
         print(f"  Type: {error.type}")
         print(f"  Message: {error.message}")
         if error.context:
@@ -189,17 +189,17 @@ def error_handling_example():
 if __name__ == "__main__":
     print("POI Discovery Pipeline Examples")
     print("=" * 50)
-    
+
     try:
         basic_poi_discovery_example()
         convenience_functions_example()
         advanced_filtering_example()
         error_handling_example()
-        
-        print(f"\n✅ All examples completed!")
-        print(f"Check the 'output/' directory for generated files.")
-        
+
+        print("\n✅ All examples completed!")
+        print("Check the 'output/' directory for generated files.")
+
     except Exception as e:
         print(f"\n❌ Example failed with error: {e}")
-        print(f"This might be due to missing dependencies or network issues.")
-        print(f"Make sure you have an internet connection for geocoding and POI queries.")
+        print("This might be due to missing dependencies or network issues.")
+        print("Make sure you have an internet connection for geocoding and POI queries.")

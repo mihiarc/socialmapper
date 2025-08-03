@@ -566,7 +566,7 @@ def download_and_cache_network(
         # 4. Fallback speed as last resort
         graph = ox.add_edge_speeds(graph, hwy_speeds=highway_speeds, fallback=default_speed)
         graph = ox.add_edge_travel_times(graph)
-        
+
         # Apply mode-specific speed adjustments for more realistic isochrones
         if travel_mode == TravelMode.WALK:
             # For walking, ensure speeds don't exceed reasonable walking speeds
@@ -580,7 +580,7 @@ def download_and_cache_network(
                 if 'speed_kph' in data and data['speed_kph'] > 30.0:
                     data['speed_kph'] = 15.0  # Set to normal cycling speed
                     data['travel_time'] = data['length'] / (data['speed_kph'] * 1000 / 3600)
-        
+
         graph = ox.project_graph(graph)
 
         # Log speed statistics for debugging
@@ -593,7 +593,7 @@ def download_and_cache_network(
                 f"Network speeds for {travel_mode.value} mode - "
                 f"avg: {avg_speed:.1f} km/h, min: {min_speed:.1f} km/h, max: {max_speed:.1f} km/h"
             )
-        
+
         # Store in cache
         cache.store_network(graph, bbox, network_type, travel_time_minutes, cluster_size)
 

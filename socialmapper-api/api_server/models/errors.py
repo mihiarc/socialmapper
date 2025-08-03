@@ -1,21 +1,20 @@
+"""Error response models for the SocialMapper API.
 """
-Error response models for the SocialMapper API.
-"""
+
+from datetime import datetime
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, Field, validator
-from datetime import datetime
-from typing import Optional, Dict, Any, List, Union, Literal
-from enum import Enum
 
-from .base import ErrorCode, APIError
+from .base import APIError, ErrorCode
 
 
 class ValidationErrorDetail(BaseModel):
     """Detailed validation error information."""
     field: str = Field(..., description="Field name that failed validation")
     message: str = Field(..., description="Validation error message")
-    invalid_value: Optional[Any] = Field(None, description="The invalid value that was provided")
-    constraint: Optional[str] = Field(None, description="Validation constraint that was violated")
+    invalid_value: Any | None = Field(None, description="The invalid value that was provided")
+    constraint: str | None = Field(None, description="Validation constraint that was violated")
 
     @validator('field')
     def validate_field(cls, v):
@@ -35,11 +34,11 @@ class ValidationErrorDetail(BaseModel):
 class DetailedValidationError(APIError):
     """Detailed validation error response."""
     error_code: Literal[ErrorCode.VALIDATION_ERROR] = Field(ErrorCode.VALIDATION_ERROR, description="Machine-readable error code")
-    field_errors: List[ValidationErrorDetail] = Field(
-        ..., 
+    field_errors: list[ValidationErrorDetail] = Field(
+        ...,
         description="Detailed field validation errors"
     )
-    
+
     @validator('field_errors')
     def validate_field_errors(cls, v):
         """Validate field errors list."""
@@ -52,7 +51,7 @@ class ResourceNotFoundError(APIError):
     """Resource not found error response."""
     error_code: Literal[ErrorCode.RESOURCE_NOT_FOUND] = Field(ErrorCode.RESOURCE_NOT_FOUND, description="Machine-readable error code")
     resource_type: str = Field(..., description="Type of resource that was not found")
-    resource_id: Optional[str] = Field(None, description="ID of the resource that was not found")
+    resource_id: str | None = Field(None, description="ID of the resource that was not found")
 
     @validator('resource_type')
     def validate_resource_type(cls, v):
@@ -65,8 +64,8 @@ class ResourceNotFoundError(APIError):
 class ProcessingError(APIError):
     """Processing error response."""
     error_code: Literal[ErrorCode.PROCESSING_ERROR] = Field(ErrorCode.PROCESSING_ERROR, description="Machine-readable error code")
-    stage: Optional[str] = Field(None, description="Processing stage where error occurred")
-    retry_after_seconds: Optional[int] = Field(None, description="Suggested retry delay in seconds")
+    stage: str | None = Field(None, description="Processing stage where error occurred")
+    retry_after_seconds: int | None = Field(None, description="Suggested retry delay in seconds")
 
     @validator('stage')
     def validate_stage(cls, v):
@@ -109,8 +108,8 @@ class RateLimitError(APIError):
 class AuthenticationError(APIError):
     """Authentication error response."""
     error_code: Literal[ErrorCode.AUTHENTICATION_ERROR] = Field(ErrorCode.AUTHENTICATION_ERROR, description="Machine-readable error code")
-    auth_method: Optional[str] = Field(None, description="Expected authentication method")
-    
+    auth_method: str | None = Field(None, description="Expected authentication method")
+
     @validator('auth_method')
     def validate_auth_method(cls, v):
         """Validate authentication method."""
@@ -122,8 +121,8 @@ class AuthenticationError(APIError):
 class AuthorizationError(APIError):
     """Authorization error response."""
     error_code: Literal[ErrorCode.AUTHORIZATION_ERROR] = Field(ErrorCode.AUTHORIZATION_ERROR, description="Machine-readable error code")
-    required_permission: Optional[str] = Field(None, description="Required permission")
-    
+    required_permission: str | None = Field(None, description="Required permission")
+
     @validator('required_permission')
     def validate_required_permission(cls, v):
         """Validate required permission."""
@@ -135,8 +134,8 @@ class AuthorizationError(APIError):
 class InternalServerError(APIError):
     """Internal server error response."""
     error_code: Literal[ErrorCode.INTERNAL_ERROR] = Field(ErrorCode.INTERNAL_ERROR, description="Machine-readable error code")
-    incident_id: Optional[str] = Field(None, description="Incident ID for tracking")
-    
+    incident_id: str | None = Field(None, description="Incident ID for tracking")
+
     @validator('incident_id')
     def validate_incident_id(cls, v):
         """Validate incident ID."""
@@ -148,9 +147,9 @@ class InternalServerError(APIError):
 class ServiceUnavailableError(APIError):
     """Service unavailable error response."""
     error_code: Literal[ErrorCode.SERVICE_UNAVAILABLE] = Field(ErrorCode.SERVICE_UNAVAILABLE, description="Machine-readable error code")
-    retry_after_seconds: Optional[int] = Field(None, description="Suggested retry delay in seconds")
-    maintenance_window: Optional[Dict[str, datetime]] = Field(
-        None, 
+    retry_after_seconds: int | None = Field(None, description="Suggested retry delay in seconds")
+    maintenance_window: dict[str, datetime] | None = Field(
+        None,
         description="Maintenance window information"
     )
 
@@ -166,7 +165,7 @@ class TimeoutError(APIError):
     """Timeout error response."""
     error_code: Literal[ErrorCode.TIMEOUT_ERROR] = Field(ErrorCode.TIMEOUT_ERROR, description="Machine-readable error code")
     timeout_seconds: float = Field(..., description="Timeout duration in seconds")
-    operation: Optional[str] = Field(None, description="Operation that timed out")
+    operation: str | None = Field(None, description="Operation that timed out")
 
     @validator('timeout_seconds')
     def validate_timeout_seconds(cls, v):
@@ -186,7 +185,7 @@ class TimeoutError(APIError):
 class InvalidRequestError(APIError):
     """Invalid request error response."""
     error_code: Literal[ErrorCode.INVALID_REQUEST] = Field(ErrorCode.INVALID_REQUEST, description="Machine-readable error code")
-    suggestion: Optional[str] = Field(None, description="Suggestion for fixing the request")
+    suggestion: str | None = Field(None, description="Suggestion for fixing the request")
 
     @validator('suggestion')
     def validate_suggestion(cls, v):

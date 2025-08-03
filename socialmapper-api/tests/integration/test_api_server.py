@@ -1,44 +1,41 @@
 #!/usr/bin/env python3
-"""
-Test the API server with real HTTP requests.
+"""Test the API server with real HTTP requests.
 """
 
 import json
-import requests
-import time
 import subprocess
-import signal
-import os
 import sys
+import time
 from pathlib import Path
+
+import requests
 
 
 def test_api_server():
     """Test the API server with real HTTP requests."""
-    
     print("Testing SocialMapper API Server")
     print("=" * 40)
-    
+
     # Start the server in the background
     print("1. Starting API server...")
-    
+
     # Change to the API directory
     api_dir = Path(__file__).parent
-    
+
     # Start the server process
     server_process = subprocess.Popen([
-        sys.executable, "-m", "uvicorn", 
-        "api_server.main:app", 
-        "--host", "127.0.0.1", 
+        sys.executable, "-m", "uvicorn",
+        "api_server.main:app",
+        "--host", "127.0.0.1",
         "--port", "8000",
         "--log-level", "info"
     ], cwd=api_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+
     # Wait for server to start
     time.sleep(3)
-    
+
     base_url = "http://127.0.0.1:8000"
-    
+
     try:
         # Test health endpoint
         print("2. Testing health endpoint...")
@@ -49,7 +46,7 @@ def test_api_server():
         else:
             print("❌ Server health check failed")
             return
-        
+
         # Submit analysis job
         print("3. Submitting analysis job...")
         analysis_request = {
@@ -63,36 +60,36 @@ def test_api_server():
             "include_isochrones": True,
             "include_demographics": True
         }
-        
+
         response = requests.post(
-            f"{base_url}/api/v1/analysis/location", 
+            f"{base_url}/api/v1/analysis/location",
             json=analysis_request,
             timeout=10
         )
-        
+
         print(f"Job submission: {response.status_code}")
         if response.status_code != 200:
             print(f"Failed to submit job: {response.text}")
             return
-        
+
         job_data = response.json()
         job_id = job_data["job_id"]
         print(f"Job ID: {job_id}")
-        
+
         # Monitor job status
         print("4. Monitoring job status...")
         max_attempts = 15
-        
+
         for attempt in range(max_attempts):
             response = requests.get(f"{base_url}/api/v1/analysis/{job_id}/status", timeout=5)
-            
+
             if response.status_code == 200:
                 status_data = response.json()
                 status = status_data['status']
                 progress = status_data['progress']
-                
+
                 print(f"Attempt {attempt + 1}: {status} ({progress:.1%})")
-                
+
                 if status == 'completed':
                     print("✅ Job completed!")
                     break
@@ -101,27 +98,27 @@ def test_api_server():
                     return
             else:
                 print(f"Status check failed: {response.status_code}")
-            
+
             time.sleep(1)
-        
+
         # Get results
         print("5. Retrieving results...")
         response = requests.get(f"{base_url}/api/v1/analysis/{job_id}/result", timeout=10)
-        
+
         if response.status_code == 200:
             result_data = response.json()
             print("✅ Results retrieved successfully!")
             print(f"POI Count: {result_data.get('poi_count', 'N/A')}")
             print(f"Processing Time: {result_data.get('processing_time_seconds', 'N/A')}s")
-            
+
             demographics = result_data.get('demographics', {})
             if demographics:
                 print(f"Demographics: {json.dumps(demographics, indent=2)}")
         else:
             print(f"Failed to get results: {response.status_code} - {response.text}")
-        
+
         print("✅ All tests completed successfully!")
-        
+
     except requests.exceptions.RequestException as e:
         print(f"❌ Request failed: {e}")
     except Exception as e:

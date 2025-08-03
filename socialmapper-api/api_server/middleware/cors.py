@@ -1,10 +1,10 @@
+"""CORS configuration for the SocialMapper API.
 """
-CORS configuration for the SocialMapper API.
-"""
+
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
 
 from ..config import get_settings
 
@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_cors(app: FastAPI, settings=None):
-    """
-    Configure CORS middleware for the FastAPI application.
+    """Configure CORS middleware for the FastAPI application.
     
     Args:
         app: FastAPI application instance
@@ -21,7 +20,7 @@ def setup_cors(app: FastAPI, settings=None):
     """
     if settings is None:
         settings = get_settings()
-    
+
     # Configure CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -40,12 +39,12 @@ def setup_cors(app: FastAPI, settings=None):
         ],
         expose_headers=[
             "X-RateLimit-Limit",
-            "X-RateLimit-Remaining", 
+            "X-RateLimit-Remaining",
             "X-RateLimit-Reset",
             "X-Request-ID",
             "Content-Language",
         ],
         max_age=86400,  # 24 hours
     )
-    
+
     logger.info(f"CORS enabled for origins: {settings.cors_origins}")

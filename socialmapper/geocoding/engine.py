@@ -8,8 +8,8 @@ with intelligent fallback, caching, and quality validation.
 import time
 from typing import Any
 
-from ..progress import get_progress_bar
 from ..console import get_logger
+from ..progress import get_progress_bar
 from .cache import AddressCache
 from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 from .providers import CensusProvider, GeocodingProvider, NominatimProvider

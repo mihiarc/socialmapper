@@ -1,17 +1,16 @@
-"""
-Job management service for handling background analysis tasks.
+"""Job management service for handling background analysis tasks.
 """
 
 import asyncio
-import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Any
 import logging
-from concurrent.futures import ThreadPoolExecutor
 import traceback
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from ..models.analysis import ProcessingJob, AnalysisRequest, JobStatusEnum
 from ..config import get_settings
+from ..models.analysis import AnalysisRequest, JobStatusEnum, ProcessingJob
 from .result_storage import get_result_storage
 
 logger = logging.getLogger(__name__)
@@ -19,17 +18,17 @@ logger = logging.getLogger(__name__)
 
 class JobManager:
     """Manages background analysis jobs and their lifecycle."""
-    
+
     def __init__(self):
-        self.jobs: Dict[str, ProcessingJob] = {}
+        self.jobs: dict[str, ProcessingJob] = {}
         self.executor = ThreadPoolExecutor(max_workers=get_settings().max_concurrent_jobs)
-        self._cleanup_task: Optional[asyncio.Task] = None
-        
+        self._cleanup_task: asyncio.Task | None = None
+
     async def start(self):
         """Start the job manager and cleanup task."""
         logger.info("Starting job manager...")
         self._cleanup_task = asyncio.create_task(self._cleanup_expired_jobs())
-        
+
     async def stop(self):
         """Stop the job manager and cleanup resources."""
         logger.info("Stopping job manager...")
@@ -39,12 +38,11 @@ class JobManager:
                 await self._cleanup_task
             except asyncio.CancelledError:
                 pass
-        
+
         self.executor.shutdown(wait=True)
-        
+
     def create_job(self, request: AnalysisRequest) -> str:
-        """
-        Create a new analysis job.
+        """Create a new analysis job.
         
         Args:
             request: Analysis request parameters
@@ -57,21 +55,20 @@ class JobManager:
             id=job_id,
             request=request,
             status=JobStatusEnum.PENDING,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
-        
+
         self.jobs[job_id] = job
         logger.info(f"Created job {job_id} for location: {request.location}")
-        
+
         # Start processing the job in background
         asyncio.create_task(self._process_job(job_id))
-        
+
         return job_id
-        
-    def get_job(self, job_id: str) -> Optional[ProcessingJob]:
-        """
-        Get job by ID.
+
+    def get_job(self, job_id: str) -> ProcessingJob | None:
+        """Get job by ID.
         
         Args:
             job_id: Job identifier
@@ -80,14 +77,13 @@ class JobManager:
             ProcessingJob or None if not found
         """
         return self.jobs.get(job_id)
-        
-    def get_all_jobs(self) -> Dict[str, ProcessingJob]:
+
+    def get_all_jobs(self) -> dict[str, ProcessingJob]:
         """Get all jobs (for debugging/admin purposes)."""
         return self.jobs.copy()
-        
+
     def delete_job(self, job_id: str) -> bool:
-        """
-        Delete a job and its results.
+        """Delete a job and its results.
         
         Args:
             job_id: Job identifier
@@ -100,10 +96,9 @@ class JobManager:
             logger.info(f"Deleted job {job_id}")
             return True
         return False
-        
+
     async def _process_job(self, job_id: str):
-        """
-        Process a job in the background.
+        """Process a job in the background.
         
         Args:
             job_id: Job identifier
@@ -112,63 +107,62 @@ class JobManager:
         if not job:
             logger.error(f"Job {job_id} not found for processing")
             return
-            
+
         try:
             # Update job status to running
             job.status = JobStatusEnum.RUNNING
-            job.started_at = datetime.now(timezone.utc)
-            job.updated_at = datetime.now(timezone.utc)
+            job.started_at = datetime.now(UTC)
+            job.updated_at = datetime.now(UTC)
             job.message = "Starting analysis..."
             job.progress = 0.1
-            
+
             logger.info(f"Starting processing for job {job_id}")
-            
+
             # Run the actual analysis in a thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
-                self.executor, 
-                self._run_socialmapper_analysis, 
+                self.executor,
+                self._run_socialmapper_analysis,
                 job.request
             )
-            
+
             # Update job with results
             job.status = JobStatusEnum.COMPLETED
-            job.completed_at = datetime.now(timezone.utc)
-            job.updated_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
+            job.updated_at = datetime.now(UTC)
             job.result = result
             job.progress = 1.0
             job.message = "Analysis completed successfully"
-            
+
             if job.started_at:
                 job.processing_time_seconds = (
                     job.completed_at - job.started_at
                 ).total_seconds()
-            
+
             # Save results to storage
             result_storage = get_result_storage()
             result_storage.save_results(job_id, result)
-            
+
             logger.info(f"Completed processing for job {job_id}")
-            
+
         except Exception as e:
             # Handle job failure
             job.status = JobStatusEnum.FAILED
-            job.completed_at = datetime.now(timezone.utc)
-            job.updated_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
+            job.updated_at = datetime.now(UTC)
             job.error = str(e)
             job.error_details = {
                 "traceback": traceback.format_exc(),
                 "error_type": type(e).__name__
             }
             job.progress = 0.0
-            job.message = f"Analysis failed: {str(e)}"
-            
-            logger.error(f"Job {job_id} failed: {str(e)}")
+            job.message = f"Analysis failed: {e!s}"
+
+            logger.error(f"Job {job_id} failed: {e!s}")
             logger.debug(f"Job {job_id} traceback: {traceback.format_exc()}")
-            
-    def _run_socialmapper_analysis(self, request: AnalysisRequest) -> Dict[str, Any]:
-        """
-        Run the actual SocialMapper analysis.
+
+    def _run_socialmapper_analysis(self, request: AnalysisRequest) -> dict[str, Any]:
+        """Run the actual SocialMapper analysis.
         
         Args:
             request: Analysis request parameters
@@ -179,13 +173,13 @@ class JobManager:
         try:
             # For now, create a mock analysis result to demonstrate the API functionality
             # TODO: Replace with actual SocialMapper integration once import issues are resolved
-            
+
             logger.info(f"Running mock analysis for {request.location}")
-            
+
             # Simulate processing time
             import time
             time.sleep(2)  # Simulate 2 seconds of processing
-            
+
             # Create mock results that match the expected structure
             mock_result = {
                 "poi_count": 5,  # Mock: found 5 POIs
@@ -217,10 +211,10 @@ class JobManager:
                     "isochrones": "/tmp/mock_isochrones.geojson"
                 }
             }
-            
+
             logger.info(f"Mock analysis completed for {request.location}")
             return mock_result
-            
+
             # TODO: Uncomment and fix the real implementation below
             """
             # Real SocialMapper integration (currently disabled due to import issues)
@@ -263,14 +257,13 @@ class JobManager:
                 # Fallback for direct result
                 return self._serialize_analysis_result(result)
             """
-            
+
         except Exception as e:
             logger.error(f"Analysis failed: {e}")
             raise Exception(f"Analysis failed: {e}")
-            
-    def _serialize_analysis_result(self, result: Any) -> Dict[str, Any]:
-        """
-        Convert SocialMapper result to JSON-serializable format.
+
+    def _serialize_analysis_result(self, result: Any) -> dict[str, Any]:
+        """Convert SocialMapper result to JSON-serializable format.
         
         Args:
             result: SocialMapper analysis result (AnalysisResult object)
@@ -290,7 +283,7 @@ class JobManager:
                     "metadata": getattr(result, 'metadata', {}),
                     "pois": getattr(result, 'pois', [])
                 }
-                
+
                 # Handle isochrones - convert GeoDataFrame to GeoJSON if present
                 if hasattr(result, 'isochrones') and result.isochrones is not None:
                     try:
@@ -304,16 +297,16 @@ class JobManager:
                     except Exception as e:
                         logger.warning(f"Failed to serialize isochrones: {e}")
                         serialized["isochrones"] = None
-                
+
                 # Handle files_generated
                 if hasattr(result, 'files_generated'):
                     files_dict = {}
                     for key, path in result.files_generated.items():
                         files_dict[key] = str(path) if path else None
                     serialized["files_generated"] = files_dict
-                
+
                 return serialized
-                
+
             # Fallback serialization methods
             elif hasattr(result, 'to_dict'):
                 return result.to_dict()
@@ -336,7 +329,7 @@ class JobManager:
                     "raw_result": str(result),
                     "result_type": type(result).__name__
                 }
-                
+
         except Exception as e:
             logger.warning(f"Failed to serialize result: {e}")
             return {
@@ -344,32 +337,32 @@ class JobManager:
                 "result_summary": str(result)[:500],  # Truncated string representation
                 "result_type": type(result).__name__
             }
-            
+
     async def _cleanup_expired_jobs(self):
         """Periodically clean up expired jobs."""
         settings = get_settings()
         cleanup_interval = 3600  # 1 hour
-        
+
         while True:
             try:
                 await asyncio.sleep(cleanup_interval)
-                
-                current_time = datetime.now(timezone.utc)
+
+                current_time = datetime.now(UTC)
                 expired_jobs = []
-                
+
                 for job_id, job in self.jobs.items():
                     # Remove jobs older than TTL
                     age = current_time - job.created_at
                     if age > timedelta(hours=settings.result_ttl_hours):
                         expired_jobs.append(job_id)
-                        
+
                 for job_id in expired_jobs:
                     del self.jobs[job_id]
                     logger.info(f"Cleaned up expired job {job_id}")
-                    
+
                 if expired_jobs:
                     logger.info(f"Cleaned up {len(expired_jobs)} expired jobs")
-                    
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -377,7 +370,7 @@ class JobManager:
 
 
 # Global job manager instance
-_job_manager: Optional[JobManager] = None
+_job_manager: JobManager | None = None
 
 
 def get_job_manager() -> JobManager:

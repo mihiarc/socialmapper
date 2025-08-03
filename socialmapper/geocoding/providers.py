@@ -12,8 +12,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from ..neighbors import get_neighbor_manager
 from ..console import get_logger
+from ..neighbors import get_neighbor_manager
 from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 
 logger = get_logger(__name__)

@@ -1,19 +1,19 @@
 """Shared pytest fixtures and configuration."""
 
-import pytest
 import asyncio
-from typing import AsyncGenerator, Generator
-from fastapi.testclient import TestClient
-from unittest.mock import Mock, AsyncMock, patch
-import tempfile
-import shutil
-from pathlib import Path
 
 # Import the FastAPI app
 import sys
+import tempfile
+from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from api_server.main import create_app
 from api_server.config import Settings, get_settings
+from api_server.main import create_app
 from api_server.services.job_manager import JobManager
 from api_server.services.result_storage import ResultStorage
 
@@ -34,7 +34,7 @@ def test_settings() -> Settings:
     os.environ["CORS_ORIGINS"] = "http://localhost:3000,http://localhost:8501,http://127.0.0.1:8501"
     os.environ["API_AUTH_ENABLED"] = "false"
     os.environ["RATE_LIMIT_PER_MINUTE"] = "60"
-    
+
     settings = Settings()
     yield settings
 
@@ -45,7 +45,7 @@ def app(test_settings):
     # Override settings
     def override_get_settings():
         return test_settings
-    
+
     app = create_app()
     app.dependency_overrides[get_settings] = override_get_settings
     yield app

@@ -11,6 +11,7 @@ import geopandas as gpd
 from pydantic import BaseModel, ValidationError, field_validator
 from shapely.geometry import Point
 
+from ..console import get_logger
 from ..constants import (
     MAX_LATITUDE,
     MAX_LONGITUDE,
@@ -19,7 +20,6 @@ from ..constants import (
     MIN_LATITUDE,
     MIN_LONGITUDE,
 )
-from ..console import get_logger
 
 logger = get_logger(__name__)
 

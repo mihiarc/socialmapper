@@ -1,20 +1,19 @@
-"""
-Metadata endpoints for census variables and POI types.
+"""Metadata endpoints for census variables and POI types.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from typing import List, Optional
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from ..config import Settings, get_settings
 from ..models import (
     CensusVariable,
     CensusVariablesResponse,
+    LocationSearchResponse,
+    LocationSearchResult,
     POIType,
     POITypesResponse,
-    LocationSearchResult,
-    LocationSearchResponse
 )
-from ..config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -157,14 +156,13 @@ POI_TYPES = [
 
 @router.get("/census/variables", response_model=CensusVariablesResponse)
 async def get_census_variables(
-    group: Optional[str] = Query(None, description="Filter by variable group"),
-    search: Optional[str] = Query(None, description="Search term for variable name or concept"),
+    group: str | None = Query(None, description="Filter by variable group"),
+    search: str | None = Query(None, description="Search term for variable name or concept"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     settings: Settings = Depends(get_settings)
 ):
-    """
-    Get available census variables for analysis.
+    """Get available census variables for analysis.
     
     This endpoint returns a list of census variables that can be used in
     analysis requests. Variables can be filtered by group or searched by name.
@@ -181,36 +179,36 @@ async def get_census_variables(
     """
     try:
         logger.info(f"Getting census variables (group={group}, search={search})")
-        
+
         # Filter variables
         filtered_vars = CENSUS_VARIABLES
-        
+
         if group:
             filtered_vars = [v for v in filtered_vars if v.group.lower() == group.lower()]
-        
+
         if search:
             search_lower = search.lower()
             filtered_vars = [
-                v for v in filtered_vars 
-                if search_lower in v.name.lower() or 
+                v for v in filtered_vars
+                if search_lower in v.name.lower() or
                    search_lower in v.concept.lower() or
                    search_lower in v.code.lower()
             ]
-        
+
         # Get unique categories
         categories = list(set(v.group for v in CENSUS_VARIABLES if v.group))
         categories.sort()
-        
+
         # Apply pagination
         total_count = len(filtered_vars)
         paginated_vars = filtered_vars[offset:offset + limit]
-        
+
         return CensusVariablesResponse(
             variables=paginated_vars,
             total_count=total_count,
             categories=categories
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to get census variables: {e}")
         raise HTTPException(
@@ -225,14 +223,13 @@ async def get_census_variables(
 
 @router.get("/poi/types", response_model=POITypesResponse)
 async def get_poi_types(
-    category: Optional[str] = Query(None, description="Filter by POI category"),
-    search: Optional[str] = Query(None, description="Search term for POI type or name"),
+    category: str | None = Query(None, description="Filter by POI category"),
+    search: str | None = Query(None, description="Search term for POI type or name"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     settings: Settings = Depends(get_settings)
 ):
-    """
-    Get available POI types for analysis.
+    """Get available POI types for analysis.
     
     This endpoint returns a list of POI types that can be used in analysis
     requests. POI types follow the OpenStreetMap taxonomy.
@@ -249,37 +246,37 @@ async def get_poi_types(
     """
     try:
         logger.info(f"Getting POI types (category={category}, search={search})")
-        
+
         # Filter POI types
         filtered_pois = POI_TYPES
-        
+
         if category:
             filtered_pois = [p for p in filtered_pois if p.category.lower() == category.lower()]
-        
+
         if search:
             search_lower = search.lower()
             filtered_pois = [
-                p for p in filtered_pois 
-                if search_lower in p.type.lower() or 
+                p for p in filtered_pois
+                if search_lower in p.type.lower() or
                    search_lower in p.name.lower() or
                    (p.description and search_lower in p.description.lower()) or
                    (p.common_names and any(search_lower in name.lower() for name in p.common_names))
             ]
-        
+
         # Get unique categories
         categories = list(set(p.category for p in POI_TYPES if p.category))
         categories.sort()
-        
+
         # Apply pagination
         total_count = len(filtered_pois)
         paginated_pois = filtered_pois[offset:offset + limit]
-        
+
         return POITypesResponse(
             poi_types=paginated_pois,
             total_count=total_count,
             categories=categories
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to get POI types: {e}")
         raise HTTPException(
@@ -296,11 +293,10 @@ async def get_poi_types(
 async def search_locations(
     q: str = Query(..., description="Search query for location"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of results"),
-    country: Optional[str] = Query("US", description="Country code to limit search"),
+    country: str | None = Query("US", description="Country code to limit search"),
     settings: Settings = Depends(get_settings)
 ):
-    """
-    Search for geographic locations by name.
+    """Search for geographic locations by name.
     
     This endpoint provides geocoding functionality to find locations by name.
     It returns coordinates and other location details for use in analysis requests.
@@ -316,11 +312,11 @@ async def search_locations(
     """
     try:
         logger.info(f"Searching for location: {q}")
-        
+
         # Mock location search results
         # In production, this would use a geocoding service
         mock_results = []
-        
+
         if "portland" in q.lower():
             mock_results.append(
                 LocationSearchResult(
@@ -386,16 +382,16 @@ async def search_locations(
                     place_type="city"
                 )
             )
-        
+
         # Limit results
         limited_results = mock_results[:limit]
-        
+
         return LocationSearchResponse(
             query=q,
             results=limited_results,
             total_count=len(limited_results)
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to search locations: {e}")
         raise HTTPException(

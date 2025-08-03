@@ -1,6 +1,5 @@
 """Integration tests for POI discovery pipeline stage."""
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,17 +7,16 @@ from unittest.mock import MagicMock, patch
 import geopandas as gpd
 import pandas as pd
 import pytest
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from socialmapper.api.result_types import (
     DiscoveredPOI,
-    Error,
     ErrorType,
     NearbyPOIDiscoveryConfig,
     NearbyPOIResult,
     Ok,
 )
-from socialmapper.geocoding.models import AddressInput, GeocodingResult, AddressQuality
+from socialmapper.geocoding.models import AddressInput, AddressQuality, GeocodingResult
 from socialmapper.isochrone.travel_modes import TravelMode
 from socialmapper.pipeline.poi_discovery import (
     NearbyPOIDiscoveryStage,
@@ -108,7 +106,7 @@ class TestNearbyPOIDiscoveryStage:
         # Verify success
         assert result.is_ok()
         poi_result = result.unwrap()
-        
+
         assert isinstance(poi_result, NearbyPOIResult)
         assert poi_result.success
         assert poi_result.total_poi_count == 2
@@ -125,7 +123,7 @@ class TestNearbyPOIDiscoveryStage:
     @patch("socialmapper.pipeline.poi_discovery.geocode_address")
     def test_geocoding_failure(self, mock_geocode):
         """Test handling of geocoding failure."""
-        # Mock failed geocoding  
+        # Mock failed geocoding
         mock_geocode.return_value = GeocodingResult(
             input_address=AddressInput(address="Invalid Address"),
             success=False,
@@ -219,7 +217,7 @@ class TestNearbyPOIDiscoveryStage:
         )
 
         stage = NearbyPOIDiscoveryStage(config)
-        
+
         # Test geocoding step with coordinates
         geocoding_result = stage._geocode_origin()
         assert geocoding_result.is_ok()
@@ -310,14 +308,14 @@ class TestNearbyPOIDiscoveryStage:
 
         assert result.is_ok()
         poi_result = result.unwrap()
-        
+
         # Verify POI processing
         assert poi_result.total_poi_count == 3
-        
+
         # Check that POIs are categorized
         all_pois = poi_result.get_all_pois()
         assert len(all_pois) == 3
-        
+
         # Find the coffee shop POI to verify details
         coffee_poi = next(p for p in all_pois if "Coffee" in p.name)
         assert coffee_poi.phone == "+1-919-555-0123"
@@ -383,10 +381,10 @@ class TestNearbyPOIDiscoveryStage:
 
         assert result.is_ok()
         poi_result = result.unwrap()
-        
+
         # Verify limit is enforced
         assert poi_result.total_poi_count == 5
-        
+
         # Verify closest POIs are kept (they should be sorted by distance)
         all_pois = poi_result.get_all_pois()
         distances = [poi.straight_line_distance_m for poi in all_pois]
@@ -427,7 +425,7 @@ class TestNearbyPOIDiscoveryStage:
         # Verify CSV was created and has correct content
         assert csv_path.exists()
         df = pd.read_csv(csv_path)
-        
+
         assert len(df) == 1
         assert df.iloc[0]["name"] == "Test Coffee Shop"
         assert df.iloc[0]["category"] == "food_and_drink"
@@ -465,7 +463,7 @@ class TestConvenienceFunctions:
         # Verify function was called with correct config
         assert result.is_ok()
         mock_execute.assert_called_once()
-        
+
         # Check the config passed to execute_poi_discovery_pipeline
         call_args = mock_execute.call_args[0][0]
         assert call_args.location == "Chapel Hill, NC"
@@ -498,7 +496,7 @@ class TestConvenienceFunctions:
         # Verify function was called with correct config
         assert result.is_ok()
         mock_execute.assert_called_once()
-        
+
         # Check the config passed to execute_poi_discovery_pipeline
         call_args = mock_execute.call_args[0][0]
         assert call_args.location == (35.9132, -79.0558)
@@ -540,7 +538,7 @@ class TestExecutePOIDiscoveryPipeline:
         )
 
         result = execute_poi_discovery_pipeline(config)
-        
+
         assert result.is_err()
         error = result.unwrap_err()
         assert error.type == ErrorType.POI_DISCOVERY
@@ -564,11 +562,11 @@ class TestEdgeCases:
         )
 
         stage = NearbyPOIDiscoveryStage(config)
-        
+
         # Test with empty isochrone
         empty_gdf = gpd.GeoDataFrame({"geometry": []}, crs="EPSG:4326")
         result = stage._query_pois_in_isochrone(empty_gdf)
-        
+
         assert result.is_err()
         error = result.unwrap_err()
         assert error.type == ErrorType.POI_QUERY
@@ -602,7 +600,7 @@ class TestEdgeCases:
         ]
 
         result = stage._process_pois(raw_pois, (35.9132, -79.0558))
-        
+
         # Should succeed but skip the invalid POI
         assert result.is_ok()
         assert stage.results.total_poi_count == 0
@@ -644,7 +642,7 @@ class TestEdgeCases:
         ]
 
         result = stage._process_pois(raw_pois, (35.9132, -79.0558))
-        
+
         assert result.is_ok()
         # Should only have the coffee shop, not the gas station
         assert stage.results.total_poi_count == 1
@@ -756,7 +754,7 @@ class TestIntegrationWithMockedAPIs:
         # Comprehensive verification
         assert result.is_ok()
         poi_result = result.unwrap()
-        
+
         # Basic result properties
         assert poi_result.success
         assert poi_result.total_poi_count == 3
@@ -781,7 +779,7 @@ class TestIntegrationWithMockedAPIs:
         # Distance calculations
         distances = [poi.straight_line_distance_m for poi in all_pois]
         assert all(d >= 0 for d in distances)
-        
+
         # File exports
         csv_files = list(self.temp_dir.glob("*.csv"))
         geojson_files = list(self.temp_dir.glob("*.geojson"))

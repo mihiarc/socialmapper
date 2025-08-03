@@ -1,11 +1,8 @@
 """Tests for POI discovery extensions to the API builder pattern."""
 
-import pytest
-from pathlib import Path
 from socialmapper.api.builder import SocialMapperBuilder
 from socialmapper.api.result_types import NearbyPOIDiscoveryConfig
 from socialmapper.isochrone import TravelMode
-from socialmapper.exceptions import InvalidConfigurationError, InvalidTravelTimeError
 
 
 class TestSocialMapperBuilderPOIDiscovery:
@@ -19,7 +16,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=15,
             travel_mode=TravelMode.DRIVE
         )
-        
+
         assert result is builder  # Check fluent interface
         assert builder._config["poi_discovery_enabled"] is True
         assert builder._config["poi_discovery_location"] == "San Francisco, CA"
@@ -35,7 +32,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=30,
             travel_mode="walk"
         )
-        
+
         assert result is builder
         assert builder._config["poi_discovery_enabled"] is True
         assert builder._config["poi_discovery_location"] == coords
@@ -51,7 +48,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=20,
             poi_categories=categories
         )
-        
+
         assert result is builder
         assert builder._config["poi_categories"] == categories
 
@@ -63,7 +60,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=150,  # Too high
             travel_mode=TravelMode.DRIVE
         )
-        
+
         assert result is builder  # Still returns self for chaining
         assert len(builder._validation_errors) > 0
         assert "Travel time must be between" in builder._validation_errors[0]
@@ -75,7 +72,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             location=(200.0, -300.0),  # Invalid coordinates
             travel_time=15
         )
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Invalid coordinates" in builder._validation_errors[0]
@@ -87,7 +84,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             location="   ",  # Empty/whitespace address
             travel_time=15
         )
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Location address cannot be empty" in builder._validation_errors[0]
@@ -99,7 +96,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             location=123,  # Invalid type
             travel_time=15
         )
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Location must be either an address string or (lat, lon) tuple" in builder._validation_errors[0]
@@ -112,7 +109,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=15,
             travel_mode="teleport"  # Invalid mode
         )
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
 
@@ -124,7 +121,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             travel_time=15,
             poi_categories=["food_and_drink", "invalid_category", "healthcare"]
         )
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Invalid POI categories" in builder._validation_errors[0]
@@ -134,7 +131,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test setting POI categories."""
         builder = SocialMapperBuilder()
         result = builder.with_poi_categories("food_and_drink", "shopping", "healthcare")
-        
+
         assert result is builder
         assert builder._config["poi_categories"] == ["food_and_drink", "shopping", "healthcare"]
 
@@ -142,7 +139,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test setting empty POI categories."""
         builder = SocialMapperBuilder()
         result = builder.with_poi_categories()
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "At least one POI category must be specified" in builder._validation_errors[0]
@@ -151,7 +148,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test setting invalid POI categories."""
         builder = SocialMapperBuilder()
         result = builder.with_poi_categories("food_and_drink", "invalid_category")
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Invalid POI categories" in builder._validation_errors[0]
@@ -160,7 +157,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test excluding POI categories."""
         builder = SocialMapperBuilder()
         result = builder.exclude_poi_categories("utilities", "services")
-        
+
         assert result is builder
         assert builder._config["exclude_poi_categories"] == ["utilities", "services"]
 
@@ -168,7 +165,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test excluding empty POI categories."""
         builder = SocialMapperBuilder()
         result = builder.exclude_poi_categories()
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "At least one POI category must be specified for exclusion" in builder._validation_errors[0]
@@ -177,7 +174,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test excluding invalid POI categories."""
         builder = SocialMapperBuilder()
         result = builder.exclude_poi_categories("utilities", "invalid_category")
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "Invalid POI categories for exclusion" in builder._validation_errors[0]
@@ -186,7 +183,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test setting POI limit per category."""
         builder = SocialMapperBuilder()
         result = builder.limit_pois_per_category(25)
-        
+
         assert result is builder
         assert builder._config["max_pois_per_category"] == 25
 
@@ -194,7 +191,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test setting invalid POI limit per category."""
         builder = SocialMapperBuilder()
         result = builder.limit_pois_per_category(0)  # Invalid - must be positive
-        
+
         assert result is builder
         assert len(builder._validation_errors) > 0
         assert "POI limit per category must be positive" in builder._validation_errors[0]
@@ -203,13 +200,13 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test listing available POI categories."""
         builder = SocialMapperBuilder()
         categories_info = builder.list_available_poi_categories()
-        
+
         assert isinstance(categories_info, dict)
         assert "categories" in categories_info
         assert "total_categories" in categories_info
         assert "category_details" in categories_info
         assert len(categories_info["categories"]) > 0
-        
+
         # Check specific expected categories
         expected_categories = ["food_and_drink", "healthcare", "education", "shopping"]
         for cat in expected_categories:
@@ -225,7 +222,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             .limit_pois_per_category(15)
             .with_output_directory("/tmp/poi_test")
         )
-        
+
         assert isinstance(builder, SocialMapperBuilder)
         assert builder._config["poi_discovery_enabled"] is True
         assert builder._config["poi_discovery_location"] == "Denver, CO"
@@ -243,7 +240,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_poi_categories("food_and_drink", "healthcare")
             .exclude_poi_categories("healthcare", "utilities")  # Conflict with include
         )
-        
+
         errors = builder.validate()
         assert len(errors) > 0
         assert any("Categories cannot be both included and excluded" in error for error in errors)
@@ -253,7 +250,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         """Test validation with missing POI discovery location."""
         builder = SocialMapperBuilder()
         builder._config["poi_discovery_enabled"] = True  # Enable without proper setup
-        
+
         errors = builder.validate()
         assert len(errors) > 0
         assert any("POI discovery location is required" in error for error in errors)
@@ -264,7 +261,7 @@ class TestSocialMapperBuilderPOIDiscovery:
         builder._config["poi_discovery_enabled"] = True
         builder._config["poi_discovery_location"] = "Austin, TX"
         # Missing travel time
-        
+
         errors = builder.validate()
         assert len(errors) > 0
         assert any("POI discovery travel time is required" in error for error in errors)
@@ -277,13 +274,13 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_poi_categories("shopping", "recreation")
             .limit_pois_per_category(20)
         )
-        
+
         config = builder.build()
-        
+
         assert isinstance(config, dict)
         assert "poi_discovery_config" in config
         assert isinstance(config["poi_discovery_config"], NearbyPOIDiscoveryConfig)
-        
+
         poi_config = config["poi_discovery_config"]
         assert poi_config.location == "Phoenix, AZ"
         assert poi_config.travel_time == 25
@@ -298,9 +295,9 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_location("Los Angeles, CA")
             .with_osm_pois("amenity", "hospital")
         )
-        
+
         config = builder.build()
-        
+
         assert isinstance(config, dict)
         assert "poi_discovery_config" not in config
         assert config["poi_discovery_enabled"] is False
@@ -312,7 +309,7 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_nearby_poi_discovery("Nashville, TN", 15, "walk")
             .with_poi_categories("food_and_drink", "education")
         )
-        
+
         errors = builder.validate()
         assert len(errors) == 0
 
@@ -323,17 +320,17 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_nearby_poi_discovery((36.1627, -86.7816), 30, TravelMode.BIKE)  # Nashville coords
             .exclude_poi_categories("utilities")
         )
-        
+
         errors = builder.validate()
         assert len(errors) == 0
 
     def test_poi_discovery_minimum_configuration(self):
         """Test minimum valid POI discovery configuration."""
         builder = SocialMapperBuilder().with_nearby_poi_discovery("Atlanta, GA", 10)
-        
+
         errors = builder.validate()
         assert len(errors) == 0
-        
+
         config = builder.build()
         poi_config = config["poi_discovery_config"]
         assert poi_config.location == "Atlanta, GA"
@@ -351,10 +348,10 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_output_directory(output_dir)
             .with_exports(csv=True, isochrones=False, maps=True)
         )
-        
+
         config = builder.build()
         poi_config = config["poi_discovery_config"]
-        
+
         assert str(poi_config.output_dir) == output_dir
         assert poi_config.export_csv is True
         assert poi_config.create_map is True
@@ -368,12 +365,12 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_nearby_poi_discovery("San Diego, CA", 20)
             .with_census_variables("total_population")
         )
-        
+
         errors = builder.validate()
         assert len(errors) == 0
-        
+
         config = builder.build()
-        
+
         # Both OSM and POI discovery should be configured
         assert "poi_type" in config
         assert "poi_name" in config
@@ -384,15 +381,15 @@ class TestSocialMapperBuilderPOIDiscovery:
     def test_poi_discovery_with_invalid_then_valid_travel_mode(self):
         """Test POI discovery error recovery with travel mode."""
         builder = SocialMapperBuilder()
-        
+
         # First set invalid travel mode
         result1 = builder.with_nearby_poi_discovery("Dallas, TX", 15, "teleport")
         assert len(builder._validation_errors) > 0
-        
+
         # Then set valid configuration - should still have errors from before
         result2 = builder.with_nearby_poi_discovery("Dallas, TX", 15, "drive")
         assert len(builder._validation_errors) > 0  # Previous error persists
-        
+
         # Create fresh builder for valid config
         fresh_builder = (
             SocialMapperBuilder()
@@ -407,9 +404,9 @@ class TestSocialMapperBuilderPOIDiscovery:
             .with_nearby_poi_discovery("Houston, TX", 15, poi_categories=["food_and_drink"])
             .with_poi_categories("healthcare", "education")  # Should override
         )
-        
+
         assert builder._config["poi_categories"] == ["healthcare", "education"]
-        
+
         # Test exclude override
         builder.exclude_poi_categories("utilities", "services")
         assert builder._config["exclude_poi_categories"] == ["utilities", "services"]
@@ -422,5 +419,5 @@ class TestSocialMapperBuilderPOIDiscovery:
             .limit_pois_per_category(10)
             .limit_pois_per_category(25)  # Should override
         )
-        
+
         assert builder._config["max_pois_per_category"] == 25

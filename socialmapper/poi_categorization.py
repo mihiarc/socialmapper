@@ -5,7 +5,7 @@ This module provides functionality to categorize POIs based on their OSM tags
 into predefined categories like food_and_drink, shopping, education, etc.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Comprehensive POI category mapping
 # Maps category names to lists of OSM tag values
@@ -158,7 +158,7 @@ OSM_KEY_PRIORITY = [
 ]
 
 
-def categorize_poi(poi_tags: Dict[str, Any]) -> str:
+def categorize_poi(poi_tags: dict[str, Any]) -> str:
     """Categorize a POI based on its OSM tags.
     
     Args:
@@ -177,25 +177,25 @@ def categorize_poi(poi_tags: Dict[str, Any]) -> str:
     """
     if not poi_tags or not isinstance(poi_tags, dict):
         return "other"
-    
+
     # Check each OSM key in priority order
     for osm_key in OSM_KEY_PRIORITY:
         if osm_key in poi_tags:
             tag_value = poi_tags[osm_key]
-            
+
             # Convert to string and lowercase for comparison
             tag_value_str = str(tag_value).lower()
-            
+
             # Check each category's values
             for category, values in POI_CATEGORY_MAPPING.items():
                 if tag_value_str in [v.lower() for v in values]:
                     return category
-    
+
     # Special case: check for specific tag combinations
     # For example, building=church should be categorized as religious
     if poi_tags.get("building") == "church":
         return "religious"
-    
+
     # Check name field for hints (fallback)
     name = poi_tags.get("name", "").lower()
     if name:
@@ -203,11 +203,11 @@ def categorize_poi(poi_tags: Dict[str, Any]) -> str:
             for value in values:
                 if value.lower() in name:
                     return category
-    
+
     return "other"
 
 
-def organize_pois_by_category(pois: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+def organize_pois_by_category(pois: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     """Organize a list of POIs by their categories.
     
     Args:
@@ -226,25 +226,25 @@ def organize_pois_by_category(pois: List[Dict[str, Any]]) -> Dict[str, List[Dict
         >>> list(result.keys())
         ['food_and_drink', 'shopping', 'healthcare']
     """
-    categorized_pois: Dict[str, List[Dict[str, Any]]] = {}
-    
+    categorized_pois: dict[str, list[dict[str, Any]]] = {}
+
     for poi in pois:
         # Extract tags from POI
         tags = poi.get("tags", {})
-        
+
         # Categorize the POI
         category = categorize_poi(tags)
-        
+
         # Add to appropriate category list
         if category not in categorized_pois:
             categorized_pois[category] = []
-        
+
         categorized_pois[category].append(poi)
-    
+
     return categorized_pois
 
 
-def get_poi_category_info() -> Dict[str, Any]:
+def get_poi_category_info() -> dict[str, Any]:
     """Get information about available POI categories.
     
     Returns:
@@ -255,13 +255,13 @@ def get_poi_category_info() -> Dict[str, Any]:
         "total_categories": len(POI_CATEGORY_MAPPING),
         "category_details": {}
     }
-    
+
     for category, values in POI_CATEGORY_MAPPING.items():
         info["category_details"][category] = {
             "value_count": len(values),
             "sample_values": values[:5]  # First 5 as examples
         }
-    
+
     return info
 
 
@@ -277,7 +277,7 @@ def is_valid_category(category: str) -> bool:
     return category in POI_CATEGORY_MAPPING
 
 
-def get_category_values(category: str) -> Optional[List[str]]:
+def get_category_values(category: str) -> list[str] | None:
     """Get all OSM tag values for a specific category.
     
     Args:
@@ -288,7 +288,7 @@ def get_category_values(category: str) -> Optional[List[str]]:
     """
     if not is_valid_category(category):
         return None
-    
+
     return POI_CATEGORY_MAPPING[category].copy()
 
 
@@ -304,14 +304,14 @@ def add_category_value(category: str, value: str) -> bool:
     """
     if not is_valid_category(category):
         return False
-    
+
     if value not in POI_CATEGORY_MAPPING[category]:
         POI_CATEGORY_MAPPING[category].append(value)
-    
+
     return True
 
 
-def create_custom_category(category_name: str, values: List[str]) -> bool:
+def create_custom_category(category_name: str, values: list[str]) -> bool:
     """Create a new custom category (for extensibility).
     
     Args:
@@ -323,6 +323,6 @@ def create_custom_category(category_name: str, values: List[str]) -> bool:
     """
     if category_name in POI_CATEGORY_MAPPING:
         return False
-    
+
     POI_CATEGORY_MAPPING[category_name] = values.copy()
     return True

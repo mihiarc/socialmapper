@@ -308,10 +308,10 @@ class CensusSystem:
         """Get counties for a list of POIs."""
         import logging
         logger = logging.getLogger(__name__)
-        
+
         counties = set()
         failed_pois = 0
-        
+
         logger.info(f"Processing {len(pois)} POIs to determine counties")
 
         for i, poi in enumerate(pois):

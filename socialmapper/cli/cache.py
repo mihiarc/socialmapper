@@ -3,16 +3,16 @@
 
 import typer
 from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
 from rich.json import JSON
+from rich.panel import Panel
+from rich.table import Table
 
 from socialmapper.cache_manager import (
-    get_cache_statistics,
-    clear_geocoding_cache,
-    clear_census_cache,
+    cleanup_expired_cache_entries,
     clear_all_caches,
-    cleanup_expired_cache_entries
+    clear_census_cache,
+    clear_geocoding_cache,
+    get_cache_statistics,
 )
 from socialmapper.isochrone import clear_network_cache
 
@@ -24,17 +24,17 @@ console = Console()
 def stats():
     """Display cache statistics."""
     console.print("\n[bold cyan]SocialMapper Cache Statistics[/bold cyan]\n")
-    
+
     # Get cache statistics
     stats = get_cache_statistics()
-    
+
     # Create summary table
     table = Table(title="Cache Summary", show_header=True, header_style="bold magenta")
     table.add_column("Cache Type", style="cyan", width=20)
     table.add_column("Size (MB)", justify="right", style="green")
     table.add_column("Items", justify="right", style="yellow")
     table.add_column("Status", style="blue")
-    
+
     for cache_type in ["network_cache", "geocoding_cache", "census_cache", "general_cache"]:
         cache_stats = stats[cache_type]
         table.add_row(
@@ -43,7 +43,7 @@ def stats():
             str(cache_stats.get('item_count', 0)),
             cache_stats.get('status', 'unknown')
         )
-    
+
     table.add_section()
     table.add_row(
         "[bold]Total[/bold]",
@@ -51,9 +51,9 @@ def stats():
         f"[bold]{stats['summary']['total_items']}[/bold]",
         ""
     )
-    
+
     console.print(table)
-    
+
     # Show network cache performance if available
     network_stats = stats.get('network_cache', {})
     if network_stats.get('cache_hits') is not None:
@@ -61,12 +61,12 @@ def stats():
         perf_table = Table(show_header=False)
         perf_table.add_column("Metric", style="cyan")
         perf_table.add_column("Value", justify="right", style="green")
-        
+
         perf_table.add_row("Cache Hits", str(network_stats.get('cache_hits', 0)))
         perf_table.add_row("Cache Misses", str(network_stats.get('cache_misses', 0)))
         perf_table.add_row("Hit Rate", f"{network_stats.get('hit_rate_percent', 0):.1f}%")
         perf_table.add_row("Avg Retrieval Time", f"{network_stats.get('avg_retrieval_time_ms', 0):.1f} ms")
-        
+
         console.print(perf_table)
 
 
@@ -79,12 +79,11 @@ def clear(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation")
 ):
     """Clear specified caches."""
-    
     # If no specific cache is selected and not --all, show error
     if not any([network, geocoding, census, all]):
         console.print("[red]Error: No cache specified. Use --network, --geocoding, --census, or --all[/red]")
         raise typer.Exit(1)
-    
+
     # Confirm action if not --yes
     if not yes:
         if all:
@@ -95,19 +94,19 @@ def clear(
             if geocoding: caches.append("geocoding")
             if census: caches.append("census")
             message = f"Are you sure you want to clear {', '.join(caches)} cache(s)?"
-        
+
         if not typer.confirm(message):
             console.print("[yellow]Operation cancelled[/yellow]")
             raise typer.Exit(0)
-    
+
     # Clear caches
     if all:
         console.print("\n[bold]Clearing all caches...[/bold]")
         result = clear_all_caches()
-        
+
         if result['summary']['success']:
             console.print(f"[green]✓ All caches cleared successfully! Total: {result['summary']['total_cleared_mb']:.2f} MB[/green]")
-            
+
             # Show details
             for cache_type, cache_result in result.items():
                 if cache_type != 'summary':
@@ -128,7 +127,7 @@ def clear(
                 console.print("[green]✓ Network cache cleared successfully![/green]")
             except Exception as e:
                 console.print(f"[red]✗ Failed to clear network cache: {e}[/red]")
-        
+
         if geocoding:
             console.print("\n[bold]Clearing geocoding cache...[/bold]")
             result = clear_geocoding_cache()
@@ -136,7 +135,7 @@ def clear(
                 console.print(f"[green]✓ Geocoding cache cleared! ({result['cleared_size_mb']:.2f} MB)[/green]")
             else:
                 console.print(f"[red]✗ Failed: {result.get('error', 'Unknown error')}[/red]")
-        
+
         if census:
             console.print("\n[bold]Clearing census cache...[/bold]")
             result = clear_census_cache()
@@ -150,9 +149,9 @@ def clear(
 def cleanup():
     """Clean up expired cache entries."""
     console.print("\n[bold]Cleaning up expired cache entries...[/bold]\n")
-    
+
     result = cleanup_expired_cache_entries()
-    
+
     for cache_type, cleanup_result in result.items():
         if cleanup_result.get('success', False):
             console.print(f"[green]✓ {cache_type}:[/green] {cleanup_result.get('message', 'Cleaned')}")
@@ -166,20 +165,20 @@ def cleanup():
 def details():
     """Show detailed cache information."""
     stats = get_cache_statistics()
-    
+
     console.print(Panel.fit("[bold cyan]Detailed Cache Information[/bold cyan]"))
-    
+
     # Show JSON representation with syntax highlighting
     console.print("\n[bold]Full Statistics:[/bold]")
     console.print(JSON(data=stats))
-    
+
     # Show cache locations
     console.print("\n[bold]Cache Locations:[/bold]")
     for cache_type in ["network_cache", "geocoding_cache", "census_cache", "general_cache"]:
         cache_data = stats.get(cache_type, {})
         location = cache_data.get('location', 'Unknown')
         console.print(f"  • {cache_type.replace('_', ' ').title()}: {location}")
-    
+
     # Show age information
     console.print("\n[bold]Cache Age:[/bold]")
     for cache_type in ["network_cache", "geocoding_cache", "census_cache", "general_cache"]:

@@ -16,7 +16,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from ...constants import HTTP_TOO_MANY_REQUESTS, COUNTY_FIPS_LENGTH, STATE_FIPS_LENGTH
+from ...constants import COUNTY_FIPS_LENGTH, HTTP_TOO_MANY_REQUESTS, STATE_FIPS_LENGTH
 from ..domain.interfaces import ConfigurationProvider
 from .api_client import CensusAPIClientImpl, CensusAPIError, CensusAPIRateLimitError
 from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerError
