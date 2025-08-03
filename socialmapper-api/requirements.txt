@@ -1,0 +1,21 @@
+# Backend API Dependencies
+# Core SocialMapper library (installed in development mode)
+-e .
+
+# FastAPI and server dependencies
+fastapi>=0.115.6
+uvicorn[standard]>=0.34.0
+python-multipart>=0.0.20  # For file uploads
+
+# Background task processing
+celery>=5.4.0  # Optional: for distributed task processing
+redis>=5.2.1   # Optional: for task queue backend
+
+# Additional API-specific dependencies
+pydantic-settings>=2.8.2  # For configuration management
+python-jose[cryptography]>=3.3.0  # For JWT tokens (optional auth)
+passlib[bcrypt]>=1.7.4  # For password hashing (optional auth)
+
+# Development dependencies
+pytest-asyncio>=0.25.0
+httpx>=0.28.1  # For testing async endpoints

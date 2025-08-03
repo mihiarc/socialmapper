@@ -1,0 +1,118 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+
+/* Leaflet styles */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+:root {
+  font-family: 'Inter var', Inter, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Light mode (default) */
+@layer base {
+  html {
+    @apply bg-gradient-to-br from-gray-50 via-white to-gray-50 text-gray-900;
+    @apply min-h-screen;
+  }
+  
+  /* Dark mode */
+  html.dark {
+    @apply bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100;
+  }
+
+  /* Selection colors */
+  ::selection {
+    @apply bg-primary-500/20 text-primary-900 dark:bg-primary-400/30 dark:text-primary-100;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+    @apply hover:bg-gray-500 dark:hover:bg-gray-500;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150;
+    @apply border border-white/20 dark:border-gray-700/50;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/80 dark:hover:bg-gray-900/80;
+    @apply hover:border-white/30 dark:hover:border-gray-700/60;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent;
+  }
+
+  /* Mesh background */
+  .mesh-bg {
+    @apply bg-mesh-gradient;
+  }
+
+  /* Modern card */
+  .modern-card {
+    @apply glass rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300;
+    @apply hover:-translate-y-1;
+  }
+
+  /* Glow effect */
+  .glow {
+    @apply shadow-glow;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    @apply animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700;
+    background-size: 200% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}
+
+/* Fix for Leaflet controls */
+.leaflet-container {
+  font-family: inherit;
+  @apply rounded-xl overflow-hidden;
+}
+
+/* Modern transitions */
+* {
+  @apply transition-colors duration-200;
+}

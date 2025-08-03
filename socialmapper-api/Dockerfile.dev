@@ -1,0 +1,52 @@
+# Development Dockerfile for SocialMapper API
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gdal-bin \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    gcc \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for GDAL
+ENV GDAL_CONFIG=/usr/bin/gdal-config
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# Install Python development tools
+RUN pip install --no-cache-dir \
+    uvicorn[standard] \
+    pytest \
+    pytest-asyncio \
+    pytest-cov \
+    httpx
+
+# Copy requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install package in development mode (will be mounted as volume)
+# This is done in the entrypoint to ensure the volume is mounted first
+
+# Create results directory
+RUN mkdir -p /app/results
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create entrypoint script
+RUN echo '#!/bin/sh\npip install -e .\nexec "$@"' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD ["uvicorn", "api_server.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

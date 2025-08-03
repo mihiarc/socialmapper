@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "socialmapper-api"
+version = "0.1.0"
+description = "FastAPI backend server for SocialMapper"
+authors = [
+    {name = "SocialMapper Contributors"}
+]
+dependencies = [
+    "fastapi>=0.115.6",
+    "uvicorn[standard]>=0.34.0",
+    "python-multipart>=0.0.20",
+    "pydantic-settings>=2.8.2",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "celery>=5.4.0",
+    "redis>=5.2.1",
+]
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.25.0",
+    "httpx>=0.28.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["api_server"]
+
+[dependency-groups]
+dev = [
+    "requests>=2.32.4",
+]
