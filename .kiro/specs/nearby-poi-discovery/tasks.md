@@ -39,12 +39,12 @@
   - ✅ Write unit tests for builder extensions and validation
   - _Requirements: 1.1, 1.2, 6.1, 6.2, 7.1, 7.2_
 
-- [ ] 6. Extend SocialMapperClient with nearby POI discovery functionality
-  - Add `discover_nearby_pois()` method to client class
-  - Implement error handling using existing Ok/Err result types
-  - Add integration with the POI discovery pipeline stage
-  - Implement result conversion to `NearbyPOIResult` format
-  - Write integration tests for client method functionality
+- [x] 6. Extend SocialMapperClient with nearby POI discovery functionality
+  - ✅ Add `discover_nearby_pois()` method to client class
+  - ✅ Implement error handling using existing Ok/Err result types
+  - ✅ Add integration with the POI discovery pipeline stage
+  - ✅ Implement result conversion to `NearbyPOIResult` format
+  - ✅ Write integration tests for client method functionality
   - _Requirements: 1.1, 1.2, 1.3, 4.1, 4.2, 7.1, 7.2_
 
 - [ ] 7. Implement distance calculations and travel time estimates
