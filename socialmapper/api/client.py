@@ -20,7 +20,7 @@ from ..pipeline import PipelineConfig, PipelineOrchestrator
 from ..console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
-from .result_types import Err, Error, ErrorType, Ok, Result
+from .result_types import Err, Error, ErrorType, NearbyPOIResult, Ok, Result
 
 logger = get_logger(__name__)
 
@@ -217,9 +217,124 @@ class SocialMapperClient:
         except Exception as e:
             return Err(Error(type=ErrorType.UNKNOWN, message=f"Unexpected error: {e!s}", cause=e))
 
+    def discover_nearby_pois(
+        self,
+        location: str | tuple[float, float],
+        travel_time: int = 15,
+        travel_mode: str = "drive",
+        poi_categories: list[str] | None = None,
+        exclude_categories: list[str] | None = None,
+        max_pois_per_category: int | None = None,
+        export_csv: bool = True,
+        export_geojson: bool = True,
+        create_map: bool = True,
+        output_dir: str | None = None,
+        **kwargs,
+    ) -> Result[NearbyPOIResult, Error]:
+        """Discover POIs near a location within travel time constraints.
+
+        This is a convenience method for POI discovery that provides a simple
+        interface for the most common use cases.
+
+        Args:
+            location: Address string (e.g., "San Francisco, CA") or (lat, lon) tuple
+            travel_time: Travel time in minutes (default: 15)
+            travel_mode: Mode of travel - "drive", "walk", or "bike" (default: "drive")
+            poi_categories: List of POI categories to include (default: all)
+            exclude_categories: List of POI categories to exclude
+            max_pois_per_category: Maximum POIs per category (default: no limit)
+            export_csv: Export results to CSV (default: True)
+            export_geojson: Export results to GeoJSON (default: True)
+            create_map: Create interactive map (default: True)
+            output_dir: Output directory path (default: "output")
+            **kwargs: Additional options
+
+        Returns:
+            Result with NearbyPOIResult or Error
+
+        Example:
+            ```python
+            with SocialMapperClient() as client:
+                result = client.discover_nearby_pois(
+                    location="Chapel Hill, NC",
+                    travel_time=20,
+                    travel_mode="walk",
+                    poi_categories=["food_and_drink", "healthcare"]
+                )
+
+                match result:
+                    case Ok(poi_result):
+                        print(f"Found {poi_result.total_poi_count} POIs")
+                        for category, count in poi_result.category_counts.items():
+                            print(f"  {category}: {count}")
+                    case Err(error):
+                        print(f"Discovery failed: {error}")
+            ```
+        """
+        try:
+            # Validate travel mode
+            from ..isochrone import TravelMode
+            
+            valid_modes = {"drive": TravelMode.DRIVE, "walk": TravelMode.WALK, 
+                          "bike": TravelMode.BIKE}
+            
+            if travel_mode not in valid_modes:
+                return Err(
+                    Error(
+                        type=ErrorType.VALIDATION,
+                        message=f"Invalid travel mode: {travel_mode}. Must be one of: {list(valid_modes.keys())}",
+                        context={"travel_mode": travel_mode, "valid_modes": list(valid_modes.keys())},
+                    )
+                )
+
+            # Build configuration using the builder
+            builder = self.create_analysis()
+            builder.with_nearby_poi_discovery(
+                location=location,
+                travel_time=travel_time,
+                travel_mode=valid_modes[travel_mode],
+                poi_categories=poi_categories,
+            )
+            
+            # Apply optional parameters
+            if exclude_categories:
+                builder.exclude_poi_categories(*exclude_categories)
+            if max_pois_per_category:
+                builder.limit_pois_per_category(max_pois_per_category)
+            if output_dir:
+                builder.with_output_directory(output_dir)
+            
+            # Apply export options
+            if not export_csv:
+                builder.disable_csv_export()
+            # Note: Map creation is enabled by default, no disable method needed
+
+            config = builder.build()
+            return self.run_analysis(config)
+
+        except Exception as e:
+            logger.error(f"POI discovery failed: {e!s}")
+            
+            # Determine error type based on exception
+            error_type = self._classify_error(e)
+            
+            return Err(
+                Error(
+                    type=error_type,
+                    message=f"POI discovery error: {e!s}",
+                    context={
+                        "location": location,
+                        "travel_time": travel_time,
+                        "travel_mode": travel_mode,
+                        "poi_categories": poi_categories,
+                    },
+                    cause=e,
+                )
+            )
+
     def run_analysis(
         self, config: dict[str, Any], on_progress: Callable[[float], None] | None = None
-    ) -> Result[AnalysisResult, Error]:
+    ) -> Result[AnalysisResult | NearbyPOIResult, Error]:
         """Run analysis with the given configuration.
 
         Args:
@@ -227,7 +342,7 @@ class SocialMapperClient:
             on_progress: Optional progress callback (0-100)
 
         Returns:
-            Result with AnalysisResult or Error
+            Result with AnalysisResult/NearbyPOIResult or Error
         """
         if not self._session_active:
             return Err(
@@ -249,8 +364,14 @@ class SocialMapperClient:
             # Rate limit check
             self.rate_limiter.wait_if_needed()
 
-            # Run pipeline
-            pipeline_config = PipelineConfig(**config)
+            # Check if this is a POI discovery analysis
+            if config.get("poi_discovery_enabled", False):
+                return self._run_poi_discovery_analysis(config, on_progress)
+
+            # Run standard pipeline - filter out POI discovery specific config
+            pipeline_config_dict = {k: v for k, v in config.items() 
+                                   if not k.startswith('poi_discovery')}
+            pipeline_config = PipelineConfig(**pipeline_config_dict)
             orchestrator = PipelineOrchestrator(pipeline_config)
 
             # Execute with progress tracking
@@ -335,6 +456,72 @@ class SocialMapperClient:
             error_type = self._classify_error(e)
 
             return Err(Error(type=error_type, message=str(e), context={"config": config}, cause=e))
+
+    def _run_poi_discovery_analysis(
+        self, config: dict[str, Any], on_progress: Callable[[float], None] | None = None
+    ) -> Result[NearbyPOIResult, Error]:
+        """Run POI discovery analysis using the pipeline stage.
+
+        Args:
+            config: Configuration from builder
+            on_progress: Optional progress callback (0-100)
+
+        Returns:
+            Result with NearbyPOIResult or Error
+        """
+        try:
+            from ..pipeline.poi_discovery import execute_poi_discovery_pipeline
+            
+            # Extract POI discovery configuration
+            poi_config = config.get("poi_discovery_config")
+            if not poi_config:
+                return Err(
+                    Error(
+                        type=ErrorType.CONFIGURATION,
+                        message="POI discovery configuration missing",
+                        context=config,
+                    )
+                )
+
+            # Execute POI discovery pipeline
+            logger.info("Starting POI discovery pipeline")
+            if on_progress:
+                on_progress(10.0)  # Starting
+
+            result = execute_poi_discovery_pipeline(poi_config)
+            
+            if on_progress:
+                on_progress(90.0)  # Nearly complete
+
+            if result.is_err():
+                return result
+
+            poi_result = result.unwrap()
+            
+            # Cache result if strategy available
+            if self.config.cache_strategy:
+                cache_key = self._generate_cache_key(config)
+                self.config.cache_strategy.set(cache_key, poi_result, ttl=3600)
+
+            if on_progress:
+                on_progress(100.0)  # Complete
+
+            return Ok(poi_result)
+
+        except Exception as e:
+            logger.error(f"POI discovery analysis failed: {e!s}")
+            
+            # Determine error type based on exception
+            error_type = self._classify_error(e)
+            
+            return Err(
+                Error(
+                    type=error_type,
+                    message=f"POI discovery analysis error: {e!s}",
+                    context={"config": config},
+                    cause=e,
+                )
+            )
 
     def validate_configuration(self, config: dict[str, Any]) -> Result[dict[str, Any], Error]:
         """Comprehensive configuration validation with detailed error reporting.
@@ -449,12 +636,28 @@ class SocialMapperClient:
     def _generate_cache_key(self, config: dict[str, Any]) -> str:
         """Generate cache key from configuration."""
         # Simple implementation - in production would use better hashing
-        key_parts = [
-            config.get("geocode_area", ""),
-            config.get("poi_type", ""),
-            config.get("poi_name", ""),
-            str(config.get("travel_time", 15)),
-        ]
+        if config.get("poi_discovery_enabled", False):
+            # POI discovery specific cache key
+            poi_config = config.get("poi_discovery_config")
+            if poi_config:
+                key_parts = [
+                    "poi_discovery",
+                    str(poi_config.location),
+                    str(poi_config.travel_time),
+                    poi_config.travel_mode.value,
+                    str(sorted(poi_config.poi_categories or [])),
+                    str(sorted(poi_config.exclude_categories or [])),
+                ]
+            else:
+                key_parts = ["poi_discovery", "unknown"]
+        else:
+            # Standard analysis cache key
+            key_parts = [
+                config.get("geocode_area", ""),
+                config.get("poi_type", ""),
+                config.get("poi_name", ""),
+                str(config.get("travel_time", 15)),
+            ]
         return ":".join(key_parts)
 
     def _extract_file_paths(self, result_data: dict[str, Any]) -> dict[str, Path]:
@@ -492,7 +695,17 @@ class SocialMapperClient:
         """Classify exception into error type."""
         error_msg = str(exception).lower()
 
-        if "validation" in error_msg or "invalid" in error_msg:
+        # POI discovery specific errors
+        if "poi discovery" in error_msg or "nearby poi" in error_msg:
+            return ErrorType.POI_DISCOVERY
+        elif "isochrone" in error_msg:
+            return ErrorType.ISOCHRONE_GENERATION
+        elif "poi query" in error_msg:
+            return ErrorType.POI_QUERY
+        elif "geocoding" in error_msg or "geocode" in error_msg:
+            return ErrorType.LOCATION_GEOCODING
+        # Standard error classification
+        elif "validation" in error_msg or "invalid" in error_msg:
             return ErrorType.VALIDATION
         elif "network" in error_msg or "connection" in error_msg:
             return ErrorType.NETWORK
