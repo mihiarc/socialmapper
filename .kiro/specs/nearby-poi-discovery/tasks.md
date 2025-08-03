@@ -31,12 +31,12 @@
   - ✅ Write integration tests for the complete pipeline stage
   - _Requirements: 1.1, 2.1, 2.2, 3.1, 3.2, 7.3_
 
-- [ ] 5. Extend SocialMapperBuilder with nearby POI discovery methods
-  - Add `with_nearby_poi_discovery()` method to configure POI discovery analysis
-  - Add `with_poi_categories()` method for category filtering
-  - Implement validation logic for POI discovery configuration
-  - Update builder's `validate()` method to handle POI discovery configurations
-  - Write unit tests for builder extensions and validation
+- [x] 5. Extend SocialMapperBuilder with nearby POI discovery methods
+  - ✅ Add `with_nearby_poi_discovery()` method to configure POI discovery analysis
+  - ✅ Add `with_poi_categories()` method for category filtering
+  - ✅ Implement validation logic for POI discovery configuration
+  - ✅ Update builder's `validate()` method to handle POI discovery configurations
+  - ✅ Write unit tests for builder extensions and validation
   - _Requirements: 1.1, 1.2, 6.1, 6.2, 7.1, 7.2_
 
 - [ ] 6. Extend SocialMapperClient with nearby POI discovery functionality
