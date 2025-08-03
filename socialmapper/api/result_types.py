@@ -6,8 +6,9 @@ better error handling without exceptions.
 
 import traceback
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
+from pathlib import Path
 from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
@@ -27,6 +28,10 @@ class ErrorType(Enum):
     OSM_API = auto()
     GEOCODING = auto()
     PROCESSING = auto()
+    POI_DISCOVERY = auto()
+    ISOCHRONE_GENERATION = auto()
+    POI_QUERY = auto()
+    LOCATION_GEOCODING = auto()
     UNKNOWN = auto()
 
 
@@ -312,3 +317,180 @@ class ResultCollector:
     def get_values(self) -> list[Any]:
         """Get all values from successful results."""
         return [r.unwrap() for r in self.results if r.is_ok()]
+
+
+# =============================================================================
+# POI DISCOVERY DATA STRUCTURES
+# =============================================================================
+
+# Import travel mode for type hints
+from ..isochrone.travel_modes import TravelMode
+from ..constants import validate_coordinates, validate_travel_time
+
+
+@dataclass(frozen=True)
+class DiscoveredPOI:
+    """Immutable representation of a discovered POI."""
+    
+    # Required fields
+    id: str
+    name: str
+    category: str
+    subcategory: str
+    
+    # Location (required)
+    latitude: float
+    longitude: float
+    
+    # Distance/travel info (required)
+    straight_line_distance_m: float
+    
+    # OSM data (required)
+    osm_type: str  # node, way, relation
+    osm_id: int
+    
+    # Optional fields with defaults
+    address: str | None = None
+    estimated_travel_time_min: float | None = None
+    tags: dict[str, str] = field(default_factory=dict)
+    phone: str | None = None
+    website: str | None = None
+    opening_hours: str | None = None
+    
+    def __post_init__(self):
+        """Validate POI data after initialization."""
+        if not self.id:
+            raise ValueError("POI ID cannot be empty")
+        if not self.name:
+            raise ValueError("POI name cannot be empty")
+        if not validate_coordinates(self.latitude, self.longitude):
+            raise ValueError(f"Invalid coordinates: ({self.latitude}, {self.longitude})")
+        if self.straight_line_distance_m < 0:
+            raise ValueError("Distance cannot be negative")
+        if self.estimated_travel_time_min is not None and self.estimated_travel_time_min < 0:
+            raise ValueError("Travel time cannot be negative")
+
+
+@dataclass
+class NearbyPOIDiscoveryConfig:
+    """Configuration for nearby POI discovery."""
+    
+    # Location (either address string or coordinates)
+    location: str | tuple[float, float]
+    
+    # Travel constraints
+    travel_time: int  # minutes
+    travel_mode: TravelMode = TravelMode.DRIVE
+    
+    # POI filtering
+    poi_categories: list[str] | None = None
+    exclude_categories: list[str] | None = None
+    
+    # Output options
+    export_csv: bool = True
+    export_geojson: bool = True
+    create_map: bool = True
+    output_dir: Path = field(default_factory=lambda: Path("output"))
+    
+    # Processing options
+    max_pois_per_category: int | None = None
+    include_poi_details: bool = True
+    
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        self.validate()
+    
+    def validate(self):
+        """Validate configuration values."""
+        from ..constants import MIN_TRAVEL_TIME, MAX_TRAVEL_TIME
+        
+        # Validate travel time
+        if not validate_travel_time(self.travel_time):
+            raise ValueError(f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes")
+        
+        # Validate location if coordinates
+        if isinstance(self.location, tuple):
+            lat, lon = self.location
+            if not validate_coordinates(lat, lon):
+                raise ValueError(f"Invalid coordinates: {self.location}")
+        elif isinstance(self.location, str):
+            if not self.location.strip():
+                raise ValueError("Location address cannot be empty")
+        else:
+            raise ValueError("Location must be either an address string or (lat, lon) tuple")
+        
+        # Validate max POIs per category
+        if self.max_pois_per_category is not None and self.max_pois_per_category <= 0:
+            raise ValueError("max_pois_per_category must be positive")
+
+
+@dataclass
+class NearbyPOIResult:
+    """Result from nearby POI discovery analysis."""
+    
+    origin_location: dict[str, float]  # lat, lon of origin
+    travel_time: int
+    travel_mode: TravelMode
+    isochrone_area_km2: float
+    
+    # POI data organized by category
+    pois_by_category: dict[str, list[DiscoveredPOI]] = field(default_factory=dict)
+    total_poi_count: int = 0
+    category_counts: dict[str, int] = field(default_factory=dict)
+    
+    # Geographic data
+    isochrone_geometry: Any | None = None  # GeoDataFrame with isochrone polygon
+    poi_points: Any | None = None  # GeoDataFrame with POI locations
+    
+    # Export paths
+    files_generated: dict[str, Path] = field(default_factory=dict)
+    
+    # Metadata
+    metadata: dict[str, Any] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
+    
+    @property
+    def success(self) -> bool:
+        """Check if discovery was successful."""
+        return self.total_poi_count > 0
+    
+    def get_all_pois(self) -> list[DiscoveredPOI]:
+        """Get a flat list of all discovered POIs."""
+        all_pois = []
+        for category_pois in self.pois_by_category.values():
+            all_pois.extend(category_pois)
+        return all_pois
+    
+    def get_pois_by_distance(self, max_distance_m: float | None = None) -> list[DiscoveredPOI]:
+        """Get POIs sorted by distance, optionally filtered by max distance."""
+        all_pois = self.get_all_pois()
+        sorted_pois = sorted(all_pois, key=lambda poi: poi.straight_line_distance_m)
+        
+        if max_distance_m is not None:
+            sorted_pois = [poi for poi in sorted_pois if poi.straight_line_distance_m <= max_distance_m]
+        
+        return sorted_pois
+    
+    def get_summary_stats(self) -> dict[str, Any]:
+        """Get summary statistics for the discovery results."""
+        all_pois = self.get_all_pois()
+        
+        if not all_pois:
+            return {
+                "total_pois": 0,
+                "categories": 0,
+                "avg_distance_m": 0,
+                "min_distance_m": 0,
+                "max_distance_m": 0,
+            }
+        
+        distances = [poi.straight_line_distance_m for poi in all_pois]
+        
+        return {
+            "total_pois": len(all_pois),
+            "categories": len(self.pois_by_category),
+            "avg_distance_m": sum(distances) / len(distances),
+            "min_distance_m": min(distances),
+            "max_distance_m": max(distances),
+            "isochrone_area_km2": self.isochrone_area_km2,
+        }
