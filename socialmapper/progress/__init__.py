@@ -29,7 +29,7 @@ from enum import Enum
 from typing import Any, Optional, Union
 
 # Import Rich progress bar libraries
-from ..ui.console import (
+from ..console import (
     RichProgressWrapper,
     console,
     get_logger,
@@ -39,7 +39,7 @@ from ..ui.console import (
     print_warning,
     rich_tqdm,
 )
-from ..ui.console import (
+from ..console import (
     progress_bar as rich_progress_context,
 )
 

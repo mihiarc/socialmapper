@@ -1,0 +1,19 @@
+apiVersion: v2
+name: socialmapper
+description: A Helm chart for deploying SocialMapper - POI accessibility analysis tool
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - socialmapper
+  - accessibility
+  - poi
+  - analysis
+  - geospatial
+home: https://github.com/yourusername/socialmapper
+sources:
+  - https://github.com/yourusername/socialmapper
+maintainers:
+  - name: Your Name
+    email: your.email@example.com
+dependencies: []

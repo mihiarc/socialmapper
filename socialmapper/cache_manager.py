@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import sqlite3
 
-from socialmapper.ui.console import get_logger
+from socialmapper.console import get_logger
 from socialmapper.isochrone import get_global_cache as get_network_cache, clear_network_cache
 from socialmapper.geocoding.cache import AddressCache
 from socialmapper.geocoding.models import GeocodingConfig

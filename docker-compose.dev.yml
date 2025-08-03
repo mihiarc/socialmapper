@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Backend API service (development mode)
+  api-dev:
+    build:
+      context: ./socialmapper-api
+      dockerfile: Dockerfile.dev
+    container_name: socialmapper-api-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - SOCIALMAPPER_API_CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+      - SOCIALMAPPER_API_CENSUS_API_KEY=${CENSUS_API_KEY}
+      - SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE=120
+      - SOCIALMAPPER_API_API_AUTH_ENABLED=false
+      - SOCIALMAPPER_API_RESULT_STORAGE_PATH=/app/results
+    volumes:
+      - ./socialmapper-api:/app
+      - api-results-dev:/app/results
+    networks:
+      - socialmapper-network-dev
+    command: uvicorn api_server.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend UI service (development mode with Vite)
+  ui-dev:
+    image: node:18-alpine
+    container_name: socialmapper-ui-dev
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    volumes:
+      - ./socialmapper-ui:/app
+      - /app/node_modules
+    networks:
+      - socialmapper-network-dev
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api-dev
+
+networks:
+  socialmapper-network-dev:
+    driver: bridge
+
+volumes:
+  api-results-dev:

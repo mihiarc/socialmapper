@@ -11,7 +11,7 @@ import overpy
 import yaml
 
 # Configure logger
-from ..ui.console import get_logger
+from ..console import get_logger
 from ..util import with_retry
 
 logger = get_logger(__name__)

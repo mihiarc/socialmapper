@@ -17,7 +17,7 @@ except ImportError:
     ) from None
 
 from ..pipeline import PipelineConfig
-from ..ui.console import get_logger
+from ..console import get_logger
 from .builder import AnalysisResult
 
 logger = get_logger(__name__)

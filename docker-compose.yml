@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Backend API service
+  api:
+    build:
+      context: ./socialmapper-api
+      dockerfile: Dockerfile
+    container_name: socialmapper-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SOCIALMAPPER_API_CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:8080,http://localhost:3000
+      - SOCIALMAPPER_API_CENSUS_API_KEY=${CENSUS_API_KEY}
+      - SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE=60
+      - SOCIALMAPPER_API_API_AUTH_ENABLED=false
+      - SOCIALMAPPER_API_RESULT_STORAGE_PATH=/app/results
+      - SOCIALMAPPER_API_MAX_CONCURRENT_JOBS=10
+      - SOCIALMAPPER_API_RESULT_TTL_HOURS=24
+      - SOCIALMAPPER_API_LOG_LEVEL=info
+      - SOCIALMAPPER_API_WORKERS=4
+    volumes:
+      - api-results:/app/results
+    networks:
+      - socialmapper-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Frontend UI service
+  ui:
+    build:
+      context: ./socialmapper-ui
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:8000
+        - VITE_APP_TITLE=SocialMapper
+        - VITE_APP_VERSION=1.0.0
+    container_name: socialmapper-ui
+    ports:
+      - "80:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - socialmapper-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Optional: PostgreSQL for future persistent storage
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: socialmapper-db
+  #   environment:
+  #     - POSTGRES_USER=socialmapper
+  #     - POSTGRES_PASSWORD=socialmapper
+  #     - POSTGRES_DB=socialmapper
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   networks:
+  #     - socialmapper-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U socialmapper"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Optional: Redis for caching and rate limiting
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: socialmapper-redis
+  #   networks:
+  #     - socialmapper-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+networks:
+  socialmapper-network:
+    driver: bridge
+
+volumes:
+  api-results:
+  # db-data:

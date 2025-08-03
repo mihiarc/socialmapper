@@ -46,7 +46,7 @@ from socialmapper.geocoding import (
     geocode_address,
     geocode_addresses,
 )
-from socialmapper.ui.console import console, print_banner, print_panel, print_success
+from socialmapper.console import console, print_banner, print_panel, print_success
 
 
 def explain_geocoding():

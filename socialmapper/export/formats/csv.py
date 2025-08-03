@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ...ui.console import get_logger
+from ...console import get_logger
 from ..base import BaseExporter, ExportError
 
 logger = get_logger(__name__)

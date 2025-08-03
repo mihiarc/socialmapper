@@ -1,0 +1,121 @@
+# Default values for socialmapper.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  imagePullSecrets: []
+  
+api:
+  replicaCount: 2
+  
+  image:
+    repository: socialmapper-api
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  env:
+    SOCIALMAPPER_API_HOST: "0.0.0.0"
+    SOCIALMAPPER_API_PORT: "8000"
+    SOCIALMAPPER_API_WORKERS: "4"
+    SOCIALMAPPER_API_LOG_LEVEL: "info"
+    SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE: "100"
+    SOCIALMAPPER_API_API_AUTH_ENABLED: "true"
+    SOCIALMAPPER_API_RESULT_STORAGE_PATH: "/app/results"
+    SOCIALMAPPER_API_MAX_CONCURRENT_JOBS: "20"
+    SOCIALMAPPER_API_RESULT_TTL_HOURS: "48"
+  
+  secrets:
+    CENSUS_API_KEY: ""
+    API_KEYS: ""
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+ui:
+  replicaCount: 2
+  
+  image:
+    repository: socialmapper-ui
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: api
+        - path: /
+          pathType: Prefix
+          backend: ui
+  tls:
+    - secretName: socialmapper-tls
+      hosts:
+        - yourdomain.com
+
+redis:
+  enabled: false
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+postgresql:
+  enabled: false
+  auth:
+    postgresPassword: "changeme"
+    database: "socialmapper"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi

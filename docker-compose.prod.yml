@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Backend API service with production optimizations
+  api:
+    image: socialmapper-api:latest
+    container_name: socialmapper-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Core settings
+      - SOCIALMAPPER_API_HOST=0.0.0.0
+      - SOCIALMAPPER_API_PORT=8000
+      - SOCIALMAPPER_API_WORKERS=4
+      - SOCIALMAPPER_API_LOG_LEVEL=warning
+      
+      # CORS settings - update with your production domain
+      - SOCIALMAPPER_API_CORS_ORIGINS=https://yourdomain.com
+      
+      # API settings
+      - SOCIALMAPPER_API_CENSUS_API_KEY=${CENSUS_API_KEY:?Census API key required}
+      - SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE=100
+      - SOCIALMAPPER_API_API_AUTH_ENABLED=true
+      - SOCIALMAPPER_API_API_KEYS=${API_KEYS:?API keys required for production}
+      
+      # Storage settings
+      - SOCIALMAPPER_API_RESULT_STORAGE_PATH=/app/results
+      - SOCIALMAPPER_API_MAX_CONCURRENT_JOBS=20
+      - SOCIALMAPPER_API_RESULT_TTL_HOURS=48
+      
+      # Performance settings
+      - SOCIALMAPPER_API_REQUEST_TIMEOUT=300
+      - SOCIALMAPPER_API_BODY_LIMIT=10485760  # 10MB
+    volumes:
+      - api-results:/app/results
+    networks:
+      - socialmapper-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  # Frontend UI service with nginx
+  ui:
+    image: socialmapper-ui:latest
+    container_name: socialmapper-ui
+    ports:
+      - "443:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - socialmapper-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx reverse proxy with SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: socialmapper-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - ui
+      - api
+    networks:
+      - socialmapper-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: socialmapper-redis
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - socialmapper-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  socialmapper-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  api-results:
+    driver: local
+  redis-data:
+    driver: local
+  nginx-cache:
+    driver: local

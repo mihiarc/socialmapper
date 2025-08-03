@@ -1,0 +1,65 @@
+INFO:     Will watch for changes in these directories: ['/Users/mihiarc/repos/socialmapper/socialmapper-api']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [37257] using WatchFiles
+INFO:api_server.middleware.cors:CORS enabled for origins: ['http://localhost:8501', 'http://127.0.0.1:8501']
+INFO:api_server.middleware.rate_limiting:Rate limiting enabled: 60 requests per minute
+INFO:api_server.middleware.auth:API key authentication disabled
+INFO:     Started server process [37261]
+INFO:     Waiting for application startup.
+INFO:api_server.main:Starting SocialMapper API server...
+INFO:api_server.services.result_storage:ResultStorage initialized with path: results
+INFO:api_server.services.result_storage:Result storage initialized
+INFO:api_server.main:Result storage initialized
+INFO:api_server.services.job_manager:Starting job manager...
+INFO:api_server.main:Job manager started
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62173 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:api_server.routers.analysis:Received analysis request for location: Portland, OR
+INFO:api_server.services.job_manager:Created job 06af0980-48fa-48c4-8b86-8ee395d76abb for location: Portland, OR
+INFO:api_server.routers.analysis:Created analysis job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.services.job_manager:Starting processing for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.services.job_manager:Running mock analysis for Portland, OR
+INFO:     127.0.0.1:62185 - "POST /api/v1/analysis/location HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62185 - "GET /api/v1/analysis/06af0980-48fa-48c4-8b86-8ee395d76abb/status HTTP/1.1" 200 OK
+INFO:api_server.services.job_manager:Mock analysis completed for Portland, OR
+INFO:api_server.services.result_storage:Saved results for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.services.job_manager:Completed processing for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:     127.0.0.1:62185 - "GET /api/v1/analysis/06af0980-48fa-48c4-8b86-8ee395d76abb/status HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Retrieving results for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:     127.0.0.1:62185 - "GET /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Exporting results for job 06af0980-48fa-48c4-8b86-8ee395d76abb in ExportFormat.CSV format
+INFO:     127.0.0.1:62185 - "GET /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb/export?format=csv HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Exporting results for job 06af0980-48fa-48c4-8b86-8ee395d76abb in ExportFormat.GEOJSON format
+INFO:     127.0.0.1:62185 - "GET /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb/export?format=geojson HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Creating export job for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:     127.0.0.1:62185 - "POST /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb/export HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Processing export export_06af0980-48fa-48c4-8b86-8ee395d76abb_geoparquet_20250720213952 for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.routers.results:Export export_06af0980-48fa-48c4-8b86-8ee395d76abb_geoparquet_20250720213952 completed successfully
+INFO:api_server.routers.results:Deleting results for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.services.result_storage:Deleted results for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:api_server.services.job_manager:Deleted job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:     127.0.0.1:62185 - "DELETE /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb HTTP/1.1" 200 OK
+INFO:api_server.routers.results:Retrieving results for job 06af0980-48fa-48c4-8b86-8ee395d76abb
+INFO:     127.0.0.1:62185 - "GET /api/v1/results/06af0980-48fa-48c4-8b86-8ee395d76abb HTTP/1.1" 404 Not Found
+INFO:api_server.routers.metadata:Getting census variables (group=None, search=None)
+INFO:     127.0.0.1:62194 - "GET /api/v1/census/variables HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting census variables (group=Demographics, search=None)
+INFO:     127.0.0.1:62194 - "GET /api/v1/census/variables?group=Demographics HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting census variables (group=None, search=income)
+INFO:     127.0.0.1:62194 - "GET /api/v1/census/variables?search=income HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting POI types (category=None, search=None)
+INFO:     127.0.0.1:62194 - "GET /api/v1/poi/types HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting POI types (category=Healthcare, search=None)
+INFO:     127.0.0.1:62194 - "GET /api/v1/poi/types?category=Healthcare HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting POI types (category=None, search=library)
+INFO:     127.0.0.1:62194 - "GET /api/v1/poi/types?search=library HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Searching for location: Portland
+INFO:     127.0.0.1:62194 - "GET /api/v1/geography/search?q=Portland HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Searching for location: Chicago
+INFO:     127.0.0.1:62194 - "GET /api/v1/geography/search?q=Chicago&limit=5 HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Searching for location: Durham
+INFO:     127.0.0.1:62194 - "GET /api/v1/geography/search?q=Durham&limit=5 HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Searching for location: New York
+INFO:     127.0.0.1:62194 - "GET /api/v1/geography/search?q=New+York&limit=5 HTTP/1.1" 200 OK
+INFO:api_server.routers.metadata:Getting census variables (group=None, search=None)
+INFO:     127.0.0.1:62194 - "GET /api/v1/census/variables?limit=3&offset=2 HTTP/1.1" 200 OK

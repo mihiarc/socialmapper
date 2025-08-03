@@ -9,7 +9,7 @@ import pandas as pd
 
 from ...constants import FULL_BLOCK_GROUP_GEOID_LENGTH, HTTP_OK
 from ...progress import get_progress_bar
-from ...ui.console import get_logger
+from ...console import get_logger
 from ..domain.entities import BlockGroupInfo, CountyInfo
 from ..domain.interfaces import CacheProvider, CensusAPIClient, ConfigurationProvider, RateLimiter
 

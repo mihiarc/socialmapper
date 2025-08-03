@@ -8,7 +8,7 @@ import geopandas as gpd
 import pandas as pd
 
 from ..constants import FULL_BLOCK_GROUP_GEOID_LENGTH
-from ..ui.console import get_logger
+from ..console import get_logger
 from .base import DataPrepConfig
 
 logger = get_logger(__name__)

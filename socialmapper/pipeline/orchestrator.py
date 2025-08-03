@@ -17,7 +17,7 @@ from ..exceptions import (
 )
 from ..io import IOManager
 from ..isochrone import TravelMode
-from ..ui.console import get_logger, print_error, print_info
+from ..console import get_logger, print_error, print_info
 from ..util.error_handling import ErrorCollector, error_context, log_error
 from .census import integrate_census_data
 from .environment import setup_pipeline_environment

@@ -17,7 +17,7 @@ from ..exceptions import (
     SocialMapperError,
 )
 from ..pipeline import PipelineConfig, PipelineOrchestrator
-from ..ui.console import get_logger
+from ..console import get_logger
 from ..util import CENSUS_VARIABLE_MAPPING, normalize_census_variable
 from .builder import AnalysisResult, GeographicLevel, SocialMapperBuilder
 from .result_types import Err, Error, ErrorType, Ok, Result
