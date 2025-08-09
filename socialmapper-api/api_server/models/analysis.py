@@ -1,5 +1,4 @@
-"""Analysis request and response models for the SocialMapper API.
-"""
+"""Analysis request and response models for the SocialMapper API."""
 
 from datetime import datetime
 from typing import Any
@@ -14,27 +13,28 @@ from .base import (
     TravelMode,
 )
 
+# Validation constants
+MIN_CENSUS_VARIABLE_LENGTH = 5
+MIN_LOCATION_LENGTH = 3
+MIN_POI_NAME_LENGTH = 2
+
 
 class BaseAnalysisRequest(BaseModel):
     """Base class for all analysis requests."""
+
     travel_time: int = Field(15, ge=1, le=120, description="Travel time in minutes")
     census_variables: list[str] = Field(
-        default=["B01003_001E"],
-        description="List of Census variable codes"
+        default=["B01003_001E"], description="List of Census variable codes"
     )
     geographic_level: GeographicLevel = Field(
-        GeographicLevel.BLOCK_GROUP,
-        description="Geographic analysis level"
+        GeographicLevel.BLOCK_GROUP, description="Geographic analysis level"
     )
-    travel_mode: TravelMode = Field(
-        TravelMode.WALK,
-        description="Mode of transportation"
-    )
+    travel_mode: TravelMode = Field(TravelMode.WALK, description="Mode of transportation")
     include_isochrones: bool = Field(True, description="Include isochrone polygons in results")
     include_demographics: bool = Field(True, description="Include demographic analysis")
 
-    @validator('census_variables')
-    def validate_census_variables(cls, v):
+    @validator("census_variables")
+    def validate_census_variables(self, v):
         """Validate census variables list."""
         if not v:
             raise ValueError("At least one census variable must be specified")
@@ -44,49 +44,51 @@ class BaseAnalysisRequest(BaseModel):
                 raise ValueError("Census variable cannot be empty")
             # Check basic census variable format (letter + numbers + underscore + numbers + letter)
             var_clean = var.strip()
-            if len(var_clean) < 5:
+            if len(var_clean) < MIN_CENSUS_VARIABLE_LENGTH:
                 raise ValueError(f"Census variable '{var_clean}' appears to be too short")
         return [var.strip() for var in v]
 
 
 class LocationAnalysisRequest(BaseAnalysisRequest):
     """Request model for location-based POI analysis."""
+
     location: str = Field(..., description="Location to analyze (city, state format)")
     poi_type: str = Field(..., description="OpenStreetMap POI type (e.g., 'amenity')")
     poi_name: str = Field(..., description="OpenStreetMap POI name (e.g., 'library')")
 
-    @validator('location')
-    def validate_location(cls, v):
+    @validator("location")
+    def validate_location(self, v):
         """Validate location format."""
-        if not v or len(v.strip()) < 3:
+        if not v or len(v.strip()) < MIN_LOCATION_LENGTH:
             raise ValueError("Location must be at least 3 characters long")
         return v.strip()
 
-    @validator('poi_type')
-    def validate_poi_type(cls, v):
+    @validator("poi_type")
+    def validate_poi_type(self, v):
         """Validate POI type."""
-        if not v or len(v.strip()) < 2:
+        if not v or len(v.strip()) < MIN_POI_NAME_LENGTH:
             raise ValueError("POI type must be at least 2 characters long")
         return v.strip()
 
-    @validator('poi_name')
-    def validate_poi_name(cls, v):
+    @validator("poi_name")
+    def validate_poi_name(self, v):
         """Validate POI name."""
-        if not v or len(v.strip()) < 2:
+        if not v or len(v.strip()) < MIN_POI_NAME_LENGTH:
             raise ValueError("POI name must be at least 2 characters long")
         return v.strip()
 
 
 class CustomPOILocation(BaseModel):
     """Model for custom POI location."""
+
     name: str = Field(..., description="POI name")
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
     longitude: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
     address: str | None = Field(None, description="Optional address")
     category: str | None = Field(None, description="Optional POI category")
 
-    @validator('name')
-    def validate_name(cls, v):
+    @validator("name")
+    def validate_name(self, v):
         """Validate POI name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI name cannot be empty")
@@ -95,22 +97,21 @@ class CustomPOILocation(BaseModel):
 
 class CustomPOIAnalysisRequest(BaseAnalysisRequest):
     """Request model for custom POI analysis."""
+
     location: str = Field(..., description="Analysis area location (city, state format)")
     custom_pois: list[CustomPOILocation] = Field(
-        ...,
-        min_items=1,
-        description="List of custom POI locations"
+        ..., min_items=1, description="List of custom POI locations"
     )
 
-    @validator('location')
-    def validate_location(cls, v):
+    @validator("location")
+    def validate_location(self, v):
         """Validate location format."""
-        if not v or len(v.strip()) < 3:
+        if not v or len(v.strip()) < MIN_LOCATION_LENGTH:
             raise ValueError("Location must be at least 3 characters long")
         return v.strip()
 
-    @validator('custom_pois')
-    def validate_custom_pois(cls, v):
+    @validator("custom_pois")
+    def validate_custom_pois(self, v):
         """Validate custom POIs list."""
         if not v:
             raise ValueError("At least one custom POI must be provided")
@@ -121,14 +122,14 @@ class CustomPOIAnalysisRequest(BaseAnalysisRequest):
 
 class BatchAnalysisItem(BaseModel):
     """Single item in a batch analysis request."""
+
     id: str = Field(..., description="Unique identifier for this analysis item")
     request: LocationAnalysisRequest | CustomPOIAnalysisRequest = Field(
-        ...,
-        description="Analysis request"
+        ..., description="Analysis request"
     )
 
-    @validator('id')
-    def validate_id(cls, v):
+    @validator("id")
+    def validate_id(self, v):
         """Validate item ID."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Item ID cannot be empty")
@@ -137,16 +138,14 @@ class BatchAnalysisItem(BaseModel):
 
 class BatchAnalysisRequest(BaseModel):
     """Request model for batch analysis processing."""
+
     items: list[BatchAnalysisItem] = Field(
-        ...,
-        min_items=1,
-        max_items=50,
-        description="List of analysis items to process"
+        ..., min_items=1, max_items=50, description="List of analysis items to process"
     )
     priority: int = Field(1, ge=1, le=5, description="Processing priority (1=highest, 5=lowest)")
 
-    @validator('items')
-    def validate_items(cls, v):
+    @validator("items")
+    def validate_items(self, v):
         """Validate batch items."""
         if not v:
             raise ValueError("At least one analysis item must be provided")
@@ -165,17 +164,15 @@ AnalysisRequest = LocationAnalysisRequest
 
 class AnalysisResponse(BaseResponse):
     """Response model for analysis submission."""
+
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Current job status")
     created_at: datetime = Field(..., description="Job creation timestamp")
-    estimated_completion: datetime | None = Field(
-        None,
-        description="Estimated completion time"
-    )
+    estimated_completion: datetime | None = Field(None, description="Estimated completion time")
     message: str | None = Field(None, description="Status message")
 
-    @validator('job_id')
-    def validate_job_id(cls, v):
+    @validator("job_id")
+    def validate_job_id(self, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -184,25 +181,25 @@ class AnalysisResponse(BaseResponse):
 
 class BatchAnalysisResponse(BaseResponse):
     """Response model for batch analysis submission."""
+
     batch_id: str = Field(..., description="Unique batch identifier")
     job_ids: list[str] = Field(..., description="List of individual job identifiers")
     status: JobStatusEnum = Field(..., description="Overall batch status")
     created_at: datetime = Field(..., description="Batch creation timestamp")
     estimated_completion: datetime | None = Field(
-        None,
-        description="Estimated completion time for entire batch"
+        None, description="Estimated completion time for entire batch"
     )
     total_items: int = Field(..., description="Total number of items in batch")
 
-    @validator('batch_id')
-    def validate_batch_id(cls, v):
+    @validator("batch_id")
+    def validate_batch_id(self, v):
         """Validate batch ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Batch ID cannot be empty")
         return v.strip()
 
-    @validator('job_ids')
-    def validate_job_ids(cls, v):
+    @validator("job_ids")
+    def validate_job_ids(self, v):
         """Validate job IDs list."""
         if not v:
             raise ValueError("At least one job ID must be provided")
@@ -214,6 +211,7 @@ class BatchAnalysisResponse(BaseResponse):
 
 class JobStatus(BaseResponse):
     """Job status response model."""
+
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Current job status")
     progress: float = Field(0.0, ge=0.0, le=1.0, description="Job progress (0.0 to 1.0)")
@@ -221,22 +219,20 @@ class JobStatus(BaseResponse):
     created_at: datetime = Field(..., description="Job creation timestamp")
     started_at: datetime | None = Field(None, description="Job start timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    estimated_completion: datetime | None = Field(
-        None,
-        description="Estimated completion time"
-    )
+    estimated_completion: datetime | None = Field(None, description="Estimated completion time")
     error: str | None = Field(None, description="Error message if job failed")
 
 
 class ExportRequest(BaseModel):
     """Request model for exporting analysis results."""
+
     job_id: str = Field(..., description="Job identifier to export")
     format: ExportFormat = Field(..., description="Export format")
     include_isochrones: bool = Field(True, description="Include isochrone data in export")
     include_demographics: bool = Field(True, description="Include demographic data in export")
 
-    @validator('job_id')
-    def validate_job_id(cls, v):
+    @validator("job_id")
+    def validate_job_id(self, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -245,6 +241,7 @@ class ExportRequest(BaseModel):
 
 class ExportResponse(BaseResponse):
     """Response model for export requests."""
+
     export_id: str = Field(..., description="Unique export identifier")
     job_id: str = Field(..., description="Source job identifier")
     format: ExportFormat = Field(..., description="Export format")
@@ -256,6 +253,7 @@ class ExportResponse(BaseResponse):
 
 class BatchJobStatus(BaseResponse):
     """Status response for batch analysis."""
+
     batch_id: str = Field(..., description="Batch identifier")
     status: JobStatusEnum = Field(..., description="Overall batch status")
     total_items: int = Field(..., description="Total number of items")
@@ -269,41 +267,31 @@ class BatchJobStatus(BaseResponse):
 
 class AnalysisResult(BaseResponse):
     """Complete analysis result model."""
+
     job_id: str = Field(..., description="Unique job identifier")
     status: JobStatusEnum = Field(..., description="Job status")
     request: LocationAnalysisRequest | CustomPOIAnalysisRequest = Field(
-        ...,
-        description="Original analysis request"
+        ..., description="Original analysis request"
     )
 
     # Results data
     poi_count: int | None = Field(None, ge=0, description="Number of POIs found")
-    demographics: dict[str, Any] | None = Field(
-        None,
-        description="Demographic analysis results"
-    )
+    demographics: dict[str, Any] | None = Field(None, description="Demographic analysis results")
     isochrones: dict[str, Any] | None = Field(
-        None,
-        description="Isochrone polygon data (GeoJSON format)"
+        None, description="Isochrone polygon data (GeoJSON format)"
     )
 
     # Analysis metadata
     analysis_area_km2: float | None = Field(
-        None,
-        ge=0,
-        description="Total analysis area in square kilometers"
+        None, ge=0, description="Total analysis area in square kilometers"
     )
     population_covered: int | None = Field(
-        None,
-        ge=0,
-        description="Total population in analysis area"
+        None, ge=0, description="Total population in analysis area"
     )
 
     # Processing metadata
     processing_time_seconds: float | None = Field(
-        None,
-        ge=0,
-        description="Total processing time in seconds"
+        None, ge=0, description="Total processing time in seconds"
     )
     created_at: datetime = Field(..., description="Job creation timestamp")
     started_at: datetime | None = Field(None, description="Job start timestamp")
@@ -311,19 +299,15 @@ class AnalysisResult(BaseResponse):
 
     # Export information
     export_urls: dict[ExportFormat, str] | None = Field(
-        None,
-        description="URLs for downloading results in different formats"
+        None, description="URLs for downloading results in different formats"
     )
 
     # Error information
     error: str | None = Field(None, description="Error message if job failed")
-    error_details: dict[str, Any] | None = Field(
-        None,
-        description="Detailed error information"
-    )
+    error_details: dict[str, Any] | None = Field(None, description="Detailed error information")
 
-    @validator('job_id')
-    def validate_job_id(cls, v):
+    @validator("job_id")
+    def validate_job_id(self, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -332,21 +316,22 @@ class AnalysisResult(BaseResponse):
 
 class CensusVariable(BaseModel):
     """Model for census variable metadata."""
+
     code: str = Field(..., description="Census variable code (e.g., 'B01003_001E')")
     name: str = Field(..., description="Human-readable variable name")
     concept: str = Field(..., description="Census concept/table name")
     group: str | None = Field(None, description="Variable group/category")
     universe: str | None = Field(None, description="Universe description")
 
-    @validator('code')
-    def validate_code(cls, v):
+    @validator("code")
+    def validate_code(self, v):
         """Validate census variable code format."""
         if not v or len(v.strip()) < 5:
             raise ValueError("Census variable code must be at least 5 characters")
         return v.strip().upper()
 
-    @validator('name')
-    def validate_name(cls, v):
+    @validator("name")
+    def validate_name(self, v):
         """Validate variable name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Variable name cannot be empty")
@@ -355,6 +340,7 @@ class CensusVariable(BaseModel):
 
 class CensusVariablesResponse(BaseResponse):
     """Response model for census variables endpoint."""
+
     variables: list[CensusVariable] = Field(..., description="Available census variables")
     total_count: int = Field(..., description="Total number of variables")
     categories: list[str] = Field(..., description="Available variable categories")
@@ -362,21 +348,22 @@ class CensusVariablesResponse(BaseResponse):
 
 class POIType(BaseModel):
     """Model for POI type information."""
+
     type: str = Field(..., description="OpenStreetMap POI type (e.g., 'amenity')")
     name: str = Field(..., description="POI name (e.g., 'library')")
     description: str | None = Field(None, description="Description of this POI type")
     category: str | None = Field(None, description="POI category")
     common_names: list[str] | None = Field(None, description="Common alternative names")
 
-    @validator('type')
-    def validate_type(cls, v):
+    @validator("type")
+    def validate_type(self, v):
         """Validate POI type."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI type cannot be empty")
         return v.strip().lower()
 
-    @validator('name')
-    def validate_name(cls, v):
+    @validator("name")
+    def validate_name(self, v):
         """Validate POI name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI name cannot be empty")
@@ -385,6 +372,7 @@ class POIType(BaseModel):
 
 class POITypesResponse(BaseResponse):
     """Response model for POI types endpoint."""
+
     poi_types: list[POIType] = Field(..., description="Available POI types")
     total_count: int = Field(..., description="Total number of POI types")
     categories: list[str] = Field(..., description="Available POI categories")
@@ -392,6 +380,7 @@ class POITypesResponse(BaseResponse):
 
 class LocationSearchResult(BaseModel):
     """Model for location search result."""
+
     display_name: str = Field(..., description="Full display name of location")
     city: str | None = Field(None, description="City name")
     state: str | None = Field(None, description="State name")
@@ -401,15 +390,15 @@ class LocationSearchResult(BaseModel):
     importance: float | None = Field(None, description="Search result importance score")
     place_type: str | None = Field(None, description="Type of place (city, town, etc.)")
 
-    @validator('display_name')
-    def validate_display_name(cls, v):
+    @validator("display_name")
+    def validate_display_name(self, v):
         """Validate display name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Display name cannot be empty")
         return v.strip()
 
-    @validator('country')
-    def validate_country(cls, v):
+    @validator("country")
+    def validate_country(self, v):
         """Validate country."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Country cannot be empty")
@@ -418,6 +407,7 @@ class LocationSearchResult(BaseModel):
 
 class LocationSearchResponse(BaseResponse):
     """Response model for location search endpoint."""
+
     query: str = Field(..., description="Original search query")
     results: list[LocationSearchResult] = Field(..., description="Search results")
     total_count: int = Field(..., description="Total number of results")
@@ -425,10 +415,10 @@ class LocationSearchResponse(BaseResponse):
 
 class ProcessingJob(BaseModel):
     """Internal job tracking model."""
+
     id: str = Field(..., description="Unique job identifier")
     request: LocationAnalysisRequest | CustomPOIAnalysisRequest | BatchAnalysisRequest = Field(
-        ...,
-        description="Analysis request"
+        ..., description="Analysis request"
     )
     status: JobStatusEnum = Field(JobStatusEnum.PENDING, description="Current status")
     progress: float = Field(0.0, ge=0.0, le=1.0, description="Progress percentage")
@@ -449,6 +439,5 @@ class ProcessingJob(BaseModel):
     processing_time_seconds: float | None = None
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        """Pydantic configuration for JSON encoding."""
+        json_encoders = {datetime: lambda v: v.isoformat()}
