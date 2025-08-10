@@ -24,19 +24,23 @@ services:
 
   # Frontend UI service (development mode with Vite)
   ui-dev:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: socialmapper-ui-dev
     working_dir: /app
     ports:
-      - "5173:5173"
+      - "3000:3000"
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8000
+      - VITE_APP_TITLE=SocialMapper (Dev)
+      - VITE_APP_VERSION=1.0.0-dev
+      - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN:-}
+      - VITE_ENABLE_DEVTOOLS=true
     volumes:
       - ./socialmapper-ui:/app
       - /app/node_modules
     networks:
       - socialmapper-network-dev
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
     depends_on:
       - api-dev
 
