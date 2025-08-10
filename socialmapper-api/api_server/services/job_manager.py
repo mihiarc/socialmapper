@@ -1,7 +1,7 @@
-"""Job management service for handling background analysis tasks.
-"""
+"""Job management service for handling background analysis tasks."""
 
 import asyncio
+import contextlib
 import logging
 import traceback
 import uuid
@@ -34,19 +34,17 @@ class JobManager:
         logger.info("Stopping job manager...")
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         self.executor.shutdown(wait=True)
 
     def create_job(self, request: AnalysisRequest) -> str:
         """Create a new analysis job.
-        
+
         Args:
             request: Analysis request parameters
-            
+
         Returns:
             str: Unique job ID
         """
@@ -56,7 +54,7 @@ class JobManager:
             request=request,
             status=JobStatusEnum.PENDING,
             created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC)
+            updated_at=datetime.now(UTC),
         )
 
         self.jobs[job_id] = job
@@ -69,10 +67,10 @@ class JobManager:
 
     def get_job(self, job_id: str) -> ProcessingJob | None:
         """Get job by ID.
-        
+
         Args:
             job_id: Job identifier
-            
+
         Returns:
             ProcessingJob or None if not found
         """
@@ -84,10 +82,10 @@ class JobManager:
 
     def delete_job(self, job_id: str) -> bool:
         """Delete a job and its results.
-        
+
         Args:
             job_id: Job identifier
-            
+
         Returns:
             bool: True if job was deleted, False if not found
         """
@@ -99,7 +97,7 @@ class JobManager:
 
     async def _process_job(self, job_id: str):
         """Process a job in the background.
-        
+
         Args:
             job_id: Job identifier
         """
@@ -121,9 +119,7 @@ class JobManager:
             # Run the actual analysis in a thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
-                self.executor,
-                self._run_socialmapper_analysis,
-                job.request
+                self.executor, self._run_socialmapper_analysis, job.request
             )
 
             # Update job with results
@@ -135,9 +131,7 @@ class JobManager:
             job.message = "Analysis completed successfully"
 
             if job.started_at:
-                job.processing_time_seconds = (
-                    job.completed_at - job.started_at
-                ).total_seconds()
+                job.processing_time_seconds = (job.completed_at - job.started_at).total_seconds()
 
             # Save results to storage
             result_storage = get_result_storage()
@@ -153,7 +147,7 @@ class JobManager:
             job.error = str(e)
             job.error_details = {
                 "traceback": traceback.format_exc(),
-                "error_type": type(e).__name__
+                "error_type": type(e).__name__,
             }
             job.progress = 0.0
             job.message = f"Analysis failed: {e!s}"
@@ -163,10 +157,10 @@ class JobManager:
 
     def _run_socialmapper_analysis(self, request: AnalysisRequest) -> dict[str, Any]:
         """Run the actual SocialMapper analysis.
-        
+
         Args:
             request: Analysis request parameters
-            
+
         Returns:
             Dict containing analysis results
         """
@@ -178,6 +172,7 @@ class JobManager:
 
             # Simulate processing time
             import time
+
             time.sleep(2)  # Simulate 2 seconds of processing
 
             # Create mock results that match the expected structure
@@ -194,22 +189,22 @@ class JobManager:
                     "geographic_level": request.geographic_level.value,
                     "census_variables": request.census_variables,
                     "center_lat": 45.5152,  # Mock Portland coordinates
-                    "center_lon": -122.6784
+                    "center_lon": -122.6784,
                 },
                 "pois": [
                     {
-                        "name": f"Mock {request.poi_name.title()} {i+1}",
+                        "name": f"Mock {request.poi_name.title()} {i + 1}",
                         "lat": 45.5152 + (i * 0.01),
                         "lon": -122.6784 + (i * 0.01),
                         "type": request.poi_type,
-                        "subtype": request.poi_name
+                        "subtype": request.poi_name,
                     }
                     for i in range(5)
                 ],
                 "files_generated": {
                     "census_data": "/tmp/mock_census_data.csv",
-                    "isochrones": "/tmp/mock_isochrones.geojson"
-                }
+                    "isochrones": "/tmp/mock_isochrones.geojson",
+                },
             }
 
             logger.info(f"Mock analysis completed for {request.location}")
@@ -220,21 +215,21 @@ class JobManager:
             # Real SocialMapper integration (currently disabled due to import issues)
             import sys
             from pathlib import Path
-            
+
             # Add the parent directory to sys.path to find socialmapper
             parent_dir = Path(__file__).parent.parent.parent
             sys.path.insert(0, str(parent_dir))
-                
+
             from socialmapper import analyze_location
-            
+
             # Parse location (expecting "City, State" format)
             location_parts = request.location.split(",")
             if len(location_parts) != 2:
                 raise Exception(f"Location must be in 'City, State' format, got: {request.location}")
-            
+
             city = location_parts[0].strip()
             state = location_parts[1].strip()
-            
+
             # Run analysis using the convenience function
             result = analyze_location(
                 city=city,
@@ -245,7 +240,7 @@ class JobManager:
                 census_variables=request.census_variables,
                 geographic_level=request.geographic_level.value
             )
-            
+
             # Handle Result type (Ok/Err pattern)
             if hasattr(result, 'is_ok') and result.is_ok():
                 analysis_result = result.unwrap()
@@ -264,33 +259,33 @@ class JobManager:
 
     def _serialize_analysis_result(self, result: Any) -> dict[str, Any]:
         """Convert SocialMapper result to JSON-serializable format.
-        
+
         Args:
             result: SocialMapper analysis result (AnalysisResult object)
-            
+
         Returns:
             Dict containing serialized results
         """
         try:
             # Handle AnalysisResult object from SocialMapper
-            if hasattr(result, 'poi_count'):
+            if hasattr(result, "poi_count"):
                 serialized = {
                     "poi_count": result.poi_count,
-                    "isochrone_count": getattr(result, 'isochrone_count', 0),
-                    "census_units_analyzed": getattr(result, 'census_units_analyzed', 0),
-                    "demographics": getattr(result, 'demographics', {}),
-                    "isochrone_area": getattr(result, 'isochrone_area', 0.0),
-                    "metadata": getattr(result, 'metadata', {}),
-                    "pois": getattr(result, 'pois', [])
+                    "isochrone_count": getattr(result, "isochrone_count", 0),
+                    "census_units_analyzed": getattr(result, "census_units_analyzed", 0),
+                    "demographics": getattr(result, "demographics", {}),
+                    "isochrone_area": getattr(result, "isochrone_area", 0.0),
+                    "metadata": getattr(result, "metadata", {}),
+                    "pois": getattr(result, "pois", []),
                 }
 
                 # Handle isochrones - convert GeoDataFrame to GeoJSON if present
-                if hasattr(result, 'isochrones') and result.isochrones is not None:
+                if hasattr(result, "isochrones") and result.isochrones is not None:
                     try:
                         # Convert GeoDataFrame to GeoJSON format
-                        if hasattr(result.isochrones, 'to_json'):
+                        if hasattr(result.isochrones, "to_json"):
                             serialized["isochrones"] = result.isochrones.to_json()
-                        elif hasattr(result.isochrones, '__geo_interface__'):
+                        elif hasattr(result.isochrones, "__geo_interface__"):
                             serialized["isochrones"] = result.isochrones.__geo_interface__
                         else:
                             serialized["isochrones"] = str(result.isochrones)
@@ -299,7 +294,7 @@ class JobManager:
                         serialized["isochrones"] = None
 
                 # Handle files_generated
-                if hasattr(result, 'files_generated'):
+                if hasattr(result, "files_generated"):
                     files_dict = {}
                     for key, path in result.files_generated.items():
                         files_dict[key] = str(path) if path else None
@@ -308,15 +303,15 @@ class JobManager:
                 return serialized
 
             # Fallback serialization methods
-            elif hasattr(result, 'to_dict'):
+            elif hasattr(result, "to_dict"):
                 return result.to_dict()
-            elif hasattr(result, '__dict__'):
+            elif hasattr(result, "__dict__"):
                 # Convert any Path objects to strings
                 result_dict = {}
                 for key, value in result.__dict__.items():
-                    if hasattr(value, '__fspath__'):  # Path-like object
+                    if hasattr(value, "__fspath__"):  # Path-like object
                         result_dict[key] = str(value)
-                    elif hasattr(value, 'to_json'):  # GeoDataFrame
+                    elif hasattr(value, "to_json"):  # GeoDataFrame
                         try:
                             result_dict[key] = value.to_json()
                         except:
@@ -325,17 +320,14 @@ class JobManager:
                         result_dict[key] = value
                 return result_dict
             else:
-                return {
-                    "raw_result": str(result),
-                    "result_type": type(result).__name__
-                }
+                return {"raw_result": str(result), "result_type": type(result).__name__}
 
         except Exception as e:
             logger.warning(f"Failed to serialize result: {e}")
             return {
                 "error": "Failed to serialize analysis result",
                 "result_summary": str(result)[:500],  # Truncated string representation
-                "result_type": type(result).__name__
+                "result_type": type(result).__name__,
             }
 
     async def _cleanup_expired_jobs(self):
@@ -369,16 +361,34 @@ class JobManager:
                 logger.error(f"Error during job cleanup: {e}")
 
 
-# Global job manager instance
-_job_manager: JobManager | None = None
+class JobManagerSingleton:
+    """Singleton manager for JobManager."""
+
+    _instance: JobManager | None = None
+
+    @classmethod
+    def get_instance(cls) -> JobManager:
+        """Get the singleton job manager instance."""
+        if cls._instance is None:
+            cls._instance = JobManager()
+        return cls._instance
+
+    @classmethod
+    async def stop_instance(cls) -> None:
+        """Stop and clear the singleton job manager instance."""
+        if cls._instance:
+            await cls._instance.stop()
+            cls._instance = None
+
+    @classmethod
+    def clear_instance(cls) -> None:
+        """Clear the singleton instance."""
+        cls._instance = None
 
 
 def get_job_manager() -> JobManager:
     """Get the global job manager instance."""
-    global _job_manager
-    if _job_manager is None:
-        _job_manager = JobManager()
-    return _job_manager
+    return JobManagerSingleton.get_instance()
 
 
 async def start_job_manager():
@@ -389,7 +399,4 @@ async def start_job_manager():
 
 async def stop_job_manager():
     """Stop the global job manager."""
-    global _job_manager
-    if _job_manager:
-        await _job_manager.stop()
-        _job_manager = None
+    await JobManagerSingleton.stop_instance()

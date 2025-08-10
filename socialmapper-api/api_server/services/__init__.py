@@ -1,5 +1,4 @@
-"""Business logic services for the SocialMapper API.
-"""
+"""Business logic services for the SocialMapper API."""
 
 from . import job_manager, result_storage
 

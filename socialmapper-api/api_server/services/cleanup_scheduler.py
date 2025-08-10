@@ -1,7 +1,7 @@
-"""Background task scheduler for periodic cleanup of expired results.
-"""
+"""Background task scheduler for periodic cleanup of expired results."""
 
 import asyncio
+import contextlib
 import logging
 from datetime import UTC, datetime
 
@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 class CleanupScheduler:
     """Scheduler for periodic cleanup of expired results.
-    
+
     This scheduler runs a background task that periodically cleans up
     expired analysis results from storage.
     """
 
     def __init__(self, interval_minutes: int = 60):
         """Initialize the cleanup scheduler.
-        
+
         Args:
             interval_minutes: Interval between cleanup runs in minutes
         """
@@ -43,10 +43,8 @@ class CleanupScheduler:
 
         if self.task:
             self.task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.task
-            except asyncio.CancelledError:
-                pass
             self.task = None
 
         logger.info("Cleanup scheduler stopped")
@@ -81,9 +79,13 @@ class CleanupScheduler:
             elapsed_time = (datetime.now(UTC) - start_time).total_seconds()
 
             if cleaned_count > 0:
-                logger.info(f"Cleanup completed: removed {cleaned_count} expired results in {elapsed_time:.2f} seconds")
+                logger.info(
+                    f"Cleanup completed: removed {cleaned_count} expired results in {elapsed_time:.2f} seconds"
+                )
             else:
-                logger.debug(f"Cleanup completed: no expired results found (took {elapsed_time:.2f} seconds)")
+                logger.debug(
+                    f"Cleanup completed: no expired results found (took {elapsed_time:.2f} seconds)"
+                )
 
         except Exception as e:
             logger.error(f"Failed to run cleanup: {e}")

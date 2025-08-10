@@ -1,5 +1,4 @@
-"""Result storage service for managing analysis results.
-"""
+"""Result storage service for managing analysis results."""
 
 import json
 import logging
@@ -12,14 +11,14 @@ logger = logging.getLogger(__name__)
 
 class ResultStorage:
     """Service for storing and retrieving analysis results.
-    
+
     This service manages the storage of completed analysis results,
     providing methods to save, retrieve, and clean up result data.
     """
 
     def __init__(self, storage_path: str = "./results", ttl_hours: int = 24):
         """Initialize the result storage service.
-        
+
         Args:
             storage_path: Directory path for storing results
             ttl_hours: Time-to-live for results in hours
@@ -34,11 +33,11 @@ class ResultStorage:
 
     def save_results(self, job_id: str, results: dict[str, Any]) -> bool:
         """Save analysis results to storage.
-        
+
         Args:
             job_id: Unique job identifier
             results: Analysis results to save
-            
+
         Returns:
             bool: True if saved successfully
         """
@@ -57,7 +56,7 @@ class ResultStorage:
                 "job_id": job_id,
                 "saved_at": datetime.now(UTC).isoformat(),
                 "expires_at": (datetime.now(UTC) + timedelta(hours=self.ttl_hours)).isoformat(),
-                "size_bytes": results_file.stat().st_size
+                "size_bytes": results_file.stat().st_size,
             }
 
             metadata_file = job_dir / "metadata.json"
@@ -73,10 +72,10 @@ class ResultStorage:
 
     def get_results(self, job_id: str) -> dict[str, Any] | None:
         """Retrieve analysis results from storage.
-        
+
         Args:
             job_id: Unique job identifier
-            
+
         Returns:
             Optional[Dict[str, Any]]: Results if found, None otherwise
         """
@@ -112,10 +111,10 @@ class ResultStorage:
 
     def delete_results(self, job_id: str) -> bool:
         """Delete analysis results from storage.
-        
+
         Args:
             job_id: Unique job identifier
-            
+
         Returns:
             bool: True if deleted successfully
         """
@@ -142,7 +141,7 @@ class ResultStorage:
 
     def cleanup_expired(self) -> int:
         """Clean up expired results from storage.
-        
+
         Returns:
             int: Number of expired results cleaned up
         """
@@ -180,7 +179,7 @@ class ResultStorage:
 
     def get_storage_stats(self) -> dict[str, Any]:
         """Get storage statistics.
-        
+
         Returns:
             Dict[str, Any]: Storage statistics
         """
@@ -218,31 +217,43 @@ class ResultStorage:
                 "expired_jobs": expired_count,
                 "total_size_bytes": total_size,
                 "total_size_mb": round(total_size / (1024 * 1024), 2),
-                "storage_path": str(self.storage_path)
+                "storage_path": str(self.storage_path),
             }
 
         except Exception as e:
             logger.error(f"Failed to get storage stats: {e}")
-            return {
-                "error": str(e),
-                "storage_path": str(self.storage_path)
-            }
+            return {"error": str(e), "storage_path": str(self.storage_path)}
 
 
-# Global instance
-_result_storage: ResultStorage | None = None
+class ResultStorageSingleton:
+    """Singleton manager for ResultStorage."""
+
+    _instance: ResultStorage | None = None
+
+    @classmethod
+    def get_instance(cls) -> ResultStorage:
+        """Get the singleton storage instance."""
+        if cls._instance is None:
+            cls._instance = ResultStorage()
+        return cls._instance
+
+    @classmethod
+    def set_instance(cls, storage_path: str = "./results", ttl_hours: int = 24) -> None:
+        """Set the singleton storage instance."""
+        cls._instance = ResultStorage(storage_path, ttl_hours)
+        logger.info("Result storage initialized")
+
+    @classmethod
+    def clear_instance(cls) -> None:
+        """Clear the singleton instance."""
+        cls._instance = None
 
 
 def get_result_storage() -> ResultStorage:
     """Get the global result storage instance."""
-    global _result_storage
-    if _result_storage is None:
-        _result_storage = ResultStorage()
-    return _result_storage
+    return ResultStorageSingleton.get_instance()
 
 
 def init_result_storage(storage_path: str = "./results", ttl_hours: int = 24):
     """Initialize the global result storage instance."""
-    global _result_storage
-    _result_storage = ResultStorage(storage_path, ttl_hours)
-    logger.info("Result storage initialized")
+    ResultStorageSingleton.set_instance(storage_path, ttl_hours)
