@@ -19,10 +19,10 @@ import {
   Button
 } from 'antd';
 import {
-  WalkOutlined,
-  BikeOutlined,
+  UserOutlined as WalkIcon,
+  CarOutlined as BikeIcon,
   CarOutlined,
-  SubwayOutlined,
+  CarOutlined as TransitIcon,
   ClockCircleOutlined,
   UserOutlined,
   BarChartOutlined,
@@ -45,7 +45,7 @@ const TRAVEL_MODES = [
   {
     value: TravelMode.WALK,
     label: 'Walking',
-    icon: <WalkOutlined />,
+    icon: <WalkIcon />,
     description: 'Pedestrian access via sidewalks and walking paths',
     color: '#52c41a',
     defaultTime: 15,
@@ -54,7 +54,7 @@ const TRAVEL_MODES = [
   {
     value: TravelMode.BIKE,
     label: 'Biking', 
-    icon: <BikeOutlined />,
+    icon: <BikeIcon />,
     description: 'Bicycle access via bike lanes and roads',
     color: '#1890ff',
     defaultTime: 10,
@@ -72,7 +72,7 @@ const TRAVEL_MODES = [
   {
     value: TravelMode.TRANSIT,
     label: 'Public Transit',
-    icon: <SubwayOutlined />,
+    icon: <TransitIcon />,
     description: 'Public transportation including bus, train, and subway',
     color: '#722ed1',
     defaultTime: 20,
@@ -148,7 +148,7 @@ const ParameterSliders: React.FC<ParameterSlidersProps> = ({ onParameterChange }
   const { 
     data: censusData, 
     isLoading: loadingCensus 
-  } = useGetCensusVariablesQuery({});
+  } = useGetCensusVariablesQuery();
 
   const censusVariables = censusData?.variables || [];
 

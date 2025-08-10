@@ -28,14 +28,54 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
+    minify: 'terser',
+    target: 'es2020',
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'antd'],
-          maps: ['mapbox-gl', 'react-map-gl', '@turf/turf'],
-          redux: ['@reduxjs/toolkit', 'react-redux'],
+        manualChunks: (id) => {
+          // Vendor chunk for core React libraries
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          // UI library chunk
+          if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) {
+            return 'ui-vendor';
+          }
+          // Maps chunk for mapping libraries
+          if (id.includes('mapbox-gl') || id.includes('react-map-gl') || id.includes('@turf')) {
+            return 'maps';
+          }
+          // Redux chunk
+          if (id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
+            return 'redux';
+          }
+          // Other vendor libraries
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
+        // Optimize chunk and asset naming
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          let extType = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+            extType = 'img';
+          } else if (/woff|woff2|ttf|eot/i.test(extType)) {
+            extType = 'fonts';
+          }
+          return `assets/${extType}/[name]-[hash][extname]`;
+        },
+      },
+    },
+    // Enable terser optimizations
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: true,
       },
     },
   },

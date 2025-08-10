@@ -23,7 +23,7 @@ import {
 } from 'antd';
 import {
   DownloadOutlined,
-  MapOutlined,
+  EnvironmentOutlined,
   BarChartOutlined,
   TableOutlined,
   ShareAltOutlined,
@@ -60,7 +60,7 @@ const EXPORT_FORMATS = [
   {
     format: ExportFormat.GEOJSON,
     label: 'GeoJSON (Maps)',
-    icon: <MapOutlined />,
+    icon: <EnvironmentOutlined />,
     description: 'Geographic data for mapping applications',
     size: 'Medium'
   },
@@ -363,7 +363,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ jobId, onShare }) =
             <Statistic
               title="Points of Interest"
               value={result.poi_count || 0}
-              prefix={<MapOutlined />}
+              prefix={<EnvironmentOutlined />}
             />
           </Card>
         </Col>
@@ -407,7 +407,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ jobId, onShare }) =
             key: 'map',
             label: (
               <Space>
-                <MapOutlined />
+                <EnvironmentOutlined />
                 Interactive Map
               </Space>
             ),

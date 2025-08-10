@@ -1,7 +1,7 @@
 # Multi-stage build for SocialMapper React UI
 
 # Dependencies stage - cache dependencies separately
-FROM node:20-alpine as deps
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
@@ -9,11 +9,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install production dependencies only
-RUN npm ci --only=production --no-audit --no-fund && \
+RUN npm install --only=production --no-audit --no-fund && \
     npm cache clean --force
 
 # Build stage
-FROM node:20-alpine as build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install all dependencies including devDeps for build
-RUN npm ci --no-audit --no-fund && \
+RUN npm install --no-audit --no-fund && \
     npm cache clean --force
 
 # Copy source code
@@ -47,8 +47,9 @@ RUN npm run typecheck
 # Build the app with optimizations
 RUN npm run build
 
-# Generate bundle size report
-RUN npx vite-bundle-visualizer --output /tmp/stats.html || true
+# Generate bundle size report and check build output sizes
+RUN npx vite-bundle-visualizer --output /tmp/stats.html
+RUN ls -la dist/assets/js/ dist/assets/css/ && echo "Build completed successfully with optimized assets"
 
 # Production stage
 FROM nginx:1.25-alpine
@@ -69,24 +70,15 @@ RUN sed -i 's/^user .*/# user disabled for non-root runtime;/' /etc/nginx/nginx.
 COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Copy bundle stats for analysis (optional, can be removed in production)
-COPY --from=build --chown=nginx:nginx /tmp/stats.html /usr/share/nginx/html/bundle-stats.html || true
+COPY --from=build --chown=nginx:nginx /tmp/stats.html /usr/share/nginx/html/bundle-stats.html
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/cache/nginx /var/log/nginx /tmp/nginx && \
-    chown -R nginx:nginx /var/cache/nginx /var/log/nginx /tmp/nginx /etc/nginx/conf.d/ && \
+    chown -R nginx:nginx /var/cache/nginx /var/log/nginx /tmp/nginx /etc/nginx/conf.d/ /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
-# Add security headers script
-RUN echo '#!/bin/sh
-# Add runtime environment injection for client-side config
-cat > /usr/share/nginx/html/config.js <<EOF
-window.__RUNTIME_CONFIG__ = {
-  API_URL: "${API_URL:-/api}",
-  APP_VERSION: "${APP_VERSION:-unknown}",
-  ENVIRONMENT: "${ENVIRONMENT:-production}"
-};
-EOF
-exec "$@"' > /docker-entrypoint.sh && \
+# Create entrypoint script for runtime environment injection
+RUN printf '#!/bin/sh\n# Add runtime environment injection for client-side config\ncat > /usr/share/nginx/html/config.js << "EOF"\nwindow.__RUNTIME_CONFIG__ = {\n  API_URL: "${API_URL:-/api}",\n  APP_VERSION: "${APP_VERSION:-unknown}",\n  ENVIRONMENT: "${ENVIRONMENT:-production}"\n};\nEOF\nexec "$@"\n' > /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
 # Switch to non-root user
@@ -97,7 +89,7 @@ EXPOSE 8080
 
 # Add labels for better container management
 LABEL maintainer="SocialMapper Team" \
-      version="${VITE_APP_VERSION}" \
+      version="latest" \
       description="SocialMapper React UI" \
       org.opencontainers.image.source="https://github.com/socialmapper/socialmapper-ui"
 

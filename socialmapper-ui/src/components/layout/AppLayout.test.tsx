@@ -46,25 +46,25 @@ const renderWithProviders = (component: React.ReactElement) => {
 
 describe('AppLayout', () => {
   it('renders without crashing', () => {
-    renderWithProviders(<AppLayout />);
+    renderWithProviders(<AppLayout><div>Test Content</div></AppLayout>);
     expect(document.querySelector('.ant-layout')).toBeInTheDocument();
   });
 
   it('displays the application title', () => {
-    renderWithProviders(<AppLayout />);
+    renderWithProviders(<AppLayout><div>Test Content</div></AppLayout>);
     const title = screen.getByText(/SocialMapper/i);
     expect(title).toBeInTheDocument();
   });
 
   it('renders navigation menu items', () => {
-    renderWithProviders(<AppLayout />);
+    renderWithProviders(<AppLayout><div>Test Content</div></AppLayout>);
     expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
     expect(screen.getByText(/Analysis Wizard/i)).toBeInTheDocument();
     expect(screen.getByText(/Results/i)).toBeInTheDocument();
   });
 
   it('has a responsive layout structure', () => {
-    const { container } = renderWithProviders(<AppLayout />);
+    const { container } = renderWithProviders(<AppLayout><div>Test Content</div></AppLayout>);
     const layout = container.querySelector('.ant-layout');
     const sider = container.querySelector('.ant-layout-sider');
     const header = container.querySelector('.ant-layout-header');
@@ -77,7 +77,7 @@ describe('AppLayout', () => {
   });
 
   it('renders the outlet for child routes', () => {
-    const { container } = renderWithProviders(<AppLayout />);
+    const { container } = renderWithProviders(<AppLayout><div>Test Content</div></AppLayout>);
     const content = container.querySelector('.ant-layout-content');
     expect(content).toBeInTheDocument();
   });

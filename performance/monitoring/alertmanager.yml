@@ -1,0 +1,152 @@
+# AlertManager configuration for SocialMapper performance alerts
+
+global:
+  smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+  smtp_from: '${ALERT_EMAIL_FROM}'
+  smtp_auth_username: '${SMTP_USERNAME}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+
+# Email and Slack notification templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Alert routing rules
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+    
+    # Performance regression alerts
+    - match:
+        component: performance
+      receiver: 'performance-alerts'
+      group_wait: 30s
+      repeat_interval: 30m
+    
+    # API alerts
+    - match:
+        component: api
+      receiver: 'api-alerts'
+      group_wait: 15s
+      repeat_interval: 15m
+    
+    # System alerts
+    - match:
+        component: system
+      receiver: 'system-alerts'
+      group_wait: 5m
+      repeat_interval: 1h
+
+# Notification receivers
+receivers:
+  # Default webhook
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://localhost:5001/'
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#critical-alerts'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Component:* {{ .Labels.component }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        send_resolved: true
+    
+    email_configs:
+      - to: '${CRITICAL_ALERT_EMAIL}'
+        subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Critical alert fired for SocialMapper:
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Component: {{ .Labels.component }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+  # Performance alerts
+  - name: 'performance-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#performance-alerts'
+        title: '⚠️ Performance Issue: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Component:* {{ .Labels.component }}
+          {{ if .Labels.test_type }}*Test Type:* {{ .Labels.test_type }}{{ end }}
+          {{ end }}
+        send_resolved: true
+
+  # API alerts
+  - name: 'api-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#api-alerts'
+        title: '🔧 API Issue: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Endpoint:* {{ .Labels.instance }}
+          *Method:* {{ .Labels.method }}
+          {{ end }}
+        send_resolved: true
+
+  # System alerts  
+  - name: 'system-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#system-alerts'
+        title: '🖥️ System Issue: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        send_resolved: true
+
+# Inhibition rules - suppress certain alerts when others are firing
+inhibit_rules:
+  # If API is down, don't alert on high response times
+  - source_match:
+      alertname: APIDown
+    target_match:
+      component: api
+    equal: ['instance']
+  
+  # If system CPU is critical, don't alert on high CPU warning
+  - source_match:
+      alertname: CriticalCPUUsage
+    target_match:
+      alertname: HighCPUUsage
+    equal: ['instance']
+  
+  # If system memory is critical, don't alert on high memory warning
+  - source_match:
+      alertname: CriticalMemoryUsage
+    target_match:
+      alertname: HighMemoryUsage
+    equal: ['instance']

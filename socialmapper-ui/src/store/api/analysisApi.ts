@@ -108,7 +108,7 @@ export const analysisApi = createApi({
           include_isochrones: includeIsochrones,
           include_demographics: includeDemographics,
         },
-        responseHandler: 'blob',
+        responseHandler: (response) => response.blob(),
       }),
     }),
 

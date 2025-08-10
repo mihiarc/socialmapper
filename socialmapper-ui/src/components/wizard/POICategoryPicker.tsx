@@ -124,7 +124,7 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
     data: poiTypesData,
     isLoading,
     error
-  } = useGetPOITypesQuery({});
+  } = useGetPOITypesQuery();
 
   const poiTypes = poiTypesData?.poi_types || [];
   const categories = poiTypesData?.categories || [];
@@ -399,7 +399,7 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
                       {poiType.common_names && poiType.common_names.length > 0 && !isMobile && (
                         <div style={{ textAlign: 'center' }}>
                           {poiType.common_names.slice(0, 2).map((name, idx) => (
-                            <Tag key={idx} size="small" style={{ fontSize: '9px', margin: '1px' }}>
+                            <Tag key={idx} style={{ fontSize: '9px', margin: '1px', padding: '0 4px' }}>
                               {name}
                             </Tag>
                           ))}

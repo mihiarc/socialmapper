@@ -22,7 +22,7 @@ import {
   Table,
 } from 'antd';
 import {
-  TrendingUpOutlined,
+  RiseOutlined,
   UserOutlined,
   StarOutlined,
   BugOutlined,
@@ -147,7 +147,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             value={feedbackSummary?.response_rate || 0}
             precision={1}
             suffix="%"
-            prefix={<TrendingUpOutlined />}
+            prefix={<RiseOutlined />}
             loading={feedbackLoading}
           />
         </Card>
@@ -182,7 +182,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <Statistic
             title="Page Views"
             value={analyticsSummary?.total_page_views || 0}
-            prefix={<TrendingUpOutlined />}
+            prefix={<RiseOutlined />}
             loading={analyticsLoading}
           />
         </Card>
@@ -218,13 +218,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     const typeData = Object.entries(feedbackSummary.feedback_by_type).map(([type, count]) => ({
       type,
       count,
-      percentage: Math.round((count / feedbackSummary.total_feedback) * 100),
+      percentage: Math.round(((count as number) / feedbackSummary.total_feedback) * 100),
     }));
 
     const touchpointData = Object.entries(feedbackSummary.feedback_by_touchpoint).map(([touchpoint, count]) => ({
       touchpoint,
       count,
-      percentage: Math.round((count / feedbackSummary.total_feedback) * 100),
+      percentage: Math.round(((count as number) / feedbackSummary.total_feedback) * 100),
     }));
 
     return (
@@ -247,7 +247,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     </Col>
                     <Col>
                       <Space>
-                        <Text strong>{item.count}</Text>
+                        <Text strong>{String(item.count)}</Text>
                         <Progress 
                           percent={item.percentage} 
                           size="small" 
@@ -275,7 +275,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     </Col>
                     <Col>
                       <Space>
-                        <Text strong>{item.count}</Text>
+                        <Text strong>{String(item.count)}</Text>
                         <Progress 
                           percent={item.percentage} 
                           size="small" 
@@ -299,7 +299,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <Card title="AI-Generated Insights" loading={insightsLoading}>
           {insights ? (
             <Space direction="vertical" style={{ width: '100%' }}>
-              {insights.sentiment_score !== null && (
+              {insights.sentiment_score !== undefined && insights.sentiment_score !== null && (
                 <div>
                   <Text strong>Overall Sentiment: </Text>
                   <Tag color={insights.sentiment_score > 0.2 ? 'green' : 
@@ -310,11 +310,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 </div>
               )}
               
-              {insights.common_themes.length > 0 && (
+              {insights.common_themes && insights.common_themes.length > 0 && (
                 <div>
                   <Text strong>Common Themes:</Text>
                   <div style={{ marginTop: '8px' }}>
-                    {insights.common_themes.map(theme => (
+                    {insights.common_themes.map((theme: string) => (
                       <Tag key={theme}>{theme}</Tag>
                     ))}
                   </div>
@@ -325,8 +325,8 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <div>
                   <Text strong>Improvement Suggestions:</Text>
                   <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-                    {insights.improvement_suggestions.map((suggestion, index) => (
-                      <li key={index}>{suggestion}</li>
+                    {insights.improvement_suggestions.map((suggestion: any, index: number) => (
+                      <li key={index}>{suggestion.suggestion}</li>
                     ))}
                   </ul>
                 </div>

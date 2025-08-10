@@ -26,7 +26,7 @@ import {
   PlusOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
-  ExternalLinkOutlined,
+  LinkOutlined,
   FireOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -160,7 +160,7 @@ const FeatureRequestBoard: React.FC<FeatureRequestBoardProps> = ({
         key="github"
         type="text"
         size="small"
-        icon={<ExternalLinkOutlined />}
+        icon={<LinkOutlined />}
         href={getFeatureUrl(feature)}
         target="_blank"
       >
@@ -302,7 +302,7 @@ const FeatureRequestBoard: React.FC<FeatureRequestBoardProps> = ({
         }
         extra={
           <Tooltip title="Feature requests are managed through GitHub Discussions">
-            <Button type="text" icon={<ExternalLinkOutlined />} />
+            <Button type="text" icon={<LinkOutlined />} />
           </Tooltip>
         }
       >

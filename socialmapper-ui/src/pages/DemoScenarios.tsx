@@ -292,7 +292,7 @@ const DemoScenarios: React.FC = () => {
                 <div style={{ margin: '12px 0' }}>
                   <Space size={[0, 8]} wrap>
                     {scenario.tags.map((tag) => (
-                      <Tag key={tag} size="small">
+                      <Tag key={tag} style={{ fontSize: '12px' }}>
                         {tag}
                       </Tag>
                     ))}

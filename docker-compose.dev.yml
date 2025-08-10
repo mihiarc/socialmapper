@@ -33,12 +33,13 @@ services:
       - VITE_APP_VERSION=1.0.0-dev
       - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN:-}
       - VITE_ENABLE_DEVTOOLS=true
+      - NODE_ENV=development
     volumes:
       - ./socialmapper-ui:/app
-      - /app/node_modules
+      - ui-node-modules-dev:/app/node_modules
     networks:
       - socialmapper-network-dev
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    command: sh -c "npm install --no-audit --no-fund && npm run typecheck && npm run dev -- --host 0.0.0.0 --port 3000"
     depends_on:
       - api-dev
 
@@ -48,3 +49,4 @@ networks:
 
 volumes:
   api-results-dev:
+  ui-node-modules-dev:

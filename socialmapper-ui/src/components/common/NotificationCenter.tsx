@@ -56,6 +56,8 @@ const NotificationCenter: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
+    
+    return undefined;
   }, [notifications, dispatch]);
 
   return null; // This component doesn't render anything directly

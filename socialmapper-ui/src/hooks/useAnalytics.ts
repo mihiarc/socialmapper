@@ -233,6 +233,7 @@ export const useAnalytics = (config: AnalyticsConfig = {}): UseAnalyticsReturn =
         }
       };
     }
+    return undefined;
   }, [fullConfig.batchEvents, fullConfig.flushInterval, flushEvents]);
 
   // Check for session timeout

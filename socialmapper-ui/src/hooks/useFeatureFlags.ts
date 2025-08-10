@@ -185,7 +185,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
   // Check if a feature flag is enabled for this user
   const isEnabled = useCallback((flagKey: string): boolean => {
     const variant = userVariants[flagKey];
-    return variant && !['disabled', 'not_eligible', 'not_in_rollout'].includes(variant);
+    return Boolean(variant && !['disabled', 'not_eligible', 'not_in_rollout'].includes(variant));
   }, [userVariants]);
 
   // Get the variant for a feature flag

@@ -1,0 +1,248 @@
+# Prometheus alerting rules for SocialMapper performance monitoring
+
+groups:
+  - name: api_performance
+    rules:
+      # API Response Time Alerts
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="socialmapper-api"}[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API response time detected"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.instance }}"
+
+      - alert: CriticalAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="socialmapper-api"}[5m])) > 2.0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical API response time detected"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.instance }}"
+
+      # API Error Rate Alerts
+      - alert: HighAPIErrorRate
+        expr: rate(http_requests_total{job="socialmapper-api",status=~"5.."}[5m]) / rate(http_requests_total{job="socialmapper-api"}[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
+
+      - alert: CriticalAPIErrorRate
+        expr: rate(http_requests_total{job="socialmapper-api",status=~"5.."}[5m]) / rate(http_requests_total{job="socialmapper-api"}[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Critical API error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
+
+      # API Availability
+      - alert: APIDown
+        expr: up{job="socialmapper-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "SocialMapper API is down"
+          description: "SocialMapper API has been down for more than 1 minute"
+
+  - name: frontend_performance
+    rules:
+      # Frontend Availability
+      - alert: FrontendDown
+        expr: up{job="socialmapper-ui"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: frontend
+        annotations:
+          summary: "SocialMapper Frontend is down"
+          description: "SocialMapper Frontend has been down for more than 1 minute"
+
+      # External Site Monitoring
+      - alert: ExternalSiteDown
+        expr: probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: external
+        annotations:
+          summary: "External site is down"
+          description: "{{ $labels.instance }} has been down for more than 2 minutes"
+
+      - alert: ExternalSiteSlowResponse
+        expr: probe_http_duration_seconds{job="blackbox"} > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: external
+        annotations:
+          summary: "External site slow response"
+          description: "{{ $labels.instance }} is responding slowly ({{ $value }}s)"
+
+  - name: system_performance
+    rules:
+      # CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for {{ $labels.instance }}"
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is above 90% for {{ $labels.instance }}"
+
+      # Memory Usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 80% for {{ $labels.instance }}"
+
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is above 90% for {{ $labels.instance }}"
+
+      # Disk Usage
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_free_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is above 80% for {{ $labels.instance }} on {{ $labels.mountpoint }}"
+
+  - name: performance_regression
+    rules:
+      # k6 Performance Regression
+      - alert: K6PerformanceRegression
+        expr: k6_http_req_duration_p95 > 1000
+        for: 0m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "k6 performance regression detected"
+          description: "95th percentile response time from k6 tests is {{ $value }}ms"
+
+      - alert: K6HighErrorRate
+        expr: k6_http_req_failed_rate > 0.02
+        for: 0m
+        labels:
+          severity: critical
+          component: performance
+        annotations:
+          summary: "k6 high error rate detected"
+          description: "k6 test error rate is {{ $value | humanizePercentage }}"
+
+      # Lighthouse Performance Regression
+      - alert: LighthousePerformanceRegression
+        expr: lighthouse_performance_score < 80
+        for: 0m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Lighthouse performance regression detected"
+          description: "Lighthouse performance score is {{ $value }}"
+
+      - alert: LighthouseCoreWebVitalsRegression
+        expr: lighthouse_lcp_score > 2500
+        for: 0m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Lighthouse Core Web Vitals regression"
+          description: "Largest Contentful Paint is {{ $value }}ms"
+
+  - name: database_performance
+    rules:
+      # Redis Performance
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value }}% for {{ $labels.instance }}"
+
+      - alert: RedisSlowQueries
+        expr: increase(redis_slowlog_length[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis slow queries detected"
+          description: "{{ $value }} slow queries detected in the last 5 minutes"
+
+      # PostgreSQL Performance (if used)
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 60
+        for: 2m
+        labels:
+          severity: warning
+          component: postgresql
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "Long running queries detected on {{ $labels.instance }}"
+
+  - name: business_metrics
+    rules:
+      # Analysis Success Rate
+      - alert: LowAnalysisSuccessRate
+        expr: rate(socialmapper_analysis_completed_total[10m]) / rate(socialmapper_analysis_started_total[10m]) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Low analysis success rate"
+          description: "Analysis success rate is {{ $value | humanizePercentage }}"
+
+      # User Experience Metrics
+      - alert: HighAnalysisQueueTime
+        expr: socialmapper_analysis_queue_duration_seconds > 300
+        for: 2m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "High analysis queue time"
+          description: "Analysis queue time is {{ $value }}s"

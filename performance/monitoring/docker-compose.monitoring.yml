@@ -1,0 +1,182 @@
+# Docker Compose for Performance Monitoring Stack
+# This sets up Prometheus, Grafana, and related monitoring tools
+
+version: '3.8'
+
+services:
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: socialmapper-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+      - ./performance_rules.yml:/etc/prometheus/performance_rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - monitoring
+
+  # Grafana - Metrics visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: socialmapper-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/dashboards
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # AlertManager - Alert routing and notification
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: socialmapper-alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - monitoring
+
+  # Node Exporter - System metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.0
+    container_name: socialmapper-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+
+  # Redis Exporter - Redis metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.51.0
+    container_name: socialmapper-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=${REDIS_URL:-redis://redis:6379}
+    networks:
+      - monitoring
+    depends_on:
+      - redis
+
+  # Blackbox Exporter - External endpoint monitoring
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: socialmapper-blackbox-exporter
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    networks:
+      - monitoring
+
+  # Custom Performance Metrics Collector
+  performance-collector:
+    build:
+      context: ./collectors
+      dockerfile: Dockerfile
+    container_name: socialmapper-performance-collector
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PROMETHEUS_GATEWAY=${PROMETHEUS_GATEWAY:-prometheus:9090}
+    volumes:
+      - ../results:/app/results:ro
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # k6 Results Webhook Receiver
+  k6-webhook:
+    build:
+      context: ./webhooks
+      dockerfile: Dockerfile.k6
+    container_name: socialmapper-k6-webhook
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # Lighthouse Results Webhook Receiver
+  lighthouse-webhook:
+    build:
+      context: ./webhooks
+      dockerfile: Dockerfile.lighthouse
+    container_name: socialmapper-lighthouse-webhook
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+
+  # Redis for caching (if not already running)
+  redis:
+    image: redis:7.2-alpine
+    container_name: socialmapper-monitoring-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - monitoring
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+  redis-data:
+
+networks:
+  monitoring:
+    driver: bridge
+    external: false

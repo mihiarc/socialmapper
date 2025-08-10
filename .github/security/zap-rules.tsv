@@ -1,0 +1,52 @@
+# ZAP Scanning Rules Configuration
+# Format: RuleID	Threshold	URL
+# Threshold: OFF, INFO, LOW, MEDIUM, HIGH
+
+# Disable false positives for local development
+10015	OFF	http://localhost:3000	# Incomplete or No Cache-control and Pragma HTTP Header Set
+10017	LOW	*	# Cross-Domain JavaScript Source File Inclusion
+10020	INFO	*	# X-Frame-Options Header Not Set
+10021	INFO	*	# X-Content-Type-Options Header Missing
+10023	INFO	*	# Information Disclosure - Debug Error Messages
+10024	INFO	*	# Information Disclosure - Sensitive Information in URL
+10025	INFO	*	# Information Disclosure - Sensitive Information in HTTP Referrer Header
+10027	INFO	*	# Information Disclosure - Suspicious Comments
+10032	INFO	*	# Viewstate Without MAC Signature
+10040	LOW	*	# Secure Pages Include Mixed Content
+10054	LOW	*	# Cookie Without SameSite Attribute
+10055	INFO	*	# Content Security Policy (CSP) Header Not Set
+10056	INFO	*	# X-Debug-Token Information Leak
+10061	LOW	*	# X-AspNet-Version Response Header Scanner
+10094	INFO	*	# Base64 Disclosure
+10095	INFO	*	# Backup File Disclosure
+10096	INFO	*	# Timestamp Disclosure
+10097	INFO	*	# Hash Disclosure
+10098	INFO	*	# Cross-Domain Misconfiguration
+10105	INFO	*	# Weak Authentication Method
+10202	INFO	*	# Absence of Anti-CSRF Tokens
+
+# Critical Rules - Always HIGH
+40003	HIGH	*	# CRLF Injection
+40008	HIGH	*	# Parameter Tampering
+40009	HIGH	*	# Server Side Include
+40012	HIGH	*	# Cross Site Scripting (Reflected)
+40014	HIGH	*	# Cross Site Scripting (Persistent)
+40016	HIGH	*	# Cross Site Scripting (Persistent) - Prime
+40017	HIGH	*	# Cross Site Scripting (Persistent) - Spider
+40018	HIGH	*	# SQL Injection
+40019	HIGH	*	# SQL Injection - MySQL
+40020	HIGH	*	# SQL Injection - Hypersonic
+40021	HIGH	*	# SQL Injection - Oracle
+40022	HIGH	*	# SQL Injection - PostgreSQL
+40023	HIGH	*	# Possible Username Enumeration
+40024	HIGH	*	# SQL Injection - SQLite
+40026	HIGH	*	# Cross Site Scripting (DOM Based)
+40027	HIGH	*	# SQL Injection - MsSQL
+90020	HIGH	*	# Remote OS Command Injection
+90021	HIGH	*	# XPath Injection
+90022	HIGH	*	# Application Error Disclosure
+90023	HIGH	*	# XML External Entity Attack
+90024	HIGH	*	# Generic Padding Oracle
+90025	HIGH	*	# Expression Language Injection
+90028	HIGH	*	# Insecure HTTP Method
+90034	HIGH	*	# Cloud Metadata Potentially Exposed

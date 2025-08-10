@@ -25,6 +25,11 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 import type { InterviewRequest as InterviewRequestType } from "@/types/api";
 import { useRequestInterviewMutation } from '@store/api/feedbackApi';

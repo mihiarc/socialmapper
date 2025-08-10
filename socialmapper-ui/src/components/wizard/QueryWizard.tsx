@@ -432,11 +432,6 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
           current={currentStep} 
           responsive={true}
           size="small"
-          style={{
-            '@media (max-width: 576px)': {
-              fontSize: '12px'
-            }
-          }}
         >
           {WIZARD_STEPS.map((step, index) => (
             <Step

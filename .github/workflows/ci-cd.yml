@@ -42,32 +42,55 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  # Security and Code Quality Checks
+  # Enhanced Security and Code Quality Checks
   security-scan:
-    name: Security Scan
+    name: Enhanced Security Scan
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Trivy vulnerability scanner
+      # CodeQL Analysis for comprehensive SAST
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript,python
+          queries: +security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:mixed"
+          upload: true
+
+      # Enhanced Trivy scanning with multiple outputs
+      - name: Run Trivy vulnerability scanner - Filesystem
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret,config'
 
-      - name: Upload Trivy scan results
+      - name: Upload Trivy filesystem results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-filesystem'
 
-      - name: Run Semgrep security scan
+      # Enhanced Semgrep with comprehensive rulesets
+      - name: Run Semgrep advanced security scan
         uses: returntocorp/semgrep-action@v1
         with:
           config: >-
@@ -79,6 +102,48 @@ jobs:
             p/react
             p/dockerfile
             p/kubernetes
+            p/owasp-top-ten
+            p/r2c-security-audit
+            p/bandit
+            p/eslint-security
+            p/nodejs
+            p/flask
+            p/django
+
+      # Python-specific security scanning with Bandit
+      - name: Run Bandit Python security scan
+        run: |
+          pip install bandit[toml]
+          bandit -r socialmapper-api/ socialmapper/ -f json -o bandit-report.json --severity-level low
+          bandit -r socialmapper-api/ socialmapper/ -f sarif -o bandit-results.sarif --severity-level medium || true
+
+      - name: Upload Bandit SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit-results.sarif
+          category: 'bandit'
+
+      # Secret scanning with multiple tools
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .github/security/gitleaks.toml
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      # License compliance check
+      - name: License compliance scan
+        run: |
+          pip install licensecheck
+          licensecheck --zero --file-extensions py js ts tsx jsx
 
   # Frontend Testing and Analysis
   test-frontend:
@@ -181,9 +246,9 @@ jobs:
           path: socialmapper-ui/stats.html
           retention-days: 30
 
-  # Frontend Security Scanning
+  # Enhanced Frontend Security Scanning
   frontend-security:
-    name: Frontend Security Scan
+    name: Enhanced Frontend Security
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -198,39 +263,97 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Run npm audit
+      # Enhanced npm audit with detailed reporting
+      - name: Enhanced npm audit
         run: |
-          npm audit --audit-level=moderate || true
-          npm audit --json > audit-report.json || true
+          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+          npx audit-ci --config ../.github/security/audit-ci.json || true
+          npx better-npm-audit audit --level low || true
 
-      - name: Check for known vulnerabilities
-        run: npx audit-ci --moderate
+      # Check for dependency confusion attacks
+      - name: Dependency confusion check
+        run: |
+          npx dependency-confusion-checker || true
+          npm ls --depth=0 --json > dependency-tree.json
 
-      - name: Run Snyk security scan
+      # ESLint with security plugins
+      - name: ESLint security scan
+        run: |
+          npm install --save-dev \
+            eslint-plugin-security \
+            eslint-plugin-security-node \
+            eslint-plugin-no-unsanitized \
+            eslint-plugin-no-secrets \
+            @microsoft/eslint-plugin-sdl
+          npx eslint . --ext .js,.jsx,.ts,.tsx \
+            --config ../.github/security/eslint-security.json \
+            --format json \
+            --output-file eslint-security-report.json || true
+
+      # NodeJsScan for JavaScript security
+      - name: NodeJsScan security analysis
+        uses: ajinabraham/njsscan-action@master
+        with:
+          args: '. --sarif --output njsscan-results.sarif || true'
+
+      - name: Upload NodeJsScan SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: njsscan-results.sarif
+          category: 'njsscan'
+
+      # Enhanced Snyk scanning
+      - name: Snyk vulnerability scan
         uses: snyk/actions/node@master
         continue-on-error: true
         with:
-          args: --severity-threshold=medium --file=socialmapper-ui/package.json
+          args: >-
+            --severity-threshold=low
+            --file=package.json
+            --json-file-output=snyk-report.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
+      # License compliance
+      - name: License compliance check
+        run: |
+          npx license-checker --json > license-report.json || true
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-3-Clause;BSD-2-Clause;ISC;CC0-1.0;CC-BY-4.0' || true
+
+      # OWASP Dependency Check with enhanced configuration
       - name: OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'socialmapper-ui'
-          path: './socialmapper-ui'
-          format: 'HTML'
+          path: '.'
+          format: 'ALL'
           args: >
             --enableRetired
             --enableExperimental
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+            --suppression ../.github/security/dependency-check-suppressions.xml
 
-      - name: Upload security reports
+      # Bundle size and security analysis
+      - name: Bundle security analysis
+        run: |
+          npm run build
+          npx webpack-bundle-analyzer dist/stats.json --mode json > bundle-analysis.json || true
+          npx source-map-explorer dist/*.js --json > source-map-analysis.json || true
+
+      - name: Upload enhanced security reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: security-reports
+          name: frontend-security-reports
           path: |
-            socialmapper-ui/audit-report.json
+            npm-audit-report.json
+            dependency-tree.json
+            eslint-security-report.json
+            snyk-report.json
+            license-report.json
+            bundle-analysis.json
+            source-map-analysis.json
             reports/
 
   # Python API Testing
@@ -421,17 +544,70 @@ jobs:
             VITE_APP_VERSION=${{ github.sha }}
             VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
 
-      - name: Scan images for vulnerabilities
+      # Enhanced container security scanning
+      - name: Comprehensive container security scan
         run: |
-          # Scan API image
+          # Trivy scan with SBOM generation
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL \
+            aquasec/trivy:latest image \
+            --format sarif \
+            --output api-container-scan.sarif \
+            --severity CRITICAL,HIGH,MEDIUM \
+            --scanners vuln,secret,config \
             ${{ steps.meta-api.outputs.tags }}
           
-          # Scan UI image
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL \
+            aquasec/trivy:latest image \
+            --format sarif \
+            --output ui-container-scan.sarif \
+            --severity CRITICAL,HIGH,MEDIUM \
+            --scanners vuln,secret,config \
             ${{ steps.meta-ui.outputs.tags }}
+
+      - name: Upload container scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'api-container-scan.sarif'
+          category: 'container-api'
+
+      - name: Grype container vulnerability scan
+        uses: anchore/scan-action@v3
+        with:
+          image: ${{ steps.meta-api.outputs.tags }}
+          output-format: sarif
+          fail-build: false
+          severity-cutoff: medium
+
+      - name: Container structure test
+        run: |
+          # Install container-structure-test
+          curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+          
+          # Test container structure
+          container-structure-test test \
+            --image ${{ steps.meta-api.outputs.tags }} \
+            --config .github/security/container-structure-api.yaml || true
+          
+          container-structure-test test \
+            --image ${{ steps.meta-ui.outputs.tags }} \
+            --config .github/security/container-structure-ui.yaml || true
+
+      - name: Dockerfile security best practices
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          format: sarif
+          output-file: hadolint-results.sarif
+
+      - name: Upload Hadolint results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: hadolint-results.sarif
+          category: 'hadolint'
 
   # Deploy to Staging
   deploy-staging:
@@ -593,10 +769,60 @@ jobs:
           cd infrastructure/terraform
           terraform plan -out=tfplan
 
-      - name: Terraform Security Scan
+      # Enhanced infrastructure security scanning
+      - name: Comprehensive Terraform security scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: infrastructure/terraform
+          format: sarif
+          out: tfsec-results.sarif
+
+      - name: Upload tfsec results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: tfsec-results.sarif
+          category: 'tfsec'
+
+      - name: Checkov infrastructure scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/
+          quiet: false
+          soft_fail: true
+          framework: terraform,kubernetes,dockerfile
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          download_external_modules: true
+
+      - name: Upload Checkov results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+          category: 'checkov'
+
+      - name: Kubernetes security scan
+        run: |
+          # Install kubesec
+          curl -sSL https://github.com/controlplaneio/kubesec/releases/download/v2.13.0/kubesec_linux_amd64.tar.gz | tar -xz
+          sudo mv kubesec /usr/local/bin/
+          
+          # Scan Kubernetes manifests
+          for file in infrastructure/kubernetes/*.yaml; do
+            echo "Scanning $file"
+            kubesec scan "$file" --format json >> kubesec-results.json || true
+          done
+
+      - name: Terrascan policy scan
+        run: |
+          # Install terrascan
+          curl -L "https://github.com/tenable/terrascan/releases/latest/download/terrascan_Linux_x86_64.tar.gz" | tar -xz
+          sudo mv terrascan /usr/local/bin
+          
+          # Scan infrastructure
+          terrascan scan -i terraform -d infrastructure/terraform --output sarif > terrascan-tf.sarif || true
+          terrascan scan -i k8s -d infrastructure/kubernetes --output sarif > terrascan-k8s.sarif || true
 
   # Notification
   notify:

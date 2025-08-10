@@ -1,0 +1,113 @@
+# Gitleaks Configuration for SocialMapper
+# Enhanced configuration for detecting secrets and credentials
+
+title = "SocialMapper Gitleaks Configuration"
+
+# Extend the base configuration
+[extend]
+useDefault = true
+
+# Custom rules for SocialMapper
+[[rules]]
+id = "census-api-key"
+description = "Census API Key"
+regex = '''(?i)(census[_\-\s]?api[_\-\s]?key)[\s]*[=:]\s*["']?([a-zA-Z0-9]{32,})["']?'''
+tags = ["api", "census"]
+
+[[rules]]
+id = "mapbox-token"
+description = "Mapbox Access Token"
+regex = '''(?i)(mapbox[_\-\s]?token|MAPBOX_ACCESS_TOKEN)[\s]*[=:]\s*["']?(pk\.[a-zA-Z0-9]{32,}\.[a-zA-Z0-9]{22,})["']?'''
+tags = ["api", "mapbox"]
+
+[[rules]]
+id = "aws-credentials"
+description = "AWS Credentials"
+regex = '''(?i)(aws[_\-\s]?access[_\-\s]?key[_\-\s]?id|aws[_\-\s]?secret[_\-\s]?access[_\-\s]?key)[\s]*[=:]\s*["']?([A-Z0-9]{20}|[a-zA-Z0-9/+=]{40})["']?'''
+tags = ["aws", "cloud"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+'''
+tags = ["jwt", "auth"]
+
+[[rules]]
+id = "redis-url"
+description = "Redis Connection String"
+regex = '''(?i)redis://[a-zA-Z0-9:@.-]+:[0-9]+(/[0-9]+)?'''
+tags = ["database", "redis"]
+
+[[rules]]
+id = "database-url"
+description = "Database Connection String"
+regex = '''(?i)(postgres|postgresql|mysql|mongodb)://[a-zA-Z0-9:@.-]+:[0-9]+/[a-zA-Z0-9_-]+'''
+tags = ["database"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |DSA |ED25519 )?PRIVATE KEY-----'''
+tags = ["key", "crypto"]
+
+[[rules]]
+id = "api-endpoint-with-key"
+description = "API Endpoint with embedded key"
+regex = '''https?://[a-zA-Z0-9.-]+/api/[a-zA-Z0-9/]*\?.*api[_-]?key=[a-zA-Z0-9]{16,}'''
+tags = ["api", "url"]
+
+# Allowlist patterns
+[[allowlist]]
+description = "Allow localhost URLs"
+regexes = [
+    '''127\.0\.0\.1''',
+    '''localhost''',
+    '''0\.0\.0\.0'''
+]
+
+[[allowlist]]
+description = "Allow example/test keys"
+regexes = [
+    '''pk\.test''',
+    '''test[_-]?key''',
+    '''example[_-]?key''',
+    '''dummy[_-]?key''',
+    '''fake[_-]?key'''
+]
+
+[[allowlist]]
+description = "Allow documentation"
+paths = [
+    '''.*\.md$''',
+    '''docs/.*''',
+    '''.*\.rst$'''
+]
+
+[[allowlist]]
+description = "Allow test files"
+paths = [
+    '''.*test.*\.py$''',
+    '''.*test.*\.js$''',
+    '''.*test.*\.ts$''',
+    '''.*\.test\.(js|ts|tsx|jsx)$''',
+    '''.*\.spec\.(js|ts|tsx|jsx)$'''
+]
+
+# Entropy checks for high-entropy strings
+[allowlist.commits]
+commits = []
+
+# Additional entropy configuration
+[[rules]]
+id = "high-entropy-base64"
+description = "High entropy base64 string"
+regex = '''[a-zA-Z0-9+/]{40,}={0,2}'''
+entropy = 4.5
+tags = ["entropy"]
+
+[[rules]]
+id = "high-entropy-hex"
+description = "High entropy hex string"
+regex = '''[a-f0-9]{40,}'''
+entropy = 3.5
+tags = ["entropy"]

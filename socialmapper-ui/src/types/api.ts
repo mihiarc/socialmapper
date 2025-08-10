@@ -333,6 +333,8 @@ export interface FeedbackSummary extends BaseResponse {
     negative: number;
   };
   period_days: number;
+  response_rate?: number;
+  recent_feedback_count?: number;
 }
 
 export interface AnalyticsSummary extends BaseResponse {
@@ -344,6 +346,10 @@ export interface AnalyticsSummary extends BaseResponse {
   conversion_rate: number;
   average_session_duration_ms: number;
   period_days: number;
+  total_sessions?: number;
+  total_page_views?: number;
+  total_conversions?: number;
+  user_journey_funnel?: Array<{ stage: string; users: number; dropoff_rate?: number }>;
 }
 
 export interface FeedbackInsights extends BaseResponse {
@@ -353,4 +359,6 @@ export interface FeedbackInsights extends BaseResponse {
   improvement_suggestions: Array<{ suggestion: string; impact: 'low' | 'medium' | 'high' }>;
   feature_adoption_rates: Record<string, number>;
   period_days: number;
+  sentiment_score?: number;
+  common_themes?: string[];
 }

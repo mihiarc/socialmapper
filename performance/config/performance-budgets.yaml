@@ -1,0 +1,142 @@
+# Performance budgets and thresholds for SocialMapper
+# These budgets enforce performance standards across different metrics
+
+api_performance:
+  endpoints:
+    health:
+      response_time:
+        target: 50ms
+        warning: 100ms
+        error: 200ms
+      error_rate:
+        target: 0.1%
+        warning: 0.5%
+        error: 1%
+      throughput:
+        min_rps: 500
+        target_rps: 1000
+    
+    metadata:
+      response_time:
+        target: 150ms
+        warning: 300ms
+        error: 500ms
+      error_rate:
+        target: 0.5%
+        warning: 1%
+        error: 2%
+      throughput:
+        min_rps: 200
+        target_rps: 500
+    
+    analysis:
+      response_time:
+        target: 1000ms
+        warning: 2000ms
+        error: 5000ms
+      error_rate:
+        target: 1%
+        warning: 2%
+        error: 5%
+      throughput:
+        min_rps: 50
+        target_rps: 100
+
+  load_profiles:
+    normal_load:
+      concurrent_users: 50
+      duration: 5m
+      ramp_up: 2m
+    
+    stress_load:
+      concurrent_users: 150
+      duration: 10m
+      ramp_up: 3m
+    
+    spike_load:
+      concurrent_users: 300
+      duration: 2m
+      ramp_up: 30s
+
+frontend_performance:
+  core_web_vitals:
+    largest_contentful_paint:
+      good: 2.5s
+      needs_improvement: 4.0s
+      poor: ">4.0s"
+    
+    first_input_delay:
+      good: 100ms
+      needs_improvement: 300ms
+      poor: ">300ms"
+    
+    cumulative_layout_shift:
+      good: 0.1
+      needs_improvement: 0.25
+      poor: ">0.25"
+
+  lighthouse_scores:
+    performance:
+      target: 90
+      warning: 80
+      error: 70
+    
+    accessibility:
+      target: 95
+      warning: 90
+      error: 85
+    
+    best_practices:
+      target: 95
+      warning: 90
+      error: 85
+    
+    seo:
+      target: 90
+      warning: 80
+      error: 70
+
+  resource_budgets:
+    total_size: 4MB
+    javascript: 500KB
+    css: 100KB
+    images: 2MB
+    fonts: 150KB
+    
+  timing_budgets:
+    first_contentful_paint: 2.0s
+    speed_index: 3.0s
+    time_to_interactive: 3.5s
+
+infrastructure_performance:
+  cpu_usage:
+    warning: 70%
+    error: 85%
+  
+  memory_usage:
+    warning: 80%
+    error: 90%
+  
+  disk_usage:
+    warning: 75%
+    error: 85%
+  
+  network_latency:
+    target: 50ms
+    warning: 100ms
+    error: 200ms
+
+monitoring_thresholds:
+  alert_frequency:
+    performance_regression: 5m
+    error_spike: 1m
+    availability_issue: 1m
+  
+  notification_channels:
+    slack: "#performance-alerts"
+    email: "devops@socialmapper.com"
+  
+  escalation:
+    level_1: "5 consecutive failures"
+    level_2: "10 consecutive failures" 
+    level_3: "20 consecutive failures"

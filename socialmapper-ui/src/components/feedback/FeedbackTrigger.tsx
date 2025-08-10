@@ -116,6 +116,7 @@ const FeedbackTrigger: React.FC<FeedbackTriggerProps> = ({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [autoTrigger, hasAutoTriggered, triggerDelay]);
 
   const handleFeedbackSubmit = async (feedback: FeedbackRequest) => {

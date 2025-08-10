@@ -1,0 +1,668 @@
+# Enhanced CI/CD Pipeline with Comprehensive Security
+name: Enhanced CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'socialmapper/**'
+      - 'socialmapper-api/**'
+      - 'socialmapper-ui/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'socialmapper/**'
+      - 'socialmapper-api/**'
+      - 'socialmapper-ui/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      security_scan_level:
+        description: 'Security scan depth'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+        - quick
+        - standard
+        - comprehensive
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  EKS_CLUSTER_NAME: socialmapper-prod
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  SECURITY_GATE_ENABLED: true
+  MAX_CRITICAL_ISSUES: 0
+  MAX_HIGH_ISSUES: 3
+  MAX_MEDIUM_ISSUES: 10
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # ==================== Pre-flight Security Checks ====================
+  
+  pre-security-check:
+    name: Pre-flight Security Check
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+      security_level: ${{ steps.gate.outputs.security_level }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Quick secret scan
+        id: secrets
+        uses: trufflesecurity/trufflehog@main
+        continue-on-error: true
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified --max-depth 1
+      
+      - name: Evaluate pre-flight gate
+        id: gate
+        run: |
+          if [ "${{ steps.secrets.outcome }}" == "failure" ]; then
+            echo "::error::Secrets detected in code! Blocking pipeline."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Determine security scan level
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "security_level=standard" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "security_level=comprehensive" >> $GITHUB_OUTPUT
+          else
+            echo "security_level=quick" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+  # ==================== Enhanced Security Scanning ====================
+  
+  sast-analysis:
+    name: SAST Analysis
+    runs-on: ubuntu-latest
+    needs: [pre-security-check]
+    if: needs.pre-security-check.outputs.proceed == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript,python
+          queries: +security-extended,security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
+      
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          upload: true
+          add-snippet-context: true
+      
+      - name: Run Semgrep advanced scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+            p/javascript
+            p/typescript
+            p/react
+            p/dockerfile
+            p/kubernetes
+            p/owasp-top-ten
+            p/r2c-security-audit
+      
+      - name: Upload SAST results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: sast-results
+          path: |
+            .sarif
+            semgrep.sarif
+
+  python-security-enhanced:
+    name: Python Security Enhanced
+    runs-on: ubuntu-latest
+    needs: [pre-security-check]
+    if: needs.pre-security-check.outputs.proceed == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install security tools
+        run: |
+          pip install --upgrade pip
+          pip install bandit[toml] safety pip-audit pylint mypy
+      
+      - name: Run Bandit with custom config
+        run: |
+          bandit -r socialmapper-api/ -f json -o bandit-report.json --configfile .bandit
+          bandit -r socialmapper-api/ -f sarif -o bandit-results.sarif --configfile .bandit || true
+      
+      - name: Check dependencies with pip-audit
+        run: |
+          cd socialmapper-api
+          pip-audit --desc --format json --output pip-audit-report.json || true
+          pip-audit --desc --format cyclonedx --output pip-audit-sbom.json || true
+      
+      - name: Run Safety with policy
+        run: |
+          cd socialmapper-api
+          safety check --json --output safety-report.json || true
+          safety check --policy-file ../.github/security/safety-policy.json || true
+      
+      - name: Static type checking
+        run: |
+          cd socialmapper-api
+          mypy api_server/ --ignore-missing-imports --json-report mypy-report || true
+      
+      - name: Upload Python security artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: python-security-enhanced
+          path: |
+            bandit-report.json
+            bandit-results.sarif
+            socialmapper-api/pip-audit-report.json
+            socialmapper-api/pip-audit-sbom.json
+            socialmapper-api/safety-report.json
+            socialmapper-api/mypy-report
+      
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit-enhanced
+
+  javascript-security-enhanced:
+    name: JavaScript Security Enhanced
+    runs-on: ubuntu-latest
+    needs: [pre-security-check]
+    if: needs.pre-security-check.outputs.proceed == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install dependencies and security tools
+        run: |
+          cd socialmapper-ui
+          npm ci
+          npm install --save-dev \
+            eslint-plugin-security \
+            eslint-plugin-security-node \
+            eslint-plugin-no-unsanitized \
+            eslint-plugin-no-secrets \
+            @microsoft/eslint-plugin-sdl \
+            better-npm-audit \
+            npm-audit-resolver \
+            dependency-confusion-checker \
+            license-checker
+      
+      - name: Run enhanced ESLint security scan
+        run: |
+          cd socialmapper-ui
+          npx eslint . --ext .js,.jsx,.ts,.tsx \
+            --config ../.github/security/eslint-security.json \
+            --format json \
+            --output-file eslint-security-report.json || true
+      
+      - name: Advanced npm audit
+        run: |
+          cd socialmapper-ui
+          npm audit --json > npm-audit-report.json || true
+          npx audit-ci --config ../.github/security/audit-ci.json || true
+          npx better-npm-audit audit --level moderate || true
+      
+      - name: Check for dependency confusion
+        run: |
+          cd socialmapper-ui
+          npx dependency-confusion-checker || true
+      
+      - name: License compliance check
+        run: |
+          cd socialmapper-ui
+          npx license-checker --json > license-report.json || true
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-3-Clause;BSD-2-Clause;ISC;CC0-1.0' --excludePrivatePackages || true
+      
+      - name: Run NodeJsScan
+        uses: ajinabraham/njsscan-action@master
+        with:
+          args: './socialmapper-ui --sarif --output njsscan-results.sarif || true'
+      
+      - name: Upload JavaScript security artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: javascript-security-enhanced
+          path: |
+            socialmapper-ui/eslint-security-report.json
+            socialmapper-ui/npm-audit-report.json
+            socialmapper-ui/license-report.json
+            njsscan-results.sarif
+      
+      - name: Upload NodeJsScan SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: njsscan-results.sarif
+          category: njsscan-enhanced
+
+  container-security-enhanced:
+    name: Container Security Enhanced
+    runs-on: ubuntu-latest
+    needs: [pre-security-check]
+    if: needs.pre-security-check.outputs.proceed == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build containers for scanning
+        run: |
+          docker build -t socialmapper-api:scan ./socialmapper-api
+          docker build -t socialmapper-ui:scan ./socialmapper-ui
+      
+      - name: Run Trivy comprehensive scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'socialmapper-api:scan'
+          format: 'sarif'
+          output: 'trivy-api-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret,config,license'
+          exit-code: '0'
+      
+      - name: Run Grype vulnerability scan
+        uses: anchore/scan-action@v3
+        with:
+          image: 'socialmapper-api:scan'
+          output-format: sarif
+          fail-build: false
+          severity-cutoff: medium
+      
+      - name: Run Syft for SBOM generation
+        uses: anchore/sbom-action@v0
+        with:
+          image: 'socialmapper-api:scan'
+          format: spdx-json
+          output-file: api-sbom.spdx.json
+      
+      - name: Container structure test
+        run: |
+          curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+          
+          container-structure-test test \
+            --image socialmapper-api:scan \
+            --config .github/security/container-structure-api.yaml || true
+          
+          container-structure-test test \
+            --image socialmapper-ui:scan \
+            --config .github/security/container-structure-ui.yaml || true
+      
+      - name: Dockerfile linting with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          format: sarif
+          output-file: hadolint-results.sarif
+          failure-threshold: warning
+      
+      - name: Upload container security artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: container-security-enhanced
+          path: |
+            trivy-api-results.sarif
+            hadolint-results.sarif
+            api-sbom.spdx.json
+      
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-api-results.sarif
+          category: trivy-enhanced
+
+  infrastructure-security-enhanced:
+    name: Infrastructure Security Enhanced
+    runs-on: ubuntu-latest
+    needs: [pre-security-check]
+    if: needs.pre-security-check.outputs.proceed == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup tools
+        run: |
+          # Install tfsec
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          
+          # Install terrascan
+          curl -L "https://github.com/tenable/terrascan/releases/latest/download/terrascan_Linux_x86_64.tar.gz" | tar -xz
+          sudo mv terrascan /usr/local/bin
+          
+          # Install kubesec
+          curl -sSL https://github.com/controlplaneio/kubesec/releases/download/v2.13.0/kubesec_linux_amd64.tar.gz | tar -xz
+          sudo mv kubesec /usr/local/bin/
+      
+      - name: Run tfsec with custom checks
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: infrastructure/terraform
+          format: sarif
+          out: tfsec-results.sarif
+          additional_args: --minimum-severity MEDIUM
+      
+      - name: Run Checkov comprehensive scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/
+          quiet: false
+          soft_fail: true
+          framework: terraform,kubernetes,dockerfile,secrets
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          download_external_modules: true
+          enable_secrets_scan_all_files: true
+      
+      - name: Run Terrascan
+        run: |
+          terrascan scan -i terraform -d infrastructure/terraform -o sarif > terrascan-terraform.sarif || true
+          terrascan scan -i k8s -d infrastructure/kubernetes -o sarif > terrascan-k8s.sarif || true
+      
+      - name: Kubernetes security with Kubesec
+        run: |
+          for file in infrastructure/kubernetes/*.yaml; do
+            echo "Scanning $file with kubesec"
+            kubesec scan "$file" -o json > "kubesec-$(basename $file .yaml).json" || true
+          done
+      
+      - name: Run KICS scan
+        uses: checkmarx/kics-github-action@v1.7.0
+        with:
+          path: infrastructure/
+          output_path: kics-results/
+          output_formats: 'json,sarif'
+          fail_on: high
+          enable_comments: true
+      
+      - name: Upload infrastructure security artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: infrastructure-security-enhanced
+          path: |
+            tfsec-results.sarif
+            checkov-results.sarif
+            terrascan-*.sarif
+            kubesec-*.json
+            kics-results/
+      
+      - name: Upload IaC SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: tfsec-results.sarif
+          category: tfsec-enhanced
+
+  # ==================== Security Gate Decision ====================
+  
+  security-gate:
+    name: Security Gate Decision
+    runs-on: ubuntu-latest
+    needs: [
+      sast-analysis,
+      python-security-enhanced,
+      javascript-security-enhanced,
+      container-security-enhanced,
+      infrastructure-security-enhanced
+    ]
+    if: always()
+    outputs:
+      gate_passed: ${{ steps.evaluate.outputs.gate_passed }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all security artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: security-artifacts
+      
+      - name: Analyze security findings
+        id: analyze
+        run: |
+          python3 .github/scripts/analyze-security-findings.py \
+            --artifacts-dir security-artifacts \
+            --output-file security-summary.json
+      
+      - name: Evaluate security gate
+        id: evaluate
+        run: |
+          # Read the security summary
+          CRITICAL=$(jq '.summary.critical' security-summary.json)
+          HIGH=$(jq '.summary.high' security-summary.json)
+          MEDIUM=$(jq '.summary.medium' security-summary.json)
+          
+          echo "Security findings: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          
+          # Check against thresholds
+          if [ "$CRITICAL" -gt "${{ env.MAX_CRITICAL_ISSUES }}" ]; then
+            echo "::error::Critical security issues exceed threshold ($CRITICAL > ${{ env.MAX_CRITICAL_ISSUES }})"
+            echo "gate_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          if [ "$HIGH" -gt "${{ env.MAX_HIGH_ISSUES }}" ]; then
+            echo "::warning::High security issues exceed threshold ($HIGH > ${{ env.MAX_HIGH_ISSUES }})"
+            if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "gate_passed=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+          
+          if [ "${{ env.SECURITY_GATE_ENABLED }}" == "true" ] && [ "${{ github.event.inputs.force_deploy }}" != "true" ]; then
+            if [ "$MEDIUM" -gt "${{ env.MAX_MEDIUM_ISSUES }}" ]; then
+              echo "::warning::Medium security issues exceed threshold ($MEDIUM > ${{ env.MAX_MEDIUM_ISSUES }})"
+            fi
+          fi
+          
+          echo "gate_passed=true" >> $GITHUB_OUTPUT
+      
+      - name: Generate security report
+        run: |
+          python3 .github/scripts/generate-security-report.py \
+            --input-dir security-artifacts \
+            --output-file security-report.html
+      
+      - name: Upload final security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report-final
+          path: |
+            security-report.html
+            security-summary.json
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('security-summary.json', 'utf8'));
+            
+            const comment = `## Security Scan Summary
+            
+            | Severity | Count |
+            |----------|-------|
+            | Critical | ${summary.summary.critical} |
+            | High | ${summary.summary.high} |
+            | Medium | ${summary.summary.medium} |
+            | Low | ${summary.summary.low} |
+            
+            **Gate Status:** ${summary.gate_passed ? '✅ Passed' : '❌ Failed'}
+            
+            [View full security report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ==================== Standard CI/CD Jobs ====================
+  # (Include existing test-frontend, test-api, test-package, build-images, deploy-staging, deploy-production jobs here)
+  # These remain the same as in the original ci-cd.yml but with added dependency on security-gate
+
+  # ==================== Post-Deployment Security Validation ====================
+  
+  post-deployment-security:
+    name: Post-Deployment Security Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: needs.deploy-production.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run DAST scan with OWASP ZAP
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: 'https://demo.socialmapper.com'
+          rules_file_name: '.github/security/zap-rules.tsv'
+          cmd_options: '-a -j -l INFO'
+      
+      - name: Run SSL/TLS security check
+        run: |
+          # Install testssl.sh
+          git clone --depth 1 https://github.com/drwetter/testssl.sh.git
+          cd testssl.sh
+          ./testssl.sh --json-pretty https://demo.socialmapper.com > ../tls-scan-results.json
+      
+      - name: Run security headers check
+        run: |
+          curl -X GET "https://securityheaders.com/api/v1/scan?q=demo.socialmapper.com" \
+            -H "Accept: application/json" > security-headers-results.json
+      
+      - name: Upload post-deployment security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: post-deployment-security
+          path: |
+            zap-scan-results/
+            tls-scan-results.json
+            security-headers-results.json
+
+  # ==================== Security Monitoring and Alerting ====================
+  
+  security-notify:
+    name: Security Notifications
+    runs-on: ubuntu-latest
+    needs: [security-gate]
+    if: always()
+    
+    steps:
+      - name: Send security alert on critical findings
+        if: needs.security-gate.outputs.gate_passed == 'false'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              channel: '#security-alerts',
+              attachments: [{
+                color: 'danger',
+                title: 'Critical Security Issues Detected',
+                text: 'Security gate failed for ${{ github.repository }}',
+                fields: [
+                  {
+                    title: 'Repository',
+                    value: '${{ github.repository }}',
+                    short: true
+                  },
+                  {
+                    title: 'Branch',
+                    value: '${{ github.ref }}',
+                    short: true
+                  },
+                  {
+                    title: 'Commit',
+                    value: '${{ github.sha }}',
+                    short: true
+                  },
+                  {
+                    title: 'Action',
+                    value: 'Review security findings immediately',
+                    short: false
+                  }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
