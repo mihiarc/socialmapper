@@ -259,7 +259,7 @@ class SocialMapperClient:
                     location="Chapel Hill, NC",
                     travel_time=20,
                     travel_mode="walk",
-                    poi_categories=["food_and_drink", "healthcare"]
+                    poi_categories=["food_and_drink", "healthcare"],
                 )
 
                 match result:
@@ -275,15 +275,21 @@ class SocialMapperClient:
             # Validate travel mode
             from ..isochrone import TravelMode
 
-            valid_modes = {"drive": TravelMode.DRIVE, "walk": TravelMode.WALK,
-                          "bike": TravelMode.BIKE}
+            valid_modes = {
+                "drive": TravelMode.DRIVE,
+                "walk": TravelMode.WALK,
+                "bike": TravelMode.BIKE,
+            }
 
             if travel_mode not in valid_modes:
                 return Err(
                     Error(
                         type=ErrorType.VALIDATION,
                         message=f"Invalid travel mode: {travel_mode}. Must be one of: {list(valid_modes.keys())}",
-                        context={"travel_mode": travel_mode, "valid_modes": list(valid_modes.keys())},
+                        context={
+                            "travel_mode": travel_mode,
+                            "valid_modes": list(valid_modes.keys()),
+                        },
                     )
                 )
 
@@ -369,8 +375,9 @@ class SocialMapperClient:
                 return self._run_poi_discovery_analysis(config, on_progress)
 
             # Run standard pipeline - filter out POI discovery specific config
-            pipeline_config_dict = {k: v for k, v in config.items()
-                                   if not k.startswith('poi_discovery')}
+            pipeline_config_dict = {
+                k: v for k, v in config.items() if not k.startswith("poi_discovery")
+            }
             pipeline_config = PipelineConfig(**pipeline_config_dict)
             orchestrator = PipelineOrchestrator(pipeline_config)
 
@@ -382,7 +389,7 @@ class SocialMapperClient:
 
             # Calculate demographics summary (aggregate from census data)
             demographics = {}
-            if "census_data" in result_data and hasattr(result_data["census_data"], 'to_dict'):
+            if "census_data" in result_data and hasattr(result_data["census_data"], "to_dict"):
                 census_df = result_data["census_data"]
                 logger.debug(f"Census DataFrame shape: {census_df.shape}")
                 logger.debug(f"Census DataFrame columns: {list(census_df.columns)}")
@@ -415,7 +422,7 @@ class SocialMapperClient:
 
             # Calculate isochrone area if available
             isochrone_area = 0.0
-            if "isochrones" in result_data and hasattr(result_data["isochrones"], 'geometry'):
+            if "isochrones" in result_data and hasattr(result_data["isochrones"], "geometry"):
                 try:
                     # Project to equal area projection for accurate area calculation
                     iso_gdf = result_data["isochrones"].to_crs("EPSG:5070")
@@ -440,7 +447,9 @@ class SocialMapperClient:
                 pois=pois,
                 demographics=demographics,
                 isochrone_area=isochrone_area,
-                isochrones=result_data.get("isochrones"),  # Include the actual isochrone GeoDataFrame
+                isochrones=result_data.get(
+                    "isochrones"
+                ),  # Include the actual isochrone GeoDataFrame
             )
 
             # Cache result if strategy available
@@ -567,7 +576,10 @@ class SocialMapperClient:
             # Validate travel time
             if "travel_time" in config:
                 travel_time = config["travel_time"]
-                if not isinstance(travel_time, int) or not MIN_TRAVEL_TIME <= travel_time <= MAX_TRAVEL_TIME:
+                if (
+                    not isinstance(travel_time, int)
+                    or not MIN_TRAVEL_TIME <= travel_time <= MAX_TRAVEL_TIME
+                ):
                     validation_errors.append(
                         f"Travel time must be an integer between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"
                     )

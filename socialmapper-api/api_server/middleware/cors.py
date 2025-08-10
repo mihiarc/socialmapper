@@ -1,5 +1,4 @@
-"""CORS configuration for the SocialMapper API.
-"""
+"""CORS configuration for the SocialMapper API."""
 
 import logging
 
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def setup_cors(app: FastAPI, settings=None):
     """Configure CORS middleware for the FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
         settings: Application settings (optional)

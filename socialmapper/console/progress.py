@@ -91,6 +91,7 @@ class RichProgressWrapper:
         self.close()
 
     def update(self, n=1):
+        """Update progress by n steps."""
         if self.progress_instance and self.task_id is not None:
             with suppress(Exception):
                 # If progress update fails, just track position
@@ -107,10 +108,12 @@ class RichProgressWrapper:
             console.print(f"  Progress: {self.position}/{self.total} ({percentage:.1f}%)")
 
     def set_description(self, desc):
+        """Update progress bar description."""
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, description=desc)
 
     def close(self):
+        """Close and cleanup progress bar."""
         if self.progress_instance:
             try:
                 self.progress_instance.stop()
@@ -122,6 +125,7 @@ class RichProgressWrapper:
                 self.task_id = None
 
     def write(self, message):
+        """Write message to console."""
         console.print(message)
 
 

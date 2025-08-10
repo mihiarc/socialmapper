@@ -11,14 +11,16 @@ import sys
 from pathlib import Path
 
 
-def run_ty_check(paths: list[str] | None = None, strict: bool = False, verbose: bool = False) -> int:
+def run_ty_check(
+    paths: list[str] | None = None, strict: bool = False, verbose: bool = False
+) -> int:
     """Run ty type checking on the specified paths.
-    
+
     Args:
         paths: List of paths to check. If None, checks entire socialmapper package
         strict: Enable strict mode for comprehensive type checking
         verbose: Enable verbose output
-        
+
     Returns:
         Exit code (0 for success, non-zero for failures)
     """
@@ -59,35 +61,23 @@ def main():
 Examples:
   # Check entire codebase
   python scripts/type_check.py
-  
+
   # Check specific files/modules
   python scripts/type_check.py socialmapper/api/ socialmapper/census/
-  
+
   # Run in strict mode
   python scripts/type_check.py --strict
-  
+
   # Verbose output
   python scripts/type_check.py --verbose
-        """
+        """,
     )
 
-    parser.add_argument(
-        "paths",
-        nargs="*",
-        help="Paths to type check (default: socialmapper/)"
-    )
+    parser.add_argument("paths", nargs="*", help="Paths to type check (default: socialmapper/)")
 
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Enable strict type checking mode"
-    )
+    parser.add_argument("--strict", action="store_true", help="Enable strict type checking mode")
 
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
 
@@ -99,9 +89,7 @@ Examples:
 
     # Run type checking
     exit_code = run_ty_check(
-        paths=args.paths if args.paths else None,
-        strict=args.strict,
-        verbose=args.verbose
+        paths=args.paths if args.paths else None, strict=args.strict, verbose=args.verbose
     )
 
     if exit_code == 0:

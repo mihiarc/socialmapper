@@ -15,9 +15,8 @@ def main():
 
     # 1. Basic POI discovery configuration
     print("1. Basic POI Discovery Configuration:")
-    basic_builder = (
-        SocialMapperBuilder()
-        .with_nearby_poi_discovery("San Francisco, CA", 15, TravelMode.WALK)
+    basic_builder = SocialMapperBuilder().with_nearby_poi_discovery(
+        "San Francisco, CA", 15, TravelMode.WALK
     )
 
     print("   Location: San Francisco, CA")
@@ -110,8 +109,7 @@ def main():
 
     # Invalid travel time
     error_builder1 = (
-        SocialMapperBuilder()
-        .with_nearby_poi_discovery("Chicago, IL", 150)  # Too high
+        SocialMapperBuilder().with_nearby_poi_discovery("Chicago, IL", 150)  # Too high
     )
     errors1 = error_builder1.validate()
     print(f"   Invalid travel time errors: {len(errors1)}")
@@ -120,8 +118,7 @@ def main():
 
     # Invalid coordinates
     error_builder2 = (
-        SocialMapperBuilder()
-        .with_nearby_poi_discovery((200.0, -300.0), 15)  # Invalid coords
+        SocialMapperBuilder().with_nearby_poi_discovery((200.0, -300.0), 15)  # Invalid coords
     )
     errors2 = error_builder2.validate()
     print(f"   Invalid coordinates errors: {len(errors2)}")

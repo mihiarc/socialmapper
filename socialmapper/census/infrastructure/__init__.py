@@ -29,21 +29,21 @@ from .request_deduplicator import AsyncRequestDeduplicator, RequestDeduplicator,
 from .streaming import ModernDataExporter, StreamingDataPipeline, get_streaming_pipeline
 
 __all__ = [
-    "AdaptiveRateLimiter",
     # API Client
     "APIMetrics",
+    "AdaptiveRateLimiter",
     "AsyncRequestDeduplicator",
     "CensusAPIClientImpl",
     "CensusAPIError",
     "CensusAPIRateLimitError",
     # Configuration
     "CensusConfig",
+    # Geocoding
+    "CensusGeocoder",
     # Circuit Breaker
     "CircuitBreaker",
     "CircuitBreakerConfig",
     "CircuitBreakerError",
-    # Geocoding
-    "CensusGeocoder",
     "ConfigurationProvider",
     # Enhanced API Client
     "EnhancedCensusAPIClient",
@@ -64,10 +64,10 @@ __all__ = [
     "NoOpGeocoder",
     "NoOpRateLimiter",
     "NoOpRepository",
+    "RepositoryError",
     # Request Deduplication
     "RequestDeduplicator",
     "RequestTimer",
-    "RepositoryError",
     # Repository
     "SQLiteRepository",
     # Streaming

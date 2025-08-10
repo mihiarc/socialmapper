@@ -129,10 +129,10 @@ MIN_CLUSTER_SIZE = 2
 DEFAULT_SPATIAL_BUFFER_KM = 5.0
 
 # Distance thresholds (meters)
-CITY_SCALE_DISTANCE_M = 50000      # ~50km - city scale
-METRO_SCALE_DISTANCE_M = 100000    # ~100km - metro area scale
-REGIONAL_SCALE_DISTANCE_M = 200000 # ~200km - regional scale
-STATE_SCALE_DISTANCE_M = 400000    # ~400km - state scale
+CITY_SCALE_DISTANCE_M = 50000  # ~50km - city scale
+METRO_SCALE_DISTANCE_M = 100000  # ~100km - metro area scale
+REGIONAL_SCALE_DISTANCE_M = 200000  # ~200km - regional scale
+STATE_SCALE_DISTANCE_M = 400000  # ~400km - state scale
 
 
 # =============================================================================
@@ -202,7 +202,7 @@ PERCENTAGE_TOLERANCE = 0.01
 
 # Default buffer sizes for various operations
 DEFAULT_GEOMETRY_BUFFER_M = 1000  # 1km default buffer
-INTERSECTION_BUFFER_M = 100       # Small buffer for intersection checks
+INTERSECTION_BUFFER_M = 100  # Small buffer for intersection checks
 
 
 # =============================================================================
@@ -279,6 +279,7 @@ HTTP_SERVER_ERROR = 500
 # HELPER FUNCTIONS
 # =============================================================================
 
+
 def validate_travel_time(minutes: int) -> bool:
     """Validate travel time is within acceptable bounds."""
     return MIN_TRAVEL_TIME <= minutes <= MAX_TRAVEL_TIME
@@ -286,8 +287,7 @@ def validate_travel_time(minutes: int) -> bool:
 
 def validate_coordinates(lat: float, lon: float) -> bool:
     """Validate latitude and longitude are within valid ranges."""
-    return (MIN_LATITUDE <= lat <= MAX_LATITUDE and
-            MIN_LONGITUDE <= lon <= MAX_LONGITUDE)
+    return MIN_LATITUDE <= lat <= MAX_LATITUDE and MIN_LONGITUDE <= lon <= MAX_LONGITUDE
 
 
 def get_scale_category(distance_m: float) -> str:

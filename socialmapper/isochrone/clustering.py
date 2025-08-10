@@ -318,16 +318,16 @@ def download_network_for_cluster(
         # Apply mode-specific speed adjustments for more realistic isochrones
         if travel_mode == TravelMode.WALK:
             # For walking, ensure speeds don't exceed reasonable walking speeds
-            for u, v, data in graph.edges(data=True):
-                if 'speed_kph' in data and data['speed_kph'] > 7.0:
-                    data['speed_kph'] = 5.0  # Set to normal walking speed
-                    data['travel_time'] = data['length'] / (data['speed_kph'] * 1000 / 3600)
+            for _u, _v, data in graph.edges(data=True):
+                if "speed_kph" in data and data["speed_kph"] > 7.0:
+                    data["speed_kph"] = 5.0  # Set to normal walking speed
+                    data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
         elif travel_mode == TravelMode.BIKE:
             # For biking, cap speeds to reasonable cycling speeds
-            for u, v, data in graph.edges(data=True):
-                if 'speed_kph' in data and data['speed_kph'] > 30.0:
-                    data['speed_kph'] = 15.0  # Set to normal cycling speed
-                    data['travel_time'] = data['length'] / (data['speed_kph'] * 1000 / 3600)
+            for _u, _v, data in graph.edges(data=True):
+                if "speed_kph" in data and data["speed_kph"] > 30.0:
+                    data["speed_kph"] = 15.0  # Set to normal cycling speed
+                    data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
 
         graph = ox.project_graph(graph)
 
@@ -336,7 +336,7 @@ def download_network_for_cluster(
         cluster.network_crs = graph.graph["crs"]
 
         # Log speed statistics for debugging
-        speeds = [data.get('speed_kph', 0) for u, v, data in graph.edges(data=True)]
+        speeds = [data.get("speed_kph", 0) for u, v, data in graph.edges(data=True)]
         if speeds:
             avg_speed = sum(speeds) / len(speeds)
             min_speed = min(speeds)

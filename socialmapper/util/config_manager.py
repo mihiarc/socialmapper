@@ -10,8 +10,34 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     from ..config.optimization import OptimizationConfig
 
-# Global configuration instance
-_global_config: Optional["OptimizationConfig"] = None
+class OptimizationConfigSingleton:
+    """Singleton manager for OptimizationConfig."""
+
+    _instance: Optional["OptimizationConfig"] = None
+
+    @classmethod
+    def get_instance(cls) -> "OptimizationConfig":
+        """Get the singleton config instance."""
+        if cls._instance is None:
+            from ..config.optimization import OptimizationConfig
+            cls._instance = OptimizationConfig.from_environment()
+        return cls._instance
+
+    @classmethod
+    def set_instance(cls, config: "OptimizationConfig") -> None:
+        """Set the singleton config instance."""
+        cls._instance = config
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset the singleton config to environment defaults."""
+        from ..config.optimization import OptimizationConfig
+        cls._instance = OptimizationConfig.from_environment()
+
+    @classmethod
+    def clear_instance(cls) -> None:
+        """Clear the singleton instance."""
+        cls._instance = None
 
 
 def get_global_config() -> "OptimizationConfig":
@@ -20,14 +46,7 @@ def get_global_config() -> "OptimizationConfig":
     Returns:
         Current global optimization configuration
     """
-    global _global_config
-
-    if _global_config is None:
-        from ..config.optimization import OptimizationConfig
-
-        _global_config = OptimizationConfig.from_environment()
-
-    return _global_config
+    return OptimizationConfigSingleton.get_instance()
 
 
 def set_global_config(config: "OptimizationConfig") -> None:
@@ -36,8 +55,7 @@ def set_global_config(config: "OptimizationConfig") -> None:
     Args:
         config: New optimization configuration to use globally
     """
-    global _global_config
-    _global_config = config
+    OptimizationConfigSingleton.set_instance(config)
 
 
 def update_global_config(**kwargs) -> None:
@@ -47,8 +65,6 @@ def update_global_config(**kwargs) -> None:
         **kwargs: Configuration updates using dot notation
                   (e.g., 'distance.chunk_size', 'memory.max_memory_gb')
     """
-    global _global_config
-
     # Ensure config exists
     config = get_global_config()
 
@@ -73,10 +89,7 @@ def update_global_config(**kwargs) -> None:
 
 def reset_global_config() -> None:
     """Reset the global configuration to environment defaults."""
-    global _global_config
-    from ..config.optimization import OptimizationConfig
-
-    _global_config = OptimizationConfig.from_environment()
+    OptimizationConfigSingleton.reset_instance()
 
 
 def apply_preset(preset_name: str) -> None:

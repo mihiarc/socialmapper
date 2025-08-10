@@ -1,7 +1,7 @@
-"""Rate limiting middleware for the SocialMapper API.
-"""
+"""Rate limiting middleware for the SocialMapper API."""
 
 import asyncio
+import contextlib
 import logging
 from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class RateLimitMiddleware:
     """Simple in-memory rate limiting middleware.
-    
+
     In production, you would use Redis or another distributed cache
     for rate limiting across multiple instances.
     """
@@ -35,6 +35,7 @@ class RateLimitMiddleware:
         self.cleanup_task = None
 
     async def __call__(self, request: Request, call_next):
+        """Process HTTP request through rate limiting middleware."""
         # Skip rate limiting for health checks and docs
         if request.url.path in ["/api/v1/health", "/docs", "/redoc", "/openapi.json"]:
             return await call_next(request)
@@ -52,7 +53,7 @@ class RateLimitMiddleware:
                 limit=self.requests_per_minute,
                 window_seconds=self.window_seconds,
                 retry_after_seconds=retry_after,
-                remaining_requests=0
+                remaining_requests=0,
             )
 
             return JSONResponse(
@@ -62,8 +63,8 @@ class RateLimitMiddleware:
                     "X-RateLimit-Limit": str(self.requests_per_minute),
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Reset": str(int(datetime.now(UTC).timestamp()) + retry_after),
-                    "Retry-After": str(retry_after)
-                }
+                    "Retry-After": str(retry_after),
+                },
             )
 
         # Process request
@@ -100,7 +101,7 @@ class RateLimitMiddleware:
 
     def _check_rate_limit(self, client_ip: str) -> tuple[bool, int]:
         """Check if request is within rate limit.
-        
+
         Returns:
             Tuple of (is_allowed, retry_after_seconds)
         """
@@ -118,7 +119,9 @@ class RateLimitMiddleware:
         if len(history) >= self.requests_per_minute:
             # Calculate retry after
             oldest_request = history[0]
-            retry_after = int((oldest_request + timedelta(seconds=self.window_seconds) - now).total_seconds())
+            retry_after = int(
+                (oldest_request + timedelta(seconds=self.window_seconds) - now).total_seconds()
+            )
             return False, max(1, retry_after)
 
         # Add current request to history
@@ -158,7 +161,9 @@ class RateLimitMiddleware:
                     if not history:
                         del self.request_history[client_ip]
 
-                logger.info(f"Cleaned up rate limit history. Active clients: {len(self.request_history)}")
+                logger.info(
+                    f"Cleaned up rate limit history. Active clients: {len(self.request_history)}"
+                )
 
             except Exception as e:
                 logger.error(f"Error in rate limit cleanup: {e}")
@@ -170,10 +175,7 @@ def setup_rate_limiting(app, settings=None):
         settings = get_settings()
 
     # Create middleware instance
-    middleware = RateLimitMiddleware(
-        app,
-        requests_per_minute=settings.rate_limit_per_minute
-    )
+    middleware = RateLimitMiddleware(app, requests_per_minute=settings.rate_limit_per_minute)
 
     # Add middleware to app
     app.middleware("http")(middleware)
@@ -187,9 +189,7 @@ def setup_rate_limiting(app, settings=None):
     async def stop_cleanup():
         if middleware.cleanup_task:
             middleware.cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await middleware.cleanup_task
-            except asyncio.CancelledError:
-                pass
 
     logger.info(f"Rate limiting enabled: {settings.rate_limit_per_minute} requests per minute")

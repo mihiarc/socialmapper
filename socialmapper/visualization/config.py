@@ -4,6 +4,10 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
 
+# Classification constants
+MIN_CLASSES = 2
+MAX_CLASSES = 12
+
 
 class ColorScheme(str, Enum):
     """Available color schemes for choropleth maps."""
@@ -167,6 +171,6 @@ class MapConfig(BaseModel):
     @field_validator("n_classes")
     def validate_n_classes(cls, v):
         """Validate number of classes is within reasonable bounds."""
-        if v < 2 or v > 12:
-            raise ValueError("n_classes must be between 2 and 12")
+        if v < MIN_CLASSES or v > MAX_CLASSES:
+            raise ValueError(f"n_classes must be between {MIN_CLASSES} and {MAX_CLASSES}")
         return v

@@ -30,7 +30,7 @@ class CacheManager:
 
     def get_cache_statistics(self) -> dict[str, Any]:
         """Get comprehensive cache statistics for all caches.
-        
+
         Returns:
             Dict containing cache statistics for each cache type
         """
@@ -38,12 +38,12 @@ class CacheManager:
             "summary": {
                 "total_size_mb": 0,
                 "total_items": 0,
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
             },
             "network_cache": self._get_network_cache_stats(),
             "geocoding_cache": self._get_geocoding_cache_stats(),
             "census_cache": self._get_census_cache_stats(),
-            "general_cache": self._get_general_cache_stats()
+            "general_cache": self._get_general_cache_stats(),
         }
 
         # Calculate totals
@@ -62,7 +62,11 @@ class CacheManager:
             cache_stats = network_cache.get_cache_stats()
 
             # Count files in network cache directory
-            network_files = list(self.network_cache_dir.glob("*.pkl.gz")) if self.network_cache_dir.exists() else []
+            network_files = (
+                list(self.network_cache_dir.glob("*.pkl.gz"))
+                if self.network_cache_dir.exists()
+                else []
+            )
 
             # Get database info
             db_stats = {}
@@ -74,7 +78,7 @@ class CacheManager:
                         db_count = cursor.fetchone()[0]
 
                         cursor = conn.execute("""
-                            SELECT MIN(created_at), MAX(created_at), 
+                            SELECT MIN(created_at), MAX(created_at),
                                    SUM(node_count), SUM(edge_count)
                             FROM networks
                         """)
@@ -82,10 +86,14 @@ class CacheManager:
 
                         db_stats = {
                             "indexed_networks": db_count,
-                            "oldest_entry": datetime.fromtimestamp(min_created).isoformat() if min_created else None,
-                            "newest_entry": datetime.fromtimestamp(max_created).isoformat() if max_created else None,
+                            "oldest_entry": datetime.fromtimestamp(min_created).isoformat()
+                            if min_created
+                            else None,
+                            "newest_entry": datetime.fromtimestamp(max_created).isoformat()
+                            if max_created
+                            else None,
                             "total_nodes": total_nodes or 0,
-                            "total_edges": total_edges or 0
+                            "total_edges": total_edges or 0,
                         }
                 except Exception as e:
                     logger.warning(f"Failed to read network cache database: {e}")
@@ -95,21 +103,18 @@ class CacheManager:
                 "item_count": len(network_files),
                 "cache_hits": cache_stats.cache_hits,
                 "cache_misses": cache_stats.cache_misses,
-                "hit_rate_percent": (cache_stats.cache_hits / cache_stats.total_requests * 100) if cache_stats.total_requests > 0 else 0,
+                "hit_rate_percent": (cache_stats.cache_hits / cache_stats.total_requests * 100)
+                if cache_stats.total_requests > 0
+                else 0,
                 "avg_retrieval_time_ms": cache_stats.avg_retrieval_time_ms,
                 "compression_ratio": cache_stats.compression_ratio,
                 "status": "active" if network_files else "empty",
                 "location": str(self.network_cache_dir),
-                **db_stats
+                **db_stats,
             }
         except Exception as e:
             logger.error(f"Failed to get network cache stats: {e}")
-            return {
-                "size_mb": 0,
-                "item_count": 0,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_geocoding_cache_stats(self) -> dict[str, Any]:
         """Get geocoding cache statistics."""
@@ -123,12 +128,13 @@ class CacheManager:
                 # Try to load and count entries
                 try:
                     import pandas as pd
+
                     df = pd.read_parquet(cache_file)
                     item_count = len(df)
 
                     # Get age statistics
-                    if 'timestamp' in df.columns:
-                        timestamps = pd.to_datetime(df['timestamp'])
+                    if "timestamp" in df.columns:
+                        timestamps = pd.to_datetime(df["timestamp"])
                         oldest = timestamps.min()
                         newest = timestamps.max()
                     else:
@@ -145,23 +151,18 @@ class CacheManager:
                     "status": "active",
                     "location": str(self.geocoding_cache_dir),
                     "oldest_entry": oldest.isoformat() if oldest else None,
-                    "newest_entry": newest.isoformat() if newest else None
+                    "newest_entry": newest.isoformat() if newest else None,
                 }
             else:
                 return {
                     "size_mb": 0,
                     "item_count": 0,
                     "status": "empty",
-                    "location": str(self.geocoding_cache_dir)
+                    "location": str(self.geocoding_cache_dir),
                 }
         except Exception as e:
             logger.error(f"Failed to get geocoding cache stats: {e}")
-            return {
-                "size_mb": 0,
-                "item_count": 0,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_census_cache_stats(self) -> dict[str, Any]:
         """Get census cache statistics."""
@@ -187,21 +188,18 @@ class CacheManager:
                 "size_mb": census_cache_size / (1024 * 1024),
                 "item_count": census_cache_files,
                 "status": "active" if census_cache_files > 0 else "empty",
-                "location": str(self.census_cache_dir)
+                "location": str(self.census_cache_dir),
             }
         except Exception as e:
             logger.error(f"Failed to get census cache stats: {e}")
-            return {
-                "size_mb": 0,
-                "item_count": 0,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_general_cache_stats(self) -> dict[str, Any]:
         """Get general cache statistics (JSON files in cache root)."""
         try:
-            json_files = list(self.cache_base_dir.glob("*.json")) if self.cache_base_dir.exists() else []
+            json_files = (
+                list(self.cache_base_dir.glob("*.json")) if self.cache_base_dir.exists() else []
+            )
             total_size = sum(f.stat().st_size for f in json_files)
 
             # Get age of files
@@ -219,20 +217,15 @@ class CacheManager:
                 "status": "active" if json_files else "empty",
                 "location": str(self.cache_base_dir),
                 "oldest_entry": oldest.isoformat() if oldest else None,
-                "newest_entry": newest.isoformat() if newest else None
+                "newest_entry": newest.isoformat() if newest else None,
             }
         except Exception as e:
             logger.error(f"Failed to get general cache stats: {e}")
-            return {
-                "size_mb": 0,
-                "item_count": 0,
-                "status": "error",
-                "error": str(e)
-            }
+            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def clear_network_cache(self) -> dict[str, Any]:
         """Clear the network cache.
-        
+
         Returns:
             Dict with operation status and details
         """
@@ -243,18 +236,15 @@ class CacheManager:
             return {
                 "success": True,
                 "message": "Network cache cleared successfully",
-                "cleared_size_mb": self._get_network_cache_stats()["size_mb"]
+                "cleared_size_mb": self._get_network_cache_stats()["size_mb"],
             }
         except Exception as e:
             logger.error(f"Failed to clear network cache: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def clear_geocoding_cache(self) -> dict[str, Any]:
         """Clear the geocoding cache.
-        
+
         Returns:
             Dict with operation status and details
         """
@@ -270,18 +260,15 @@ class CacheManager:
                 "success": True,
                 "message": "Geocoding cache cleared successfully",
                 "cleared_size_mb": stats_before["size_mb"],
-                "cleared_items": stats_before["item_count"]
+                "cleared_items": stats_before["item_count"],
             }
         except Exception as e:
             logger.error(f"Failed to clear geocoding cache: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def clear_census_cache(self) -> dict[str, Any]:
         """Clear the census cache.
-        
+
         Returns:
             Dict with operation status and details
         """
@@ -302,18 +289,15 @@ class CacheManager:
                 "success": True,
                 "message": "Census cache cleared successfully",
                 "cleared_size_mb": stats_before["size_mb"],
-                "cleared_items": stats_before["item_count"]
+                "cleared_items": stats_before["item_count"],
             }
         except Exception as e:
             logger.error(f"Failed to clear census cache: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def clear_all_caches(self) -> dict[str, Any]:
         """Clear all caches.
-        
+
         Returns:
             Dict with operation status and details for each cache
         """
@@ -321,31 +305,25 @@ class CacheManager:
             "network": self.clear_network_cache(),
             "geocoding": self.clear_geocoding_cache(),
             "census": self.clear_census_cache(),
-            "general": self._clear_general_cache()
+            "general": self._clear_general_cache(),
         }
 
         # Calculate totals
-        total_cleared_mb = sum(
-            result.get("cleared_size_mb", 0)
-            for result in results.values()
-        )
+        total_cleared_mb = sum(result.get("cleared_size_mb", 0) for result in results.values())
 
-        all_successful = all(
-            result.get("success", False)
-            for result in results.values()
-        )
+        all_successful = all(result.get("success", False) for result in results.values())
 
         results["summary"] = {
             "success": all_successful,
             "total_cleared_mb": total_cleared_mb,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         return results
 
     def _clear_general_cache(self) -> dict[str, Any]:
         """Clear general cache files (JSON files in cache root).
-        
+
         Returns:
             Dict with operation status and details
         """
@@ -362,18 +340,15 @@ class CacheManager:
                 "success": True,
                 "message": "General cache cleared successfully",
                 "cleared_size_mb": stats_before["size_mb"],
-                "cleared_items": stats_before["item_count"]
+                "cleared_items": stats_before["item_count"],
             }
         except Exception as e:
             logger.error(f"Failed to clear general cache: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def cleanup_expired_entries(self) -> dict[str, Any]:
         """Clean up expired entries from all caches.
-        
+
         Returns:
             Dict with cleanup statistics
         """
@@ -382,19 +357,19 @@ class CacheManager:
         # Census cache doesn't have built-in expiration for file-based cache
         results["census"] = {
             "success": True,
-            "message": "Census file cache doesn't have automatic expiration"
+            "message": "Census file cache doesn't have automatic expiration",
         }
 
         # Network cache doesn't have built-in expiration
         results["network"] = {
             "success": True,
-            "message": "Network cache uses LRU eviction, no expiration cleanup needed"
+            "message": "Network cache uses LRU eviction, no expiration cleanup needed",
         }
 
         # Geocoding cache cleanup handled by AddressCache on load
         results["geocoding"] = {
             "success": True,
-            "message": "Geocoding cache cleans expired entries on load"
+            "message": "Geocoding cache cleans expired entries on load",
         }
 
         return results
@@ -403,7 +378,7 @@ class CacheManager:
 # Convenience functions for direct use
 def get_cache_statistics() -> dict[str, Any]:
     """Get comprehensive cache statistics.
-    
+
     Returns:
         Dict containing cache statistics for all cache types
     """
@@ -413,7 +388,7 @@ def get_cache_statistics() -> dict[str, Any]:
 
 def clear_all_caches() -> dict[str, Any]:
     """Clear all SocialMapper caches.
-    
+
     Returns:
         Dict with operation status and details
     """
@@ -423,7 +398,7 @@ def clear_all_caches() -> dict[str, Any]:
 
 def clear_geocoding_cache() -> dict[str, Any]:
     """Clear the geocoding cache.
-    
+
     Returns:
         Dict with operation status and details
     """
@@ -433,7 +408,7 @@ def clear_geocoding_cache() -> dict[str, Any]:
 
 def clear_census_cache() -> dict[str, Any]:
     """Clear the census cache.
-    
+
     Returns:
         Dict with operation status and details
     """
@@ -443,7 +418,7 @@ def clear_census_cache() -> dict[str, Any]:
 
 def cleanup_expired_cache_entries() -> dict[str, Any]:
     """Clean up expired entries from all caches.
-    
+
     Returns:
         Dict with cleanup statistics
     """
@@ -476,8 +451,8 @@ if __name__ == "__main__":
         table.add_row(
             cache_type.replace("_", " ").title(),
             f"{cache_stats.get('size_mb', 0):.2f}",
-            str(cache_stats.get('item_count', 0)),
-            cache_stats.get('status', 'unknown')
+            str(cache_stats.get("item_count", 0)),
+            cache_stats.get("status", "unknown"),
         )
 
     table.add_section()
@@ -485,7 +460,7 @@ if __name__ == "__main__":
         "[bold]Total[/bold]",
         f"[bold]{stats['summary']['total_size_mb']:.2f}[/bold]",
         f"[bold]{stats['summary']['total_items']}[/bold]",
-        ""
+        "",
     )
 
     console.print(table)

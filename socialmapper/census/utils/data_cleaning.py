@@ -1,6 +1,5 @@
 """Utility functions for cleaning census data values."""
 
-
 # Census placeholder values that indicate missing or suppressed data
 CENSUS_PLACEHOLDER_VALUES = {
     -999999999,  # Most common placeholder
@@ -13,34 +12,31 @@ CENSUS_PLACEHOLDER_VALUES = {
 
 # Census variable prefixes that represent monetary values
 MONETARY_VARIABLE_PREFIXES = {
-    'B19',  # Income variables
-    'B25',  # Housing variables (including home values, rent)
-    'B22',  # Food stamp/SNAP benefits
-    'B27',  # Health insurance (premiums)
-    'B28',  # Computer and internet (costs)
+    "B19",  # Income variables
+    "B25",  # Housing variables (including home values, rent)
+    "B22",  # Food stamp/SNAP benefits
+    "B27",  # Health insurance (premiums)
+    "B28",  # Computer and internet (costs)
 }
 
 # Reasonable bounds for different types of monetary values
 MONETARY_BOUNDS = {
-    'B19': (0, 500000),      # Income: $0 to $500k
-    'B25077': (0, 5000000),  # Home value: $0 to $5M
-    'B25': (0, 10000),       # Rent/other housing costs: $0 to $10k/month
-    'B22': (0, 50000),       # SNAP benefits: $0 to $50k/year
-    'B27': (0, 50000),       # Health insurance: $0 to $50k/year
-    'B28': (0, 5000),        # Internet costs: $0 to $5k/month
+    "B19": (0, 500000),  # Income: $0 to $500k
+    "B25077": (0, 5000000),  # Home value: $0 to $5M
+    "B25": (0, 10000),  # Rent/other housing costs: $0 to $10k/month
+    "B22": (0, 50000),  # SNAP benefits: $0 to $50k/year
+    "B27": (0, 50000),  # Health insurance: $0 to $50k/year
+    "B28": (0, 5000),  # Internet costs: $0 to $5k/month
 }
 
 
-def is_valid_census_value(
-    value: int | float | None,
-    variable_code: str | None = None
-) -> bool:
+def is_valid_census_value(value: int | float | None, variable_code: str | None = None) -> bool:
     """Check if a census value is valid (not a placeholder).
-    
+
     Args:
         value: The census data value
         variable_code: Optional census variable code (e.g., 'B19013_001E')
-        
+
     Returns:
         True if the value is valid, False if it's a placeholder or invalid
     """
@@ -66,8 +62,8 @@ def is_valid_census_value(
                 return False
 
             # Check reasonable bounds
-            if variable_code.startswith('B25077'):  # Home value specifically
-                min_val, max_val = MONETARY_BOUNDS['B25077']
+            if variable_code.startswith("B25077"):  # Home value specifically
+                min_val, max_val = MONETARY_BOUNDS["B25077"]
             elif prefix in MONETARY_BOUNDS:
                 min_val, max_val = MONETARY_BOUNDS[prefix]
             else:
@@ -79,17 +75,15 @@ def is_valid_census_value(
 
 
 def clean_census_value(
-    value: int | float | None,
-    variable_code: str | None = None,
-    default: int | float | None = None
+    value: int | float | None, variable_code: str | None = None, default: int | float | None = None
 ) -> int | float | None:
     """Clean a census value by replacing invalid values with None or a default.
-    
+
     Args:
         value: The census data value
         variable_code: Optional census variable code
         default: Default value to use for invalid data
-        
+
     Returns:
         Cleaned value or default/None if invalid
     """
@@ -99,15 +93,14 @@ def clean_census_value(
 
 
 def clean_monetary_value(
-    value: int | float | None,
-    variable_code: str | None = None
+    value: int | float | None, variable_code: str | None = None
 ) -> float | None:
     """Clean a monetary census value (income, home value, etc.).
-    
+
     Args:
         value: The monetary value
         variable_code: Optional census variable code
-        
+
     Returns:
         Cleaned monetary value or None if invalid
     """
@@ -125,10 +118,10 @@ def format_monetary_value(
     prefix: str = "$",
     suffix: str = "",
     decimal_places: int = 0,
-    not_available_text: str = "N/A"
+    not_available_text: str = "N/A",
 ) -> str:
     """Format a monetary value for display, handling invalid values gracefully.
-    
+
     Args:
         value: The monetary value
         variable_code: Optional census variable code
@@ -136,7 +129,7 @@ def format_monetary_value(
         suffix: Suffix for the formatted value (default "")
         decimal_places: Number of decimal places to show
         not_available_text: Text to show for invalid/missing values
-        
+
     Returns:
         Formatted string
     """
@@ -145,9 +138,6 @@ def format_monetary_value(
     if cleaned is None:
         return not_available_text
 
-    if decimal_places == 0:
-        formatted = f"{int(cleaned):,}"
-    else:
-        formatted = f"{cleaned:,.{decimal_places}f}"
+    formatted = f"{int(cleaned):,}" if decimal_places == 0 else f"{cleaned:,.{decimal_places}f}"
 
     return f"{prefix}{formatted}{suffix}"

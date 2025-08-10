@@ -24,10 +24,7 @@ def main():
     console = Console()
 
     # Display header
-    console.print(Panel.fit(
-        "🏛️ Census API Reliability Demo with SocialMapper",
-        style="bold blue"
-    ))
+    console.print(Panel.fit("🏛️ Census API Reliability Demo with SocialMapper", style="bold blue"))
 
     # Check for API key
     if not os.getenv("CENSUS_API_KEY"):
@@ -92,13 +89,14 @@ def main():
     client = census_system["client"]
 
     import time
+
     start = time.time()
     data1 = client.get_census_data(
         variables=["B01003_001E"],  # Total population
         geography="tract:*",
         year=2022,
         dataset="acs/acs5",
-        **{"in": "state:37 county:183"}  # Wake County
+        **{"in": "state:37 county:183"},  # Wake County
     )
     time1 = time.time() - start
     console.print(f"✓ First request took {time1:.2f}s (cache miss)")
@@ -106,16 +104,16 @@ def main():
     # Second request (cache hit)
     console.print("Making same request again (will hit cache)...")
     start = time.time()
-    data2 = client.get_census_data(
+    client.get_census_data(
         variables=["B01003_001E"],
         geography="tract:*",
         year=2022,
         dataset="acs/acs5",
-        **{"in": "state:37 county:183"}
+        **{"in": "state:37 county:183"},
     )
     time2 = time.time() - start
     console.print(f"✓ Second request took {time2:.2f}s (cache hit)")
-    console.print(f"✓ Speed improvement: {time1/time2:.1f}x faster")
+    console.print(f"✓ Speed improvement: {time1 / time2:.1f}x faster")
 
     # Example 3: Display comprehensive metrics
     console.print("\n[bold]Example 3: API Performance Metrics[/bold]")
@@ -129,35 +127,15 @@ def main():
     metrics_table.add_column("Value", style="green")
 
     # Add metrics rows
+    metrics_table.add_row("Requests", "Total", str(metrics["requests"]["total"]))
+    metrics_table.add_row("Requests", "Success Rate", metrics["requests"]["success_rate"])
     metrics_table.add_row(
-        "Requests",
-        "Total",
-        str(metrics["requests"]["total"])
+        "Performance", "Avg Response Time", metrics["performance"]["average_response_time"]
     )
+    metrics_table.add_row("Cache", "Hit Rate", metrics["cache"]["hit_rate"])
+    metrics_table.add_row("Circuit Breaker", "State", metrics["circuit_breaker"]["state"])
     metrics_table.add_row(
-        "Requests",
-        "Success Rate",
-        metrics["requests"]["success_rate"]
-    )
-    metrics_table.add_row(
-        "Performance",
-        "Avg Response Time",
-        metrics["performance"]["average_response_time"]
-    )
-    metrics_table.add_row(
-        "Cache",
-        "Hit Rate",
-        metrics["cache"]["hit_rate"]
-    )
-    metrics_table.add_row(
-        "Circuit Breaker",
-        "State",
-        metrics["circuit_breaker"]["state"]
-    )
-    metrics_table.add_row(
-        "Circuit Breaker",
-        "Failures",
-        str(metrics["circuit_breaker"]["failure_count"])
+        "Circuit Breaker", "Failures", str(metrics["circuit_breaker"]["failure_count"])
     )
 
     console.print(metrics_table)
@@ -192,15 +170,17 @@ def main():
     console.print("\n[bold]Session Summary[/bold]")
     final_metrics = client.get_metrics_summary()
 
-    console.print(Panel(
-        f"[green]Total API Calls:[/green] {final_metrics['requests']['total']}\n"
-        f"[green]Cache Hit Rate:[/green] {final_metrics['cache']['hit_rate']}\n"
-        f"[green]Average Response:[/green] {final_metrics['performance']['average_response_time']}\n"
-        f"[green]Circuit Breaker:[/green] {final_metrics['circuit_breaker']['state']}\n"
-        f"[green]Uptime:[/green] {final_metrics['uptime']}",
-        title="Performance Summary",
-        style="green",
-    ))
+    console.print(
+        Panel(
+            f"[green]Total API Calls:[/green] {final_metrics['requests']['total']}\n"
+            f"[green]Cache Hit Rate:[/green] {final_metrics['cache']['hit_rate']}\n"
+            f"[green]Average Response:[/green] {final_metrics['performance']['average_response_time']}\n"
+            f"[green]Circuit Breaker:[/green] {final_metrics['circuit_breaker']['state']}\n"
+            f"[green]Uptime:[/green] {final_metrics['uptime']}",
+            title="Performance Summary",
+            style="green",
+        )
+    )
 
 
 def display_demographic_summary(console: Console, census_data: list):

@@ -3,7 +3,7 @@
 This module handles exporting pipeline outputs to various formats.
 """
 
-import os
+from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
@@ -74,9 +74,7 @@ def export_pipeline_outputs(
         else:
             # Legacy path handling
             mode_suffix = f"_{travel_mode}" if travel_mode else ""
-            csv_file = os.path.join(
-                directories.get("census_data", directories["base"]), f"{base_filename}_{travel_time}min{mode_suffix}_census_data.csv"
-            )
+            csv_file = Path(directories.get("census_data", directories["base"])) / f"{base_filename}_{travel_time}min{mode_suffix}_census_data.csv"
 
             csv_output = export_census_data_to_csv(
                 census_data=census_data_gdf,
@@ -110,9 +108,7 @@ def export_pipeline_outputs(
             else:
                 # Legacy path handling
                 mode_suffix = f"_{travel_mode}" if travel_mode else ""
-                isochrone_file = os.path.join(
-                    directories["isochrones"], f"{base_filename}_{travel_time}min{mode_suffix}_isochrones.geoparquet"
-                )
+                isochrone_file = Path(directories["isochrones"]) / f"{base_filename}_{travel_time}min{mode_suffix}_isochrones.geoparquet"
 
                 # Save isochrone GeoDataFrame to GeoParquet format
                 isochrone_gdf.to_parquet(isochrone_file, compression="snappy", index=False)

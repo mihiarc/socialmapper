@@ -392,6 +392,3 @@ def state_fips_to_abbreviation(fips_code):
         "72": "PR",
     }
     return fips_to_abbrev.get(fips_code)
-
-
-

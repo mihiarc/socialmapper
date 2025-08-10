@@ -175,9 +175,17 @@ class CountyInfo:
 
     def __post_init__(self):
         """Validate state and county FIPS code formats."""
-        if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
+        if (
+            not self.state_fips
+            or len(self.state_fips) != STATE_FIPS_LENGTH
+            or not self.state_fips.isdigit()
+        ):
             raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
-        if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():
+        if (
+            not self.county_fips
+            or len(self.county_fips) != COUNTY_FIPS_LENGTH
+            or not self.county_fips.isdigit()
+        ):
             raise ValueError(f"County FIPS must be a {COUNTY_FIPS_LENGTH}-digit string")
 
     @property
@@ -198,13 +206,25 @@ class BlockGroupInfo:
 
     def __post_init__(self):
         """Validate state, county, tract, and block group code formats."""
-        if not self.state_fips or len(self.state_fips) != STATE_FIPS_LENGTH or not self.state_fips.isdigit():
+        if (
+            not self.state_fips
+            or len(self.state_fips) != STATE_FIPS_LENGTH
+            or not self.state_fips.isdigit()
+        ):
             raise ValueError(f"State FIPS must be a {STATE_FIPS_LENGTH}-digit string")
-        if not self.county_fips or len(self.county_fips) != COUNTY_FIPS_LENGTH or not self.county_fips.isdigit():
+        if (
+            not self.county_fips
+            or len(self.county_fips) != COUNTY_FIPS_LENGTH
+            or not self.county_fips.isdigit()
+        ):
             raise ValueError(f"County FIPS must be a {COUNTY_FIPS_LENGTH}-digit string")
         if not self.tract or len(self.tract) != TRACT_LENGTH or not self.tract.isdigit():
             raise ValueError(f"Tract must be a {TRACT_LENGTH}-digit string")
-        if not self.block_group or len(self.block_group) != BLOCK_GROUP_LENGTH or not self.block_group.isdigit():
+        if (
+            not self.block_group
+            or len(self.block_group) != BLOCK_GROUP_LENGTH
+            or not self.block_group.isdigit()
+        ):
             raise ValueError(f"Block group must be a {BLOCK_GROUP_LENGTH}-digit string")
 
     @property

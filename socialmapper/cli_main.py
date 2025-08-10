@@ -47,7 +47,7 @@ def parse_arguments():
     )
 
     # Check if this is a feature-flags command
-    if len(sys.argv) > 1 and sys.argv[1] == 'feature-flags':
+    if len(sys.argv) > 1 and sys.argv[1] == "feature-flags":
         return _handle_feature_flags_command()
 
     # Otherwise, handle as regular analysis command
@@ -181,7 +181,9 @@ def _add_analysis_arguments(parser):
             if result.returncode == 0:
                 console.print("\n[bold green]✅ Type checking passed![/bold green]")
             else:
-                console.print(f"\n[bold red]❌ Type checking found issues (exit code: {result.returncode})[/bold red]")
+                console.print(
+                    f"\n[bold red]❌ Type checking found issues (exit code: {result.returncode})[/bold red]"
+                )
                 console.print("[dim]💡 Use 'python scripts/type_check.py' for more options[/dim]")
             sys.exit(result.returncode)
         except FileNotFoundError:

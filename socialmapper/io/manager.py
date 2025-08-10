@@ -131,16 +131,14 @@ class OutputTracker:
         return {
             "total_files": len(self.files),
             "existing_files": len(self.get_existing_files()),
-            "categories": {
-                cat: len(files) for cat, files in self._categories.items()
-            },
+            "categories": {cat: len(files) for cat, files in self._categories.items()},
             "file_types": {
                 file_type: len(self.get_by_type(file_type))
-                for file_type in set(f.file_type for f in self.files)
+                for file_type in {f.file_type for f in self.files}
             },
             "travel_modes": {
                 mode: len(self.get_by_travel_mode(mode))
-                for mode in set(f.travel_mode for f in self.files if f.travel_mode)
+                for mode in {f.travel_mode for f in self.files if f.travel_mode}
             },
             "total_size_mb": sum(f.size_mb for f in self.files if f.exists),
         }
@@ -253,9 +251,7 @@ class IOManager:
             raise ValueError(f"No writer available for file type: {file_type}")
 
         # Generate filename and path
-        filename = self.generate_filename(
-            base_name, file_type, travel_mode, travel_time, suffix
-        )
+        filename = self.generate_filename(base_name, file_type, travel_mode, travel_time, suffix)
         directory = self.get_directory(category)
         filepath = directory / filename
 
@@ -311,7 +307,7 @@ class IOManager:
         removed_count = 0
 
         # Sort each group by creation time and remove old files
-        for key, files in file_groups.items():
+        for _key, files in file_groups.items():
             sorted_files = sorted(files, key=lambda f: f.created_at, reverse=True)
 
             for f in sorted_files[keep_latest_n:]:

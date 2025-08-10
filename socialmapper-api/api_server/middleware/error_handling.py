@@ -31,6 +31,14 @@ from ..models.errors import (
     ValidationErrorDetail,
 )
 
+# HTTP status code constants
+HTTP_NOT_FOUND = 404
+HTTP_METHOD_NOT_ALLOWED = 405
+HTTP_UNAUTHORIZED = 401
+HTTP_FORBIDDEN = 403
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVICE_UNAVAILABLE = 503
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +50,7 @@ class APIException(Exception):
         status_code: int,
         error_code: ErrorCode,
         message: str,
-        details: dict[str, Any] | None = None
+        details: dict[str, Any] | None = None,
     ):
         self.status_code = status_code
         self.error_code = error_code
@@ -53,7 +61,7 @@ class APIException(Exception):
 
 async def error_handling_middleware(request: Request, call_next):
     """Global error handling middleware.
-    
+
     This middleware catches all exceptions and returns standardized
     error responses. It also logs errors appropriately.
     """
@@ -66,11 +74,11 @@ async def error_handling_middleware(request: Request, call_next):
 
 async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
     """Handle exceptions and return appropriate error responses.
-    
+
     Args:
         request: The incoming request
         exc: The exception that was raised
-        
+
     Returns:
         JSONResponse with standardized error format
     """
@@ -86,9 +94,9 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             "path": request.url.path,
             "client": request.client.host if request.client else None,
             "exception_type": type(exc).__name__,
-            "exception": str(exc)
+            "exception": str(exc),
         },
-        exc_info=True
+        exc_info=True,
     )
 
     # Handle different exception types
@@ -98,41 +106,42 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=exc.error_code,
             message=exc.message,
             details=exc.details,
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, RequestValidationError):
         # Handle FastAPI validation errors
-        field_errors = []
-        for error in exc.errors():
-            field_errors.append({
+        field_errors = [
+            {
                 "field": ".".join(str(loc) for loc in error["loc"]),
                 "message": error["msg"],
-                "type": error["type"]
-            })
+                "type": error["type"],
+            }
+            for error in exc.errors()
+        ]
 
         return create_error_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             error_code=ErrorCode.VALIDATION_ERROR,
             message="Validation error",
             details={"field_errors": field_errors},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, HTTPException):
         # Handle FastAPI HTTPException
         error_code = ErrorCode.INTERNAL_ERROR
-        if exc.status_code == 404:
+        if exc.status_code == HTTP_NOT_FOUND:
             error_code = ErrorCode.RESOURCE_NOT_FOUND
-        elif exc.status_code == 405:
+        elif exc.status_code == HTTP_METHOD_NOT_ALLOWED:
             error_code = ErrorCode.METHOD_NOT_ALLOWED
-        elif exc.status_code == 401:
+        elif exc.status_code == HTTP_UNAUTHORIZED:
             error_code = ErrorCode.AUTHENTICATION_ERROR
-        elif exc.status_code == 403:
+        elif exc.status_code == HTTP_FORBIDDEN:
             error_code = ErrorCode.AUTHORIZATION_ERROR
-        elif exc.status_code == 429:
+        elif exc.status_code == HTTP_TOO_MANY_REQUESTS:
             error_code = ErrorCode.RATE_LIMIT_EXCEEDED
-        elif exc.status_code == 503:
+        elif exc.status_code == HTTP_SERVICE_UNAVAILABLE:
             error_code = ErrorCode.SERVICE_UNAVAILABLE
 
         return create_error_response(
@@ -140,15 +149,15 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=error_code,
             message=exc.detail,
             details={},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, StarletteHTTPException):
         # Handle Starlette HTTPException (similar to above)
         error_code = ErrorCode.INTERNAL_ERROR
-        if exc.status_code == 404:
+        if exc.status_code == HTTP_NOT_FOUND:
             error_code = ErrorCode.RESOURCE_NOT_FOUND
-        elif exc.status_code == 405:
+        elif exc.status_code == HTTP_METHOD_NOT_ALLOWED:
             error_code = ErrorCode.METHOD_NOT_ALLOWED
 
         return create_error_response(
@@ -156,7 +165,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=error_code,
             message=exc.detail or "HTTP Error",
             details={},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, ValidationError):
@@ -166,7 +175,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=ErrorCode.VALIDATION_ERROR,
             message="Validation error",
             details={"errors": exc.errors()},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, TimeoutError):
@@ -175,7 +184,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=ErrorCode.TIMEOUT_ERROR,
             message="Request timeout",
             details={"operation": str(exc)},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     elif isinstance(exc, ConnectionError):
@@ -184,7 +193,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=ErrorCode.SERVICE_UNAVAILABLE,
             message="Service temporarily unavailable",
             details={"reason": "Connection error"},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
     else:
@@ -194,7 +203,7 @@ async def handle_exception(request: Request, exc: Exception) -> JSONResponse:
             error_code=ErrorCode.INTERNAL_ERROR,
             message="An unexpected error occurred",
             details={},
-            incident_id=incident_id
+            incident_id=incident_id,
         )
 
 
@@ -209,7 +218,7 @@ def handle_validation_error(exc: RequestValidationError, incident_id: str) -> JS
                 field=field_path,
                 message=error["msg"],
                 invalid_value=error.get("input"),
-                constraint=error.get("type")
+                constraint=error.get("type"),
             )
         )
 
@@ -217,12 +226,11 @@ def handle_validation_error(exc: RequestValidationError, incident_id: str) -> JS
         message="Validation error in request",
         details={"request_errors": exc.errors()},
         timestamp=datetime.now(UTC),
-        field_errors=field_errors
+        field_errors=field_errors,
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=error_response.model_dump()
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response.model_dump()
     )
 
 
@@ -237,7 +245,7 @@ def handle_http_exception(exc: HTTPException, incident_id: str) -> JSONResponse:
         429: ErrorCode.RATE_LIMIT_EXCEEDED,
         500: ErrorCode.INTERNAL_ERROR,
         503: ErrorCode.SERVICE_UNAVAILABLE,
-        504: ErrorCode.TIMEOUT_ERROR
+        504: ErrorCode.TIMEOUT_ERROR,
     }
 
     error_code = error_code_map.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
@@ -255,15 +263,14 @@ def handle_http_exception(exc: HTTPException, incident_id: str) -> JSONResponse:
         error_code=error_code,
         message=message,
         details=details,
-        incident_id=incident_id
+        incident_id=incident_id,
     )
 
 
 def handle_starlette_http_exception(exc: StarletteHTTPException, incident_id: str) -> JSONResponse:
     """Handle Starlette HTTP exceptions."""
     return handle_http_exception(
-        HTTPException(status_code=exc.status_code, detail=exc.detail),
-        incident_id
+        HTTPException(status_code=exc.status_code, detail=exc.detail), incident_id
     )
 
 
@@ -278,7 +285,7 @@ def handle_pydantic_validation_error(exc: ValidationError, incident_id: str) -> 
                 field=field_path,
                 message=error["msg"],
                 invalid_value=error.get("input"),
-                constraint=error.get("type")
+                constraint=error.get("type"),
             )
         )
 
@@ -286,12 +293,11 @@ def handle_pydantic_validation_error(exc: ValidationError, incident_id: str) -> 
         message="Data validation error",
         details={"validation_errors": exc.errors()},
         timestamp=datetime.now(UTC),
-        field_errors=field_errors
+        field_errors=field_errors,
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=error_response.model_dump()
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response.model_dump()
     )
 
 
@@ -300,17 +306,17 @@ def create_error_response(
     error_code: ErrorCode,
     message: str,
     details: dict[str, Any] | None = None,
-    incident_id: str | None = None
+    incident_id: str | None = None,
 ) -> JSONResponse:
     """Create a standardized error response.
-    
+
     Args:
         status_code: HTTP status code
         error_code: Machine-readable error code
         message: Human-readable error message
         details: Additional error details
         incident_id: Incident ID for tracking
-        
+
     Returns:
         JSONResponse with error details
     """
@@ -325,7 +331,7 @@ def create_error_response(
         ErrorCode.SERVICE_UNAVAILABLE: ServiceUnavailableError,
         ErrorCode.TIMEOUT_ERROR: TimeoutError,
         ErrorCode.INVALID_REQUEST: InvalidRequestError,
-        ErrorCode.INTERNAL_ERROR: InternalServerError
+        ErrorCode.INTERNAL_ERROR: InternalServerError,
     }
 
     error_class = error_class_map.get(error_code, APIError)
@@ -335,7 +341,7 @@ def create_error_response(
         "error_code": error_code,
         "message": message,
         "timestamp": datetime.now(UTC),
-        "details": details or {}
+        "details": details or {},
     }
 
     # Add incident ID for internal errors
@@ -364,17 +370,14 @@ def create_error_response(
 
     return JSONResponse(
         status_code=status_code,
-        content=error_response.model_dump(mode='json'),
-        headers={
-            "X-Incident-ID": incident_id or "",
-            "X-Error-Code": error_code
-        }
+        content=error_response.model_dump(mode="json"),
+        headers={"X-Incident-ID": incident_id or "", "X-Error-Code": error_code},
     )
 
 
 def setup_error_handling(app):
     """Set up error handling for the FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
     """

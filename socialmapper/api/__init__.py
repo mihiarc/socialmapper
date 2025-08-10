@@ -44,6 +44,7 @@ try:
         POIResult,
         run_async_analysis,
     )
+
     _ASYNC_AVAILABLE = True
 except ImportError:
     # Async client requires aiohttp which might not be installed
@@ -121,12 +122,14 @@ __all__ = [
 
 # Add async components only if available
 if _ASYNC_AVAILABLE:
-    __all__.extend([
-        "AsyncSocialMapper",
-        "IsochroneResult",
-        "POIResult",
-        "run_async_analysis",
-    ])
+    __all__.extend(
+        [
+            "AsyncSocialMapper",
+            "IsochroneResult",
+            "POIResult",
+            "run_async_analysis",
+        ]
+    )
 
 
 # Deprecation warnings for old API

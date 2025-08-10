@@ -14,7 +14,9 @@ from ..console import get_logger
 logger = get_logger(__name__)
 
 
-def write_csv(data: pd.DataFrame | dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_csv(
+    data: pd.DataFrame | dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write data to CSV file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -29,7 +31,9 @@ def write_csv(data: pd.DataFrame | dict[str, Any], filepath: Path, metadata: dic
     logger.info(f"Wrote CSV to {filepath} ({len(df)} rows)")
 
 
-def write_parquet(data: pd.DataFrame, filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_parquet(
+    data: pd.DataFrame, filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write DataFrame to Parquet file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -38,7 +42,9 @@ def write_parquet(data: pd.DataFrame, filepath: Path, metadata: dict[str, Any] |
     logger.info(f"Wrote Parquet to {filepath} ({len(data)} rows)")
 
 
-def write_geoparquet(data: gpd.GeoDataFrame, filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_geoparquet(
+    data: gpd.GeoDataFrame, filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write GeoDataFrame to GeoParquet file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -47,7 +53,9 @@ def write_geoparquet(data: gpd.GeoDataFrame, filepath: Path, metadata: dict[str,
     logger.info(f"Wrote GeoParquet to {filepath} ({len(data)} features)")
 
 
-def write_geojson(data: gpd.GeoDataFrame | dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_geojson(
+    data: gpd.GeoDataFrame | dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write data to GeoJSON file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -62,7 +70,9 @@ def write_geojson(data: gpd.GeoDataFrame | dict[str, Any], filepath: Path, metad
         logger.info(f"Wrote GeoJSON to {filepath}")
 
 
-def write_json(data: dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_json(
+    data: dict[str, Any], filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write data to JSON file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +83,9 @@ def write_json(data: dict[str, Any], filepath: Path, metadata: dict[str, Any] | 
     logger.info(f"Wrote JSON to {filepath}")
 
 
-def write_map(figure: plt.Figure | Any, filepath: Path, metadata: dict[str, Any] | None = None) -> None:
+def write_map(
+    figure: plt.Figure | Any, filepath: Path, metadata: dict[str, Any] | None = None
+) -> None:
     """Write a map/plot to image file."""
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)

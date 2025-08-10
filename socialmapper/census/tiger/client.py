@@ -222,10 +222,14 @@ class TigerGeometryClient:
     def _validate_query(self, query: GeometryQuery) -> None:
         """Validate query parameters."""
         # Check required parameters for certain geography levels
-        if query.geography_level in [
-            GeographyLevel.BLOCK_GROUP,
-            GeographyLevel.BLOCK_GROUP_DETAILED,
-        ] and not query.state_fips:
+        if (
+            query.geography_level
+            in [
+                GeographyLevel.BLOCK_GROUP,
+                GeographyLevel.BLOCK_GROUP_DETAILED,
+            ]
+            and not query.state_fips
+        ):
             raise ValueError("state_fips is required for block group queries")
 
         if query.geography_level == GeographyLevel.TRACT and not query.state_fips:

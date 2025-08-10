@@ -21,6 +21,12 @@ from ..progress import get_progress_bar
 from ..visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
 from ..visualization.config import ClassificationScheme, LegendConfig
 
+# Map zoom level thresholds (in meters)
+ZOOM_12_THRESHOLD = 50000    # 50km
+ZOOM_11_THRESHOLD = 100000   # 100km
+ZOOM_10_THRESHOLD = 200000   # 200km
+ZOOM_9_THRESHOLD = 400000    # 400km
+
 
 def create_pipeline_maps(
     census_data_gdf: gpd.GeoDataFrame,
@@ -320,9 +326,7 @@ def _create_demographic_map(
     gdf = gdf.copy()
     if variable in gdf.columns:
         # Replace invalid census values with NaN
-        gdf[variable] = gdf[variable].apply(
-            lambda x: clean_census_value(x, variable)
-        )
+        gdf[variable] = gdf[variable].apply(lambda x: clean_census_value(x, variable))
 
         # Drop rows with NaN values for this variable
         valid_data = gdf[gdf[variable].notna()]
@@ -414,7 +418,9 @@ def _create_demographic_map(
         # Legacy path handling
         safe_variable_name = variable.replace("/", "_").replace(" ", "_").lower()
         mode_suffix = f"_{travel_mode}" if travel_mode else ""
-        filename = f"{base_filename}_{travel_time}min{mode_suffix}_{safe_variable_name}_map.{map_format}"
+        filename = (
+            f"{base_filename}_{travel_time}min{mode_suffix}_{safe_variable_name}_map.{map_format}"
+        )
         output_file = output_path / filename
 
         mapper.save(output_file, format=map_format, dpi=dpi)
@@ -464,13 +470,13 @@ def _create_distance_map(
     bbox_diagonal = (bbox_width**2 + bbox_height**2) ** 0.5
 
     # Improved zoom level calculation for Web Mercator
-    if bbox_diagonal < 50000:  # < 50km
+    if bbox_diagonal < ZOOM_12_THRESHOLD:  # < 50km
         zoom_level = 12
-    elif bbox_diagonal < 100000:  # < 100km
+    elif bbox_diagonal < ZOOM_11_THRESHOLD:  # < 100km
         zoom_level = 11
-    elif bbox_diagonal < 200000:  # < 200km
+    elif bbox_diagonal < ZOOM_10_THRESHOLD:  # < 200km
         zoom_level = 10
-    elif bbox_diagonal < 400000:  # < 400km
+    elif bbox_diagonal < ZOOM_9_THRESHOLD:  # < 400km
         zoom_level = 9
     else:
         zoom_level = 8
@@ -507,7 +513,11 @@ def _create_distance_map(
             travel_mode=travel_mode,
             travel_time=travel_time,
             suffix="distance",
-            metadata={"distance_column": distance_column, "geographic_level": geographic_level, "dpi": dpi},
+            metadata={
+                "distance_column": distance_column,
+                "geographic_level": geographic_level,
+                "dpi": dpi,
+            },
         )
         plt.close(fig)
         return output_file.path
@@ -557,13 +567,13 @@ def _create_accessibility_map(
     bbox_diagonal = (bbox_width**2 + bbox_height**2) ** 0.5
 
     # Improved zoom level calculation for Web Mercator
-    if bbox_diagonal < 50000:  # < 50km
+    if bbox_diagonal < ZOOM_12_THRESHOLD:  # < 50km
         zoom_level = 12
-    elif bbox_diagonal < 100000:  # < 100km
+    elif bbox_diagonal < ZOOM_11_THRESHOLD:  # < 100km
         zoom_level = 11
-    elif bbox_diagonal < 200000:  # < 200km
+    elif bbox_diagonal < ZOOM_10_THRESHOLD:  # < 200km
         zoom_level = 10
-    elif bbox_diagonal < 400000:  # < 400km
+    elif bbox_diagonal < ZOOM_9_THRESHOLD:  # < 400km
         zoom_level = 9
     else:
         zoom_level = 8

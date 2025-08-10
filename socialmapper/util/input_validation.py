@@ -44,7 +44,9 @@ def sanitize_string_input(input_str: str, max_length: int = 1000) -> str:
         raise InputValidationError(f"Input too long (max {max_length} characters)")
 
     # Remove control characters (except newline and tab)
-    input_str = "".join(char for char in input_str if ord(char) >= MIN_ASCII_PRINTABLE or char in "\n\t")
+    input_str = "".join(
+        char for char in input_str if ord(char) >= MIN_ASCII_PRINTABLE or char in "\n\t"
+    )
 
     # HTML escape to prevent injection
     return html.escape(input_str.strip())
@@ -247,8 +249,9 @@ def validate_file_path(file_path: str, allowed_extensions: list[str] | None = No
     return file_path
 
 
-def validate_numeric_range(value: str | int | float, min_val: float, max_val: float,
-                         param_name: str = "value") -> float:
+def validate_numeric_range(
+    value: str | int | float, min_val: float, max_val: float, param_name: str = "value"
+) -> float:
     """Validate that a numeric value is within specified range.
 
     Args:
@@ -276,8 +279,13 @@ def validate_numeric_range(value: str | int | float, min_val: float, max_val: fl
     return num_value
 
 
-def validate_list_input(input_list: Any, min_length: int = 0, max_length: int | None = None,
-                       item_type: type | None = None, item_name: str = "item") -> list[Any]:
+def validate_list_input(
+    input_list: Any,
+    min_length: int = 0,
+    max_length: int | None = None,
+    item_type: type | None = None,
+    item_name: str = "item",
+) -> list[Any]:
     """Validate list input with optional constraints.
 
     Args:
@@ -312,8 +320,9 @@ def validate_list_input(input_list: Any, min_length: int = 0, max_length: int | 
     return input_list
 
 
-def validate_dict_input(input_dict: Any, required_keys: list[str] | None = None,
-                       optional_keys: list[str] | None = None) -> dict[str, Any]:
+def validate_dict_input(
+    input_dict: Any, required_keys: list[str] | None = None, optional_keys: list[str] | None = None
+) -> dict[str, Any]:
     """Validate dictionary input structure.
 
     Args:
@@ -465,10 +474,10 @@ def sanitize_filename(filename: str) -> str:
 
 def sanitize_for_api(value: str) -> str:
     """Sanitize string value for safe use in API requests.
-    
+
     Args:
         value: String value to sanitize
-        
+
     Returns:
         Sanitized string safe for API use
     """
@@ -488,13 +497,13 @@ def sanitize_for_api(value: str) -> str:
 
 def validate_state_name(state: str) -> str:
     """Validate a US state name or abbreviation.
-    
+
     Args:
         state: State name or abbreviation to validate
-        
+
     Returns:
         Validated state string
-        
+
     Raises:
         InputValidationError: If state is invalid
     """
@@ -508,12 +517,58 @@ def validate_state_name(state: str) -> str:
 
     # List of valid state abbreviations
     valid_abbrs = {
-        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
-        "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
-        "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
-        "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "PR",
-        "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
-        "WI", "WY"
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "DC",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "PR",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
     }
 
     # Check if it's a valid abbreviation
@@ -522,17 +577,58 @@ def validate_state_name(state: str) -> str:
 
     # List of valid state names (lowercase for comparison)
     valid_names = {
-        "alabama", "alaska", "arizona", "arkansas", "california",
-        "colorado", "connecticut", "delaware", "district of columbia",
-        "florida", "georgia", "hawaii", "idaho", "illinois", "indiana",
-        "iowa", "kansas", "kentucky", "louisiana", "maine", "maryland",
-        "massachusetts", "michigan", "minnesota", "mississippi", "missouri",
-        "montana", "nebraska", "nevada", "new hampshire", "new jersey",
-        "new mexico", "new york", "north carolina", "north dakota", "ohio",
-        "oklahoma", "oregon", "pennsylvania", "puerto rico", "rhode island",
-        "south carolina", "south dakota", "tennessee", "texas", "utah",
-        "vermont", "virginia", "washington", "west virginia", "wisconsin",
-        "wyoming"
+        "alabama",
+        "alaska",
+        "arizona",
+        "arkansas",
+        "california",
+        "colorado",
+        "connecticut",
+        "delaware",
+        "district of columbia",
+        "florida",
+        "georgia",
+        "hawaii",
+        "idaho",
+        "illinois",
+        "indiana",
+        "iowa",
+        "kansas",
+        "kentucky",
+        "louisiana",
+        "maine",
+        "maryland",
+        "massachusetts",
+        "michigan",
+        "minnesota",
+        "mississippi",
+        "missouri",
+        "montana",
+        "nebraska",
+        "nevada",
+        "new hampshire",
+        "new jersey",
+        "new mexico",
+        "new york",
+        "north carolina",
+        "north dakota",
+        "ohio",
+        "oklahoma",
+        "oregon",
+        "pennsylvania",
+        "puerto rico",
+        "rhode island",
+        "south carolina",
+        "south dakota",
+        "tennessee",
+        "texas",
+        "utah",
+        "vermont",
+        "virginia",
+        "washington",
+        "west virginia",
+        "wisconsin",
+        "wyoming",
     }
 
     # Check if it's a valid full name

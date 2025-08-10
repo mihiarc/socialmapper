@@ -198,7 +198,7 @@ def deduplicate_key(*args, **kwargs) -> str:
 
     # Add positional arguments
     for arg in args:
-        if isinstance(arg, (list, dict, set)):
+        if isinstance(arg, list | dict | set):
             # Sort collections for consistent keys
             key_parts.append(str(sorted(str(x) for x in arg)))
         else:
@@ -206,7 +206,7 @@ def deduplicate_key(*args, **kwargs) -> str:
 
     # Add keyword arguments (sorted by key)
     for k, v in sorted(kwargs.items()):
-        if isinstance(v, (list, dict, set)):
+        if isinstance(v, list | dict | set):
             key_parts.append(f"{k}={sorted(str(x) for x in v)}")
         else:
             key_parts.append(f"{k}={v}")

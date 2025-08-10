@@ -88,7 +88,9 @@ def sanitize_path(
         try:
             final_path.relative_to(base_dir)
         except ValueError:
-            raise PathSecurityError(f"Path '{final_path}' is outside base directory '{base_dir}'") from None
+            raise PathSecurityError(
+                f"Path '{final_path}' is outside base directory '{base_dir}'"
+            ) from None
 
     return final_path
 

@@ -81,16 +81,16 @@ class CensusService:
             for dp in api_data:
                 var_code = dp.variable.code
                 if var_code not in variable_stats:
-                    variable_stats[var_code] = {'total': 0, 'valid': 0, 'null': 0}
-                variable_stats[var_code]['total'] += 1
+                    variable_stats[var_code] = {"total": 0, "valid": 0, "null": 0}
+                variable_stats[var_code]["total"] += 1
                 if dp.value is not None:
-                    variable_stats[var_code]['valid'] += 1
+                    variable_stats[var_code]["valid"] += 1
                 else:
-                    variable_stats[var_code]['null'] += 1
+                    variable_stats[var_code]["null"] += 1
 
             self._logger.info("Census data summary by variable:")
             for var_code, stats in variable_stats.items():
-                valid_pct = (stats['valid'] / stats['total'] * 100) if stats['total'] > 0 else 0
+                valid_pct = (stats["valid"] / stats["total"] * 100) if stats["total"] > 0 else 0
                 self._logger.info(
                     f"  {var_code}: {stats['valid']}/{stats['total']} valid ({valid_pct:.1f}%), "
                     f"{stats['null']} null values"
@@ -190,7 +190,7 @@ class CensusService:
         # Group GEOIDs by state and county for more specific API calls
         state_county_groups = self._group_geoids_by_state_and_county(geoids)
 
-        for (state_fips, county_fips) in state_county_groups:
+        for state_fips, county_fips in state_county_groups:
             self._rate_limiter.wait_if_needed("census_api")
 
             try:
@@ -238,7 +238,9 @@ class CensusService:
         # Debug log first few rows to see what data we're getting
         self._logger.debug(f"API Response headers: {headers}")
         if rows:
-            self._logger.debug(f"First row of data: {rows[0][:10] if len(rows[0]) > 10 else rows[0]}")
+            self._logger.debug(
+                f"First row of data: {rows[0][:10] if len(rows[0]) > 10 else rows[0]}"
+            )
             self._logger.debug(f"Total rows returned: {len(rows)}")
 
         for row in rows:
@@ -256,10 +258,21 @@ class CensusService:
                         raw_value = row_dict[var_code]
 
                         # Add debug logging to trace values
-                        self._logger.debug(f"Processing {var_code} for GEOID {geoid}: raw_value={raw_value}")
+                        self._logger.debug(
+                            f"Processing {var_code} for GEOID {geoid}: raw_value={raw_value}"
+                        )
 
                         # Handle census placeholder values
-                        if raw_value in ["-999999999", "-888888888", "-666666666", "-555555555", "-222222222", "-111111111", "null", ""]:
+                        if raw_value in [
+                            "-999999999",
+                            "-888888888",
+                            "-666666666",
+                            "-555555555",
+                            "-222222222",
+                            "-111111111",
+                            "null",
+                            "",
+                        ]:
                             self._logger.debug(f"  -> Filtered as placeholder: {raw_value}")
                             value = None
                         else:
@@ -267,7 +280,7 @@ class CensusService:
                             self._logger.debug(f"  -> Converted to float: {value}")
 
                             # For income and financial variables, negative values are placeholders
-                            if var_code.startswith(('B19', 'B25')) and value < 0:
+                            if var_code.startswith(("B19", "B25")) and value < 0:
                                 self._logger.debug("  -> Filtered as negative monetary value")
                                 value = None
                             # For most other variables, large negative values are placeholders

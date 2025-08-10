@@ -73,7 +73,7 @@ class ErrorContext:
 
 class SocialMapperError(Exception):
     """Base exception for all SocialMapper errors.
-    
+
     This provides rich error context and chaining support.
     """
 
@@ -87,7 +87,7 @@ class SocialMapperError(Exception):
         **kwargs,
     ):
         """Initialize with rich context.
-        
+
         Args:
             message: User-friendly error message
             context: Detailed error context
@@ -191,13 +191,7 @@ class InvalidConfigurationError(ConfigurationError):
 
     def __init__(self, field: str, value: Any, reason: str, **kwargs):
         message = f"Invalid value for '{field}': {value}. {reason}"
-        super().__init__(
-            message,
-            field=field,
-            value=value,
-            reason=reason,
-            **kwargs
-        )
+        super().__init__(message, field=field, value=value, reason=reason, **kwargs)
 
 
 # Validation Errors
@@ -248,11 +242,7 @@ class InvalidTravelTimeError(ValidationError):
     def __init__(self, travel_time: int, min_time: int = 1, max_time: int = 60, **kwargs):
         message = f"Travel time {travel_time} is out of range [{min_time}, {max_time}]"
         super().__init__(
-            message,
-            travel_time=travel_time,
-            min_time=min_time,
-            max_time=max_time,
-            **kwargs
+            message, travel_time=travel_time, min_time=min_time, max_time=max_time, **kwargs
         )
         self.add_suggestion(f"Use a travel time between {min_time} and {max_time} minutes")
 
@@ -293,13 +283,7 @@ class InsufficientDataError(DataProcessingError):
 
     def __init__(self, required: int, found: int, data_type: str = "points", **kwargs):
         message = f"Need at least {required} {data_type}, but only found {found}"
-        super().__init__(
-            message,
-            required=required,
-            found=found,
-            data_type=data_type,
-            **kwargs
-        )
+        super().__init__(message, required=required, found=found, data_type=data_type, **kwargs)
 
 
 # External API Errors
@@ -473,6 +457,7 @@ class MapGenerationError(VisualizationError):
 # Helper functions for error handling
 def handle_with_context(operation: str):
     """Decorator to add operation context to exceptions."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             try:
@@ -484,11 +469,12 @@ def handle_with_context(operation: str):
                 raise
             except Exception as e:
                 # Wrap unexpected exceptions
-                raise SocialMapperError(
-                    f"Unexpected error in {operation}",
-                    cause=e
-                ).with_operation(operation)
+                raise SocialMapperError(f"Unexpected error in {operation}", cause=e).with_operation(
+                    operation
+                )
+
         return wrapper
+
     return decorator
 
 
@@ -508,7 +494,9 @@ def format_error_for_log(error: Exception) -> dict[str, Any]:
             "error_type": type(error).__name__,
             "message": error.message,
             "context": error.context.to_dict(),
-            "traceback": error.get_full_traceback() if hasattr(error, 'get_full_traceback') else None,
+            "traceback": error.get_full_traceback()
+            if hasattr(error, "get_full_traceback")
+            else None,
         }
     else:
         return {

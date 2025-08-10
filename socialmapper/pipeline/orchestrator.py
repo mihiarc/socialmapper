@@ -68,9 +68,7 @@ class PipelineConfig:
 
         # Validate travel time
         if not MIN_TRAVEL_TIME <= self.travel_time <= MAX_TRAVEL_TIME:
-            raise InvalidTravelTimeError(
-                self.travel_time, MIN_TRAVEL_TIME, MAX_TRAVEL_TIME
-            )
+            raise InvalidTravelTimeError(self.travel_time, MIN_TRAVEL_TIME, MAX_TRAVEL_TIME)
 
         # Validate POI configuration
         if not self.custom_coords_path:
@@ -78,14 +76,14 @@ class PipelineConfig:
                 raise InvalidConfigurationError(
                     field="location",
                     value="None",
-                    reason="Either geocode_area or city/state must be provided"
+                    reason="Either geocode_area or city/state must be provided",
                 )
 
             if not self.poi_type or not self.poi_name:
                 raise InvalidConfigurationError(
                     field="POI",
                     value=f"type={self.poi_type}, name={self.poi_name}",
-                    reason="Both poi_type and poi_name must be provided"
+                    reason="Both poi_type and poi_name must be provided",
                 )
 
         # Validate geographic level
@@ -94,7 +92,7 @@ class PipelineConfig:
             raise InvalidConfigurationError(
                 field="geographic_level",
                 value=self.geographic_level,
-                reason=f"Must be one of: {', '.join(valid_levels)}"
+                reason=f"Must be one of: {', '.join(valid_levels)}",
             )
 
 
@@ -233,7 +231,11 @@ class PipelineOrchestrator:
         directories = self.stage_outputs["setup"]
 
         # Get travel mode string
-        travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
+        travel_mode_str = (
+            self.config.travel_mode.value
+            if hasattr(self.config.travel_mode, "value")
+            else str(self.config.travel_mode)
+        )
 
         return export_pipeline_outputs(
             census_data_gdf=census_data_gdf,
@@ -261,7 +263,11 @@ class PipelineOrchestrator:
         directories = self.stage_outputs["setup"]
 
         # Get travel mode string
-        travel_mode_str = self.config.travel_mode.value if hasattr(self.config.travel_mode, 'value') else str(self.config.travel_mode)
+        travel_mode_str = (
+            self.config.travel_mode.value
+            if hasattr(self.config.travel_mode, "value")
+            else str(self.config.travel_mode)
+        )
 
         return generate_pipeline_maps(
             census_data_gdf=census_data_gdf,
@@ -320,7 +326,7 @@ class PipelineOrchestrator:
                         f"Pipeline failed at stage '{stage.name}': No data found",
                         cause=e,
                         stage=stage.name,
-                        completed_stages=list(self.stage_outputs.keys())
+                        completed_stages=list(self.stage_outputs.keys()),
                     ).with_operation("pipeline_execution")
 
             except Exception as e:
@@ -332,13 +338,13 @@ class PipelineOrchestrator:
                 else:
                     self._handle_stage_error(stage.name, e)
                     # Wrap non-SocialMapper errors
-                    if not hasattr(e, 'context'):
+                    if not hasattr(e, "context"):
                         raise DataProcessingError(
                             f"Pipeline failed at stage '{stage.name}': {e!s}",
                             cause=e,
                             stage=stage.name,
                             completed_stages=list(self.stage_outputs.keys()),
-                            config=self.config.__dict__
+                            config=self.config.__dict__,
                         ).with_operation("pipeline_execution")
                     raise
 

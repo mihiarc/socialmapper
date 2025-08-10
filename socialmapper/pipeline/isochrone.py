@@ -58,13 +58,10 @@ def generate_isochrones(
             raise NetworkAnalysisError(
                 f"Failed to analyze {travel_mode.value} network",
                 network_type=travel_mode.value,
-                cause=e
+                cause=e,
             ).add_suggestion("The area may lack sufficient road/path data for this travel mode")
         else:
-            raise IsochroneGenerationError(
-                travel_mode=travel_mode.value,
-                cause=e
-            )
+            raise IsochroneGenerationError(travel_mode=travel_mode.value, cause=e)
 
     # Handle different return types
     if isinstance(isochrone_result, gpd.GeoDataFrame):
@@ -83,32 +80,31 @@ def generate_isochrones(
                 isochrone_gdf = gpd.GeoDataFrame.from_arrow(table)
             except Exception as e2:
                 raise DataProcessingError(
-                    "Failed to load isochrone data from file",
-                    file_path=isochrone_result,
-                    cause=e2
+                    "Failed to load isochrone data from file", file_path=isochrone_result, cause=e2
                 ).with_operation("isochrone_file_loading")
     elif isinstance(isochrone_result, list):
         # If it's a list of GeoDataFrames, combine them
         if all(isinstance(gdf, gpd.GeoDataFrame) for gdf in isochrone_result):
             import pandas as pd
+
             isochrone_gdf = gpd.GeoDataFrame(pd.concat(isochrone_result, ignore_index=True))
         else:
             raise DataProcessingError(
                 "Unexpected isochrone result format",
                 result_type="list",
-                content_type=type(isochrone_result[0]).__name__ if isochrone_result else "empty"
+                content_type=type(isochrone_result[0]).__name__ if isochrone_result else "empty",
             ).with_operation("isochrone_processing")
     else:
         raise DataProcessingError(
-            "Unexpected isochrone result type",
-            result_type=type(isochrone_result).__name__
+            "Unexpected isochrone result type", result_type=type(isochrone_result).__name__
         ).with_operation("isochrone_processing")
 
     if isochrone_gdf is None or isochrone_gdf.empty:
-        raise IsochroneGenerationError(
-            travel_mode=travel_mode.value
-        ).add_suggestion("Check that POI locations are valid and accessible") \
-        .add_suggestion("Verify internet connection for downloading network data")
+        raise (
+            IsochroneGenerationError(travel_mode=travel_mode.value)
+            .add_suggestion("Check that POI locations are valid and accessible")
+            .add_suggestion("Verify internet connection for downloading network data")
+        )
 
     print(f"Generated isochrones for {len(isochrone_gdf)} locations")
     return isochrone_gdf

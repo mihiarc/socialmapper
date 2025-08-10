@@ -101,7 +101,9 @@ class EnhancedCensusAPIClient(CensusAPIClientImpl):
             # Check circuit breaker state
             if self._circuit_breaker.is_open:
                 status = self._circuit_breaker.get_status()
-                self._metrics.record_error("CircuitBreakerOpen", f"Recovery in {status['recovery_time']:.1f}s")
+                self._metrics.record_error(
+                    "CircuitBreakerOpen", f"Recovery in {status['recovery_time']:.1f}s"
+                )
                 raise CensusAPIError(
                     f"Circuit breaker is open due to repeated failures. "
                     f"Retry in {status['recovery_time']:.1f} seconds"
@@ -109,8 +111,7 @@ class EnhancedCensusAPIClient(CensusAPIClientImpl):
 
             # Execute request with circuit breaker
             return self._circuit_breaker.call(
-                self._fetch_census_data_internal,
-                variables, geography, year, dataset, **kwargs
+                self._fetch_census_data_internal, variables, geography, year, dataset, **kwargs
             )
         except CircuitBreakerError as e:
             self._metrics.record_circuit_breaker_open()
@@ -147,8 +148,7 @@ class EnhancedCensusAPIClient(CensusAPIClientImpl):
         total_batches = (len(geoids) + batch_size - 1) // batch_size
 
         self._logger.info(
-            f"Fetching census data in {total_batches} batches "
-            f"({batch_size} geoids per batch)"
+            f"Fetching census data in {total_batches} batches ({batch_size} geoids per batch)"
         )
 
         for i in range(0, len(geoids), batch_size):
@@ -186,10 +186,7 @@ class EnhancedCensusAPIClient(CensusAPIClientImpl):
 
                         if geoid_idx is not None:
                             # Filter rows
-                            filtered_rows = [
-                                row for row in rows
-                                if row[geoid_idx] in county_geoids
-                            ]
+                            filtered_rows = [row for row in rows if row[geoid_idx] in county_geoids]
 
                             if filtered_rows:
                                 all_results.append([headers, *filtered_rows])
@@ -221,7 +218,7 @@ class EnhancedCensusAPIClient(CensusAPIClientImpl):
             min_geoid_length = STATE_FIPS_LENGTH + COUNTY_FIPS_LENGTH
             if len(geoid) >= min_geoid_length:
                 state = geoid[:STATE_FIPS_LENGTH]
-                county = geoid[STATE_FIPS_LENGTH:STATE_FIPS_LENGTH + COUNTY_FIPS_LENGTH]
+                county = geoid[STATE_FIPS_LENGTH : STATE_FIPS_LENGTH + COUNTY_FIPS_LENGTH]
                 counties.setdefault((state, county), set()).add(geoid)
 
         return counties

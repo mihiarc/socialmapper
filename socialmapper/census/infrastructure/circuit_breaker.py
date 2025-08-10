@@ -163,7 +163,9 @@ class CircuitBreaker:
                 "last_failure": (
                     self._last_failure_time.isoformat() if self._last_failure_time else None
                 ),
-                "recovery_time": self._get_recovery_time() if self._state == CircuitState.OPEN else 0,
+                "recovery_time": self._get_recovery_time()
+                if self._state == CircuitState.OPEN
+                else 0,
             }
 
 

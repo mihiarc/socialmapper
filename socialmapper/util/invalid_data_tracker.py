@@ -221,22 +221,37 @@ class InvalidDataTracker:
         print("=" * 60)
 
 
-# Global tracker instance
-_global_tracker: InvalidDataTracker | None = None
+class InvalidDataTrackerSingleton:
+    """Singleton manager for InvalidDataTracker."""
+
+    _instance: InvalidDataTracker | None = None
+
+    @classmethod
+    def get_instance(cls) -> InvalidDataTracker:
+        """Get the singleton tracker instance."""
+        if cls._instance is None:
+            cls._instance = InvalidDataTracker()
+        return cls._instance
+
+    @classmethod
+    def reset_instance(cls, output_dir: str = "output") -> None:
+        """Reset the singleton tracker with a new output directory."""
+        cls._instance = InvalidDataTracker(output_dir)
+
+    @classmethod
+    def clear_instance(cls) -> None:
+        """Clear the singleton instance."""
+        cls._instance = None
 
 
 def get_global_tracker() -> InvalidDataTracker:
     """Get the global invalid data tracker instance."""
-    global _global_tracker
-    if _global_tracker is None:
-        _global_tracker = InvalidDataTracker()
-    return _global_tracker
+    return InvalidDataTrackerSingleton.get_instance()
 
 
 def reset_global_tracker(output_dir: str = "output"):
     """Reset the global tracker with a new output directory."""
-    global _global_tracker
-    _global_tracker = InvalidDataTracker(output_dir)
+    InvalidDataTrackerSingleton.reset_instance(output_dir)
 
 
 def track_invalid_point(point_data: dict[str, Any], reason: str, stage: str = "unknown"):

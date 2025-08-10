@@ -43,10 +43,10 @@ def create_census_api_client(
     Example:
         >>> # Create enhanced client with defaults
         >>> client = create_census_api_client()
-        
+
         >>> # Create basic client without enhancements
         >>> client = create_census_api_client(enhanced=False)
-        
+
         >>> # Create client with custom configuration
         >>> client = create_census_api_client(
         ...     cache_type="memory",
@@ -64,9 +64,7 @@ def create_census_api_client(
         if not logger.handlers:
             handler = logging.StreamHandler()
             handler.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-                )
+                logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             )
             logger.addHandler(handler)
             logger.setLevel(logging.INFO)
@@ -100,18 +98,17 @@ def create_census_cache(cache_type: str = "hybrid", **kwargs: Any):
     Example:
         >>> # Create hybrid cache with custom TTL
         >>> cache = create_census_cache("hybrid", ttl_seconds=7200)
-        
+
         >>> # Create memory-only cache with size limit
         >>> cache = create_census_cache("memory", max_size=5000)
     """
     cache_type = cache_type.lower()
 
     if cache_type == "memory":
-        return InMemoryCacheProvider(
-            max_size=kwargs.get("max_size", 1000)
-        )
+        return InMemoryCacheProvider(max_size=kwargs.get("max_size", 1000))
     elif cache_type == "file":
         from .cache import FileCacheProvider
+
         return FileCacheProvider(
             cache_dir=kwargs.get("cache_dir", ".census_cache"),
             ttl_seconds=kwargs.get("ttl_seconds", 3600),
@@ -146,13 +143,9 @@ def create_rate_limiter(
     Example:
         >>> # Create adaptive rate limiter
         >>> limiter = create_rate_limiter(60, adaptive=True)
-        
+
         >>> # Create fixed rate limiter with burst
-        >>> limiter = create_rate_limiter(
-        ...     60, 
-        ...     adaptive=False, 
-        ...     burst_size=100
-        ... )
+        >>> limiter = create_rate_limiter(60, adaptive=False, burst_size=100)
     """
     if rate_limit_per_minute <= 0:
         return NoOpRateLimiter()
@@ -196,13 +189,12 @@ def create_census_system(
         >>> # Create complete system
         >>> system = create_census_system()
         >>> client = system["client"]
-        >>> 
         >>> # Use the client
         >>> data = client.get_census_data(
         ...     variables=["B01003_001E"],
         ...     geography="state:*",
         ...     year=2022,
-        ...     dataset="acs/acs5"
+        ...     dataset="acs/acs5",
         ... )
     """
     # Extract component-specific config

@@ -11,6 +11,22 @@ from typing import Any
 
 import psutil
 
+# System requirements constants
+MIN_MEMORY_GB = 2.0
+RECOMMENDED_MEMORY_GB = 4.0
+OPTIMAL_MEMORY_GB = 8.0
+HIGH_PERFORMANCE_MEMORY_GB = 16.0
+ENTERPRISE_MEMORY_GB = 32.0
+
+MIN_CPU_CORES = 2
+RECOMMENDED_CPU_CORES = 4
+HIGH_PERFORMANCE_CPU_CORES = 8
+ENTERPRISE_CPU_CORES = 16
+
+MIN_DISK_GB = 1.0
+RECOMMENDED_DISK_GB = 5.0
+OPTIMAL_DISK_GB = 10.0
+
 
 def get_system_capabilities() -> dict[str, Any]:
     """Get comprehensive system capability information.
@@ -117,7 +133,7 @@ def is_memory_constrained() -> bool:
     Returns:
         True if system has limited memory (< 4GB)
     """
-    return get_total_memory_gb() < 4.0
+    return get_total_memory_gb() < RECOMMENDED_MEMORY_GB
 
 
 def is_high_performance_system() -> bool:
@@ -126,7 +142,7 @@ def is_high_performance_system() -> bool:
     Returns:
         True if system has abundant resources (>= 16GB RAM, >= 8 cores)
     """
-    return get_total_memory_gb() >= 16.0 and mp.cpu_count() >= 8
+    return get_total_memory_gb() >= HIGH_PERFORMANCE_MEMORY_GB and mp.cpu_count() >= HIGH_PERFORMANCE_CPU_CORES
 
 
 def get_recommended_cache_size_gb() -> float:
@@ -161,11 +177,11 @@ def get_performance_tier() -> str:
     memory_gb = get_total_memory_gb()
     cpu_count = mp.cpu_count()
 
-    if memory_gb >= 32 and cpu_count >= 16:
+    if memory_gb >= ENTERPRISE_MEMORY_GB and cpu_count >= ENTERPRISE_CPU_CORES:
         return "enterprise"
-    elif memory_gb >= 16 and cpu_count >= 8:
+    elif memory_gb >= HIGH_PERFORMANCE_MEMORY_GB and cpu_count >= HIGH_PERFORMANCE_CPU_CORES:
         return "high"
-    elif memory_gb >= 8 and cpu_count >= 4:
+    elif memory_gb >= OPTIMAL_MEMORY_GB and cpu_count >= RECOMMENDED_CPU_CORES:
         return "medium"
     else:
         return "low"
@@ -185,18 +201,18 @@ def validate_system_requirements() -> dict[str, Any]:
     errors = []
 
     # Check minimum requirements
-    if memory_gb < 2.0:
-        errors.append(f"Insufficient memory: {memory_gb:.1f}GB (minimum 2GB required)")
-    elif memory_gb < 4.0:
-        warnings.append(f"Low memory: {memory_gb:.1f}GB (4GB+ recommended)")
+    if memory_gb < MIN_MEMORY_GB:
+        errors.append(f"Insufficient memory: {memory_gb:.1f}GB (minimum {MIN_MEMORY_GB}GB required)")
+    elif memory_gb < RECOMMENDED_MEMORY_GB:
+        warnings.append(f"Low memory: {memory_gb:.1f}GB ({RECOMMENDED_MEMORY_GB}GB+ recommended)")
 
-    if cpu_count < 2:
-        warnings.append(f"Limited CPU cores: {cpu_count} (2+ recommended)")
+    if cpu_count < MIN_CPU_CORES:
+        warnings.append(f"Limited CPU cores: {cpu_count} ({MIN_CPU_CORES}+ recommended)")
 
-    if free_disk_gb < 1.0:
-        errors.append(f"Insufficient disk space: {free_disk_gb:.1f}GB (minimum 1GB required)")
-    elif free_disk_gb < 5.0:
-        warnings.append(f"Limited disk space: {free_disk_gb:.1f}GB (5GB+ recommended)")
+    if free_disk_gb < MIN_DISK_GB:
+        errors.append(f"Insufficient disk space: {free_disk_gb:.1f}GB (minimum {MIN_DISK_GB}GB required)")
+    elif free_disk_gb < RECOMMENDED_DISK_GB:
+        warnings.append(f"Limited disk space: {free_disk_gb:.1f}GB ({RECOMMENDED_DISK_GB}GB+ recommended)")
 
     return {
         "meets_requirements": len(errors) == 0,
@@ -211,18 +227,18 @@ def _get_system_recommendations(memory_gb: float, cpu_count: int, free_disk_gb: 
     """Get system-specific recommendations."""
     recommendations = []
 
-    if memory_gb < 8.0:
+    if memory_gb < OPTIMAL_MEMORY_GB:
         recommendations.append(
             "Consider increasing memory for better performance with large datasets"
         )
 
-    if cpu_count < 4:
+    if cpu_count < RECOMMENDED_CPU_CORES:
         recommendations.append("More CPU cores would improve parallel processing performance")
 
-    if free_disk_gb < 10.0:
+    if free_disk_gb < OPTIMAL_DISK_GB:
         recommendations.append("More disk space recommended for caching and large outputs")
 
-    if memory_gb >= 16.0 and cpu_count >= 8:
+    if memory_gb >= HIGH_PERFORMANCE_MEMORY_GB and cpu_count >= HIGH_PERFORMANCE_CPU_CORES:
         recommendations.append("System well-suited for high-performance configurations")
 
     return recommendations

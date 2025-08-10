@@ -77,9 +77,7 @@ class NearbyPOIDiscoveryStage:
                 "lat": origin_coords[0],
                 "lon": origin_coords[1],
             }
-            print_success(
-                f"Origin geocoded: {origin_coords[0]:.6f}, {origin_coords[1]:.6f}"
-            )
+            print_success(f"Origin geocoded: {origin_coords[0]:.6f}, {origin_coords[1]:.6f}")
 
             # Step 2: Generate isochrone for the origin
             print_info("\n=== Step 2: Generating Isochrone ===")
@@ -123,12 +121,15 @@ class NearbyPOIDiscoveryStage:
                     )
 
             # Add metadata
-            self.results.metadata.update({
-                "query_categories": self.config.poi_categories or list(POI_CATEGORY_MAPPING.keys()),
-                "excluded_categories": self.config.exclude_categories or [],
-                "max_pois_per_category": self.config.max_pois_per_category,
-                "include_poi_details": self.config.include_poi_details,
-            })
+            self.results.metadata.update(
+                {
+                    "query_categories": self.config.poi_categories
+                    or list(POI_CATEGORY_MAPPING.keys()),
+                    "excluded_categories": self.config.exclude_categories or [],
+                    "max_pois_per_category": self.config.max_pois_per_category,
+                    "include_poi_details": self.config.include_poi_details,
+                }
+            )
 
             print_success(
                 f"\n✓ POI Discovery Complete: {self.results.total_poi_count} POIs found "
@@ -403,7 +404,9 @@ class NearbyPOIDiscoveryStage:
                     if len(pois) > self.config.max_pois_per_category:
                         # Sort by distance and keep closest ones
                         sorted_pois = sorted(pois, key=lambda p: p.straight_line_distance_m)
-                        pois_by_category[category] = sorted_pois[: self.config.max_pois_per_category]
+                        pois_by_category[category] = sorted_pois[
+                            : self.config.max_pois_per_category
+                        ]
 
                         logger.info(
                             f"Limited {category} POIs from {len(pois)} to "
@@ -419,20 +422,19 @@ class NearbyPOIDiscoveryStage:
 
             # Create POI points GeoDataFrame
             if processed_pois:
-                poi_data = []
-                for poi in self.results.get_all_pois():
-                    poi_data.append({
+                poi_data = [
+                    {
                         "id": poi.id,
                         "name": poi.name,
                         "category": poi.category,
                         "subcategory": poi.subcategory,
                         "distance_m": poi.straight_line_distance_m,
                         "geometry": Point(poi.longitude, poi.latitude),
-                    })
+                    }
+                    for poi in self.results.get_all_pois()
+                ]
 
-                self.results.poi_points = gpd.GeoDataFrame(
-                    poi_data, crs="EPSG:4326"
-                )
+                self.results.poi_points = gpd.GeoDataFrame(poi_data, crs="EPSG:4326")
 
             return Ok(None)
 
@@ -455,12 +457,12 @@ class NearbyPOIDiscoveryStage:
         Returns:
             Formatted address string or None
         """
-        address_parts = []
-
         # Common address components in order
-        for key in ["addr:housenumber", "addr:street", "addr:city", "addr:state", "addr:postcode"]:
-            if key in tags:
-                address_parts.append(tags[key])
+        address_parts = [
+            tags[key]
+            for key in ["addr:housenumber", "addr:street", "addr:city", "addr:state", "addr:postcode"]
+            if key in tags
+        ]
 
         return ", ".join(address_parts) if address_parts else None
 
@@ -474,7 +476,9 @@ class NearbyPOIDiscoveryStage:
             # Create output directory
             self.config.output_dir.mkdir(parents=True, exist_ok=True)
 
-            base_name = f"poi_discovery_{self.config.travel_time}min_{self.config.travel_mode.value}"
+            base_name = (
+                f"poi_discovery_{self.config.travel_time}min_{self.config.travel_mode.value}"
+            )
 
             # Export CSV if requested
             if self.config.export_csv and self.results.total_poi_count > 0:
@@ -491,7 +495,10 @@ class NearbyPOIDiscoveryStage:
                     self.results.files_generated["poi_geojson"] = geojson_path
                     print_success(f"Exported POI GeoJSON: {geojson_path}")
 
-                if self.results.isochrone_geometry is not None and not self.results.isochrone_geometry.empty:
+                if (
+                    self.results.isochrone_geometry is not None
+                    and not self.results.isochrone_geometry.empty
+                ):
                     isochrone_path = self.config.output_dir / f"{base_name}_isochrone.geojson"
                     self.results.isochrone_geometry.to_file(isochrone_path, driver="GeoJSON")
                     self.results.files_generated["isochrone_geojson"] = isochrone_path
@@ -505,7 +512,9 @@ class NearbyPOIDiscoveryStage:
                     self.results.files_generated["map"] = map_path
                     print_success(f"Created map: {map_path}")
                 else:
-                    self.results.warnings.append(f"Map creation failed: {map_result.unwrap_err().message}")
+                    self.results.warnings.append(
+                        f"Map creation failed: {map_result.unwrap_err().message}"
+                    )
 
             return Ok(None)
 
@@ -539,12 +548,14 @@ class NearbyPOIDiscoveryStage:
             }
 
             if self.config.include_poi_details:
-                row.update({
-                    "address": poi.address or "",
-                    "phone": poi.phone or "",
-                    "website": poi.website or "",
-                    "opening_hours": poi.opening_hours or "",
-                })
+                row.update(
+                    {
+                        "address": poi.address or "",
+                        "phone": poi.phone or "",
+                        "website": poi.website or "",
+                        "opening_hours": poi.opening_hours or "",
+                    }
+                )
 
             rows.append(row)
 
@@ -583,7 +594,10 @@ class NearbyPOIDiscoveryStage:
             ).add_to(m)
 
             # Add isochrone polygon
-            if self.results.isochrone_geometry is not None and not self.results.isochrone_geometry.empty:
+            if (
+                self.results.isochrone_geometry is not None
+                and not self.results.isochrone_geometry.empty
+            ):
                 isochrone_geojson = json.loads(self.results.isochrone_geometry.to_json())
                 folium.GeoJson(
                     isochrone_geojson,
@@ -601,10 +615,24 @@ class NearbyPOIDiscoveryStage:
 
             # Color palette for categories
             colors = [
-                "blue", "green", "purple", "orange", "darkred",
-                "lightred", "beige", "darkblue", "darkgreen", "cadetblue",
-                "darkpurple", "white", "pink", "lightblue", "lightgreen",
-                "gray", "black", "lightgray"
+                "blue",
+                "green",
+                "purple",
+                "orange",
+                "darkred",
+                "lightred",
+                "beige",
+                "darkblue",
+                "darkgreen",
+                "cadetblue",
+                "darkpurple",
+                "white",
+                "pink",
+                "lightblue",
+                "lightgreen",
+                "gray",
+                "black",
+                "lightgray",
             ]
 
             category_colors = {}
@@ -618,7 +646,7 @@ class NearbyPOIDiscoveryStage:
                     <b>{poi.name}</b><br>
                     Category: {poi.category}<br>
                     Subcategory: {poi.subcategory}<br>
-                    Distance: {poi.straight_line_distance_m/1000:.1f} km
+                    Distance: {poi.straight_line_distance_m / 1000:.1f} km
                     """
 
                     if poi.address:
@@ -633,23 +661,25 @@ class NearbyPOIDiscoveryStage:
                     ).add_to(marker_cluster)
 
             # Add legend
-            legend_html = '''
-            <div style="position: fixed; 
+            legend_html = """
+            <div style="position: fixed;
                         top: 10px; right: 10px; width: 200px; height: auto;
                         background-color: white; z-index: 1000; font-size: 14px;
                         border: 2px solid grey; border-radius: 5px; padding: 10px">
                 <p style="margin: 0; font-weight: bold;">POI Categories</p>
-            '''
+            """
 
             for category, color in category_colors.items():
                 count = self.results.category_counts.get(category, 0)
                 legend_html += f'<p style="margin: 2px;"><span style="color: {color};">⬤</span> {category} ({count})</p>'
 
-            legend_html += '</div>'
+            legend_html += "</div>"
             m.get_root().html.add_child(folium.Element(legend_html))
 
             # Save map
-            map_path = self.config.output_dir / f"poi_discovery_map_{self.config.travel_time}min.html"
+            map_path = (
+                self.config.output_dir / f"poi_discovery_map_{self.config.travel_time}min.html"
+            )
             m.save(str(map_path))
 
             return Ok(map_path)
@@ -699,11 +729,11 @@ def execute_poi_discovery_pipeline(
             poi_categories=["food_and_drink", "shopping"],
             export_csv=True,
             create_map=True,
-            output_dir=Path("output/poi_discovery")
+            output_dir=Path("output/poi_discovery"),
         )
 
         result = execute_poi_discovery_pipeline(config)
-        
+
         match result:
             case Ok(poi_result):
                 print(f"Found {poi_result.total_poi_count} POIs")
@@ -741,6 +771,7 @@ def execute_poi_discovery_pipeline(
 
 
 # Helper functions for common use cases
+
 
 def discover_pois_near_address(
     address: str,

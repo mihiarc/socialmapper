@@ -1,6 +1,6 @@
 """SocialMapper: Backend Toolkit for Spatial Analysis.
 
-An open-source Python backend toolkit for spatial analysis, demographic mapping, 
+An open-source Python backend toolkit for spatial analysis, demographic mapping,
 and geospatial data processing. Provides APIs and services for community mapping.
 """
 
@@ -139,57 +139,88 @@ from .exceptions import (
 # Import tutorial helpers
 from .tutorial_helper import tutorial_error_handler
 
+# Import NLP module if available
+try:
+    from .nlp import (
+        NLQueryProcessor,
+        EntityType,
+        QueryIntent,
+        IntentClassifier,
+        EntityExtractor,
+        QueryTranslator,
+    )
+    _NLP_AVAILABLE = True
+except ImportError:
+    _NLP_AVAILABLE = False
+
 # Build __all__ based on available features
 __all__ = [
+    # Backend configuration
+    "BackendConfig",
     "CacheStrategy",
+    "CensusAPIError",
     "CensusSystem",
     "CensusSystemBuilder",
+    "ConfigurationError",
+    "DataProcessingError",
+    "ExternalAPIError",
+    "InvalidLocationError",
+    "MissingAPIKeyError",
+    "NoDataFoundError",
+    "OSMAPIError",
     "RepositoryType",
+    # Error handling
+    "SocialMapperError",
     "StateFormat",
+    "ValidationError",
     "VariableFormat",
+    "get_api_base_url",
+    "get_backend_config",
     # Modern census system
     "get_census_system",
     "get_counties_from_pois",
     # Neighbor functions
     "get_geography_from_point",
     "get_legacy_adapter",
-    # Backend configuration
-    "BackendConfig",
-    "get_backend_config",
-    "get_api_base_url",
     "get_runtime_config",
-    # Error handling
-    "SocialMapperError",
-    "ConfigurationError",
-    "ValidationError",
-    "DataProcessingError",
-    "ExternalAPIError",
-    "MissingAPIKeyError",
-    "InvalidLocationError",
-    "NoDataFoundError",
-    "CensusAPIError",
-    "OSMAPIError",
     "tutorial_error_handler",
 ]
 
 # Add API items if available
 if _MODERN_API_AVAILABLE:
-    __all__.extend([
-        "Err",
-        "Ok",
-        "Result",
-        "SocialMapperBuilder",
-        # Modern API (primary interface)
-        "SocialMapperClient",
-        "analyze_location",
-        "quick_analysis",
-    ])
+    __all__.extend(
+        [
+            "Err",
+            "Ok",
+            "Result",
+            "SocialMapperBuilder",
+            # Modern API (primary interface)
+            "SocialMapperClient",
+            "analyze_location",
+            "quick_analysis",
+        ]
+    )
 
 # Add visualization items if available
 if _VISUALIZATION_AVAILABLE:
-    __all__.extend([
-        "ChoroplethMap",
-        "ColorScheme",
-        "MapConfig",
-        "MapType",
-    ])
+    __all__.extend(
+        [
+            "ChoroplethMap",
+            "ColorScheme",
+            "MapConfig",
+            "MapType",
+        ]
+    )
+
+# Add NLP items if available
+if _NLP_AVAILABLE:
+    __all__.extend(
+        [
+            "EntityExtractor",
+            "EntityType",
+            "IntentClassifier",
+            "NLQueryProcessor",
+            "QueryIntent",
+            "QueryTranslator",
+        ]
+    )

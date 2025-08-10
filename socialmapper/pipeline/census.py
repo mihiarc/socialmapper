@@ -121,7 +121,9 @@ def integrate_census_data(
             with get_progress_bar(
                 total=1, desc="🏛️ Finding Census Block Groups (spatial query)", unit="query"
             ) as pbar:
-                geographic_units_gdf = spatial_service.fetch_block_groups_by_isochrones(isochrone_gdf)
+                geographic_units_gdf = spatial_service.fetch_block_groups_by_isochrones(
+                    isochrone_gdf
+                )
                 pbar.update(1)
 
             if geographic_units_gdf is None or geographic_units_gdf.empty:
@@ -136,7 +138,9 @@ def integrate_census_data(
 
                 # Get counties from POI locations
                 logger.info(f"Getting counties from {len(poi_data.get('pois', []))} POIs")
-                counties = census_system.get_counties_from_pois(poi_data["pois"], include_neighbors=True)
+                counties = census_system.get_counties_from_pois(
+                    poi_data["pois"], include_neighbors=True
+                )
 
                 if not counties:
                     # Log more details about the failure
@@ -144,9 +148,13 @@ def integrate_census_data(
                     logger.error(f"POI count: {len(poi_data.get('pois', []))}")
                     if poi_data.get("pois"):
                         sample_poi = poi_data["pois"][0]
-                        logger.error(f"Sample POI: lat={sample_poi.get('lat')}, lon={sample_poi.get('lon')}")
+                        logger.error(
+                            f"Sample POI: lat={sample_poi.get('lat')}, lon={sample_poi.get('lon')}"
+                        )
                     print("⚠️ Could not determine counties from POI locations")
-                    raise ValueError("Failed to determine counties for census data. This may be due to geocoding service issues.")
+                    raise ValueError(
+                        "Failed to determine counties for census data. This may be due to geocoding service issues."
+                    )
 
                 with get_progress_bar(
                     total=len(counties), desc="🏛️ Fetching Census Block Groups", unit="county"
@@ -170,7 +178,9 @@ def integrate_census_data(
     # Debug: Check what we have before distance calculation
     logger.info(f"Geographic units GDF shape: {geographic_units_gdf.shape}")
     logger.info(f"Geographic units columns: {list(geographic_units_gdf.columns)}")
-    logger.info(f"POI data keys: {list(poi_data.keys()) if isinstance(poi_data, dict) else 'Not a dict'}")
+    logger.info(
+        f"POI data keys: {list(poi_data.keys()) if isinstance(poi_data, dict) else 'Not a dict'}"
+    )
     if not geographic_units_gdf.empty:
         logger.info(f"First row sample: {geographic_units_gdf.iloc[0].to_dict()}")
 
@@ -182,6 +192,7 @@ def integrate_census_data(
     except Exception as e:
         logger.error(f"Error in add_travel_distances: {type(e).__name__}: {e}")
         import traceback
+
         logger.error(f"Full traceback:\n{traceback.format_exc()}")
         raise
 
@@ -192,7 +203,9 @@ def integrate_census_data(
     try:
         geoids = units_with_distances["GEOID"].tolist()
     except KeyError as e:
-        logger.error(f"GEOID column not found in units_with_distances. Available columns: {list(units_with_distances.columns)}")
+        logger.error(
+            f"GEOID column not found in units_with_distances. Available columns: {list(units_with_distances.columns)}"
+        )
         raise ValueError(f"Missing GEOID column in geographic units data: {e}") from e
 
     unit_desc = "ZCTA" if geographic_level == "zcta" else "block"
@@ -251,7 +264,7 @@ def integrate_census_data(
                 "sample_geoids": geoids[:5] if geoids else [],
                 "census_codes": census_codes,
                 "error_type": type(e).__name__,
-                "error_message": str(e)
+                "error_message": str(e),
             }
             logger.error(f"Census data fetch failed with details: {error_details}")
             raise ValueError(f"Failed to fetch census data: {e}") from e

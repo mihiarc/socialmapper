@@ -201,7 +201,9 @@ class SocialMapperBuilder:
 
     def with_geographic_level(self, level: GeographicLevel) -> Self:
         """Set the geographic unit for census analysis."""
-        self._config["geographic_level"] = level.value if isinstance(level, GeographicLevel) else level
+        self._config["geographic_level"] = (
+            level.value if isinstance(level, GeographicLevel) else level
+        )
         return self
 
     def limit_pois(self, max_count: int) -> Self:
@@ -295,9 +297,7 @@ class SocialMapperBuilder:
         errors = self.validate()
         if errors:
             raise InvalidConfigurationError(
-                field="configuration",
-                value="multiple errors",
-                reason="\n".join(errors)
+                field="configuration", value="multiple errors", reason="\n".join(errors)
             ).add_suggestion("Fix the configuration errors listed above")
 
         config = self._config.copy()
@@ -327,13 +327,13 @@ class SocialMapperBuilder:
         poi_categories: list[str] | None = None,
     ) -> Self:
         """Configure nearby POI discovery analysis.
-        
+
         Args:
             location: Either an address string or (lat, lon) tuple for the origin
             travel_time: Travel time in minutes for isochrone generation
             travel_mode: Travel mode (walk, bike, drive)
             poi_categories: Optional list of POI categories to include
-            
+
         Returns:
             Self for method chaining
         """
@@ -391,10 +391,10 @@ class SocialMapperBuilder:
 
     def with_poi_categories(self, *categories: str) -> Self:
         """Set POI categories to include in discovery.
-        
+
         Args:
             *categories: POI category names to include
-            
+
         Returns:
             Self for method chaining
         """
@@ -417,15 +417,17 @@ class SocialMapperBuilder:
 
     def exclude_poi_categories(self, *categories: str) -> Self:
         """Set POI categories to exclude from discovery.
-        
+
         Args:
             *categories: POI category names to exclude
-            
+
         Returns:
             Self for method chaining
         """
         if not categories:
-            self._validation_errors.append("At least one POI category must be specified for exclusion")
+            self._validation_errors.append(
+                "At least one POI category must be specified for exclusion"
+            )
             return self
 
         # Validate all categories
@@ -443,15 +445,17 @@ class SocialMapperBuilder:
 
     def limit_pois_per_category(self, max_count: int) -> Self:
         """Set maximum number of POIs per category.
-        
+
         Args:
             max_count: Maximum POIs to return per category
-            
+
         Returns:
             Self for method chaining
         """
         if max_count < 1:
-            self._validation_errors.append(f"POI limit per category must be positive, got {max_count}")
+            self._validation_errors.append(
+                f"POI limit per category must be positive, got {max_count}"
+            )
             return self
 
         self._config["max_pois_per_category"] = max_count
@@ -463,7 +467,7 @@ class SocialMapperBuilder:
 
     def list_available_poi_categories(self) -> dict[str, Any]:
         """List available POI categories with details.
-        
+
         Returns:
             Dictionary containing category information
         """

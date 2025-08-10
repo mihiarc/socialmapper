@@ -84,7 +84,9 @@ class GeoParquetExporter(BaseExporter):
                 if col_type == "object":
                     # Try to convert to categorical for better compression
                     unique_ratio = gdf_optimized[col].nunique() / len(gdf_optimized)
-                    if unique_ratio < CATEGORICAL_CONVERSION_THRESHOLD:  # Less than 50% unique values
+                    if (
+                        unique_ratio < CATEGORICAL_CONVERSION_THRESHOLD
+                    ):  # Less than 50% unique values
                         gdf_optimized[col] = gdf_optimized[col].astype("category")
 
                 elif col_type in ["int64", "float64"]:

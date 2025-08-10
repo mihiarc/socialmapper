@@ -25,9 +25,9 @@ from .exceptions import (
 @contextmanager
 def tutorial_error_handler(tutorial_name: str = "Tutorial"):
     """Context manager for handling errors in tutorials.
-    
+
     Provides user-friendly error messages and helpful suggestions.
-    
+
     Example:
         ```python
         with tutorial_error_handler("Getting Started Tutorial"):
@@ -118,19 +118,20 @@ def tutorial_error_handler(tutorial_name: str = "Tutorial"):
 
 def safe_import(module_name: str, package: str | None = None) -> Any:
     """Safely import a module with helpful error messages.
-    
+
     Args:
         module_name: Name of module to import
         package: Package name for installation instructions
-        
+
     Returns:
         Imported module or None if import failed
     """
     try:
-        if module_name.startswith('.'):
+        if module_name.startswith("."):
             # Relative import
             from importlib import import_module
-            return import_module(module_name, package='socialmapper')
+
+            return import_module(module_name, package="socialmapper")
         else:
             # Absolute import
             return __import__(module_name)
@@ -147,7 +148,7 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
 
 def check_dependencies() -> bool:
     """Check if all backend tutorial dependencies are available.
-    
+
     Returns:
         True if all dependencies are available
     """
@@ -172,10 +173,10 @@ def check_dependencies() -> bool:
 
 def validate_tutorial_config(config: dict[str, Any]) -> None:
     """Validate tutorial configuration with helpful error messages.
-    
+
     Args:
         config: Configuration dictionary to validate
-        
+
     Raises:
         ConfigurationError: If configuration is invalid
     """
@@ -186,7 +187,7 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
         raise ConfigurationError(
             f"Missing required configuration: {', '.join(missing)}",
             config=config,
-            missing_fields=missing
+            missing_fields=missing,
         ).add_suggestion("Check that all required parameters are provided")
 
     # Validate location format
@@ -202,13 +203,13 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
                 "Invalid travel time",
                 field="travel_time",
                 value=travel_time,
-                reason="Must be an integer between 1 and 60 minutes"
+                reason="Must be an integer between 1 and 60 minutes",
             )
 
 
 def print_tutorial_header(title: str, description: str) -> None:
     """Print a formatted tutorial header.
-    
+
     Args:
         title: Tutorial title
         description: Tutorial description
@@ -221,7 +222,7 @@ def print_tutorial_header(title: str, description: str) -> None:
 
 def print_tutorial_section(title: str) -> None:
     """Print a formatted section header.
-    
+
     Args:
         title: Section title
     """

@@ -1,5 +1,4 @@
-"""Middleware components for the SocialMapper API server.
-"""
+"""Middleware components for the SocialMapper API server."""
 
 from .auth import APIKeyMiddleware, setup_api_key_auth
 from .cors import setup_cors
@@ -13,5 +12,5 @@ __all__ = [
     "setup_api_key_auth",
     "setup_cors",
     "setup_error_handling",
-    "setup_rate_limiting"
+    "setup_rate_limiting",
 ]

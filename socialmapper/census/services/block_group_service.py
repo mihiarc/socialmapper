@@ -57,7 +57,7 @@ class BlockGroupService:
                     f"Loaded cached block groups for county {county_fips} in state {state_fips}"
                 )
                 # Extract data from CacheEntry if needed
-                if hasattr(cached_entry, 'data'):
+                if hasattr(cached_entry, "data"):
                     return cached_entry.data
                 return cached_entry
 

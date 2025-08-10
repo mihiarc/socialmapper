@@ -318,9 +318,11 @@ class RateLimitedClient:
         return self.request("POST", url, **kwargs)
 
     def __enter__(self):
+        """Enter context manager."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Exit context manager and close client."""
         self.client.close()
 
     def close(self):
@@ -407,9 +409,11 @@ class AsyncRateLimitedClient:
         return await self.request("POST", url, **kwargs)
 
     async def __aenter__(self):
+        """Enter async context manager."""
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
+        """Exit async context manager and close client."""
         await self.client.aclose()
 
     async def aclose(self):

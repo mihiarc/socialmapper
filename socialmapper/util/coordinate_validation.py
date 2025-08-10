@@ -53,6 +53,7 @@ class Coordinate(BaseModel):
     def to_point(self):
         """Convert coordinate to Shapely Point."""
         from shapely.geometry import Point
+
         return Point(self.lon, self.lat)
 
 
@@ -156,7 +157,7 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
             validation_errors=["No POI data provided"],
             total_input=0,
             total_valid=0,
-            total_invalid=0
+            total_invalid=0,
         )
 
     validated_coords = []
@@ -223,21 +224,13 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
                     error_msg = "Unknown validation error"
                 logger.warning(f"POI {i}: {error_msg}")
                 validation_errors.append(f"POI {i}: {error_msg}")
-                invalid_coords.append({
-                    "index": i,
-                    "data": poi,
-                    "error": error_msg
-                })
+                invalid_coords.append({"index": i, "data": poi, "error": error_msg})
 
         except Exception as e:
             error_msg = f"Unexpected error: {e!s}"
             logger.warning(f"POI {i}: {error_msg}")
             validation_errors.append(f"POI {i}: {error_msg}")
-            invalid_coords.append({
-                "index": i,
-                "data": poi,
-                "error": error_msg
-            })
+            invalid_coords.append({"index": i, "data": poi, "error": error_msg})
 
     return ValidationResult(
         valid_coordinates=validated_coords,
@@ -245,11 +238,13 @@ def validate_poi_coordinates(poi_data: dict[str, Any] | list[dict[str, Any]]) ->
         validation_errors=validation_errors,
         total_input=len(pois),
         total_valid=len(validated_coords),
-        total_invalid=len(invalid_coords)
+        total_invalid=len(invalid_coords),
     )
 
 
-def validate_coordinate_cluster(coordinates: list[dict[str, Any]], cluster_id: str | None = None) -> CoordinateCluster:
+def validate_coordinate_cluster(
+    coordinates: list[dict[str, Any]], cluster_id: str | None = None
+) -> CoordinateCluster:
     """Validate a cluster of coordinates.
 
     Args:

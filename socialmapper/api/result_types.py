@@ -11,6 +11,9 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 
+from ..constants import validate_coordinates, validate_travel_time
+from ..isochrone.travel_modes import TravelMode
+
 T = TypeVar("T")
 E = TypeVar("E")
 
@@ -323,9 +326,6 @@ class ResultCollector:
 # POI DISCOVERY DATA STRUCTURES
 # =============================================================================
 
-# Import travel mode for type hints
-from ..constants import validate_coordinates, validate_travel_time
-from ..isochrone.travel_modes import TravelMode
 
 
 @dataclass(frozen=True)
@@ -406,7 +406,9 @@ class NearbyPOIDiscoveryConfig:
 
         # Validate travel time
         if not validate_travel_time(self.travel_time):
-            raise ValueError(f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes")
+            raise ValueError(
+                f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"
+            )
 
         # Validate location if coordinates
         if isinstance(self.location, tuple):
@@ -467,7 +469,9 @@ class NearbyPOIResult:
         sorted_pois = sorted(all_pois, key=lambda poi: poi.straight_line_distance_m)
 
         if max_distance_m is not None:
-            sorted_pois = [poi for poi in sorted_pois if poi.straight_line_distance_m <= max_distance_m]
+            sorted_pois = [
+                poi for poi in sorted_pois if poi.straight_line_distance_m <= max_distance_m
+            ]
 
         return sorted_pois
 

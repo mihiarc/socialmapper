@@ -368,14 +368,10 @@ def create_isochrones_from_poi_list(
             poi_name = isochrone_gdf["poi_name"].iloc[0].lower().replace(" ", "_")
 
             if use_parquet and USE_ARROW:
-                isochrone_file = os.path.join(
-                    output_dir, f"isochrone{travel_time_limit}_{poi_name}.parquet"
-                )
+                isochrone_file = Path(output_dir) / f"isochrone{travel_time_limit}_{poi_name}.parquet"
                 isochrone_gdf.to_parquet(isochrone_file)
             else:
-                isochrone_file = os.path.join(
-                    output_dir, f"isochrone{travel_time_limit}_{poi_name}.geojson"
-                )
+                isochrone_file = Path(output_dir) / f"isochrone{travel_time_limit}_{poi_name}.geojson"
                 isochrone_gdf.to_file(isochrone_file, driver="GeoJSON", use_arrow=USE_ARROW)
 
             isochrone_files.append(isochrone_file)
@@ -387,14 +383,10 @@ def create_isochrones_from_poi_list(
         if save_individual_files:
             # Save combined result
             if use_parquet and USE_ARROW:
-                combined_file = os.path.join(
-                    output_dir, f"combined_isochrones_{travel_time_limit}min.parquet"
-                )
+                combined_file = Path(output_dir) / f"combined_isochrones_{travel_time_limit}min.parquet"
                 combined_gdf.to_parquet(combined_file)
             else:
-                combined_file = os.path.join(
-                    output_dir, f"combined_isochrones_{travel_time_limit}min.geojson"
-                )
+                combined_file = Path(output_dir) / f"combined_isochrones_{travel_time_limit}min.geojson"
                 combined_gdf.to_file(combined_file, driver="GeoJSON", use_arrow=USE_ARROW)
             return combined_file
         else:

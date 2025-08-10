@@ -33,11 +33,11 @@ COORDINATE_PRECISION = 7
 
 def _format_coordinate(value: float, precision: int = COORDINATE_PRECISION) -> str:
     """Format a coordinate value with specified precision.
-    
+
     Args:
         value: Coordinate value (latitude or longitude)
         precision: Number of decimal places
-        
+
     Returns:
         Formatted coordinate string
     """
@@ -46,13 +46,13 @@ def _format_coordinate(value: float, precision: int = COORDINATE_PRECISION) -> s
 
 def _polygon_to_overpass_format(polygon: Polygon) -> str:
     """Convert a Shapely Polygon to Overpass API polygon format.
-    
+
     Args:
         polygon: Shapely Polygon object
-        
+
     Returns:
         Space-separated string of lat/lon pairs
-        
+
     Raises:
         ValueError: If polygon has too many coordinates
     """
@@ -68,20 +68,17 @@ def _polygon_to_overpass_format(polygon: Polygon) -> str:
     # Format as "lat1 lon1 lat2 lon2 ..."
     coord_pairs = []
     for lon, lat in coords:  # Shapely uses (lon, lat) order
-        coord_pairs.extend([
-            _format_coordinate(lat),
-            _format_coordinate(lon)
-        ])
+        coord_pairs.extend([_format_coordinate(lat), _format_coordinate(lon)])
 
     return " ".join(coord_pairs)
 
 
 def _multipolygon_to_overpass_queries(multipolygon: MultiPolygon) -> list[str]:
     """Convert a MultiPolygon to multiple Overpass polygon queries.
-    
+
     Args:
         multipolygon: Shapely MultiPolygon object
-        
+
     Returns:
         List of polygon format strings, one for each polygon
     """
@@ -100,11 +97,11 @@ def _multipolygon_to_overpass_queries(multipolygon: MultiPolygon) -> list[str]:
 
 def _build_category_tag_filters(categories: list[str] | None = None) -> list[dict[str, str]]:
     """Build tag filters for specified POI categories.
-    
+
     Args:
         categories: List of category names from POI_CATEGORY_MAPPING.
                    If None, includes all categories.
-                   
+
     Returns:
         List of tag filter dictionaries
     """
@@ -144,72 +141,70 @@ def _build_category_tag_filters(categories: list[str] | None = None) -> list[dic
     return tag_filters
 
 
+# OSM key mappings for POI categories
+_OSM_KEY_MAPPINGS = {
+    "food_and_drink": {
+        "amenity": {
+            "restaurant", "cafe", "bar", "fast_food", "pub",
+            "food_court", "ice_cream", "biergarten", "nightclub"
+        },
+        "shop": "*"  # Default for food_and_drink category
+    },
+    "shopping": {
+        "amenity": {"shop", "marketplace"},
+        "shop": "*"  # Default for shopping category
+    },
+    "education": {
+        "amenity": "*"  # All education values go to amenity
+    },
+    "healthcare": {
+        "amenity": {"pharmacy"},
+        "healthcare": "*"  # Default for healthcare category
+    },
+    "transportation": {
+        "amenity": {"fuel", "charging_station", "parking", "taxi"},
+        "railway": {"bus_station", "train_station"},
+        "public_transport": "*"  # Default for transportation category
+    },
+    "recreation": {
+        "amenity": {"cinema", "theatre"},
+        "leisure": "*"  # Default for recreation category
+    },
+    "services": {
+        "amenity": {"bank", "atm", "post_office", "police", "fire_station"},
+        "office": "*"  # Default for services category
+    },
+    "accommodation": {
+        "tourism": "*"  # All accommodation values go to tourism
+    },
+    "religious": {
+        "amenity": {"place_of_worship"},
+        "building": "*"  # Default for religious category
+    },
+    "utilities": {
+        "amenity": "*"  # All utilities values go to amenity
+    }
+}
+
+
 def _infer_osm_key(value: str, category: str) -> str:
     """Infer the OSM key for a given value based on category context.
-    
+
     Args:
         value: The OSM tag value
         category: The POI category
-        
+
     Returns:
         The inferred OSM key (e.g., 'amenity', 'shop', 'leisure')
     """
-    # Common patterns based on category
-    if category == "food_and_drink":
-        if value in ["restaurant", "cafe", "bar", "fast_food", "pub", "food_court",
-                     "ice_cream", "biergarten", "nightclub"]:
-            return "amenity"
-        else:
-            return "shop"
+    category_mapping = _OSM_KEY_MAPPINGS.get(category, {})
 
-    elif category == "shopping":
-        if value in ["shop", "marketplace"]:
-            return "amenity"
-        else:
-            return "shop"
+    # Check each OSM key in the category mapping
+    for osm_key, values in category_mapping.items():
+        if values == "*" or value in values:
+            return osm_key
 
-    elif category == "education":
-        return "amenity"
-
-    elif category == "healthcare":
-        if value in ["pharmacy"]:
-            return "amenity"
-        else:
-            return "healthcare"
-
-    elif category == "transportation":
-        if value in ["fuel", "charging_station", "parking", "taxi"]:
-            return "amenity"
-        elif value in ["bus_station", "train_station"]:
-            return "railway"
-        else:
-            return "public_transport"
-
-    elif category == "recreation":
-        if value in ["cinema", "theatre"]:
-            return "amenity"
-        else:
-            return "leisure"
-
-    elif category == "services":
-        if value in ["bank", "atm", "post_office", "police", "fire_station"]:
-            return "amenity"
-        else:
-            return "office"
-
-    elif category == "accommodation":
-        return "tourism"
-
-    elif category == "religious":
-        if value == "place_of_worship":
-            return "amenity"
-        else:
-            return "building"
-
-    elif category == "utilities":
-        return "amenity"
-
-    # Default fallback
+    # Default fallback if no category match
     return "amenity"
 
 
@@ -220,29 +215,26 @@ def build_poi_discovery_query(
     additional_tags: dict[str, str] | None = None,
 ) -> str:
     """Build an Overpass API query for POI discovery within a polygon.
-    
+
     Args:
         geometry: Shapely Polygon or MultiPolygon defining the search area
         categories: Optional list of POI categories to filter by
         timeout: Query timeout in seconds
         additional_tags: Optional additional OSM tags to filter by
-        
+
     Returns:
         Complete Overpass API query string
-        
+
     Raises:
         ValueError: If geometry is not a Polygon or MultiPolygon
     """
-    if not isinstance(geometry, (Polygon, MultiPolygon)):
+    if not isinstance(geometry, Polygon | MultiPolygon):
         raise ValueError(
             f"Geometry must be a Polygon or MultiPolygon, got {type(geometry).__name__}"
         )
 
     # Start query with JSON output and timeout
-    query_parts = [
-        f"[out:json][timeout:{timeout}];",
-        "("
-    ]
+    query_parts = [f"[out:json][timeout:{timeout}];", "("]
 
     # Get polygon strings
     if isinstance(geometry, Polygon):
@@ -279,10 +271,7 @@ def build_poi_discovery_query(
             query_parts.append(f'  relation{tag_str}(poly:"{polygon_str}");')
 
     # Close union and add output statement
-    query_parts.extend([
-        ");",
-        "out center;"
-    ])
+    query_parts.extend([");", "out center;"])
 
     return "\n".join(query_parts)
 
@@ -290,13 +279,13 @@ def build_poi_discovery_query(
 @with_retry(max_retries=3, base_delay=2.0, service="openstreetmap")
 def _query_overpass_with_polygon(query: str) -> overpy.Result:
     """Execute an Overpass API query with retry logic.
-    
+
     Args:
         query: The Overpass API query string
-        
+
     Returns:
         Query result from overpy
-        
+
     Raises:
         Exception: If query fails after retries
     """
@@ -319,27 +308,27 @@ def query_pois_in_polygon(
     simplify_tolerance: float | None = None,
 ) -> dict[str, Any]:
     """Query POIs within a polygon boundary using Overpass API.
-    
+
     This function builds and executes an Overpass API query to find POIs
     within the specified polygon geometry, with optional category filtering.
-    
+
     Args:
         geometry: Shapely Polygon or MultiPolygon defining the search area
         categories: Optional list of POI categories to filter by (from POI_CATEGORY_MAPPING)
         timeout: Query timeout in seconds (default: 180)
         additional_tags: Optional additional OSM tags to filter by
         simplify_tolerance: Optional tolerance for simplifying the geometry before querying
-        
+
     Returns:
         Dictionary containing:
             - poi_count: Total number of POIs found
             - pois: List of POI dictionaries with id, type, lat, lon, tags
             - query_info: Metadata about the query (geometry area, categories, etc.)
-            
+
     Raises:
         ValueError: If geometry is invalid or too complex
         Exception: If Overpass API query fails
-        
+
     Example:
         >>> from shapely.geometry import Polygon
         >>> # Create a simple square polygon
@@ -356,9 +345,7 @@ def query_pois_in_polygon(
     if simplify_tolerance:
         original_area = geometry.area
         geometry = geometry.simplify(simplify_tolerance, preserve_topology=True)
-        logger.info(
-            f"Simplified geometry from area {original_area:.6f} to {geometry.area:.6f}"
-        )
+        logger.info(f"Simplified geometry from area {original_area:.6f} to {geometry.area:.6f}")
 
     # Build the query
     query = build_poi_discovery_query(
@@ -430,7 +417,7 @@ def query_pois_in_polygon(
             "categories": categories or "all",
             "additional_tags": additional_tags,
             "timeout": timeout,
-        }
+        },
     }
 
     logger.info(f"Found {len(pois)} POIs in polygon")
@@ -446,20 +433,20 @@ def query_pois_from_isochrone(
     simplify_tolerance: float | None = 0.001,
 ) -> dict[str, Any]:
     """Query POIs within an isochrone boundary.
-    
+
     This is a convenience function that extracts the geometry from an
     isochrone GeoDataFrame and queries POIs within it.
-    
+
     Args:
         isochrone_gdf: GeoDataFrame containing isochrone geometry
         categories: Optional list of POI categories to filter by
         timeout: Query timeout in seconds
         additional_tags: Optional additional OSM tags to filter by
         simplify_tolerance: Tolerance for simplifying the geometry (default: 0.001)
-        
+
     Returns:
         Dictionary containing POI results
-        
+
     Raises:
         ValueError: If isochrone_gdf is invalid or empty
     """
@@ -468,15 +455,13 @@ def query_pois_from_isochrone(
 
     # Extract geometry (should be a single polygon or multipolygon)
     if len(isochrone_gdf) > 1:
-        logger.warning(
-            f"Isochrone contains {len(isochrone_gdf)} geometries, using union"
-        )
+        logger.warning(f"Isochrone contains {len(isochrone_gdf)} geometries, using union")
         geometry = isochrone_gdf.unary_union
     else:
         geometry = isochrone_gdf.geometry.iloc[0]
 
     # Ensure we have a Polygon or MultiPolygon
-    if not isinstance(geometry, (Polygon, MultiPolygon)):
+    if not isinstance(geometry, Polygon | MultiPolygon):
         raise ValueError(
             f"Isochrone geometry must be Polygon or MultiPolygon, got {type(geometry).__name__}"
         )

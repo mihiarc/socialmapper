@@ -484,7 +484,8 @@ class InMemoryRepository:
     ) -> list[CensusDataPoint]:
         """Retrieve census data from memory."""
         return [
-            point for point in self._census_data.values()
+            point
+            for point in self._census_data.values()
             if point.geoid in geoids and point.variable.code in variable_codes
         ]
 
@@ -495,10 +496,7 @@ class InMemoryRepository:
 
     def get_boundaries(self, geoids: list[str]) -> list[BoundaryData]:
         """Retrieve boundaries from memory."""
-        return [
-            self._boundaries[geoid] for geoid in geoids
-            if geoid in self._boundaries
-        ]
+        return [self._boundaries[geoid] for geoid in geoids if geoid in self._boundaries]
 
     def save_neighbor_relationships(self, relationships: list[NeighborRelationship]) -> None:
         """Store neighbor relationships in memory."""

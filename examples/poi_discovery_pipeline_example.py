@@ -42,7 +42,9 @@ def basic_poi_discovery_example():
             poi_result = result.unwrap()
             print(f"✅ Success! Found {poi_result.total_poi_count} POIs")
             print(f"📍 Origin: {poi_result.origin_location}")
-            print(f"🕒 Travel time: {poi_result.travel_time} minutes ({poi_result.travel_mode.value})")
+            print(
+                f"🕒 Travel time: {poi_result.travel_time} minutes ({poi_result.travel_mode.value})"
+            )
             print(f"📐 Isochrone area: {poi_result.isochrone_area_km2:.2f} km²")
             print("\n📊 POIs by category:")
             for category, count in poi_result.category_counts.items():
@@ -59,7 +61,9 @@ def basic_poi_discovery_example():
             stats = poi_result.get_summary_stats()
             print("\n📈 Summary:")
             print(f"  Average distance: {stats['avg_distance_m']:.0f} m")
-            print(f"  Distance range: {stats['min_distance_m']:.0f} - {stats['max_distance_m']:.0f} m")
+            print(
+                f"  Distance range: {stats['min_distance_m']:.0f} - {stats['max_distance_m']:.0f} m"
+            )
 
             # Show generated files
             if poi_result.files_generated:

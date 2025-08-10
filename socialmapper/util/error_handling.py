@@ -8,9 +8,8 @@ from __future__ import annotations
 import functools
 import logging
 import sys
-from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from ..exceptions import (
     ErrorSeverity,
@@ -19,6 +18,9 @@ from ..exceptions import (
     format_error_for_user,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ logger = logging.getLogger(__name__)
 @contextmanager
 def error_context(operation: str, **context_kwargs):
     """Context manager that adds context to any errors raised within.
-    
+
     Example:
         ```python
         with error_context("Loading census data", location="San Francisco"):
@@ -45,10 +47,7 @@ def error_context(operation: str, **context_kwargs):
     except Exception as e:
         # Wrap other exceptions
         raise SocialMapperError(
-            f"Error during {operation}",
-            cause=e,
-            operation=operation,
-            **context_kwargs
+            f"Error during {operation}", cause=e, operation=operation, **context_kwargs
         ) from e
 
 
@@ -59,16 +58,17 @@ def suppress_and_log(
     fallback: Any = None,
 ):
     """Context manager that suppresses exceptions and logs them.
-    
+
     Example:
         ```python
         with suppress_and_log(ValueError, KeyError) as handler:
             result = risky_operation()
-        
+
         if handler.error_occurred:
             result = handler.fallback
         ```
     """
+
     class Handler:
         def __init__(self):
             self.error_occurred = False
@@ -97,7 +97,7 @@ def with_retries(
     on_retry: Callable[[Exception, int], None] | None = None,
 ):
     """Decorator that retries function on specific exceptions.
-    
+
     Example:
         ```python
         @with_retries(max_attempts=3, exceptions=(NetworkError,))
@@ -105,6 +105,7 @@ def with_retries(
             return api.get_data()
         ```
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -142,12 +143,13 @@ def with_retries(
                 raise RuntimeError("Unexpected retry logic error")
 
         return wrapper
+
     return decorator
 
 
 def with_fallback(fallback_value: T, *exceptions: type[Exception]) -> Callable:
     """Decorator that returns fallback value on exception.
-    
+
     Example:
         ```python
         @with_fallback([], ValueError, KeyError)
@@ -155,26 +157,22 @@ def with_fallback(fallback_value: T, *exceptions: type[Exception]) -> Callable:
             return parse_items(data)
         ```
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> T:
             try:
                 return func(*args, **kwargs)
             except exceptions:
-                logger.warning(
-                    f"{func.__name__} failed, returning fallback value",
-                    exc_info=True
-                )
+                logger.warning(f"{func.__name__} failed, returning fallback value", exc_info=True)
                 return fallback_value
+
         return wrapper
+
     return decorator
 
 
-def log_error(
-    error: Exception,
-    severity: ErrorSeverity = ErrorSeverity.ERROR,
-    **extra_context
-):
+def log_error(error: Exception, severity: ErrorSeverity = ErrorSeverity.ERROR, **extra_context):
     """Log an error with appropriate formatting and context."""
     error_data = format_error_for_log(error)
     error_data.update(extra_context)
@@ -187,11 +185,7 @@ def log_error(
         ErrorSeverity.CRITICAL: logging.CRITICAL,
     }.get(severity, logging.ERROR)
 
-    logger.log(
-        log_level,
-        format_error_for_user(error),
-        extra={"error_data": error_data}
-    )
+    logger.log(log_level, format_error_for_user(error), extra={"error_data": error_data})
 
 
 def handle_error(
@@ -200,7 +194,7 @@ def handle_error(
     show_traceback: bool = False,
 ):
     """Handle an error appropriately for CLI usage.
-    
+
     Args:
         error: The exception to handle
         exit_code: Exit code to use if exiting
@@ -215,10 +209,11 @@ def handle_error(
 
     if show_traceback:
         print("\nFull traceback:", file=sys.stderr)
-        if isinstance(error, SocialMapperError) and hasattr(error, 'get_full_traceback'):
+        if isinstance(error, SocialMapperError) and hasattr(error, "get_full_traceback"):
             print(error.get_full_traceback(), file=sys.stderr)
         else:
             import traceback
+
             traceback.print_exc(file=sys.stderr)
 
     sys.exit(exit_code)
@@ -226,15 +221,15 @@ def handle_error(
 
 class ErrorCollector:
     """Collects errors during batch operations.
-    
+
     Example:
         ```python
         collector = ErrorCollector()
-        
+
         for item in items:
             with collector.collect(item):
                 process_item(item)
-        
+
         if collector.has_errors:
             print(f"Failed to process {len(collector.errors)} items")
             for ctx, error in collector.errors:
@@ -248,10 +243,12 @@ class ErrorCollector:
 
     @property
     def has_errors(self) -> bool:
+        """Check if any errors have been collected."""
         return len(self.errors) > 0
 
     @property
     def has_warnings(self) -> bool:
+        """Check if any warnings have been collected."""
         return len(self.warnings) > 0
 
     @contextmanager
@@ -276,11 +273,7 @@ class ErrorCollector:
                 else:
                     error_details.append(str(error))
 
-            raise SocialMapperError(
-                message,
-                error_count=len(self.errors),
-                errors=error_details
-            )
+            raise SocialMapperError(message, error_count=len(self.errors), errors=error_details)
 
     def get_summary(self) -> dict[str, Any]:
         """Get a summary of collected errors."""
@@ -288,17 +281,11 @@ class ErrorCollector:
             "total_errors": len(self.errors),
             "total_warnings": len(self.warnings),
             "errors": [
-                {
-                    "context": str(ctx) if ctx else None,
-                    "error": format_error_for_log(error)
-                }
+                {"context": str(ctx) if ctx else None, "error": format_error_for_log(error)}
                 for ctx, error in self.errors
             ],
             "warnings": [
-                {
-                    "context": str(ctx) if ctx else None,
-                    "warning": format_error_for_log(warning)
-                }
+                {"context": str(ctx) if ctx else None, "warning": format_error_for_log(warning)}
                 for ctx, warning in self.warnings
             ],
         }
@@ -311,7 +298,7 @@ def validate_type(
     allow_none: bool = False,
 ) -> None:
     """Validate that a value is of the expected type.
-    
+
     Raises:
         TypeError: If type doesn't match
     """
@@ -327,9 +314,7 @@ def validate_type(
 
         actual_type = type(value).__name__
 
-        raise TypeError(
-            f"{name} must be {expected_str}, got {actual_type}"
-        )
+        raise TypeError(f"{name} must be {expected_str}, got {actual_type}")
 
 
 def validate_range(
@@ -339,24 +324,20 @@ def validate_range(
     name: str = "value",
 ) -> None:
     """Validate that a numeric value is within range.
-    
+
     Raises:
         ValueError: If value is out of range
     """
     if min_value is not None and value < min_value:
-        raise ValueError(
-            f"{name} must be at least {min_value}, got {value}"
-        )
+        raise ValueError(f"{name} must be at least {min_value}, got {value}")
 
     if max_value is not None and value > max_value:
-        raise ValueError(
-            f"{name} must be at most {max_value}, got {value}"
-        )
+        raise ValueError(f"{name} must be at most {max_value}, got {value}")
 
 
 def chain_errors(*errors: Exception | None) -> Exception | None:
     """Chain multiple errors together.
-    
+
     Returns the first error with others chained as causes.
     """
     filtered_errors = [e for e in errors if e is not None]

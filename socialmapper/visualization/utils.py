@@ -1,12 +1,15 @@
 """Utility functions for map visualization."""
 
-
 import geopandas as gpd
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.offsetbox import AnchoredOffsetbox, DrawingArea, HPacker, TextArea
 from matplotlib.patches import FancyBboxPatch, Polygon
+
+# Scale bar formatting constants
+KM_TO_M_THRESHOLD = 1
+KM_FORMAT_THRESHOLD = 10
 
 
 def add_north_arrow(
@@ -183,9 +186,9 @@ def add_scale_bar(
     scale_km = scale_length * 111  # Very rough approximation (1 degree ≈ 111 km)
 
     # Format scale text
-    if scale_km < 1:
+    if scale_km < KM_TO_M_THRESHOLD:
         scale_text = f"{int(scale_km * 1000)} m"
-    elif scale_km < 10:
+    elif scale_km < KM_FORMAT_THRESHOLD:
         scale_text = f"{scale_km:.1f} km"
     else:
         scale_text = f"{int(scale_km)} km"
@@ -240,7 +243,10 @@ def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list
         colors.reverse()
 
     # Convert to hex
-    hex_colors = [f"#{int(color[0] * 255):02x}{int(color[1] * 255):02x}{int(color[2] * 255):02x}" for color in colors]
+    hex_colors = [
+        f"#{int(color[0] * 255):02x}{int(color[1] * 255):02x}{int(color[2] * 255):02x}"
+        for color in colors
+    ]
 
     return hex_colors
 

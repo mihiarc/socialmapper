@@ -27,63 +27,43 @@ def main():
             "tags": {
                 "amenity": "restaurant",
                 "cuisine": "italian",
-                "name": "Luigi's Italian Restaurant"
-            }
+                "name": "Luigi's Italian Restaurant",
+            },
         },
         {
             "id": 2345678,
             "type": "node",
             "lat": 35.9145,
             "lon": -79.0572,
-            "tags": {
-                "shop": "supermarket",
-                "brand": "Whole Foods",
-                "name": "Whole Foods Market"
-            }
+            "tags": {"shop": "supermarket", "brand": "Whole Foods", "name": "Whole Foods Market"},
         },
         {
             "id": 3456789,
             "type": "way",
             "lat": 35.9108,
             "lon": -79.0593,
-            "tags": {
-                "leisure": "park",
-                "name": "Forest Hills Park",
-                "access": "yes"
-            }
+            "tags": {"leisure": "park", "name": "Forest Hills Park", "access": "yes"},
         },
         {
             "id": 4567890,
             "type": "node",
             "lat": 35.9119,
             "lon": -79.0545,
-            "tags": {
-                "amenity": "pharmacy",
-                "name": "CVS Pharmacy",
-                "healthcare": "pharmacy"
-            }
+            "tags": {"amenity": "pharmacy", "name": "CVS Pharmacy", "healthcare": "pharmacy"},
         },
         {
             "id": 5678901,
             "type": "node",
             "lat": 35.9127,
             "lon": -79.0561,
-            "tags": {
-                "amenity": "bank",
-                "brand": "Wells Fargo",
-                "name": "Wells Fargo Bank"
-            }
+            "tags": {"amenity": "bank", "brand": "Wells Fargo", "name": "Wells Fargo Bank"},
         },
         {
             "id": 6789012,
             "type": "node",
             "lat": 35.9101,
             "lon": -79.0589,
-            "tags": {
-                "amenity": "cafe",
-                "name": "The Daily Grind",
-                "cuisine": "coffee_shop"
-            }
+            "tags": {"amenity": "cafe", "name": "The Daily Grind", "cuisine": "coffee_shop"},
         },
         {
             "id": 7890123,
@@ -93,20 +73,16 @@ def main():
             "tags": {
                 "amenity": "school",
                 "name": "Chapel Hill High School",
-                "operator": "Orange County Schools"
-            }
+                "operator": "Orange County Schools",
+            },
         },
         {
             "id": 8901234,
             "type": "node",
             "lat": 35.9138,
             "lon": -79.0567,
-            "tags": {
-                "tourism": "hotel",
-                "name": "The Carolina Inn",
-                "stars": "4"
-            }
-        }
+            "tags": {"tourism": "hotel", "name": "The Carolina Inn", "stars": "4"},
+        },
     ]
 
     console.print("[bold blue]POI Categorization Example[/bold blue]\n")
@@ -136,7 +112,12 @@ def main():
         category_branch = tree.add(f"[magenta]{category}[/magenta] ({len(pois)} POIs)")
         for poi in pois:
             name = poi["tags"].get("name", "Unnamed")
-            poi_type = poi["tags"].get("amenity") or poi["tags"].get("shop") or poi["tags"].get("leisure") or poi["tags"].get("tourism")
+            poi_type = (
+                poi["tags"].get("amenity")
+                or poi["tags"].get("shop")
+                or poi["tags"].get("leisure")
+                or poi["tags"].get("tourism")
+            )
             category_branch.add(f"[cyan]{name}[/cyan] [dim]({poi_type})[/dim]")
 
     console.print(tree)

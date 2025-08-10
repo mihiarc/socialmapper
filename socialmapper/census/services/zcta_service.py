@@ -54,7 +54,7 @@ class ZctaService:
             if cached_entry:
                 logger.info(f"Loaded cached ZCTAs for state {state_fips}")
                 # Extract data from CacheEntry if needed
-                if hasattr(cached_entry, 'data'):
+                if hasattr(cached_entry, "data"):
                     return cached_entry.data
                 return cached_entry
 
@@ -85,7 +85,6 @@ class ZctaService:
             "50": ["05"],  # Vermont: 05xxx
             "51": ["20", "22", "23", "24"],  # Virginia: 20xxx, 22xxx-24xxx
             "54": ["24", "25", "26"],  # West Virginia: 24xxx-26xxx
-
             # Midwest states
             "17": ["60", "61", "62"],  # Illinois: 60xxx-62xxx
             "18": ["46", "47"],  # Indiana: 46xxx-47xxx
@@ -99,7 +98,6 @@ class ZctaService:
             "39": ["43", "44", "45"],  # Ohio: 43xxx-45xxx
             "46": ["57"],  # South Dakota: 57xxx
             "55": ["53", "54"],  # Wisconsin: 53xxx-54xxx
-
             # Southern states
             "01": ["35", "36"],  # Alabama: 35xxx-36xxx
             "05": ["71", "72"],  # Arkansas: 71xxx-72xxx
@@ -108,7 +106,6 @@ class ZctaService:
             "40": ["73", "74"],  # Oklahoma: 73xxx-74xxx
             "47": ["37", "38"],  # Tennessee: 37xxx-38xxx
             "48": ["75", "76", "77", "78", "79"],  # Texas: 75xxx-79xxx
-
             # Western states
             "02": ["99"],  # Alaska: 99xxx
             "04": ["85", "86"],  # Arizona: 85xxx-86xxx
@@ -322,6 +319,7 @@ class ZctaService:
             import logging
 
             from ..infrastructure.geocoder import CensusGeocoder
+
             geocoder_logger = logging.getLogger(f"{__name__}.geocoder")
 
             geocoder = CensusGeocoder(self._config, geocoder_logger)
@@ -403,13 +401,24 @@ class ZctaService:
                             raw_value = row[variable]
 
                             # Handle census placeholder values
-                            if raw_value in ["-999999999", "-888888888", "-666666666", "-555555555", "-222222222", "-111111111", "null", ""]:
+                            if raw_value in [
+                                "-999999999",
+                                "-888888888",
+                                "-666666666",
+                                "-555555555",
+                                "-222222222",
+                                "-111111111",
+                                "null",
+                                "",
+                            ]:
                                 value = None
                             else:
                                 value = float(raw_value)
 
                                 # For income and financial variables, negative values are placeholders
-                                if (variable.startswith(('B19', 'B25')) and value < 0) or value < -100000:
+                                if (
+                                    variable.startswith(("B19", "B25")) and value < 0
+                                ) or value < -100000:
                                     value = None
 
                         except (ValueError, TypeError):

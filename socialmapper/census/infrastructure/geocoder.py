@@ -285,18 +285,20 @@ class CensusGeocoder:
 
     def _try_known_region_fallback(self, latitude: float, longitude: float) -> GeocodeResult | None:
         """Try to use known region fallback for geocoding.
-        
+
         Args:
             latitude: Latitude coordinate
             longitude: Longitude coordinate
-            
+
         Returns:
             GeocodeResult if region is known, None otherwise
         """
         for bounds, (state_fips, county_fips) in self._known_regions.items():
             lat_min, lat_max, lon_min, lon_max = bounds
             if lat_min <= latitude <= lat_max and lon_min <= longitude <= lon_max:
-                self._logger.info(f"Using fallback for known region: state={state_fips}, county={county_fips}")
+                self._logger.info(
+                    f"Using fallback for known region: state={state_fips}, county={county_fips}"
+                )
 
                 # Create a basic result with state and county info
                 # We don't have tract/block group info but at least we have county

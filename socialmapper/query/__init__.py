@@ -121,11 +121,11 @@ def build_overpass_query(poi_config):
 
             # Then search for the city within that state
             # Using multiple possible admin levels for cities
-            query += '(\n'
+            query += "(\n"
             query += f'  area[name="{city}"]["place"="city"](area.state);\n'
             query += f'  area[name="{city}"]["admin_level"="8"](area.state);\n'
             query += f'  area[name="{city}"]["boundary"="administrative"](area.state);\n'
-            query += ')->.searchArea;\n'
+            query += ")->.searchArea;\n"
         else:
             # Simple area based query. If multiple areas have the same name, this will return all of them.
             query += f'area[name="{area_name}"]->.searchArea;\n'
@@ -261,8 +261,10 @@ def format_results(result, config=None):
         lon = float(node.lon)
 
         # Skip if outside state bounds
-        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+        if bounds and not (
+            bounds["min_lat"] <= lat <= bounds["max_lat"]
+            and bounds["min_lon"] <= lon <= bounds["max_lon"]
+        ):
             continue
 
         poi_data = {
@@ -293,8 +295,10 @@ def format_results(result, config=None):
         lon = float(center_lon)
 
         # Skip if outside state bounds
-        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+        if bounds and not (
+            bounds["min_lat"] <= lat <= bounds["max_lat"]
+            and bounds["min_lon"] <= lon <= bounds["max_lon"]
+        ):
             continue
 
         poi_data = {"id": way.id, "type": "way", "tags": way.tags}
@@ -321,8 +325,10 @@ def format_results(result, config=None):
         lon = float(center_lon)
 
         # Skip if outside state bounds
-        if bounds and not (bounds["min_lat"] <= lat <= bounds["max_lat"] and
-                bounds["min_lon"] <= lon <= bounds["max_lon"]):
+        if bounds and not (
+            bounds["min_lat"] <= lat <= bounds["max_lat"]
+            and bounds["min_lon"] <= lon <= bounds["max_lon"]
+        ):
             continue
 
         poi_data = {"id": relation.id, "type": "relation", "tags": relation.tags}
@@ -341,7 +347,9 @@ def format_results(result, config=None):
     # Log filtering results if bounds were applied
     if bounds:
         total_results = len(result.nodes) + len(result.ways) + len(result.relations)
-        logger.info(f"Filtered {total_results} results to {data['poi_count']} within {state} bounds")
+        logger.info(
+            f"Filtered {total_results} results to {data['poi_count']} within {state} bounds"
+        )
 
     return data
 

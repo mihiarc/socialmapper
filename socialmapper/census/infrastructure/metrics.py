@@ -88,14 +88,18 @@ class APIMetrics:
             },
             "performance": {
                 "average_response_time": f"{self.average_response_time:.3f}s",
-                "min_response_time": f"{self.min_response_time:.3f}s" if self.min_response_time != float("inf") else "N/A",
+                "min_response_time": f"{self.min_response_time:.3f}s"
+                if self.min_response_time != float("inf")
+                else "N/A",
                 "max_response_time": f"{self.max_response_time:.3f}s",
                 "last_response_time": f"{self.last_response_time:.3f}s",
             },
             "errors": {
                 "counts_by_type": self.error_counts,
                 "last_error": self.last_error,
-                "last_error_time": self.last_error_time.isoformat() if self.last_error_time else None,
+                "last_error_time": self.last_error_time.isoformat()
+                if self.last_error_time
+                else None,
             },
             "circuit_breaker": {
                 "opens": self.circuit_breaker_opens,
@@ -104,7 +108,9 @@ class APIMetrics:
             "rate_limiter": {
                 "waits": self.rate_limit_waits,
                 "total_wait_time": f"{self.total_rate_limit_wait_time:.3f}s",
-                "average_wait_time": f"{self.total_rate_limit_wait_time / self.rate_limit_waits:.3f}s" if self.rate_limit_waits > 0 else "0s",
+                "average_wait_time": f"{self.total_rate_limit_wait_time / self.rate_limit_waits:.3f}s"
+                if self.rate_limit_waits > 0
+                else "0s",
             },
         }
 
@@ -158,10 +164,14 @@ class MetricsCollector:
             self._metrics.failed_requests += 1
 
             # Count by error type
-            self._metrics.error_counts[error_type] = self._metrics.error_counts.get(error_type, 0) + 1
+            self._metrics.error_counts[error_type] = (
+                self._metrics.error_counts.get(error_type, 0) + 1
+            )
 
             # Track last error
-            self._metrics.last_error = f"{error_type}: {error_message}" if error_message else error_type
+            self._metrics.last_error = (
+                f"{error_type}: {error_message}" if error_message else error_type
+            )
             self._metrics.last_error_time = datetime.now()
 
             # Add to error window
@@ -248,11 +258,17 @@ class MetricsCollector:
             cutoff_time = datetime.now() - timedelta(minutes=minutes)
 
             # Count recent errors
-            recent_errors = sum(1 for _, error_time in self._error_window if error_time >= cutoff_time)
+            recent_errors = sum(
+                1 for _, error_time in self._error_window if error_time >= cutoff_time
+            )
 
             # Calculate recent average response time
             recent_response_times = list(self._response_time_window)
-            recent_avg = sum(recent_response_times) / len(recent_response_times) if recent_response_times else 0
+            recent_avg = (
+                sum(recent_response_times) / len(recent_response_times)
+                if recent_response_times
+                else 0
+            )
 
             return {
                 "time_window": f"{minutes} minutes",

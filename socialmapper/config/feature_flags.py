@@ -24,7 +24,9 @@ class BackendConfig:
 
         # External API Configuration
         self.census_api_key = os.getenv("CENSUS_API_KEY")
-        self.overpass_api_url = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter")
+        self.overpass_api_url = os.getenv(
+            "OVERPASS_API_URL", "https://overpass-api.de/api/interpreter"
+        )
         self.rate_limit_requests_per_second = int(os.getenv("SOCIALMAPPER_RATE_LIMIT_RPS", "10"))
 
     def _get_bool_env(self, key: str, default: bool) -> bool:
@@ -33,16 +35,27 @@ class BackendConfig:
         return value in ("true", "1", "yes", "on")
 
 
-# Global backend config instance
-_backend_config: BackendConfig = None
+class BackendConfigSingleton:
+    """Singleton manager for BackendConfig."""
+
+    _instance: BackendConfig | None = None
+
+    @classmethod
+    def get_instance(cls) -> BackendConfig:
+        """Get the singleton backend config instance."""
+        if cls._instance is None:
+            cls._instance = BackendConfig()
+        return cls._instance
+
+    @classmethod
+    def clear_instance(cls) -> None:
+        """Clear the singleton instance."""
+        cls._instance = None
 
 
 def get_backend_config() -> BackendConfig:
     """Get the global backend configuration instance."""
-    global _backend_config
-    if _backend_config is None:
-        _backend_config = BackendConfig()
-    return _backend_config
+    return BackendConfigSingleton.get_instance()
 
 
 def get_api_base_url() -> str:

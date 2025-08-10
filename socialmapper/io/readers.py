@@ -83,7 +83,11 @@ def read_poi_csv(filepath: Path) -> dict[str, Any]:
                     "name": row.get("name", f"POI {i}"),
                     "lat": lat,
                     "lon": lon,
-                    "tags": {k: v for k, v in row.items() if k not in ["id", "name", "lat", "lon", "latitude", "longitude"]},
+                    "tags": {
+                        k: v
+                        for k, v in row.items()
+                        if k not in ["id", "name", "lat", "lon", "latitude", "longitude"]
+                    },
                 }
                 pois.append(poi)
             else:
@@ -132,18 +136,18 @@ def read_custom_pois(
 
     # Normalize column names
     column_mapping = {
-        'latitude': 'lat',
-        'longitude': 'lon',
-        'long': 'lon',
-        'lng': 'lon',
-        'x': 'lon',
-        'y': 'lat',
+        "latitude": "lat",
+        "longitude": "lon",
+        "long": "lon",
+        "lng": "lon",
+        "x": "lon",
+        "y": "lat",
     }
 
     df.columns = [column_mapping.get(col.lower(), col.lower()) for col in df.columns]
 
     # Validate required columns
-    required_cols = ['lat', 'lon']
+    required_cols = ["lat", "lon"]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"CSV must contain columns: {', '.join(missing_cols)}")
@@ -153,28 +157,28 @@ def read_custom_pois(
     for idx, row in df.iterrows():
         poi = {
             "id": f"custom_{idx}",
-            "lat": float(row['lat']),
-            "lon": float(row['lon']),
-            "tags": {}
+            "lat": float(row["lat"]),
+            "lon": float(row["lon"]),
+            "tags": {},
         }
 
         # Add name
         if name_field and name_field in row:
             poi["name"] = row[name_field]
-        elif 'name' in row:
-            poi["name"] = row['name']
+        elif "name" in row:
+            poi["name"] = row["name"]
         else:
             poi["name"] = f"Custom POI {idx}"
 
         # Add type
         if type_field and type_field in row:
             poi["type"] = row[type_field]
-        elif 'type' in row:
-            poi["type"] = row['type']
+        elif "type" in row:
+            poi["type"] = row["type"]
 
         # Add all other fields to tags
         for col in df.columns:
-            if col not in ['lat', 'lon', 'name', 'type']:
+            if col not in ["lat", "lon", "name", "type"]:
                 poi["tags"][col] = row[col]
 
         pois.append(poi)
