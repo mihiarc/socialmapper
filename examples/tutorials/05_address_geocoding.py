@@ -24,6 +24,7 @@ Prerequisites:
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -65,7 +66,7 @@ def explain_geocoding():
   • Census Bureau: US-only, very accurate for US addresses
   • Automatic fallback between providers for best results""",
         title="📍 Understanding Address Geocoding",
-        style="cyan"
+        style="cyan",
     )
 
 
@@ -79,17 +80,13 @@ def demo_single_address():
     console.print(f"🏛️  Address: {address_str}")
 
     # Create address input
-    address = AddressInput(
-        address=address_str,
-        id="white_house",
-        source="tutorial"
-    )
+    address = AddressInput(address=address_str, id="white_house", source="tutorial")
 
     # Configure geocoding
     config = GeocodingConfig(
         primary_provider=AddressProvider.NOMINATIM,
         fallback_providers=[AddressProvider.CENSUS],
-        min_quality_threshold=AddressQuality.APPROXIMATE
+        min_quality_threshold=AddressQuality.APPROXIMATE,
     )
 
     try:
@@ -123,23 +120,23 @@ def demo_quality_levels():
         {
             "address": "1600 Pennsylvania Avenue NW, Washington, DC 20500",
             "expected": "High quality - exact street address",
-            "threshold": AddressQuality.EXACT
+            "threshold": AddressQuality.EXACT,
         },
         {
             "address": "Washington, DC",
             "expected": "Medium quality - city level",
-            "threshold": AddressQuality.CENTROID
+            "threshold": AddressQuality.CENTROID,
         },
         {
             "address": "North Carolina",
             "expected": "Low quality - state level",
-            "threshold": AddressQuality.APPROXIMATE
-        }
+            "threshold": AddressQuality.APPROXIMATE,
+        },
     ]
 
     config = GeocodingConfig(
         primary_provider=AddressProvider.NOMINATIM,
-        min_quality_threshold=AddressQuality.APPROXIMATE  # Accept all for demo
+        min_quality_threshold=AddressQuality.APPROXIMATE,  # Accept all for demo
     )
 
     for i, test in enumerate(test_cases, 1):
@@ -152,7 +149,9 @@ def demo_quality_levels():
             result = geocode_address(address, config)
 
             if result.success:
-                console.print(f"   ✅ Quality: {result.quality.value} | Coordinates: {result.latitude:.4f}, {result.longitude:.4f}")
+                console.print(
+                    f"   ✅ Quality: {result.quality.value} | Coordinates: {result.latitude:.4f}, {result.longitude:.4f}"
+                )
             else:
                 console.print(f"   ❌ Failed: {result.error_message}")
 
@@ -173,7 +172,7 @@ def demo_batch_processing():
         "301 E Hargett St, Raleigh, NC",
         "120 E Main St, Durham, NC",
         "100 N Greene St, Greensboro, NC",
-        "100 Coxe Ave, Asheville, NC"
+        "100 Coxe Ave, Asheville, NC",
     ]
 
     console.print(f"📋 Processing {len(addresses)} addresses:")
@@ -183,11 +182,7 @@ def demo_batch_processing():
 
     # Create address inputs
     address_inputs = [
-        AddressInput(
-            address=addr,
-            id=f"nc_{i}",
-            source="tutorial_batch"
-        )
+        AddressInput(address=addr, id=f"nc_{i}", source="tutorial_batch")
         for i, addr in enumerate(addresses, 1)
     ]
 
@@ -198,7 +193,7 @@ def demo_batch_processing():
         min_quality_threshold=AddressQuality.APPROXIMATE,
         enable_cache=True,
         batch_size=3,
-        batch_delay_seconds=0.5  # Be respectful to free APIs
+        batch_delay_seconds=0.5,  # Be respectful to free APIs
     )
 
     try:
@@ -210,13 +205,17 @@ def demo_batch_processing():
         failed = [r for r in results if not r.success]
 
         console.print("\n📊 Batch Results:")
-        console.print(f"   ✅ Successful: {len(successful)}/{len(results)} ({len(successful)/len(results)*100:.1f}%)")
+        console.print(
+            f"   ✅ Successful: {len(successful)}/{len(results)} ({len(successful) / len(results) * 100:.1f}%)"
+        )
         console.print(f"   ❌ Failed: {len(failed)}")
 
         if successful:
             console.print("\n📍 Successful Geocodes:")
             for result in successful[:3]:  # Show first 3
-                console.print(f"   • {result.input_address.address[:40]:<40} → {result.latitude:.4f}, {result.longitude:.4f}")
+                console.print(
+                    f"   • {result.input_address.address[:40]:<40} → {result.latitude:.4f}, {result.longitude:.4f}"
+                )
 
         return successful
 
@@ -239,16 +238,17 @@ def demo_socialmapper_integration(geocoded_results):
     output_file.parent.mkdir(exist_ok=True)
 
     # Convert to DataFrame
-    data = []
-    for result in geocoded_results:
-        data.append({
-            'name': result.input_address.address.split(',')[0],  # Use first part as name
-            'latitude': result.latitude,
-            'longitude': result.longitude,
-            'address': result.input_address.address,
-            'quality': result.quality.value,
-            'provider': result.provider_used.value
-        })
+    data = [
+        {
+            "name": result.input_address.address.split(",")[0],  # Use first part as name
+            "latitude": result.latitude,
+            "longitude": result.longitude,
+            "address": result.input_address.address,
+            "quality": result.quality.value,
+            "provider": result.provider_used.value,
+        }
+        for result in geocoded_results
+    ]
 
     df = pd.DataFrame(data)
     df.to_csv(output_file, index=False)
@@ -259,7 +259,8 @@ def demo_socialmapper_integration(geocoded_results):
     try:
         # Use the geocoded addresses with SocialMapper
         with SocialMapperClient() as client:
-            config = (SocialMapperBuilder()
+            config = (
+                SocialMapperBuilder()
                 .with_custom_pois(str(output_file))
                 .with_travel_time(15)
                 .with_census_variables("total_population", "median_household_income")
@@ -296,14 +297,14 @@ def demo_error_handling():
         "This is not a real address at all",
         "123 Nonexistent Street, Nowhere, XX 99999",
         "",  # Empty address
-        "Paris"  # Ambiguous (Paris, France vs Paris, Texas?)
+        "Paris",  # Ambiguous (Paris, France vs Paris, Texas?)
     ]
 
     config = GeocodingConfig(
         primary_provider=AddressProvider.NOMINATIM,
         min_quality_threshold=AddressQuality.APPROXIMATE,
         timeout_seconds=5,
-        max_retries=1
+        max_retries=1,
     )
 
     console.print("🧪 Testing problematic addresses:")
@@ -321,7 +322,9 @@ def demo_error_handling():
             result = geocode_address(address, config)
 
             if result.success:
-                console.print(f"   ✅ Unexpected success: {result.latitude:.4f}, {result.longitude:.4f}")
+                console.print(
+                    f"   ✅ Unexpected success: {result.latitude:.4f}, {result.longitude:.4f}"
+                )
                 console.print(f"      Quality: {result.quality.value} (verify this is correct!)")
             else:
                 console.print(f"   ❌ Failed as expected: {result.error_message}")
@@ -370,7 +373,7 @@ config = GeocodingConfig(
     max_retries=3
 )""",
         title="⚙️ Configuration Patterns",
-        style="blue"
+        style="blue",
     )
 
     console.print("\n🎯 Use Case Recommendations:")
@@ -384,7 +387,7 @@ def main():
     """Run the address geocoding tutorial."""
     print_banner(
         "Address Geocoding Tutorial",
-        "Learn to convert addresses into coordinates for spatial analysis"
+        "Learn to convert addresses into coordinates for spatial analysis",
     )
 
     try:
@@ -402,7 +405,7 @@ def main():
         # Success summary
         print_success(
             "You've learned to geocode addresses and integrate them with SocialMapper analysis!",
-            "Tutorial Complete!"
+            "Tutorial Complete!",
         )
 
         console.print("\n[bold]🎉 What You've Learned:[/bold]")

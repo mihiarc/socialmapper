@@ -16,6 +16,7 @@ Prerequisites:
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -66,11 +67,7 @@ Community Center,35.7754,-78.6434,community_center
     # Step 3: Configure analysis
     print("Step 3: Configuring analysis parameters")
     travel_time = 10  # minutes
-    census_variables = [
-        "total_population",
-        "median_age",
-        "percent_poverty"
-    ]
+    census_variables = ["total_population", "median_age", "percent_poverty"]
 
     print(f"  ⏱️  Travel time: {travel_time} minutes")
     print(f"  📊 Census variables: {', '.join(census_variables)}\n")
@@ -81,7 +78,8 @@ Community Center,35.7754,-78.6434,community_center
     try:
         with SocialMapperClient() as client:
             # Build configuration for custom POIs
-            config = (SocialMapperBuilder()
+            config = (
+                SocialMapperBuilder()
                 .with_custom_pois(custom_coords_path)
                 .with_travel_time(travel_time)
                 .with_census_variables(*census_variables)
@@ -108,7 +106,9 @@ Community Center,35.7754,-78.6434,community_center
             # Step 5: Explore results
             print("Step 5: Results summary")
             print(f"\n📍 Analyzed {analysis_result.poi_count} custom POIs")
-            print(f"👥 Population data collected for {analysis_result.census_units_analyzed} census units")
+            print(
+                f"👥 Population data collected for {analysis_result.census_units_analyzed} census units"
+            )
 
             if analysis_result.metadata:
                 print("\nAnalysis details:")

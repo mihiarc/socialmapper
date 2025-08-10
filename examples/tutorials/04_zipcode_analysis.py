@@ -19,6 +19,7 @@ Prerequisites:
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -123,10 +124,7 @@ def demo_zcta_census_data():
 
     try:
         # Fetch census data for these ZCTAs
-        census_data = census_system.get_zcta_census_data(
-            geoids=example_zctas,
-            variables=variables
-        )
+        census_data = census_system.get_zcta_census_data(geoids=example_zctas, variables=variables)
 
         if not census_data.empty:
             print(f"\n✅ Retrieved {len(census_data)} data points")
@@ -134,29 +132,31 @@ def demo_zcta_census_data():
             # Transform data for analysis
             analysis_data = []
             for zcta in example_zctas:
-                zcta_data = census_data[census_data['GEOID'] == zcta]
+                zcta_data = census_data[census_data["GEOID"] == zcta]
 
                 if not zcta_data.empty:
                     # Extract values for each variable
-                    data_dict = {'ZCTA': zcta}
+                    data_dict = {"ZCTA": zcta}
                     for _, row in zcta_data.iterrows():
-                        var_code = row['variable_code']
-                        value = row['value']
+                        var_code = row["variable_code"]
+                        value = row["value"]
 
-                        if var_code == 'B01003_001E':
-                            data_dict['Population'] = int(value) if value else 0
-                        elif var_code == 'B19013_001E':
-                            data_dict['Median_Income'] = int(value) if value else 0
-                        elif var_code == 'B25003_002E':
-                            data_dict['Owner_Occupied'] = int(value) if value else 0
-                        elif var_code == 'B25003_003E':
-                            data_dict['Renter_Occupied'] = int(value) if value else 0
+                        if var_code == "B01003_001E":
+                            data_dict["Population"] = int(value) if value else 0
+                        elif var_code == "B19013_001E":
+                            data_dict["Median_Income"] = int(value) if value else 0
+                        elif var_code == "B25003_002E":
+                            data_dict["Owner_Occupied"] = int(value) if value else 0
+                        elif var_code == "B25003_003E":
+                            data_dict["Renter_Occupied"] = int(value) if value else 0
 
                     # Calculate derived metrics
-                    total_occupied = data_dict.get('Owner_Occupied', 0) + data_dict.get('Renter_Occupied', 0)
+                    total_occupied = data_dict.get("Owner_Occupied", 0) + data_dict.get(
+                        "Renter_Occupied", 0
+                    )
                     if total_occupied > 0:
-                        data_dict['Pct_Owner_Occupied'] = round(
-                            (data_dict.get('Owner_Occupied', 0) / total_occupied) * 100, 1
+                        data_dict["Pct_Owner_Occupied"] = round(
+                            (data_dict.get("Owner_Occupied", 0) / total_occupied) * 100, 1
                         )
 
                     analysis_data.append(data_dict)
@@ -170,10 +170,16 @@ def demo_zcta_census_data():
                 print("-" * 80)
 
                 for _, row in df.iterrows():
-                    zcta = row.get('ZCTA', 'N/A')
-                    pop = f"{row.get('Population', 0):,}" if row.get('Population') else 'N/A'
-                    income = f"${row.get('Median_Income', 0):,}" if row.get('Median_Income') else 'N/A'
-                    owner_pct = f"{row.get('Pct_Owner_Occupied', 0):.1f}%" if row.get('Pct_Owner_Occupied') else 'N/A'
+                    zcta = row.get("ZCTA", "N/A")
+                    pop = f"{row.get('Population', 0):,}" if row.get("Population") else "N/A"
+                    income = (
+                        f"${row.get('Median_Income', 0):,}" if row.get("Median_Income") else "N/A"
+                    )
+                    owner_pct = (
+                        f"{row.get('Pct_Owner_Occupied', 0):.1f}%"
+                        if row.get("Pct_Owner_Occupied")
+                        else "N/A"
+                    )
 
                     print(f"{zcta:<8} {pop:<12} {income:<12} {owner_pct:<12}")
                 print("-" * 80)
@@ -195,11 +201,7 @@ def demo_batch_processing():
     census_system = get_census_system()
 
     # Small southeastern states for demo
-    states = {
-        "37": "North Carolina",
-        "45": "South Carolina",
-        "13": "Georgia"
-    }
+    states = {"37": "North Carolina", "45": "South Carolina", "13": "Georgia"}
 
     print(f"\n🗺️  Processing ZCTAs for {len(states)} states:")
     for fips, name in states.items():
@@ -211,7 +213,7 @@ def demo_batch_processing():
         all_zctas = census_system.batch_get_zctas(
             state_fips_list=state_fips_list,
             batch_size=2,  # Process 2 states at a time
-            progress_callback=None  # Could add progress tracking
+            progress_callback=None,  # Could add progress tracking
         )
 
         if not all_zctas.empty:
@@ -220,7 +222,7 @@ def demo_batch_processing():
             # Show state-by-state breakdown
             print("\n📊 ZCTAs by State:")
             for fips, name in states.items():
-                state_zctas = all_zctas[all_zctas['STATEFP'] == fips]
+                state_zctas = all_zctas[all_zctas["STATEFP"] == fips]
                 print(f"   • {name}: {len(state_zctas)} ZCTAs")
         else:
             print("❌ No ZCTAs retrieved in batch processing")
@@ -322,11 +324,7 @@ def demo_zcta_map_visualization():
     print("  • Geographic Level: ZCTA (ZIP Code areas)")
 
     # Census variables to analyze
-    census_variables = [
-        "total_population",
-        "median_household_income",
-        "median_age"
-    ]
+    census_variables = ["total_population", "median_household_income", "median_age"]
     print(f"  • Census Variables: {', '.join(census_variables)}")
 
     print("\n🚀 Running ZCTA-level analysis...")
@@ -335,7 +333,8 @@ def demo_zcta_map_visualization():
         # Use the SocialMapper client with ZCTA geographic level
         with SocialMapperClient() as client:
             # Build configuration using fluent interface
-            config = (SocialMapperBuilder()
+            config = (
+                SocialMapperBuilder()
                 .with_location(geocode_area, state)
                 .with_osm_pois(poi_type, poi_name)
                 .with_travel_time(travel_time)
