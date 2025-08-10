@@ -3,11 +3,11 @@
  * Handles the analysis wizard form state and job tracking
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type {
+import {
   GeographicLevel,
   JobStatusEnum,
-  LocationAnalysisRequest,
   TravelMode,
+  type LocationAnalysisRequest,
 } from '@types/api';
 
 export interface AnalysisConfiguration {

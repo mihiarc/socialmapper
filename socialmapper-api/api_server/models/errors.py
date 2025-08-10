@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import Any, Literal, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic import field_validator
 
 from .base import APIError, ErrorCode
 
@@ -16,15 +17,17 @@ class ValidationErrorDetail(BaseModel):
     invalid_value: Any | None = Field(None, description="The invalid value that was provided")
     constraint: str | None = Field(None, description="Validation constraint that was violated")
 
-    @validator("field")
-    def validate_field(self, v):
+    @field_validator("field")
+    @classmethod
+    def validate_field(cls, v):
         """Validate field name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Field name cannot be empty")
         return v.strip()
 
-    @validator("message")
-    def validate_message(self, v):
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, v):
         """Validate error message."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Error message cannot be empty")
@@ -41,8 +44,9 @@ class DetailedValidationError(APIError):
         ..., description="Detailed field validation errors"
     )
 
-    @validator("field_errors")
-    def validate_field_errors(self, v):
+    @field_validator("field_errors")
+    @classmethod
+    def validate_field_errors(cls, v):
         """Validate field errors list."""
         if not v:
             raise ValueError("At least one field error must be provided")
@@ -58,8 +62,9 @@ class ResourceNotFoundError(APIError):
     resource_type: str = Field(..., description="Type of resource that was not found")
     resource_id: str | None = Field(None, description="ID of the resource that was not found")
 
-    @validator("resource_type")
-    def validate_resource_type(self, v):
+    @field_validator("resource_type")
+    @classmethod
+    def validate_resource_type(cls, v):
         """Validate resource type."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Resource type cannot be empty")
@@ -75,8 +80,9 @@ class ProcessingError(APIError):
     stage: str | None = Field(None, description="Processing stage where error occurred")
     retry_after_seconds: int | None = Field(None, description="Suggested retry delay in seconds")
 
-    @validator("stage")
-    def validate_stage(self, v):
+    @field_validator("stage")
+    @classmethod
+    def validate_stage(cls, v):
         """Validate processing stage."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Processing stage cannot be empty string")
@@ -94,22 +100,25 @@ class RateLimitError(APIError):
     retry_after_seconds: int = Field(..., description="Seconds to wait before retrying")
     remaining_requests: int = Field(0, description="Remaining requests in current window")
 
-    @validator("limit")
-    def validate_limit(self, v):
+    @field_validator("limit")
+    @classmethod
+    def validate_limit(cls, v):
         """Validate rate limit."""
         if v <= 0:
             raise ValueError("Rate limit must be positive")
         return v
 
-    @validator("window_seconds")
-    def validate_window_seconds(self, v):
+    @field_validator("window_seconds")
+    @classmethod
+    def validate_window_seconds(cls, v):
         """Validate window seconds."""
         if v <= 0:
             raise ValueError("Window seconds must be positive")
         return v
 
-    @validator("retry_after_seconds")
-    def validate_retry_after_seconds(self, v):
+    @field_validator("retry_after_seconds")
+    @classmethod
+    def validate_retry_after_seconds(cls, v):
         """Validate retry after seconds."""
         if v < 0:
             raise ValueError("Retry after seconds cannot be negative")
@@ -124,8 +133,9 @@ class AuthenticationError(APIError):
     )
     auth_method: str | None = Field(None, description="Expected authentication method")
 
-    @validator("auth_method")
-    def validate_auth_method(self, v):
+    @field_validator("auth_method")
+    @classmethod
+    def validate_auth_method(cls, v):
         """Validate authentication method."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Authentication method cannot be empty string")
@@ -140,8 +150,9 @@ class AuthorizationError(APIError):
     )
     required_permission: str | None = Field(None, description="Required permission")
 
-    @validator("required_permission")
-    def validate_required_permission(self, v):
+    @field_validator("required_permission")
+    @classmethod
+    def validate_required_permission(cls, v):
         """Validate required permission."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Required permission cannot be empty string")
@@ -156,8 +167,9 @@ class InternalServerError(APIError):
     )
     incident_id: str | None = Field(None, description="Incident ID for tracking")
 
-    @validator("incident_id")
-    def validate_incident_id(self, v):
+    @field_validator("incident_id")
+    @classmethod
+    def validate_incident_id(cls, v):
         """Validate incident ID."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Incident ID cannot be empty string")
@@ -175,8 +187,9 @@ class ServiceUnavailableError(APIError):
         None, description="Maintenance window information"
     )
 
-    @validator("retry_after_seconds")
-    def validate_retry_after_seconds(self, v):
+    @field_validator("retry_after_seconds")
+    @classmethod
+    def validate_retry_after_seconds2(cls, v):
         """Validate retry after seconds."""
         if v is not None and v < 0:
             raise ValueError("Retry after seconds cannot be negative")
@@ -192,15 +205,17 @@ class TimeoutError(APIError):
     timeout_seconds: float = Field(..., description="Timeout duration in seconds")
     operation: str | None = Field(None, description="Operation that timed out")
 
-    @validator("timeout_seconds")
-    def validate_timeout_seconds(self, v):
+    @field_validator("timeout_seconds")
+    @classmethod
+    def validate_timeout_seconds(cls, v):
         """Validate timeout seconds."""
         if v <= 0:
             raise ValueError("Timeout seconds must be positive")
         return v
 
-    @validator("operation")
-    def validate_operation(self, v):
+    @field_validator("operation")
+    @classmethod
+    def validate_operation(cls, v):
         """Validate operation."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Operation cannot be empty string")
@@ -215,8 +230,9 @@ class InvalidRequestError(APIError):
     )
     suggestion: str | None = Field(None, description="Suggestion for fixing the request")
 
-    @validator("suggestion")
-    def validate_suggestion(self, v):
+    @field_validator("suggestion")
+    @classmethod
+    def validate_suggestion(cls, v):
         """Validate suggestion."""
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Suggestion cannot be empty string")

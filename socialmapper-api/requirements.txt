@@ -1,6 +1,5 @@
 # Backend API Dependencies
-# Core SocialMapper library (installed in development mode)
--e .
+# Core SocialMapper library is installed separately in Dockerfiles
 
 # FastAPI and server dependencies
 fastapi>=0.115.6

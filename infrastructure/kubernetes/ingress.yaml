@@ -1,0 +1,317 @@
+# Ingress Configuration for SocialMapper
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-ingress
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ingress
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: socialmapper
+  annotations:
+    # AWS Load Balancer Controller annotations
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-name: socialmapper-alb
+    
+    # SSL/TLS Configuration
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERT_ID"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    
+    # Load balancer configuration
+    alb.ingress.kubernetes.io/load-balancer-attributes: |
+      idle_timeout.timeout_seconds=300,
+      routing.http2.enabled=true,
+      access_logs.s3.enabled=true,
+      access_logs.s3.bucket=socialmapper-alb-logs,
+      access_logs.s3.prefix=alb-access-logs
+    
+    # Security configuration
+    alb.ingress.kubernetes.io/security-groups: "sg-xxxxxxxxx"  # Replace with actual security group
+    
+    # Rate limiting and DDoS protection
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # CORS headers
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://demo.socialmapper.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    
+    # Request size limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/client-max-body-size: "10m"
+    
+    # Timeout configuration
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Content-Type-Options nosniff;
+      add_header X-Frame-Options DENY;
+      add_header X-XSS-Protection "1; mode=block";
+      add_header Referrer-Policy "strict-origin-when-cross-origin";
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.census.gov https://overpass-api.de";
+      
+      # Demo banner
+      add_header X-Demo-Mode "true";
+      add_header X-Demo-Message "This is a demonstration deployment of SocialMapper";
+      
+      # Performance headers
+      add_header Cache-Control "public, max-age=3600" always;
+
+spec:
+  tls:
+    - hosts:
+        - demo.socialmapper.com
+        - api.socialmapper.com
+      secretName: socialmapper-tls
+  
+  rules:
+    # Main domain for UI
+    - host: demo.socialmapper.com
+      http:
+        paths:
+          # API endpoints
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          # Health check endpoint
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080
+          
+          # Static assets with caching
+          - path: /assets
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080
+          
+          # All other paths to UI
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080
+    
+    # API subdomain (alternative access)
+    - host: api.socialmapper.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+
+---
+# Alternative Ingress for NGINX Ingress Controller
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-nginx-ingress
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-nginx-ingress
+    app.kubernetes.io/component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "10"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # SSL and security
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Request size limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    
+    # Timeout configuration
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    
+    # Enable CORS for API
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    
+    # Monitoring annotations
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location /nginx-metrics {
+        stub_status on;
+        access_log off;
+        allow 10.0.0.0/8;
+        deny all;
+      }
+
+spec:
+  tls:
+    - hosts:
+        - demo.socialmapper.com
+      secretName: socialmapper-tls
+  
+  rules:
+    - host: demo.socialmapper.com
+      http:
+        paths:
+          # API endpoints with specific routing
+          - path: /api/v1/analysis
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          - path: /api/v1/health
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          - path: /api/v1/metadata
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          - path: /api/v1/results
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          # All other API paths
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          
+          # Frontend application
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080
+
+---
+# Ingress for development/staging environment
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-dev-ingress
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-dev-ingress
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/environment: development
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Allow HTTP for dev
+    
+    # More permissive rate limits for development
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "50"
+    
+    # Development CORS settings
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    
+    # Basic auth for development (optional)
+    # nginx.ingress.kubernetes.io/auth-type: basic
+    # nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    # nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required - SocialMapper Dev'
+
+spec:
+  tls:
+    - hosts:
+        - dev.socialmapper.com
+        - staging.socialmapper.com
+      secretName: socialmapper-dev-tls
+  
+  rules:
+    - host: dev.socialmapper.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080
+    
+    - host: staging.socialmapper.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-service
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-service
+                port:
+                  number: 8080

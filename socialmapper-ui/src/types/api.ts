@@ -194,3 +194,128 @@ export interface ErrorResponse {
   details?: Record<string, any>;
   timestamp: string;
 }
+
+// Feedback System Types
+export interface FeedbackRequest {
+  type: FeedbackType;
+  touchpoint: FeedbackTouchpoint;
+  rating?: number; // 1-5 star rating
+  comment?: string;
+  context?: FeedbackContext;
+  metadata?: Record<string, any>;
+  user_id?: string; // Optional anonymous identifier
+}
+
+export interface FeedbackResponse extends BaseResponse {
+  id: string;
+  type: FeedbackType;
+  touchpoint: FeedbackTouchpoint;
+  rating?: number;
+  comment?: string;
+  context?: FeedbackContext;
+  created_at: string;
+  status: 'pending' | 'reviewed' | 'resolved';
+}
+
+export interface FeedbackContext {
+  job_id?: string;
+  page_url?: string;
+  user_agent?: string;
+  session_duration?: number;
+  error_occurred?: boolean;
+  feature_used?: string;
+}
+
+export type FeedbackType = 
+  | 'rating' 
+  | 'usability' 
+  | 'bug_report' 
+  | 'feature_request' 
+  | 'general';
+
+export type FeedbackTouchpoint = 
+  | 'post_analysis' 
+  | 'configuration_wizard' 
+  | 'results_dashboard' 
+  | 'error_state' 
+  | 'export_download' 
+  | 'general_usage';
+
+// Analytics Types
+export interface UserAnalyticsEvent {
+  event_name: string;
+  event_category: 'navigation' | 'interaction' | 'conversion' | 'error';
+  properties?: Record<string, any>;
+  timestamp?: string;
+  session_id?: string;
+  user_id?: string;
+}
+
+export interface UserJourneyStep {
+  step_name: string;
+  timestamp: string;
+  duration_ms?: number;
+  completed: boolean;
+  error?: string;
+}
+
+export interface UserSession {
+  session_id: string;
+  started_at: string;
+  ended_at?: string;
+  total_duration_ms?: number;
+  page_views: number;
+  interactions: number;
+  conversion_events: string[];
+  journey_steps: UserJourneyStep[];
+}
+
+// Feature Request Types
+export interface FeatureRequest extends BaseResponse {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'submitted' | 'under_review' | 'planned' | 'in_development' | 'completed' | 'rejected';
+  votes: number;
+  github_issue_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureVoteRequest {
+  feature_id: string;
+  vote_type: 'upvote' | 'downvote';
+}
+
+export interface FeatureVote extends BaseResponse {
+  feature_id: string;
+  user_id?: string;
+  vote_type: 'upvote' | 'downvote';
+  created_at: string;
+}
+
+// User Interview Types
+export interface InterviewRequest {
+  name: string;
+  email: string;
+  user_type: 'academic' | 'government' | 'nonprofit' | 'corporate' | 'individual';
+  research_focus?: string;
+  preferred_times: string[];
+  timezone: string;
+  interview_type: 'usability' | 'feature_discussion' | 'workflow_analysis' | 'general_feedback';
+}
+
+export interface InterviewSession extends BaseResponse {
+  id: string;
+  participant_id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  interview_type: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  recording_url?: string;
+  notes?: string;
+  insights: string[];
+  created_at: string;
+}

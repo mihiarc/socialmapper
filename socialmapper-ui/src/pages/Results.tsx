@@ -1,7 +1,7 @@
 /**
  * Results page - Display analysis results with interactive visualizations
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Row, 
@@ -26,6 +26,9 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 
+import FeedbackTrigger from '@components/feedback/FeedbackTrigger';
+import { useAnalytics } from '@hooks/useAnalytics';
+
 import { 
   useGetJobStatusQuery, 
   useGetResultsQuery,
@@ -42,6 +45,10 @@ const Results: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const [exportResults] = useExportResultsMutation();
+  const { trackEvent, trackConversion, trackError, trackJourneyStep } = useAnalytics();
+
+  // State to control polling
+  const [shouldPoll, setShouldPoll] = useState(true);
 
   // Poll job status every 2 seconds for active jobs
   const {
@@ -50,9 +57,16 @@ const Results: React.FC = () => {
     error: statusError,
     refetch: refetchStatus
   } = useGetJobStatusQuery(jobId!, {
-    pollingInterval: jobStatus?.status === 'running' || jobStatus?.status === 'pending' ? 2000 : 0,
+    pollingInterval: shouldPoll ? 2000 : 0,
     skip: !jobId,
   });
+
+  // Stop polling when job is completed or failed
+  useEffect(() => {
+    if (jobStatus?.status && ['completed', 'failed', 'cancelled'].includes(jobStatus.status)) {
+      setShouldPoll(false);
+    }
+  }, [jobStatus?.status]);
 
   // Only fetch results if job is completed
   const {
@@ -68,6 +82,8 @@ const Results: React.FC = () => {
     if (!jobId) return;
     
     try {
+      trackJourneyStep('export_started');
+      
       const blob = await exportResults({
         jobId,
         format,
@@ -84,8 +100,12 @@ const Results: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      trackConversion('export_completed', 1);
+      trackJourneyStep('export_completed');
     } catch (error) {
       console.error('Export failed:', error);
+      trackError('export_failed', { format, jobId, error: error.toString() });
     }
   };
 
@@ -234,6 +254,18 @@ const Results: React.FC = () => {
               loading={isResultsLoading}
               extra={
                 <Space>
+                  <FeedbackTrigger
+                    touchpoint="results_dashboard"
+                    context={{
+                      jobId: jobId!,
+                      featureUsed: 'results_view',
+                    }}
+                    trigger="button"
+                    type="text"
+                    size="small"
+                    text="Rate Results"
+                    tooltip="How helpful are these results?"
+                  />
                   <Button 
                     icon={<ReloadOutlined />}
                     onClick={() => refetchResults()}
@@ -321,6 +353,19 @@ const Results: React.FC = () => {
                 >
                   Share Results
                 </Button>
+                
+                {/* Export Feedback Trigger */}
+                <FeedbackTrigger
+                  touchpoint="export_download"
+                  context={{
+                    jobId: jobId!,
+                    featureUsed: 'export',
+                  }}
+                  trigger="button"
+                  type="dashed"
+                  text="Rate Export Experience"
+                  tooltip="How was the export process?"
+                />
               </Space>
             </Card>
 
@@ -352,6 +397,33 @@ const Results: React.FC = () => {
             </Card>
           </Col>
         </Row>
+      )}
+
+      {/* Auto-triggered Post-Analysis Feedback */}
+      {isCompleted && (
+        <FeedbackTrigger
+          touchpoint="post_analysis"
+          context={{
+            jobId: jobId!,
+            featureUsed: 'analysis_completion',
+          }}
+          trigger="auto"
+          autoTrigger={true}
+          autoTriggerDelay={3000} // 3 seconds after results are shown
+          title="How was your analysis experience?"
+          description="Your feedback helps us improve SocialMapper for researchers and planners like you."
+          onFeedbackSubmit={(feedback) => {
+            trackEvent({
+              event_name: 'feedback_submitted',
+              event_category: 'interaction',
+              properties: {
+                touchpoint: feedback.touchpoint,
+                type: feedback.type,
+                rating: feedback.rating,
+              },
+            });
+          }}
+        />
       )}
     </div>
   );

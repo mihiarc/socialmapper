@@ -4,7 +4,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic import field_validator
 
 
 class JobStatusEnum(str, Enum):
@@ -65,8 +66,9 @@ class APIError(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
     request_id: str | None = Field(None, description="Request identifier for tracking")
 
-    @validator("message")
-    def validate_message(self, v):
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, v: str) -> str:
         """Ensure error message is not empty."""
         if not v or not v.strip():
             raise ValueError("Error message cannot be empty")

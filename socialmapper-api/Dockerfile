@@ -21,16 +21,14 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy and install requirements
 WORKDIR /app
+# Copy and install only third-party requirements first (without -e .)
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and install the package
 COPY . .
-
-# Install the package
 RUN pip install --no-cache-dir .
 
 # Stage 2: Runtime stage
@@ -41,7 +39,7 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal32 \
     libgeos3.11.1 \
-    libproj22 \
+    libproj25 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

@@ -7,6 +7,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 
 import { analysisApi } from './api/analysisApi';
 import { metadataApi } from './api/metadataApi';
+import { feedbackApi } from './api/feedbackApi';
 import analysisSlice from './slices/analysisSlice';
 import uiSlice from './slices/uiSlice';
 
@@ -15,6 +16,7 @@ export const store = configureStore({
     // RTK Query APIs
     [analysisApi.reducerPath]: analysisApi.reducer,
     [metadataApi.reducerPath]: metadataApi.reducer,
+    [feedbackApi.reducerPath]: feedbackApi.reducer,
     
     // Feature slices
     analysis: analysisSlice,
@@ -28,7 +30,8 @@ export const store = configureStore({
       },
     })
       .concat(analysisApi.middleware)
-      .concat(metadataApi.middleware),
+      .concat(metadataApi.middleware)
+      .concat(feedbackApi.middleware),
   
   devTools: process.env.NODE_ENV !== 'production',
 });

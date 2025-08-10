@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic import field_validator
 
 from .base import (
     BaseResponse,
@@ -33,8 +34,9 @@ class BaseAnalysisRequest(BaseModel):
     include_isochrones: bool = Field(True, description="Include isochrone polygons in results")
     include_demographics: bool = Field(True, description="Include demographic analysis")
 
-    @validator("census_variables")
-    def validate_census_variables(self, v):
+    @field_validator("census_variables")
+    @classmethod
+    def validate_census_variables(cls, v):
         """Validate census variables list."""
         if not v:
             raise ValueError("At least one census variable must be specified")
@@ -56,22 +58,25 @@ class LocationAnalysisRequest(BaseAnalysisRequest):
     poi_type: str = Field(..., description="OpenStreetMap POI type (e.g., 'amenity')")
     poi_name: str = Field(..., description="OpenStreetMap POI name (e.g., 'library')")
 
-    @validator("location")
-    def validate_location(self, v):
+    @field_validator("location")
+    @classmethod
+    def validate_location(cls, v):
         """Validate location format."""
         if not v or len(v.strip()) < MIN_LOCATION_LENGTH:
             raise ValueError("Location must be at least 3 characters long")
         return v.strip()
 
-    @validator("poi_type")
-    def validate_poi_type(self, v):
+    @field_validator("poi_type")
+    @classmethod
+    def validate_poi_type(cls, v):
         """Validate POI type."""
         if not v or len(v.strip()) < MIN_POI_NAME_LENGTH:
             raise ValueError("POI type must be at least 2 characters long")
         return v.strip()
 
-    @validator("poi_name")
-    def validate_poi_name(self, v):
+    @field_validator("poi_name")
+    @classmethod
+    def validate_poi_name(cls, v):
         """Validate POI name."""
         if not v or len(v.strip()) < MIN_POI_NAME_LENGTH:
             raise ValueError("POI name must be at least 2 characters long")
@@ -87,8 +92,9 @@ class CustomPOILocation(BaseModel):
     address: str | None = Field(None, description="Optional address")
     category: str | None = Field(None, description="Optional POI category")
 
-    @validator("name")
-    def validate_name(self, v):
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
         """Validate POI name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI name cannot be empty")
@@ -103,15 +109,17 @@ class CustomPOIAnalysisRequest(BaseAnalysisRequest):
         ..., min_items=1, description="List of custom POI locations"
     )
 
-    @validator("location")
-    def validate_location(self, v):
+    @field_validator("location")
+    @classmethod
+    def validate_location(cls, v):
         """Validate location format."""
         if not v or len(v.strip()) < MIN_LOCATION_LENGTH:
             raise ValueError("Location must be at least 3 characters long")
         return v.strip()
 
-    @validator("custom_pois")
-    def validate_custom_pois(self, v):
+    @field_validator("custom_pois")
+    @classmethod
+    def validate_custom_pois(cls, v):
         """Validate custom POIs list."""
         if not v:
             raise ValueError("At least one custom POI must be provided")
@@ -128,8 +136,9 @@ class BatchAnalysisItem(BaseModel):
         ..., description="Analysis request"
     )
 
-    @validator("id")
-    def validate_id(self, v):
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, v):
         """Validate item ID."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Item ID cannot be empty")
@@ -144,8 +153,9 @@ class BatchAnalysisRequest(BaseModel):
     )
     priority: int = Field(1, ge=1, le=5, description="Processing priority (1=highest, 5=lowest)")
 
-    @validator("items")
-    def validate_items(self, v):
+    @field_validator("items")
+    @classmethod
+    def validate_items(cls, v):
         """Validate batch items."""
         if not v:
             raise ValueError("At least one analysis item must be provided")
@@ -171,8 +181,9 @@ class AnalysisResponse(BaseResponse):
     estimated_completion: datetime | None = Field(None, description="Estimated completion time")
     message: str | None = Field(None, description="Status message")
 
-    @validator("job_id")
-    def validate_job_id(self, v):
+    @field_validator("job_id")
+    @classmethod
+    def validate_job_id(cls, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -191,15 +202,17 @@ class BatchAnalysisResponse(BaseResponse):
     )
     total_items: int = Field(..., description="Total number of items in batch")
 
-    @validator("batch_id")
-    def validate_batch_id(self, v):
+    @field_validator("batch_id")
+    @classmethod
+    def validate_batch_id(cls, v):
         """Validate batch ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Batch ID cannot be empty")
         return v.strip()
 
-    @validator("job_ids")
-    def validate_job_ids(self, v):
+    @field_validator("job_ids")
+    @classmethod
+    def validate_job_ids(cls, v):
         """Validate job IDs list."""
         if not v:
             raise ValueError("At least one job ID must be provided")
@@ -231,8 +244,9 @@ class ExportRequest(BaseModel):
     include_isochrones: bool = Field(True, description="Include isochrone data in export")
     include_demographics: bool = Field(True, description="Include demographic data in export")
 
-    @validator("job_id")
-    def validate_job_id(self, v):
+    @field_validator("job_id")
+    @classmethod
+    def validate_job_id2(cls, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -306,8 +320,9 @@ class AnalysisResult(BaseResponse):
     error: str | None = Field(None, description="Error message if job failed")
     error_details: dict[str, Any] | None = Field(None, description="Detailed error information")
 
-    @validator("job_id")
-    def validate_job_id(self, v):
+    @field_validator("job_id")
+    @classmethod
+    def validate_job_id3(cls, v):
         """Validate job ID format."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Job ID cannot be empty")
@@ -323,15 +338,17 @@ class CensusVariable(BaseModel):
     group: str | None = Field(None, description="Variable group/category")
     universe: str | None = Field(None, description="Universe description")
 
-    @validator("code")
-    def validate_code(self, v):
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v):
         """Validate census variable code format."""
         if not v or len(v.strip()) < 5:
             raise ValueError("Census variable code must be at least 5 characters")
         return v.strip().upper()
 
-    @validator("name")
-    def validate_name(self, v):
+    @field_validator("name")
+    @classmethod
+    def validate_census_name(cls, v):
         """Validate variable name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Variable name cannot be empty")
@@ -355,15 +372,17 @@ class POIType(BaseModel):
     category: str | None = Field(None, description="POI category")
     common_names: list[str] | None = Field(None, description="Common alternative names")
 
-    @validator("type")
-    def validate_type(self, v):
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v):
         """Validate POI type."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI type cannot be empty")
         return v.strip().lower()
 
-    @validator("name")
-    def validate_name(self, v):
+    @field_validator("name")
+    @classmethod
+    def validate_poi_name2(cls, v):
         """Validate POI name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("POI name cannot be empty")
@@ -390,15 +409,17 @@ class LocationSearchResult(BaseModel):
     importance: float | None = Field(None, description="Search result importance score")
     place_type: str | None = Field(None, description="Type of place (city, town, etc.)")
 
-    @validator("display_name")
-    def validate_display_name(self, v):
+    @field_validator("display_name")
+    @classmethod
+    def validate_display_name(cls, v):
         """Validate display name."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Display name cannot be empty")
         return v.strip()
 
-    @validator("country")
-    def validate_country(self, v):
+    @field_validator("country")
+    @classmethod
+    def validate_country(cls, v):
         """Validate country."""
         if not v or len(v.strip()) < 1:
             raise ValueError("Country cannot be empty")

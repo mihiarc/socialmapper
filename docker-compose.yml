@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Backend API service
   api:
@@ -10,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SOCIALMAPPER_API_CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:8080,http://localhost:3000
+      - SOCIALMAPPER_API_CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:8080","http://localhost:3000"]
       - SOCIALMAPPER_API_CENSUS_API_KEY=${CENSUS_API_KEY}
       - SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE=60
       - SOCIALMAPPER_API_API_AUTH_ENABLED=false
@@ -45,7 +43,7 @@ services:
       context: ./socialmapper-ui
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8000
+        - VITE_API_URL=http://localhost:8000/api/v1
         - VITE_APP_TITLE=SocialMapper
         - VITE_APP_VERSION=1.0.0
         - VITE_MAPBOX_TOKEN=${MAPBOX_TOKEN:-}

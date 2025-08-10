@@ -1,0 +1,361 @@
+# SocialMapper API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-api
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: socialmapper
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3  # Multiple replicas for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialmapper-api
+        app.kubernetes.io/component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+        # Restart on config/secret changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: socialmapper-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      # Init container to wait for Redis
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              until nc -z redis-service.socialmapper.svc.cluster.local 6379; do
+                echo "Waiting for Redis...";
+                sleep 2;
+              done;
+              echo "Redis is ready!";
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+      
+      containers:
+        - name: api
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-api:latest"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          
+          env:
+            # Load configuration from ConfigMap
+            - name: SOCIALMAPPER_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_HOST
+            - name: SOCIALMAPPER_API_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_PORT
+            - name: SOCIALMAPPER_API_WORKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_WORKERS
+            - name: SOCIALMAPPER_API_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_LOG_LEVEL
+            - name: SOCIALMAPPER_API_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_CORS_ORIGINS
+            - name: SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE
+            - name: SOCIALMAPPER_API_MAX_CONCURRENT_JOBS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_MAX_CONCURRENT_JOBS
+            - name: SOCIALMAPPER_API_RESULT_TTL_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_RESULT_TTL_HOURS
+            
+            # Load secrets
+            - name: SOCIALMAPPER_API_CENSUS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: SOCIALMAPPER_API_CENSUS_API_KEY
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: REDIS_PASSWORD
+            
+            # Redis connection
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis-service.socialmapper.svc.cluster.local:6379/0"
+            
+            # Pod information
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          
+          volumeMounts:
+            - name: results-storage
+              mountPath: /app/results
+            - name: tmp-storage
+              mountPath: /tmp
+            - name: cache-storage
+              mountPath: /app/cache
+          
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          
+          # Graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 15"]
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      
+      volumes:
+        - name: results-storage
+          persistentVolumeClaim:
+            claimName: api-results-pvc
+        - name: tmp-storage
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: cache-storage
+          emptyDir:
+            sizeLimit: 2Gi
+      
+      # Spread pods across nodes for better availability
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: ["socialmapper-api"]
+                topologyKey: kubernetes.io/hostname
+        
+        # Prefer nodes with compute-intensive taint for heavy workloads
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: workload-type
+                    operator: In
+                    values: ["compute-intensive"]
+      
+      # Tolerate compute-intensive nodes
+      tolerations:
+        - key: "workload-type"
+          operator: "Equal"
+          value: "compute-intensive"
+          effect: "NoSchedule"
+      
+      terminationGracePeriodSeconds: 30
+
+---
+# API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-api-service
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-api
+
+---
+# Persistent Volume Claim for API results
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: api-results-pvc
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteMany  # Multiple pods need access
+  storageClassName: efs  # AWS EFS for shared storage
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# Horizontal Pod Autoscaler for API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: socialmapper-api-hpa
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: socialmapper-api
+  minReplicas: 2
+  maxReplicas: 20  # Scale up to handle demo load
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: socialmapper-api-pdb
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: availability
+spec:
+  minAvailable: 50%  # Always keep at least 50% of pods running
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-api
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: socialmapper-api-metrics
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-api
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+      honorLabels: true
