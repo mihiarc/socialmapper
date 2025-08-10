@@ -93,10 +93,10 @@ class TestCacheManager:
         manager = CacheManager()
 
         assert manager is not None
-        assert hasattr(manager, 'cache_base_dir')
-        assert hasattr(manager, 'geocoding_cache_dir')
-        assert hasattr(manager, 'network_cache_dir')
-        assert hasattr(manager, 'census_cache_dir')
+        assert hasattr(manager, "cache_base_dir")
+        assert hasattr(manager, "geocoding_cache_dir")
+        assert hasattr(manager, "network_cache_dir")
+        assert hasattr(manager, "census_cache_dir")
 
     def test_cache_manager_directories(self):
         """Test cache directory paths."""
@@ -110,7 +110,7 @@ class TestCacheManager:
     def test_cache_manager_has_statistics_method(self):
         """Test that CacheManager has get_cache_statistics method."""
         manager = CacheManager()
-        assert hasattr(manager, 'get_cache_statistics')
+        assert hasattr(manager, "get_cache_statistics")
         assert callable(manager.get_cache_statistics)
 
 

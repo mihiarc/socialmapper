@@ -1,6 +1,5 @@
 """Tests for geocoding engine."""
 
-
 from socialmapper.geocoding.engine import AddressGeocodingEngine
 from socialmapper.geocoding.models import AddressProvider, GeocodingConfig
 
@@ -18,9 +17,7 @@ class TestAddressGeocodingEngine:
     def test_engine_with_custom_config(self):
         """Test engine initialization with custom config."""
         config = GeocodingConfig(
-            primary_provider=AddressProvider.GOOGLE,
-            enable_cache=False,
-            max_retries=5
+            primary_provider=AddressProvider.GOOGLE, enable_cache=False, max_retries=5
         )
 
         engine = AddressGeocodingEngine(config)
@@ -34,9 +31,9 @@ class TestAddressGeocodingEngine:
         engine = AddressGeocodingEngine()
 
         # Check required methods exist
-        assert hasattr(engine, 'geocode_address')
-        assert hasattr(engine, 'geocode_addresses_batch')
-        assert hasattr(engine, 'get_statistics')
+        assert hasattr(engine, "geocode_address")
+        assert hasattr(engine, "geocode_addresses_batch")
+        assert hasattr(engine, "get_statistics")
 
         # Check they are callable
         assert callable(engine.geocode_address)

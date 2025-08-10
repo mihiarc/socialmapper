@@ -1,6 +1,5 @@
 """Tests for pipeline modules."""
 
-
 from socialmapper.pipeline import (
     PipelineConfig,
     PipelineOrchestrator,
@@ -24,7 +23,7 @@ class TestPipelineConfig:
             poi_type="amenity",
             poi_name="library",
             travel_time=15,
-            travel_mode="walk"
+            travel_mode="walk",
         )
 
         assert config.geocode_area == "San Francisco, CA"
@@ -36,9 +35,7 @@ class TestPipelineConfig:
     def test_pipeline_config_defaults(self):
         """Test pipeline config default values."""
         config = PipelineConfig(
-            geocode_area="San Francisco, CA",
-            poi_type="amenity",
-            poi_name="library"
+            geocode_area="San Francisco, CA", poi_type="amenity", poi_name="library"
         )
 
         # Check defaults
@@ -74,27 +71,19 @@ class TestPipelineOrchestrator:
 
     def test_orchestrator_initialization(self):
         """Test creating orchestrator with config."""
-        config = PipelineConfig(
-            geocode_area="Boston, MA",
-            poi_type="amenity",
-            poi_name="park"
-        )
+        config = PipelineConfig(geocode_area="Boston, MA", poi_type="amenity", poi_name="park")
 
         orchestrator = PipelineOrchestrator(config)
 
         assert orchestrator.config == config
-        assert hasattr(orchestrator, 'run')
+        assert hasattr(orchestrator, "run")
 
     def test_orchestrator_has_run_method(self):
         """Test that orchestrator has run method."""
-        config = PipelineConfig(
-            geocode_area="Boston, MA",
-            poi_type="amenity",
-            poi_name="park"
-        )
+        config = PipelineConfig(geocode_area="Boston, MA", poi_type="amenity", poi_name="park")
         orchestrator = PipelineOrchestrator(config)
 
-        assert hasattr(orchestrator, 'run')
+        assert hasattr(orchestrator, "run")
         assert callable(orchestrator.run)
 
 

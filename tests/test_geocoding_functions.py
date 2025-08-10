@@ -1,6 +1,5 @@
 """Tests for geocoding convenience functions."""
 
-
 from socialmapper.geocoding import addresses_to_poi_format, geocode_address, geocode_addresses
 from socialmapper.geocoding.models import AddressInput, AddressProvider, GeocodingConfig
 
@@ -19,9 +18,9 @@ class TestGeocodeAddress:
         try:
             result = geocode_address("123 Fake Street")
             # Result should be a GeocodingResult object
-            assert hasattr(result, 'success')
-            assert hasattr(result, 'latitude')
-            assert hasattr(result, 'longitude')
+            assert hasattr(result, "success")
+            assert hasattr(result, "latitude")
+            assert hasattr(result, "longitude")
         except Exception:
             # If geocoding fails due to network/API issues, that's okay
             # We're just testing the interface
@@ -33,7 +32,7 @@ class TestGeocodeAddress:
 
         try:
             result = geocode_address(addr)
-            assert hasattr(result, 'success')
+            assert hasattr(result, "success")
         except Exception:
             pass
 
@@ -43,7 +42,7 @@ class TestGeocodeAddress:
 
         try:
             result = geocode_address("Test", config=config)
-            assert hasattr(result, 'success')
+            assert hasattr(result, "success")
         except Exception:
             pass
 
@@ -67,10 +66,7 @@ class TestGeocodeAddresses:
 
     def test_accepts_mixed_types(self):
         """Test that function accepts mixed string and AddressInput."""
-        addresses = [
-            "123 Test St",
-            AddressInput(address="456 Test Ave")
-        ]
+        addresses = ["123 Test St", AddressInput(address="456 Test Ave")]
 
         try:
             results = geocode_addresses(addresses, progress=False)

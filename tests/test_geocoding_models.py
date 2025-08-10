@@ -78,7 +78,7 @@ class TestGeocodingConfig:
             fallback_providers=[AddressProvider.HERE, AddressProvider.MAPBOX],
             google_api_key="test_key",
             timeout_seconds=30,
-            enable_cache=False
+            enable_cache=False,
         )
 
         assert config.primary_provider == AddressProvider.GOOGLE
@@ -94,10 +94,7 @@ class TestAddressInput:
     def test_valid_address_input(self):
         """Test creating valid address input."""
         addr = AddressInput(
-            address="123 Main St",
-            city="San Francisco",
-            state="CA",
-            postal_code="94105"
+            address="123 Main St", city="San Francisco", state="CA", postal_code="94105"
         )
 
         assert addr.address == "123 Main St"
@@ -136,7 +133,7 @@ class TestAddressInput:
             id="addr_123",
             source="customer_db",
             provider_preference=AddressProvider.GOOGLE,
-            quality_threshold=AddressQuality.EXACT
+            quality_threshold=AddressQuality.EXACT,
         )
 
         assert addr.id == "addr_123"
@@ -152,7 +149,7 @@ class TestAddressInput:
             city="San Francisco",
             state="CA",
             postal_code="94105",
-            country="US"
+            country="US",
         )
 
         formatted = addr.get_formatted_address()
@@ -177,7 +174,7 @@ class TestAddressInput:
         # Key should be a valid hex string (SHA256)
         key = addr1.get_cache_key()
         assert len(key) == 64  # SHA256 produces 64 hex characters
-        assert all(c in '0123456789abcdef' for c in key)
+        assert all(c in "0123456789abcdef" for c in key)
 
 
 class TestGeocodingResult:
@@ -200,7 +197,7 @@ class TestGeocodingResult:
             state="CA",
             postal_code="94105",
             state_fips="06",
-            county_fips="075"
+            county_fips="075",
         )
 
         assert result.success is True
@@ -219,7 +216,7 @@ class TestGeocodingResult:
             input_address=input_addr,
             success=False,
             quality=AddressQuality.FAILED,
-            error_message="Address not found"
+            error_message="Address not found",
         )
 
         assert result.success is False
@@ -238,7 +235,7 @@ class TestGeocodingResult:
             success=True,
             latitude=45.0,
             longitude=-100.0,
-            quality=AddressQuality.EXACT
+            quality=AddressQuality.EXACT,
         )
         assert result.latitude == 45.0
         assert result.longitude == -100.0
@@ -250,7 +247,7 @@ class TestGeocodingResult:
                 success=True,
                 latitude=91.0,
                 longitude=0,
-                quality=AddressQuality.EXACT
+                quality=AddressQuality.EXACT,
             )
 
         # Invalid longitude (too low)
@@ -260,16 +257,12 @@ class TestGeocodingResult:
                 success=True,
                 latitude=0,
                 longitude=-181.0,
-                quality=AddressQuality.EXACT
+                quality=AddressQuality.EXACT,
             )
 
     def test_to_poi_format(self):
         """Test conversion to POI format."""
-        input_addr = AddressInput(
-            address="Central Library",
-            id="lib_001",
-            source="library_db"
-        )
+        input_addr = AddressInput(address="Central Library", id="lib_001", source="library_db")
 
         result = GeocodingResult(
             input_address=input_addr,
@@ -284,7 +277,7 @@ class TestGeocodingResult:
             state="NY",
             postal_code="10001",
             state_fips="36",
-            county_fips="061"
+            county_fips="061",
         )
 
         poi = result.to_poi_format()
@@ -319,7 +312,7 @@ class TestGeocodingResult:
             input_address=input_addr,
             success=False,
             quality=AddressQuality.FAILED,
-            error_message="Not found"
+            error_message="Not found",
         )
 
         assert result.to_poi_format() is None
@@ -333,7 +326,7 @@ class TestGeocodingResult:
             success=True,
             latitude=0,
             longitude=0,
-            quality=AddressQuality.EXACT
+            quality=AddressQuality.EXACT,
         )
 
         assert result.timestamp is not None

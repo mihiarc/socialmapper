@@ -23,11 +23,9 @@ class TestEstimateDataSize:
     def test_dataframe_size_estimation(self):
         """Test size estimation for regular DataFrame."""
         # Create a DataFrame with known size
-        data = pd.DataFrame({
-            'col1': range(1000),
-            'col2': ['string' * 10] * 1000,
-            'col3': np.random.rand(1000)
-        })
+        data = pd.DataFrame(
+            {"col1": range(1000), "col2": ["string" * 10] * 1000, "col3": np.random.rand(1000)}
+        )
 
         size_mb = estimate_data_size(data)
         assert isinstance(size_mb, float)
@@ -37,10 +35,7 @@ class TestEstimateDataSize:
         """Test size estimation for GeoDataFrame."""
         # Create a GeoDataFrame
         points = [Point(x, y) for x, y in zip(range(100), range(100), strict=False)]
-        gdf = gpd.GeoDataFrame({
-            'id': range(100),
-            'value': np.random.rand(100)
-        }, geometry=points)
+        gdf = gpd.GeoDataFrame({"id": range(100), "value": np.random.rand(100)}, geometry=points)
 
         size_mb = estimate_data_size(gdf)
         assert isinstance(size_mb, float)
@@ -54,8 +49,8 @@ class TestEstimateDataSize:
 
     def test_large_dataframe_size(self):
         """Test that larger DataFrames have larger estimated sizes."""
-        small_df = pd.DataFrame({'col': range(100)})
-        large_df = pd.DataFrame({'col': range(10000)})
+        small_df = pd.DataFrame({"col": range(100)})
+        large_df = pd.DataFrame({"col": range(10000)})
 
         small_size = estimate_data_size(small_df)
         large_size = estimate_data_size(large_df)
@@ -105,7 +100,7 @@ class TestGenerateOutputPath:
     def test_directory_creation(self, tmp_path):
         """Test that directories are created."""
         output_dir = tmp_path / "new" / "nested" / "dir"
-        path = generate_output_path(output_dir=str(output_dir))
+        generate_output_path(output_dir=str(output_dir))
 
         # Directory should be created
         assert output_dir.exists()
@@ -154,7 +149,9 @@ class TestSelectExportFormat:
 
         # Exactly at thresholds
         assert select_export_format(10.0, False, "auto") == "csv"  # 10.0 is not > 10
-        assert select_export_format(100.0, False, "auto") == "parquet"  # 100.0 is not > 100, but is > 10
+        assert (
+            select_export_format(100.0, False, "auto") == "parquet"
+        )  # 100.0 is not > 100, but is > 10
 
         # Just above thresholds
         assert select_export_format(10.01, False, "auto") == "parquet"  # 10.01 > 10
@@ -170,14 +167,14 @@ class TestValidateExportData:
 
     def test_valid_dataframe(self):
         """Test validation of valid DataFrame."""
-        df = pd.DataFrame({'col': [1, 2, 3]})
+        df = pd.DataFrame({"col": [1, 2, 3]})
         # Should not raise
         validate_export_data(df)
 
     def test_valid_geodataframe(self):
         """Test validation of valid GeoDataFrame."""
         points = [Point(0, 0), Point(1, 1)]
-        gdf = gpd.GeoDataFrame({'id': [1, 2]}, geometry=points)
+        gdf = gpd.GeoDataFrame({"id": [1, 2]}, geometry=points)
         # Should not raise
         validate_export_data(gdf)
 

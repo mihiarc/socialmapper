@@ -47,8 +47,7 @@ class TestDataPrepConfig:
         custom_excluded = ["exclude1", "exclude2"]
 
         config = DataPrepConfig(
-            preferred_column_order=custom_order,
-            excluded_columns=custom_excluded
+            preferred_column_order=custom_order, excluded_columns=custom_excluded
         )
 
         assert config.preferred_column_order == custom_order
@@ -93,9 +92,7 @@ class TestBaseExporter:
         assert isinstance(exporter.config, DataPrepConfig)
 
         # With custom config
-        custom_config = DataPrepConfig(
-            preferred_column_order=["col1", "col2"]
-        )
+        custom_config = DataPrepConfig(preferred_column_order=["col1", "col2"])
         exporter = MockExporter(config=custom_config)
         assert exporter.config == custom_config
 

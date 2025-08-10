@@ -61,16 +61,16 @@ class TestNearbyPOIDiscoveryStage:
         )
 
         # Mock isochrone generation
-        isochrone_polygon = Polygon([
-            (-79.0658, 35.9032),
-            (-79.0458, 35.9032),
-            (-79.0458, 35.9232),
-            (-79.0658, 35.9232),
-            (-79.0658, 35.9032),
-        ])
-        mock_isochrone_gdf = gpd.GeoDataFrame(
-            {"geometry": [isochrone_polygon]}, crs="EPSG:4326"
+        isochrone_polygon = Polygon(
+            [
+                (-79.0658, 35.9032),
+                (-79.0458, 35.9032),
+                (-79.0458, 35.9232),
+                (-79.0658, 35.9232),
+                (-79.0658, 35.9032),
+            ]
         )
+        mock_isochrone_gdf = gpd.GeoDataFrame({"geometry": [isochrone_polygon]}, crs="EPSG:4326")
         mock_create_isochrone.return_value = mock_isochrone_gdf
 
         # Mock POI query
@@ -183,16 +183,16 @@ class TestNearbyPOIDiscoveryStage:
             quality=AddressQuality.EXACT,
         )
 
-        isochrone_polygon = Polygon([
-            (-79.0658, 35.9032),
-            (-79.0458, 35.9032),
-            (-79.0458, 35.9232),
-            (-79.0658, 35.9232),
-            (-79.0658, 35.9032),
-        ])
-        mock_isochrone_gdf = gpd.GeoDataFrame(
-            {"geometry": [isochrone_polygon]}, crs="EPSG:4326"
+        isochrone_polygon = Polygon(
+            [
+                (-79.0658, 35.9032),
+                (-79.0458, 35.9032),
+                (-79.0458, 35.9232),
+                (-79.0658, 35.9232),
+                (-79.0658, 35.9032),
+            ]
         )
+        mock_isochrone_gdf = gpd.GeoDataFrame({"geometry": [isochrone_polygon]}, crs="EPSG:4326")
         mock_create_isochrone.return_value = mock_isochrone_gdf
 
         # Mock empty POI query result
@@ -242,16 +242,16 @@ class TestNearbyPOIDiscoveryStage:
             quality=AddressQuality.EXACT,
         )
 
-        isochrone_polygon = Polygon([
-            (-79.0658, 35.9032),
-            (-79.0458, 35.9032),
-            (-79.0458, 35.9232),
-            (-79.0658, 35.9232),
-            (-79.0658, 35.9032),
-        ])
-        mock_isochrone_gdf = gpd.GeoDataFrame(
-            {"geometry": [isochrone_polygon]}, crs="EPSG:4326"
+        isochrone_polygon = Polygon(
+            [
+                (-79.0658, 35.9032),
+                (-79.0458, 35.9032),
+                (-79.0458, 35.9232),
+                (-79.0658, 35.9232),
+                (-79.0658, 35.9032),
+            ]
         )
+        mock_isochrone_gdf = gpd.GeoDataFrame({"geometry": [isochrone_polygon]}, crs="EPSG:4326")
         mock_create_isochrone.return_value = mock_isochrone_gdf
 
         # Mock POIs with various tags for categorization testing
@@ -340,22 +340,21 @@ class TestNearbyPOIDiscoveryStage:
             quality=AddressQuality.EXACT,
         )
 
-        isochrone_polygon = Polygon([
-            (-79.0658, 35.9032),
-            (-79.0458, 35.9032),
-            (-79.0458, 35.9232),
-            (-79.0658, 35.9232),
-            (-79.0658, 35.9032),
-        ])
-        mock_isochrone_gdf = gpd.GeoDataFrame(
-            {"geometry": [isochrone_polygon]}, crs="EPSG:4326"
+        isochrone_polygon = Polygon(
+            [
+                (-79.0658, 35.9032),
+                (-79.0458, 35.9032),
+                (-79.0458, 35.9232),
+                (-79.0658, 35.9232),
+                (-79.0658, 35.9032),
+            ]
         )
+        mock_isochrone_gdf = gpd.GeoDataFrame({"geometry": [isochrone_polygon]}, crs="EPSG:4326")
         mock_create_isochrone.return_value = mock_isochrone_gdf
 
         # Create many POIs of the same category
-        mock_pois = []
-        for i in range(10):
-            mock_pois.append({
+        mock_pois = [
+            {
                 "type": "node",
                 "id": i,
                 "lat": 35.9140 + (i * 0.001),  # Different distances
@@ -364,7 +363,9 @@ class TestNearbyPOIDiscoveryStage:
                     "name": f"Restaurant {i}",
                     "amenity": "restaurant",
                 },
-            })
+            }
+            for i in range(10)
+        ]
         mock_query_pois.return_value = mock_pois
 
         # Test with limit
@@ -660,9 +661,7 @@ class TestIntegrationWithMockedAPIs:
     @patch("socialmapper.pipeline.poi_discovery.geocode_address")
     @patch("socialmapper.pipeline.poi_discovery.create_isochrone_from_poi")
     @patch("socialmapper.pipeline.poi_discovery.query_pois_in_polygon")
-    def test_full_pipeline_integration(
-        self, mock_query_pois, mock_create_isochrone, mock_geocode
-    ):
+    def test_full_pipeline_integration(self, mock_query_pois, mock_create_isochrone, mock_geocode):
         """Test full pipeline integration with realistic data."""
         # Mock geocoding
         mock_geocode.return_value = GeocodingResult(
@@ -675,16 +674,16 @@ class TestIntegrationWithMockedAPIs:
         )
 
         # Mock isochrone generation with realistic polygon
-        isochrone_polygon = Polygon([
-            (-79.0658, 35.9032),
-            (-79.0458, 35.9032),
-            (-79.0458, 35.9232),
-            (-79.0658, 35.9232),
-            (-79.0658, 35.9032),
-        ])
-        mock_isochrone_gdf = gpd.GeoDataFrame(
-            {"geometry": [isochrone_polygon]}, crs="EPSG:4326"
+        isochrone_polygon = Polygon(
+            [
+                (-79.0658, 35.9032),
+                (-79.0458, 35.9032),
+                (-79.0458, 35.9232),
+                (-79.0658, 35.9232),
+                (-79.0658, 35.9032),
+            ]
         )
+        mock_isochrone_gdf = gpd.GeoDataFrame({"geometry": [isochrone_polygon]}, crs="EPSG:4326")
         mock_create_isochrone.return_value = mock_isochrone_gdf
 
         # Mock realistic POI data
@@ -790,11 +789,15 @@ class TestIntegrationWithMockedAPIs:
         df = pd.read_csv(csv_files[0])
         assert len(df) == 3
         assert "Carrboro Coffee Roasters" in df["name"].values
-        assert all(col in df.columns for col in ["name", "category", "distance_m", "latitude", "longitude"])
+        assert all(
+            col in df.columns for col in ["name", "category", "distance_m", "latitude", "longitude"]
+        )
 
         # Metadata
         assert "query_categories" in poi_result.metadata
-        assert "processing_time" not in poi_result.metadata or isinstance(poi_result.metadata["processing_time"], (int, float))
+        assert "processing_time" not in poi_result.metadata or isinstance(
+            poi_result.metadata["processing_time"], int | float
+        )
 
         # Summary statistics
         stats = poi_result.get_summary_stats()

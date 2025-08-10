@@ -18,9 +18,7 @@ class TestCensusVariable:
     def test_census_variable_creation(self):
         """Test creating a CensusVariable."""
         var = CensusVariable(
-            code="B01001_001E",
-            name="Total Population",
-            description="Total population count"
+            code="B01001_001E", name="Total Population", description="Total population count"
         )
 
         assert var.code == "B01001_001E"
@@ -30,10 +28,7 @@ class TestCensusVariable:
     def test_census_variable_validation(self):
         """Test CensusVariable validation."""
         # Valid variable
-        var = CensusVariable(
-            code="B01001_001E",
-            name="Total Population"
-        )
+        var = CensusVariable(code="B01001_001E", name="Total Population")
         assert var.code == "B01001_001E"
 
         # Invalid - empty code
@@ -56,7 +51,7 @@ class TestGeographicUnit:
             state_fips="06",
             county_fips="075",
             tract_code="020100",
-            block_group_code="1"
+            block_group_code="1",
         )
 
         assert unit.geoid == "060750201001"
@@ -83,6 +78,7 @@ class TestCensusDataPoint:
     def test_census_data_point_creation(self):
         """Test creating CensusDataPoint."""
         var = CensusVariable(code="B01001_001E", name="Total Population")
+
         # CensusDataPoint is not a dataclass, need to create it differently
         @dataclass
         class TestCensusDataPoint:
@@ -92,12 +88,7 @@ class TestCensusDataPoint:
             year: int | None = None
             margin_of_error: float | None = None
 
-        data = TestCensusDataPoint(
-            geoid="060750201001",
-            variable=var,
-            value=1234.0,
-            year=2022
-        )
+        data = TestCensusDataPoint(geoid="060750201001", variable=var, value=1234.0, year=2022)
 
         assert data.geoid == "060750201001"
         assert data.variable.code == "B01001_001E"
@@ -122,13 +113,13 @@ class TestGeocodeResult:
             state_fips="06",
             county_fips="075",
             block_group_geoid="060750201001",
-            confidence=0.95
+            confidence=0.95,
         )
 
         assert result.latitude == 37.7749
         assert result.longitude == -122.4194
         assert result.state_fips == "06"
-        assert result.county_fips == "075" if hasattr(result, 'county_fips') else True
+        assert result.county_fips == "075" if hasattr(result, "county_fips") else True
         assert result.block_group_geoid == "060750201001"
         assert result.confidence == 0.95
 
@@ -143,7 +134,7 @@ class TestBlockGroupInfo:
             county_fips="075",
             tract="020100",
             block_group="1",
-            geoid="060750201001"
+            geoid="060750201001",
         )
 
         assert info.geoid == "060750201001"
@@ -154,11 +145,6 @@ class TestBlockGroupInfo:
 
     def test_block_group_info_full_geoid(self):
         """Test BlockGroupInfo full_geoid property."""
-        info = BlockGroupInfo(
-            state_fips="06",
-            county_fips="075",
-            tract="020100",
-            block_group="1"
-        )
+        info = BlockGroupInfo(state_fips="06", county_fips="075", tract="020100", block_group="1")
 
         assert info.full_geoid == "060750201001"

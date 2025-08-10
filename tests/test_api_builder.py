@@ -23,20 +23,13 @@ class TestSocialMapperBuilder:
 
     def test_poi_configuration(self):
         """Test POI configuration."""
-        builder = (
-            SocialMapperBuilder()
-            .with_osm_pois(poi_type="amenity", poi_name="library")
-        )
+        builder = SocialMapperBuilder().with_osm_pois(poi_type="amenity", poi_name="library")
         # Builder pattern should return self
         assert isinstance(builder, SocialMapperBuilder)
 
     def test_travel_configuration(self):
         """Test travel time and mode configuration."""
-        builder = (
-            SocialMapperBuilder()
-            .with_travel_time(15)
-            .with_travel_mode("walk")
-        )
+        builder = SocialMapperBuilder().with_travel_time(15).with_travel_mode("walk")
         # Builder pattern should return self
         assert isinstance(builder, SocialMapperBuilder)
 
@@ -96,6 +89,7 @@ class TestSocialMapperBuilder:
     def test_invalid_travel_time(self):
         """Test invalid travel time raises error."""
         from socialmapper.exceptions import InvalidTravelTimeError
+
         builder = SocialMapperBuilder()
         with pytest.raises(InvalidTravelTimeError):
             builder.with_travel_time(0)  # Too low
@@ -105,6 +99,7 @@ class TestSocialMapperBuilder:
     def test_geographic_level(self):
         """Test geographic level configuration."""
         from socialmapper.api.builder import GeographicLevel
+
         builder = SocialMapperBuilder().with_geographic_level(GeographicLevel.ZCTA)
         assert isinstance(builder, SocialMapperBuilder)
 

@@ -359,7 +359,10 @@ class TestNearbyPOIDiscoveryConfig:
 
     def test_travel_time_validation_min(self):
         """Test that travel time below minimum raises ValueError."""
-        with pytest.raises(ValueError, match=f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"):
+        with pytest.raises(
+            ValueError,
+            match=f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes",
+        ):
             NearbyPOIDiscoveryConfig(
                 location="Test Location",
                 travel_time=0,  # < MIN_TRAVEL_TIME (1)
@@ -367,7 +370,10 @@ class TestNearbyPOIDiscoveryConfig:
 
     def test_travel_time_validation_max(self):
         """Test that travel time above maximum raises ValueError."""
-        with pytest.raises(ValueError, match=f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes"):
+        with pytest.raises(
+            ValueError,
+            match=f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes",
+        ):
             NearbyPOIDiscoveryConfig(
                 location="Test Location",
                 travel_time=121,  # > MAX_TRAVEL_TIME (120)
@@ -422,13 +428,17 @@ class TestNearbyPOIDiscoveryConfig:
 
     def test_invalid_location_type(self):
         """Test that invalid location type raises ValueError."""
-        with pytest.raises(ValueError, match="Location must be either an address string or \\(lat, lon\\) tuple"):
+        with pytest.raises(
+            ValueError, match="Location must be either an address string or \\(lat, lon\\) tuple"
+        ):
             NearbyPOIDiscoveryConfig(
                 location=123,  # Invalid type
                 travel_time=30,
             )
 
-        with pytest.raises(ValueError, match="Location must be either an address string or \\(lat, lon\\) tuple"):
+        with pytest.raises(
+            ValueError, match="Location must be either an address string or \\(lat, lon\\) tuple"
+        ):
             NearbyPOIDiscoveryConfig(
                 location=["New York"],  # Invalid type
                 travel_time=30,
@@ -582,19 +592,37 @@ class TestNearbyPOIResult:
     def test_get_all_pois(self):
         """Test get_all_pois method returns flat list of POIs."""
         poi1 = DiscoveredPOI(
-            id="poi_1", name="POI 1", category="cat1", subcategory="sub1",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=100.0,
-            osm_type="node", osm_id=1,
+            id="poi_1",
+            name="POI 1",
+            category="cat1",
+            subcategory="sub1",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=100.0,
+            osm_type="node",
+            osm_id=1,
         )
         poi2 = DiscoveredPOI(
-            id="poi_2", name="POI 2", category="cat1", subcategory="sub1",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=200.0,
-            osm_type="node", osm_id=2,
+            id="poi_2",
+            name="POI 2",
+            category="cat1",
+            subcategory="sub1",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=200.0,
+            osm_type="node",
+            osm_id=2,
         )
         poi3 = DiscoveredPOI(
-            id="poi_3", name="POI 3", category="cat2", subcategory="sub2",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=300.0,
-            osm_type="node", osm_id=3,
+            id="poi_3",
+            name="POI 3",
+            category="cat2",
+            subcategory="sub2",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=300.0,
+            osm_type="node",
+            osm_id=3,
         )
 
         result = NearbyPOIResult(
@@ -629,19 +657,37 @@ class TestNearbyPOIResult:
     def test_get_pois_by_distance(self):
         """Test get_pois_by_distance returns sorted POIs."""
         poi1 = DiscoveredPOI(
-            id="poi_1", name="Far", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=1000.0,
-            osm_type="node", osm_id=1,
+            id="poi_1",
+            name="Far",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=1000.0,
+            osm_type="node",
+            osm_id=1,
         )
         poi2 = DiscoveredPOI(
-            id="poi_2", name="Near", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=100.0,
-            osm_type="node", osm_id=2,
+            id="poi_2",
+            name="Near",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=100.0,
+            osm_type="node",
+            osm_id=2,
         )
         poi3 = DiscoveredPOI(
-            id="poi_3", name="Medium", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=500.0,
-            osm_type="node", osm_id=3,
+            id="poi_3",
+            name="Medium",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=500.0,
+            osm_type="node",
+            osm_id=3,
         )
 
         result = NearbyPOIResult(
@@ -661,19 +707,37 @@ class TestNearbyPOIResult:
     def test_get_pois_by_distance_with_max(self):
         """Test get_pois_by_distance with max_distance_m filter."""
         poi1 = DiscoveredPOI(
-            id="poi_1", name="Far", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=1000.0,
-            osm_type="node", osm_id=1,
+            id="poi_1",
+            name="Far",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=1000.0,
+            osm_type="node",
+            osm_id=1,
         )
         poi2 = DiscoveredPOI(
-            id="poi_2", name="Near", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=100.0,
-            osm_type="node", osm_id=2,
+            id="poi_2",
+            name="Near",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=100.0,
+            osm_type="node",
+            osm_id=2,
         )
         poi3 = DiscoveredPOI(
-            id="poi_3", name="Medium", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=500.0,
-            osm_type="node", osm_id=3,
+            id="poi_3",
+            name="Medium",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=500.0,
+            osm_type="node",
+            osm_id=3,
         )
 
         result = NearbyPOIResult(
@@ -694,19 +758,37 @@ class TestNearbyPOIResult:
     def test_get_summary_stats_with_pois(self):
         """Test get_summary_stats with multiple POIs."""
         poi1 = DiscoveredPOI(
-            id="poi_1", name="POI 1", category="cat1", subcategory="sub1",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=100.0,
-            osm_type="node", osm_id=1,
+            id="poi_1",
+            name="POI 1",
+            category="cat1",
+            subcategory="sub1",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=100.0,
+            osm_type="node",
+            osm_id=1,
         )
         poi2 = DiscoveredPOI(
-            id="poi_2", name="POI 2", category="cat1", subcategory="sub1",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=200.0,
-            osm_type="node", osm_id=2,
+            id="poi_2",
+            name="POI 2",
+            category="cat1",
+            subcategory="sub1",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=200.0,
+            osm_type="node",
+            osm_id=2,
         )
         poi3 = DiscoveredPOI(
-            id="poi_3", name="POI 3", category="cat2", subcategory="sub2",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=300.0,
-            osm_type="node", osm_id=3,
+            id="poi_3",
+            name="POI 3",
+            category="cat2",
+            subcategory="sub2",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=300.0,
+            osm_type="node",
+            osm_id=3,
         )
 
         result = NearbyPOIResult(
@@ -769,9 +851,15 @@ class TestNearbyPOIResult:
 
         # Add POI to category
         poi = DiscoveredPOI(
-            id="poi_1", name="New POI", category="test", subcategory="test",
-            latitude=0.0, longitude=0.0, straight_line_distance_m=100.0,
-            osm_type="node", osm_id=123,
+            id="poi_1",
+            name="New POI",
+            category="test",
+            subcategory="test",
+            latitude=0.0,
+            longitude=0.0,
+            straight_line_distance_m=100.0,
+            osm_type="node",
+            osm_id=123,
         )
         result.pois_by_category["test"] = [poi]
         assert len(result.pois_by_category) == 1

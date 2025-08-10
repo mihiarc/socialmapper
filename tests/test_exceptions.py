@@ -57,7 +57,7 @@ class TestExceptionHierarchy:
             DataProcessingError,
             AnalysisError,
             VisualizationError,
-            FileSystemError
+            FileSystemError,
         ]
 
         for exc_class in exceptions:
@@ -83,9 +83,7 @@ class TestConfigurationExceptions:
         """Test InvalidConfigurationError."""
         with pytest.raises(InvalidConfigurationError) as exc_info:
             raise InvalidConfigurationError(
-                field="timeout",
-                value=-1,
-                reason="Timeout must be positive"
+                field="timeout", value=-1, reason="Timeout must be positive"
             )
         assert "timeout" in str(exc_info.value)
         assert "-1" in str(exc_info.value)
@@ -232,23 +230,20 @@ class TestErrorMetadata:
 
     def test_error_severity(self):
         """Test ErrorSeverity enum."""
-        assert hasattr(ErrorSeverity, 'INFO')
-        assert hasattr(ErrorSeverity, 'WARNING')
-        assert hasattr(ErrorSeverity, 'ERROR')
-        assert hasattr(ErrorSeverity, 'CRITICAL')
+        assert hasattr(ErrorSeverity, "INFO")
+        assert hasattr(ErrorSeverity, "WARNING")
+        assert hasattr(ErrorSeverity, "ERROR")
+        assert hasattr(ErrorSeverity, "CRITICAL")
 
     def test_error_category(self):
         """Test ErrorCategory enum."""
-        assert hasattr(ErrorCategory, 'CONFIGURATION')
-        assert hasattr(ErrorCategory, 'VALIDATION')
-        assert hasattr(ErrorCategory, 'EXTERNAL_API')
-        assert hasattr(ErrorCategory, 'DATA_PROCESSING')
+        assert hasattr(ErrorCategory, "CONFIGURATION")
+        assert hasattr(ErrorCategory, "VALIDATION")
+        assert hasattr(ErrorCategory, "EXTERNAL_API")
+        assert hasattr(ErrorCategory, "DATA_PROCESSING")
 
     def test_error_context(self):
         """Test ErrorContext class."""
-        context = ErrorContext(
-            operation="test_operation",
-            severity=ErrorSeverity.ERROR
-        )
+        context = ErrorContext(operation="test_operation", severity=ErrorSeverity.ERROR)
         assert context.operation == "test_operation"
         assert context.severity == ErrorSeverity.ERROR

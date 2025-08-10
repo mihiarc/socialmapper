@@ -120,6 +120,7 @@ class TestResultTypes:
 
     def test_result_type_hint(self):
         """Test that Result works as a type hint."""
+
         def divide(a: int, b: int) -> Result[float, Error]:
             if b == 0:
                 return Err(Error(ErrorType.VALIDATION, "Division by zero"))
@@ -139,7 +140,7 @@ class TestResultTypes:
             Ok(5)
             .map(lambda x: x * 2)
             .and_then(lambda x: Ok(x + 1) if x > 5 else Err("Too small"))
-            .map(lambda x: x ** 2)
+            .map(lambda x: x**2)
         )
         assert result.is_ok()
         assert result.unwrap() == 121  # ((5 * 2) + 1) ** 2

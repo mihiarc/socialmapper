@@ -70,12 +70,7 @@ class TestLegendConfig:
 
     def test_custom_legend_config(self):
         """Test custom legend configuration."""
-        config = LegendConfig(
-            title="Custom Legend",
-            loc="upper right",
-            ncol=2,
-            fontsize=14
-        )
+        config = LegendConfig(title="Custom Legend", loc="upper right", ncol=2, fontsize=14)
 
         assert config.title == "Custom Legend"
         assert config.loc == "upper right"
@@ -85,7 +80,14 @@ class TestLegendConfig:
     def test_legend_location_validation(self):
         """Test legend location validation."""
         # Valid locations should work
-        valid_locations = ["upper right", "upper left", "lower right", "lower left", "center", "best"]
+        valid_locations = [
+            "upper right",
+            "upper left",
+            "lower right",
+            "lower left",
+            "center",
+            "best",
+        ]
         for loc in valid_locations:
             config = LegendConfig(loc=loc)
             assert config.loc == loc
@@ -123,7 +125,7 @@ class TestMapConfig:
             color_scheme=ColorScheme.VIRIDIS,
             n_classes=7,
             title="Population Distribution",
-            legend_config=legend_config
+            legend_config=legend_config,
         )
 
         assert config.figsize == (16, 12)
@@ -154,7 +156,7 @@ class TestMapConfig:
             add_basemap=True,
             basemap_source="CartoDB.Positron",
             basemap_alpha=0.8,
-            basemap_zoom="auto"
+            basemap_zoom="auto",
         )
 
         assert config.add_basemap is True
@@ -164,10 +166,7 @@ class TestMapConfig:
 
     def test_map_config_export_settings(self):
         """Test export settings."""
-        config = MapConfig(
-            bbox_inches="tight",
-            pad_inches=0.2
-        )
+        config = MapConfig(bbox_inches="tight", pad_inches=0.2)
 
         assert config.bbox_inches == "tight"
         assert config.pad_inches == 0.2

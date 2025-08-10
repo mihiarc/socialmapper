@@ -54,12 +54,14 @@ class TestPolygonConversion:
 
     def test_polygon_to_overpass_format_complex(self):
         """Test converting a polygon with decimal coordinates."""
-        polygon = Polygon([
-            (-73.9851, 40.7589),  # NYC coordinates
-            (-73.9851, 40.7489),
-            (-73.9751, 40.7489),
-            (-73.9751, 40.7589)
-        ])
+        polygon = Polygon(
+            [
+                (-73.9851, 40.7589),  # NYC coordinates
+                (-73.9851, 40.7489),
+                (-73.9751, 40.7489),
+                (-73.9751, 40.7589),
+            ]
+        )
         result = _polygon_to_overpass_format(polygon)
 
         # Check format and coordinate order
@@ -206,10 +208,7 @@ class TestQueryBuilding:
     def test_build_query_with_additional_tags(self):
         """Test building a query with additional tags."""
         polygon = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-        query = build_poi_discovery_query(
-            polygon,
-            additional_tags={"cuisine": "italian"}
-        )
+        query = build_poi_discovery_query(polygon, additional_tags={"cuisine": "italian"})
 
         assert '["cuisine"="italian"]' in query
 
@@ -238,14 +237,14 @@ class TestQueryBuilding:
 class TestPOIQuerying:
     """Test the main POI querying functions."""
 
-    @patch('socialmapper.query.polygon_queries._query_overpass_with_polygon')
+    @patch("socialmapper.query.polygon_queries._query_overpass_with_polygon")
     def test_query_pois_in_polygon_basic(self, mock_query):
         """Test basic POI querying in a polygon."""
         # Mock Overpass response
         mock_result = Mock(spec=overpy.Result)
         mock_result.nodes = [
             Mock(id=1, lat=0.5, lon=0.5, tags={"amenity": "restaurant", "name": "Test Restaurant"}),
-            Mock(id=2, lat=0.6, lon=0.6, tags={"shop": "supermarket", "name": "Test Shop"})
+            Mock(id=2, lat=0.6, lon=0.6, tags={"shop": "supermarket", "name": "Test Shop"}),
         ]
         mock_result.ways = []
         mock_result.relations = []
@@ -262,7 +261,7 @@ class TestPOIQuerying:
         assert result["pois"][0]["tags"]["amenity"] == "restaurant"
         assert result["query_info"]["geometry_type"] == "Polygon"
 
-    @patch('socialmapper.query.polygon_queries._query_overpass_with_polygon')
+    @patch("socialmapper.query.polygon_queries._query_overpass_with_polygon")
     def test_query_pois_with_categories(self, mock_query):
         """Test POI querying with category filtering."""
         # Mock empty result
@@ -273,7 +272,7 @@ class TestPOIQuerying:
         mock_query.return_value = mock_result
 
         polygon = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-        result = query_pois_in_polygon(polygon, categories=["food_and_drink"])
+        query_pois_in_polygon(polygon, categories=["food_and_drink"])
 
         # Verify query was called
         mock_query.assert_called_once()
@@ -282,7 +281,7 @@ class TestPOIQuerying:
         # Should have amenity or shop tags in query
         assert "amenity" in query_str or "shop" in query_str
 
-    @patch('socialmapper.query.polygon_queries._query_overpass_with_polygon')
+    @patch("socialmapper.query.polygon_queries._query_overpass_with_polygon")
     def test_query_pois_with_ways_and_relations(self, mock_query):
         """Test POI querying including ways and relations."""
         # Mock result with ways and relations
@@ -308,7 +307,7 @@ class TestPOIQuerying:
         assert result["pois"][0]["type"] == "way"
         assert result["pois"][1]["type"] == "relation"
 
-    @patch('socialmapper.query.polygon_queries._query_overpass_with_polygon')
+    @patch("socialmapper.query.polygon_queries._query_overpass_with_polygon")
     def test_query_pois_invalid_geometry_fix(self, mock_query):
         """Test automatic fixing of invalid geometry."""
         # Create an invalid polygon (self-intersecting)
@@ -326,11 +325,12 @@ class TestPOIQuerying:
         result = query_pois_in_polygon(polygon)
         assert result["poi_count"] == 0
 
-    @patch('socialmapper.query.polygon_queries._query_overpass_with_polygon')
+    @patch("socialmapper.query.polygon_queries._query_overpass_with_polygon")
     def test_query_pois_with_simplification(self, mock_query):
         """Test geometry simplification."""
         # Create a complex polygon
         import numpy as np
+
         angles = np.linspace(0, 2 * np.pi, 100)
         coords = [(np.cos(a), np.sin(a)) for a in angles]
         polygon = Polygon(coords)
@@ -353,26 +353,18 @@ class TestPOIQuerying:
 class TestIsochroneIntegration:
     """Test isochrone-specific query functions."""
 
-    @patch('socialmapper.query.polygon_queries.query_pois_in_polygon')
+    @patch("socialmapper.query.polygon_queries.query_pois_in_polygon")
     def test_query_pois_from_isochrone(self, mock_query_func):
         """Test querying POIs from an isochrone GeoDataFrame."""
         # Create a mock isochrone GeoDataFrame
         polygon = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-        gdf = gpd.GeoDataFrame(
-            {"travel_time": [10]},
-            geometry=[polygon],
-            crs="EPSG:4326"
-        )
+        gdf = gpd.GeoDataFrame({"travel_time": [10]}, geometry=[polygon], crs="EPSG:4326")
 
         # Mock the query function
-        mock_query_func.return_value = {
-            "poi_count": 5,
-            "pois": [],
-            "query_info": {}
-        }
+        mock_query_func.return_value = {"poi_count": 5, "pois": [], "query_info": {}}
 
         # Query POIs
-        result = query_pois_from_isochrone(gdf, categories=["shopping"])
+        query_pois_from_isochrone(gdf, categories=["shopping"])
 
         # Verify call
         mock_query_func.assert_called_once()
@@ -392,27 +384,19 @@ class TestIsochroneIntegration:
 
         assert "empty or None" in str(exc_info.value)
 
-    @patch('socialmapper.query.polygon_queries.query_pois_in_polygon')
+    @patch("socialmapper.query.polygon_queries.query_pois_in_polygon")
     def test_query_pois_from_isochrone_multiple_geometries(self, mock_query_func):
         """Test handling of isochrone with multiple geometries."""
         # Create multiple polygons
         poly1 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
         poly2 = Polygon([(1, 0), (2, 0), (2, 1), (1, 1)])
-        gdf = gpd.GeoDataFrame(
-            {"travel_time": [10, 20]},
-            geometry=[poly1, poly2],
-            crs="EPSG:4326"
-        )
+        gdf = gpd.GeoDataFrame({"travel_time": [10, 20]}, geometry=[poly1, poly2], crs="EPSG:4326")
 
         # Mock the query function
-        mock_query_func.return_value = {
-            "poi_count": 10,
-            "pois": [],
-            "query_info": {}
-        }
+        mock_query_func.return_value = {"poi_count": 10, "pois": [], "query_info": {}}
 
         # Query POIs - should use union of geometries
-        result = query_pois_from_isochrone(gdf)
+        query_pois_from_isochrone(gdf)
 
         # Verify union was used
         mock_query_func.assert_called_once()
@@ -421,13 +405,13 @@ class TestIsochroneIntegration:
         assert "geometry" in call_args.kwargs
         geometry = call_args.kwargs["geometry"]
         # Union should create a single larger polygon or multipolygon
-        assert isinstance(geometry, (Polygon, MultiPolygon))
+        assert isinstance(geometry, Polygon | MultiPolygon)
 
 
 class TestRetryLogic:
     """Test retry logic for API calls."""
 
-    @patch('socialmapper.query.polygon_queries.overpy.Overpass')
+    @patch("socialmapper.query.polygon_queries.overpy.Overpass")
     def test_query_with_overpass_api(self, mock_overpass_class):
         """Test basic query execution with Overpass API."""
         # Mock API
@@ -457,18 +441,11 @@ class TestRealAPIIntegration:
     def test_real_api_small_polygon(self):
         """Test with a real small polygon query."""
         # Small polygon in Manhattan
-        polygon = Polygon([
-            (-73.9851, 40.7589),
-            (-73.9851, 40.7489),
-            (-73.9751, 40.7489),
-            (-73.9751, 40.7589)
-        ])
-
-        result = query_pois_in_polygon(
-            polygon,
-            categories=["food_and_drink"],
-            timeout=30
+        polygon = Polygon(
+            [(-73.9851, 40.7589), (-73.9851, 40.7489), (-73.9751, 40.7489), (-73.9751, 40.7589)]
         )
+
+        result = query_pois_in_polygon(polygon, categories=["food_and_drink"], timeout=30)
 
         # Should find some POIs
         assert result["poi_count"] > 0

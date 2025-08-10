@@ -55,13 +55,11 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_discover_nearby_pois_basic_usage(self):
         """Test basic POI discovery with default parameters."""
-        with patch.object(self.client, 'run_analysis') as mock_run:
+        with patch.object(self.client, "run_analysis") as mock_run:
             mock_run.return_value = Ok(self.sample_result)
 
             with self.client:
-                result = self.client.discover_nearby_pois(
-                    location="Chapel Hill, NC"
-                )
+                result = self.client.discover_nearby_pois(location="Chapel Hill, NC")
 
             assert result.is_ok()
             poi_result = result.unwrap()
@@ -78,14 +76,12 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_discover_nearby_pois_with_coordinates(self):
         """Test POI discovery using coordinate tuple."""
-        with patch.object(self.client, 'run_analysis') as mock_run:
+        with patch.object(self.client, "run_analysis") as mock_run:
             mock_run.return_value = Ok(self.sample_result)
 
             with self.client:
                 result = self.client.discover_nearby_pois(
-                    location=(35.9132, -79.0558),
-                    travel_time=20,
-                    travel_mode="walk"
+                    location=(35.9132, -79.0558), travel_time=20, travel_mode="walk"
                 )
 
             assert result.is_ok()
@@ -98,7 +94,7 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_discover_nearby_pois_with_categories(self):
         """Test POI discovery with specific categories."""
-        with patch.object(self.client, 'run_analysis') as mock_run:
+        with patch.object(self.client, "run_analysis") as mock_run:
             mock_run.return_value = Ok(self.sample_result)
 
             with self.client:
@@ -106,7 +102,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Durham, NC",
                     poi_categories=["food_and_drink", "healthcare"],
                     exclude_categories=["utilities"],
-                    max_pois_per_category=25
+                    max_pois_per_category=25,
                 )
 
             assert result.is_ok()
@@ -121,8 +117,7 @@ class TestSocialMapperClientPOIDiscovery:
         """Test validation of invalid travel mode."""
         with self.client:
             result = self.client.discover_nearby_pois(
-                location="Raleigh, NC",
-                travel_mode="invalid_mode"
+                location="Raleigh, NC", travel_mode="invalid_mode"
             )
 
         assert result.is_err()
@@ -133,7 +128,7 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_discover_nearby_pois_export_options(self):
         """Test POI discovery with different export options."""
-        with patch.object(self.client, 'run_analysis') as mock_run:
+        with patch.object(self.client, "run_analysis") as mock_run:
             mock_run.return_value = Ok(self.sample_result)
 
             with self.client:
@@ -141,7 +136,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Greensboro, NC",
                     export_csv=False,
                     create_map=False,
-                    output_dir="/tmp/test_output"
+                    output_dir="/tmp/test_output",
                 )
 
             assert result.is_ok()
@@ -154,9 +149,7 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_discover_nearby_pois_session_not_active(self):
         """Test error when client session is not active."""
-        result = self.client.discover_nearby_pois(
-            location="Charlotte, NC"
-        )
+        result = self.client.discover_nearby_pois(location="Charlotte, NC")
 
         assert result.is_err()
         error = result.unwrap_err()
@@ -165,7 +158,9 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_run_analysis_poi_discovery_enabled(self):
         """Test run_analysis with POI discovery configuration."""
-        with patch('socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline') as mock_execute:
+        with patch(
+            "socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline"
+        ) as mock_execute:
             mock_execute.return_value = Ok(self.sample_result)
 
             config = {
@@ -174,7 +169,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Chapel Hill, NC",
                     travel_time=15,
                     travel_mode=TravelMode.DRIVE,
-                )
+                ),
             }
 
             with self.client:
@@ -204,7 +199,9 @@ class TestSocialMapperClientPOIDiscovery:
 
     def test_run_analysis_poi_discovery_pipeline_error(self):
         """Test handling of POI discovery pipeline errors."""
-        with patch('socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline') as mock_execute:
+        with patch(
+            "socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline"
+        ) as mock_execute:
             pipeline_error = Error(
                 type=ErrorType.POI_DISCOVERY,
                 message="Pipeline failed",
@@ -217,7 +214,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Test Location",
                     travel_time=15,
                     travel_mode=TravelMode.DRIVE,
-                )
+                ),
             }
 
             with self.client:
@@ -231,12 +228,8 @@ class TestSocialMapperClientPOIDiscovery:
         """Test that standard analysis still works when POI discovery is not enabled."""
         from socialmapper.pipeline import PipelineOrchestrator
 
-        with patch.object(PipelineOrchestrator, 'run') as mock_run:
-            mock_run.return_value = {
-                "pois": [],
-                "census_data": [],
-                "isochrones": []
-            }
+        with patch.object(PipelineOrchestrator, "run") as mock_run:
+            mock_run.return_value = {"pois": [], "census_data": [], "isochrones": []}
 
             config = {
                 "poi_discovery_enabled": False,
@@ -322,7 +315,9 @@ class TestSocialMapperClientPOIDiscovery:
         def progress_callback(progress):
             progress_calls.append(progress)
 
-        with patch('socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline') as mock_execute:
+        with patch(
+            "socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline"
+        ) as mock_execute:
             mock_execute.return_value = Ok(self.sample_result)
 
             config = {
@@ -331,7 +326,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Test Location",
                     travel_time=15,
                     travel_mode=TravelMode.DRIVE,
-                )
+                ),
             }
 
             with self.client:
@@ -351,7 +346,9 @@ class TestSocialMapperClientPOIDiscovery:
         client_config = ClientConfig(cache_strategy=cache_strategy)
         client = SocialMapperClient(client_config)
 
-        with patch('socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline') as mock_execute:
+        with patch(
+            "socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline"
+        ) as mock_execute:
             mock_execute.return_value = Ok(self.sample_result)
 
             config = {
@@ -360,7 +357,7 @@ class TestSocialMapperClientPOIDiscovery:
                     location="Test Location",
                     travel_time=15,
                     travel_mode=TravelMode.DRIVE,
-                )
+                ),
             }
 
             with client:
@@ -373,11 +370,13 @@ class TestSocialMapperClientPOIDiscovery:
             args, kwargs = cache_strategy.set.call_args
             assert len(args) >= 2  # key and value
             assert isinstance(args[1], NearbyPOIResult)
-            assert kwargs.get('ttl', 3600) == 3600
+            assert kwargs.get("ttl", 3600) == 3600
 
     def test_builder_integration_complete_flow(self):
         """Test complete integration flow using the builder pattern."""
-        with patch('socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline') as mock_execute:
+        with patch(
+            "socialmapper.pipeline.poi_discovery.execute_poi_discovery_pipeline"
+        ) as mock_execute:
             mock_execute.return_value = Ok(self.sample_result)
 
             with self.client:
@@ -388,7 +387,7 @@ class TestSocialMapperClientPOIDiscovery:
                         location="Research Triangle Park, NC",
                         travel_time=25,
                         travel_mode=TravelMode.BIKE,
-                        poi_categories=["food_and_drink", "services"]
+                        poi_categories=["food_and_drink", "services"],
                     )
                     .exclude_poi_categories("utilities")
                     .limit_pois_per_category(50)
@@ -419,14 +418,26 @@ class TestPOIDiscoveryResultHandling:
     def test_poi_result_properties_and_methods(self):
         """Test NearbyPOIResult properties and methods."""
         poi1 = DiscoveredPOI(
-            id="poi_1", name="Close POI", category="food_and_drink", subcategory="restaurant",
-            latitude=35.9132, longitude=-79.0558, straight_line_distance_m=500.0,
-            osm_type="node", osm_id=1
+            id="poi_1",
+            name="Close POI",
+            category="food_and_drink",
+            subcategory="restaurant",
+            latitude=35.9132,
+            longitude=-79.0558,
+            straight_line_distance_m=500.0,
+            osm_type="node",
+            osm_id=1,
         )
         poi2 = DiscoveredPOI(
-            id="poi_2", name="Far POI", category="healthcare", subcategory="hospital",
-            latitude=35.9140, longitude=-79.0560, straight_line_distance_m=1500.0,
-            osm_type="way", osm_id=2
+            id="poi_2",
+            name="Far POI",
+            category="healthcare",
+            subcategory="hospital",
+            latitude=35.9140,
+            longitude=-79.0560,
+            straight_line_distance_m=1500.0,
+            osm_type="way",
+            osm_id=2,
         )
 
         result = NearbyPOIResult(
@@ -434,12 +445,9 @@ class TestPOIDiscoveryResultHandling:
             travel_time=15,
             travel_mode=TravelMode.DRIVE,
             isochrone_area_km2=8.5,
-            pois_by_category={
-                "food_and_drink": [poi1],
-                "healthcare": [poi2]
-            },
+            pois_by_category={"food_and_drink": [poi1], "healthcare": [poi2]},
             total_poi_count=2,
-            category_counts={"food_and_drink": 1, "healthcare": 1}
+            category_counts={"food_and_drink": 1, "healthcare": 1},
         )
 
         # Test success property
@@ -477,7 +485,7 @@ class TestPOIDiscoveryResultHandling:
             travel_time=15,
             travel_mode=TravelMode.DRIVE,
             isochrone_area_km2=5.0,
-            total_poi_count=0
+            total_poi_count=0,
         )
 
         assert result.success is False

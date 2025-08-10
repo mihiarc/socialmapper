@@ -29,11 +29,7 @@ class TestOptimizationConfig:
 
     def test_custom_distance_config(self):
         """Test custom distance configuration."""
-        distance_config = DistanceConfig(
-            engine="sklearn",
-            chunk_size=10000,
-            enable_jit=False
-        )
+        distance_config = DistanceConfig(engine="sklearn", chunk_size=10000, enable_jit=False)
 
         config = OptimizationConfig(distance=distance_config)
 
@@ -44,9 +40,7 @@ class TestOptimizationConfig:
     def test_isochrone_config(self):
         """Test isochrone configuration."""
         isochrone_config = IsochroneConfig(
-            clustering_algorithm="kmeans",
-            max_cluster_radius_km=20.0,
-            enable_caching=False
+            clustering_algorithm="kmeans", max_cluster_radius_km=20.0, enable_caching=False
         )
 
         assert isochrone_config.clustering_algorithm == "kmeans"
@@ -56,9 +50,7 @@ class TestOptimizationConfig:
     def test_memory_config(self):
         """Test memory configuration."""
         memory_config = MemoryConfig(
-            enable_memory_monitoring=False,
-            max_memory_gb=4.0,
-            streaming_batch_size=2000
+            enable_memory_monitoring=False, max_memory_gb=4.0, streaming_batch_size=2000
         )
 
         assert memory_config.enable_memory_monitoring is False
@@ -67,11 +59,7 @@ class TestOptimizationConfig:
 
     def test_io_config(self):
         """Test IO configuration."""
-        io_config = IOConfig(
-            default_format="parquet",
-            use_polars=True,
-            enable_arrow=True
-        )
+        io_config = IOConfig(default_format="parquet", use_polars=True, enable_arrow=True)
 
         assert io_config.default_format == "parquet"
         assert io_config.use_polars is True

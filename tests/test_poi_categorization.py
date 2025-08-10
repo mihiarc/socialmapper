@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for POI categorization module."""
 
-
 from socialmapper.poi_categorization import (
     POI_CATEGORY_MAPPING,
     add_category_value,
@@ -70,17 +69,11 @@ class TestPOICategorization:
     def test_categorize_poi_multiple_tags(self):
         """Test POIs with multiple tags (first matching tag wins)."""
         # Amenity takes precedence over shop in our priority order
-        poi = {
-            "amenity": "restaurant",
-            "shop": "supermarket"
-        }
+        poi = {"amenity": "restaurant", "shop": "supermarket"}
         assert categorize_poi(poi) == "food_and_drink"
 
         # Shop comes before leisure
-        poi = {
-            "shop": "clothes",
-            "leisure": "park"
-        }
+        poi = {"shop": "clothes", "leisure": "park"}
         assert categorize_poi(poi) == "shopping"
 
     def test_categorize_poi_case_insensitive(self):
@@ -315,8 +308,9 @@ class TestPOICategorization:
         for expected_category, test_tags in test_cases.items():
             for key, value in test_tags:
                 result = categorize_poi({key: value})
-                assert result == expected_category, \
+                assert result == expected_category, (
                     f"Expected {key}={value} to be categorized as {expected_category}, got {result}"
+                )
 
     def test_real_world_poi_examples(self):
         """Test with real-world POI examples."""
@@ -325,30 +319,18 @@ class TestPOICategorization:
             "amenity": "fast_food",
             "brand": "McDonald's",
             "cuisine": "burger",
-            "name": "McDonald's"
+            "name": "McDonald's",
         }
-        assert categorize_poi(poi["tags"] if "tags" in poi else poi) == "food_and_drink"
+        assert categorize_poi(poi.get("tags", poi)) == "food_and_drink"
 
         # Walmart (supermarket)
-        poi = {
-            "shop": "supermarket",
-            "brand": "Walmart",
-            "name": "Walmart Supercenter"
-        }
-        assert categorize_poi(poi["tags"] if "tags" in poi else poi) == "shopping"
+        poi = {"shop": "supermarket", "brand": "Walmart", "name": "Walmart Supercenter"}
+        assert categorize_poi(poi.get("tags", poi)) == "shopping"
 
         # Central Park (recreation)
-        poi = {
-            "leisure": "park",
-            "name": "Central Park",
-            "tourism": "attraction"
-        }
-        assert categorize_poi(poi["tags"] if "tags" in poi else poi) == "recreation"
+        poi = {"leisure": "park", "name": "Central Park", "tourism": "attraction"}
+        assert categorize_poi(poi.get("tags", poi)) == "recreation"
 
         # City Hospital (healthcare)
-        poi = {
-            "amenity": "hospital",
-            "emergency": "yes",
-            "name": "City General Hospital"
-        }
-        assert categorize_poi(poi["tags"] if "tags" in poi else poi) == "healthcare"
+        poi = {"amenity": "hospital", "emergency": "yes", "name": "City General Hospital"}
+        assert categorize_poi(poi.get("tags", poi)) == "healthcare"
