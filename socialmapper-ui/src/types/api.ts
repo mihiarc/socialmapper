@@ -319,3 +319,38 @@ export interface InterviewSession extends BaseResponse {
   insights: string[];
   created_at: string;
 }
+
+// Summary and Insights Types
+export interface FeedbackSummary extends BaseResponse {
+  total_feedback: number;
+  average_rating: number;
+  feedback_by_type: Record<FeedbackType, number>;
+  feedback_by_touchpoint: Record<FeedbackTouchpoint, number>;
+  recent_comments: string[];
+  sentiment_distribution: {
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
+  period_days: number;
+}
+
+export interface AnalyticsSummary extends BaseResponse {
+  total_events: number;
+  unique_users: number;
+  unique_sessions: number;
+  events_by_category: Record<string, number>;
+  top_events: Array<{ name: string; count: number }>;
+  conversion_rate: number;
+  average_session_duration_ms: number;
+  period_days: number;
+}
+
+export interface FeedbackInsights extends BaseResponse {
+  top_issues: Array<{ issue: string; count: number; severity: string }>;
+  trending_topics: string[];
+  user_satisfaction_score: number;
+  improvement_suggestions: Array<{ suggestion: string; impact: 'low' | 'medium' | 'high' }>;
+  feature_adoption_rates: Record<string, number>;
+  period_days: number;
+}
