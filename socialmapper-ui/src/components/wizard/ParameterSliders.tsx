@@ -239,13 +239,18 @@ const ParameterSliders: React.FC<ParameterSlidersProps> = ({ onParameterChange }
         Set travel parameters and demographic variables for your analysis
       </Text>
 
-      {/* Travel Mode Selection */}
-      <Card title="Travel Mode" style={{ marginBottom: 16 }}>
-        <Row gutter={[12, 12]}>
+      {/* Travel Mode Selection - Mobile Optimized */}
+      <Card 
+        title="Travel Mode" 
+        style={{ marginBottom: 16 }}
+        bodyStyle={{ padding: window.innerWidth <= 576 ? '12px' : '24px' }}
+      >
+        <Row gutter={window.innerWidth <= 576 ? [4, 4] : [12, 12]}>
           {TRAVEL_MODES.map((mode) => {
             const isSelected = travelMode === mode.value;
+            const isMobile = window.innerWidth <= 576;
             return (
-              <Col xs={24} sm={12} md={6} key={mode.value}>
+              <Col xs={12} sm={12} md={6} key={mode.value}>
                 <Card
                   hoverable
                   size="small"
@@ -254,20 +259,26 @@ const ParameterSliders: React.FC<ParameterSlidersProps> = ({ onParameterChange }
                   style={{
                     borderColor: isSelected ? mode.color : undefined,
                     backgroundColor: isSelected ? `${mode.color}10` : undefined,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    minHeight: isMobile ? '80px' : '100px'
                   }}
+                  bodyStyle={{ padding: isMobile ? '8px' : '12px' }}
                 >
-                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
-                    <div style={{ fontSize: '24px', color: mode.color }}>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }} size={isMobile ? 2 : 8}>
+                    <div style={{ fontSize: isMobile ? '20px' : '24px', color: mode.color }}>
                       {mode.icon}
                     </div>
-                    <Text strong>{mode.label}</Text>
-                    <Text type="secondary" style={{ 
-                      fontSize: '11px', 
-                      textAlign: 'center' 
-                    }}>
-                      {mode.speedRange}
+                    <Text strong style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                      {mode.label}
                     </Text>
+                    {!isMobile && (
+                      <Text type="secondary" style={{ 
+                        fontSize: '11px', 
+                        textAlign: 'center' 
+                      }}>
+                        {mode.speedRange}
+                      </Text>
+                    )}
                   </Space>
                 </Card>
               </Col>
@@ -360,19 +371,25 @@ const ParameterSliders: React.FC<ParameterSlidersProps> = ({ onParameterChange }
         }
         style={{ marginBottom: 16 }}
       >
-        {/* Variable Presets */}
+        {/* Variable Presets - Mobile Optimized */}
         <div style={{ marginBottom: 16 }}>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+          <Text strong style={{ 
+            display: 'block', 
+            marginBottom: 8,
+            fontSize: window.innerWidth <= 576 ? '12px' : '14px'
+          }}>
             Quick Presets:
           </Text>
-          <Row gutter={[8, 8]}>
+          <Row gutter={window.innerWidth <= 576 ? [4, 4] : [8, 8]}>
             {VARIABLE_PRESETS.map((preset) => (
-              <Col xs={24} sm={12} md={6} key={preset.name}>
+              <Col xs={12} sm={12} md={6} key={preset.name}>
                 <Button
-                  size="small"
+                  size={window.innerWidth <= 576 ? 'small' : 'middle'}
                   style={{ 
                     borderColor: preset.color,
-                    color: preset.color
+                    color: preset.color,
+                    width: '100%',
+                    fontSize: window.innerWidth <= 576 ? '11px' : '14px'
                   }}
                   onClick={() => applyVariablePreset(preset)}
                 >
@@ -510,4 +527,4 @@ const ParameterSliders: React.FC<ParameterSlidersProps> = ({ onParameterChange }
   );
 };
 
-export default ParameterSliders;
+export default React.memo(ParameterSliders);

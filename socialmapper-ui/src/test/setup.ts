@@ -26,12 +26,22 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root: Element | null = null;
+  readonly rootMargin: string = '';
+  readonly thresholds: ReadonlyArray<number> = [];
+
   constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {}
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+  
+  observe(target: Element): void {}
+  unobserve(target: Element): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
+
+global.IntersectionObserver = MockIntersectionObserver as any;
 
 // Suppress console warnings in tests
 const originalConsoleError = console.error;

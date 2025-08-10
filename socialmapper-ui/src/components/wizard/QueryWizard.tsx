@@ -2,7 +2,7 @@
  * QueryWizard Component - Main step-by-step configuration wizard
  * Orchestrates the 4-step analysis configuration process
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import { 
   Steps, 
   Card, 
@@ -14,7 +14,8 @@ import {
   Alert,
   Divider,
   message,
-  Modal
+  Modal,
+  Spin
 } from 'antd';
 import { 
   EnvironmentOutlined,
@@ -23,7 +24,8 @@ import {
   CheckCircleOutlined,
   LeftOutlined,
   RightOutlined,
-  PlayCircleOutlined
+  PlayCircleOutlined,
+  RocketOutlined
 } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
@@ -36,9 +38,11 @@ import {
 } from '@/store/slices/analysisSlice';
 import { useSubmitLocationAnalysisMutation } from '@/store/api/analysisApi';
 
-import MapSelector from './MapSelector';
-import POICategoryPicker from './POICategoryPicker';
-import ParameterSliders from './ParameterSliders';
+// Lazy load heavy components for better performance
+const MapSelector = lazy(() => import('./MapSelector'));
+const POICategoryPicker = lazy(() => import('./POICategoryPicker'));
+const ParameterSliders = lazy(() => import('./ParameterSliders'));
+const TemplateLibrary = lazy(() => import('@/components/templates/TemplateLibrary'));
 import type { LocationSearchResult, LocationAnalysisRequest } from '@/types/api';
 
 const { Title, Text } = Typography;
@@ -110,6 +114,7 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
   
   const [selectedLocation, setSelectedLocation] = useState<LocationSearchResult | null>(null);
   const [selectedAnalysisType, setSelectedAnalysisType] = useState<string>('');
+  const [templateLibraryVisible, setTemplateLibraryVisible] = useState(false);
   const [submitLocationAnalysis] = useSubmitLocationAnalysisMutation();
 
   // Validation for each step
@@ -225,10 +230,17 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
     switch (currentStep) {
       case 0:
         return (
-          <MapSelector 
-            onLocationSelect={handleLocationSelect}
-            selectedLocation={currentConfig.location}
-          />
+          <Suspense fallback={
+            <Card style={{ textAlign: 'center', padding: '60px 0' }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>Loading map...</div>
+            </Card>
+          }>
+            <MapSelector 
+              onLocationSelect={handleLocationSelect}
+              selectedLocation={currentConfig.location}
+            />
+          </Suspense>
         );
 
       case 1:
@@ -302,21 +314,35 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
           <div>
             <Row gutter={16}>
               <Col xs={24} lg={12}>
-                <POICategoryPicker 
-                  onSelectionChange={(types, names) => {
-                    dispatch(updateConfiguration({
-                      poi_type: types.join(','),
-                      poi_name: names.join(',')
-                    }));
-                  }}
-                />
+                <Suspense fallback={
+                  <Card style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <Spin size="large" />
+                    <div style={{ marginTop: 16 }}>Loading POI selector...</div>
+                  </Card>
+                }>
+                  <POICategoryPicker 
+                    onSelectionChange={(types, names) => {
+                      dispatch(updateConfiguration({
+                        poi_type: types.join(','),
+                        poi_name: names.join(',')
+                      }));
+                    }}
+                  />
+                </Suspense>
               </Col>
               <Col xs={24} lg={12}>
-                <ParameterSliders 
-                  onParameterChange={(config) => {
-                    // Already handled by the component
-                  }}
-                />
+                <Suspense fallback={
+                  <Card style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <Spin size="large" />
+                    <div style={{ marginTop: 16 }}>Loading parameters...</div>
+                  </Card>
+                }>
+                  <ParameterSliders 
+                    onParameterChange={(config) => {
+                      // Already handled by the component
+                    }}
+                  />
+                </Suspense>
               </Col>
             </Row>
           </div>
@@ -381,18 +407,42 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
 
   return (
     <div className="query-wizard">
-      {/* Progress Steps */}
+      {/* Header with Template Button */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Title level={3} style={{ margin: 0 }}>
+            Configure Your Analysis
+          </Title>
+        </Col>
+        <Col>
+          <Button
+            icon={<RocketOutlined />}
+            onClick={() => setTemplateLibraryVisible(true)}
+            type="primary"
+            ghost
+          >
+            Use Template
+          </Button>
+        </Col>
+      </Row>
+
+      {/* Progress Steps - Mobile Responsive */}
       <Card style={{ marginBottom: 24 }}>
         <Steps 
           current={currentStep} 
-          responsive={false}
+          responsive={true}
           size="small"
+          style={{
+            '@media (max-width: 576px)': {
+              fontSize: '12px'
+            }
+          }}
         >
           {WIZARD_STEPS.map((step, index) => (
             <Step
               key={index}
-              title={step.title}
-              description={step.description}
+              title={<span style={{ fontSize: 'inherit' }}>{step.title}</span>}
+              description={window.innerWidth > 576 ? step.description : undefined}
               icon={step.icon}
               status={
                 index < currentStep ? 'finish' :
@@ -404,29 +454,36 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
         </Steps>
       </Card>
 
-      {/* Step Content */}
-      <div style={{ minHeight: '500px', marginBottom: 24 }}>
+      {/* Step Content - Responsive min-height */}
+      <div style={{ 
+        minHeight: window.innerWidth > 768 ? '500px' : '400px', 
+        marginBottom: 24 
+      }}>
         {renderStepContent()}
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Controls - Mobile Friendly */}
       <Card>
-        <Row justify="space-between" align="middle">
-          <Col>
+        <Row justify="space-between" align="middle" gutter={[8, 8]}>
+          <Col xs={8} sm={6}>
             {currentStep > 0 && (
               <Button 
                 icon={<LeftOutlined />} 
                 onClick={handlePrevious}
                 disabled={isSubmitting}
+                size={window.innerWidth <= 576 ? 'middle' : 'middle'}
               >
-                Previous
+                {window.innerWidth > 576 ? 'Previous' : 'Back'}
               </Button>
             )}
           </Col>
           
-          <Col>
-            <Space>
-              <Text type="secondary">
+          <Col xs={16} sm={18} style={{ textAlign: 'right' }}>
+            <Space size={window.innerWidth <= 576 ? 'small' : 'middle'}>
+              <Text type="secondary" style={{ 
+                fontSize: window.innerWidth <= 576 ? '12px' : '14px',
+                display: window.innerWidth <= 400 ? 'none' : 'inline'
+              }}>
                 Step {currentStep + 1} of {WIZARD_STEPS.length}
               </Text>
               
@@ -437,13 +494,14 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
                   iconPosition="end"
                   onClick={handleNext}
                   disabled={!validateStep(currentStep) || isSubmitting}
+                  size={window.innerWidth <= 576 ? 'middle' : 'middle'}
                 >
                   Next
                 </Button>
               ) : (
                 <Button
                   type="primary"
-                  size="large"
+                  size={window.innerWidth <= 576 ? 'middle' : 'large'}
                   icon={<PlayCircleOutlined />}
                   loading={isSubmitting}
                   onClick={handleStartAnalysis}
@@ -472,6 +530,32 @@ const QueryWizard: React.FC<QueryWizardProps> = ({ onAnalysisStart, onComplete }
           showIcon
           style={{ marginTop: 16 }}
         />
+      )}
+
+      {/* Template Library Modal */}
+      {templateLibraryVisible && (
+        <Suspense fallback={
+          <Modal
+            open={true}
+            footer={null}
+            closable={false}
+            centered
+          >
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>Loading templates...</div>
+            </div>
+          </Modal>
+        }>
+          <TemplateLibrary
+            onTemplateSelect={(template) => {
+              setTemplateLibraryVisible(false);
+              message.success(`Template "${template.name}" loaded. Please select a location to begin.`);
+            }}
+            onClose={() => setTemplateLibraryVisible(false)}
+            embedded={false}
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -1,0 +1,50 @@
+name: Frontend Matrix Testing
+
+on:
+  pull_request:
+    paths:
+      - 'socialmapper-ui/**'
+      - '.github/workflows/frontend-matrix-test.yml'
+
+jobs:
+  test-matrix:
+    name: Test Node ${{ matrix.node-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: [18, 20, 21]
+        exclude:
+          # Exclude some combinations to save CI time
+          - os: macos-latest
+            node-version: 18
+    
+    defaults:
+      run:
+        working-directory: ./socialmapper-ui
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: socialmapper-ui/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      
+      - name: Run tests
+        run: npm run test:ci
+        env:
+          CI: true
+          NODE_ENV: test
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production

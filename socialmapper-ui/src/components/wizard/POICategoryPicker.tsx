@@ -271,25 +271,33 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
         </Card>
       )}
 
-      {/* Popular Combinations */}
+      {/* Popular Combinations - Mobile Optimized */}
       <Card title="Quick Selection" size="small" style={{ marginBottom: 16 }}>
         <Row gutter={[8, 8]}>
           {POPULAR_COMBINATIONS.map((combo) => (
-            <Col xs={24} sm={12} md={6} key={combo.name}>
+            <Col xs={12} sm={12} md={6} key={combo.name}>
               <Card
                 hoverable
                 size="small"
                 onClick={() => handleCombinationSelect(combo)}
                 style={{ 
                   borderColor: combo.color,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  padding: '8px'
                 }}
+                bodyStyle={{ padding: '8px' }}
               >
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Text strong style={{ color: combo.color }}>
+                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                  <Text strong style={{ 
+                    color: combo.color,
+                    fontSize: window.innerWidth <= 400 ? '12px' : '14px'
+                  }}>
                     {combo.name}
                   </Text>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                  <Text type="secondary" style={{ 
+                    fontSize: window.innerWidth <= 400 ? '10px' : '12px',
+                    lineHeight: 1.2
+                  }}>
                     {combo.description}
                   </Text>
                 </Space>
@@ -332,16 +340,17 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
         </Space>
       </Card>
 
-      {/* POI Type Grid */}
+      {/* POI Type Grid - Mobile Responsive */}
       <Spin spinning={isLoading}>
-        <Row gutter={[12, 12]}>
+        <Row gutter={window.innerWidth <= 576 ? [8, 8] : [12, 12]}>
           {filteredPOITypes.map((poiType: POIType) => {
             const isSelected = selectedTypes.includes(poiType.type);
             const icon = CATEGORY_ICONS[poiType.category || 'default'];
             const color = CATEGORY_COLORS[poiType.category || 'default'];
+            const isMobile = window.innerWidth <= 576;
             
             return (
-              <Col xs={24} sm={12} md={8} lg={6} key={poiType.type}>
+              <Col xs={12} sm={12} md={8} lg={6} key={poiType.type}>
                 <Badge
                   count={isSelected ? '✓' : 0}
                   style={{ backgroundColor: color }}
@@ -355,17 +364,25 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
                       borderColor: isSelected ? color : undefined,
                       backgroundColor: isSelected ? `${color}10` : undefined,
                       cursor: selectedTypes.length >= maxSelections && !isSelected ? 'not-allowed' : 'pointer',
-                      opacity: selectedTypes.length >= maxSelections && !isSelected ? 0.5 : 1
+                      opacity: selectedTypes.length >= maxSelections && !isSelected ? 0.5 : 1,
+                      minHeight: isMobile ? '120px' : '150px'
+                    }}
+                    bodyStyle={{ 
+                      padding: isMobile ? '8px' : '12px'
                     }}
                   >
-                    <Space direction="vertical" align="center" style={{ width: '100%' }}>
-                      <div style={{ fontSize: '24px', color: color }}>
+                    <Space direction="vertical" align="center" style={{ width: '100%' }} size={isMobile ? 4 : 8}>
+                      <div style={{ fontSize: isMobile ? '20px' : '24px', color: color }}>
                         {icon}
                       </div>
-                      <Text strong style={{ textAlign: 'center', fontSize: '12px' }}>
+                      <Text strong style={{ 
+                        textAlign: 'center', 
+                        fontSize: isMobile ? '11px' : '12px',
+                        lineHeight: 1.2
+                      }}>
                         {poiType.name}
                       </Text>
-                      {poiType.description && (
+                      {poiType.description && !isMobile && (
                         <Tooltip title={poiType.description}>
                           <Text type="secondary" style={{ 
                             fontSize: '10px',
@@ -379,8 +396,8 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
                           </Text>
                         </Tooltip>
                       )}
-                      {poiType.common_names && poiType.common_names.length > 0 && (
-                        <div>
+                      {poiType.common_names && poiType.common_names.length > 0 && !isMobile && (
+                        <div style={{ textAlign: 'center' }}>
                           {poiType.common_names.slice(0, 2).map((name, idx) => (
                             <Tag key={idx} size="small" style={{ fontSize: '9px', margin: '1px' }}>
                               {name}
@@ -412,4 +429,4 @@ const POICategoryPicker: React.FC<POICategoryPickerProps> = ({
   );
 };
 
-export default POICategoryPicker;
+export default React.memo(POICategoryPicker);

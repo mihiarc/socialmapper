@@ -556,4 +556,4 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ jobId, onShare }) =
   );
 };
 
-export default ResultsDashboard;
+export default React.memo(ResultsDashboard);

@@ -13,14 +13,10 @@ import {
   Progress, 
   Alert, 
   Spin,
-  Statistic,
-  Tag,
-  Descriptions
+  Tag
 } from 'antd';
 import {
   ArrowLeftOutlined,
-  DownloadOutlined,
-  ShareAltOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
@@ -32,10 +28,8 @@ import ResultsDashboard from '@components/results/ResultsDashboard';
 
 import { 
   useGetJobStatusQuery, 
-  useGetResultsQuery,
-  useExportResultsMutation 
+  useGetResultsQuery
 } from '@store/api/analysisApi';
-import type { ExportFormat } from '@types/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -45,7 +39,6 @@ const { Title, Text, Paragraph } = Typography;
 const Results: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const [exportResults] = useExportResultsMutation();
   const { trackEvent, trackConversion, trackError, trackJourneyStep } = useAnalytics();
 
   // State to control polling
@@ -79,36 +72,6 @@ const Results: React.FC = () => {
     skip: !jobId || jobStatus?.status !== 'completed',
   });
 
-  const handleExport = async (format: ExportFormat) => {
-    if (!jobId) return;
-    
-    try {
-      trackJourneyStep('export_started');
-      
-      const blob = await exportResults({
-        jobId,
-        format,
-        includeIsochrones: true,
-        includeDemographics: true,
-      }).unwrap();
-      
-      // Download the file
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `socialmapper_results_${jobId}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      trackConversion('export_completed', 1);
-      trackJourneyStep('export_completed');
-    } catch (error) {
-      console.error('Export failed:', error);
-      trackError('export_failed', { format, jobId, error: error.toString() });
-    }
-  };
 
   if (!jobId) {
     return (
@@ -247,157 +210,93 @@ const Results: React.FC = () => {
       )}
 
       {isCompleted && (
-        <Row gutter={[24, 24]}>
-          {/* Results Summary */}
-          <Col xs={24} lg={16}>
-            <Card 
-              title="Analysis Summary" 
-              loading={isResultsLoading}
-              extra={
-                <Space>
-                  <FeedbackTrigger
-                    touchpoint="results_dashboard"
-                    context={{
-                      jobId: jobId!,
-                      featureUsed: 'results_view',
-                    }}
-                    trigger="button"
-                    type="text"
-                    size="small"
-                    text="Rate Results"
-                    tooltip="How helpful are these results?"
-                  />
-                  <Button 
-                    icon={<ReloadOutlined />}
-                    onClick={() => refetchResults()}
-                  >
-                    Refresh
-                  </Button>
-                </Space>
-              }
-            >
-              {results ? (
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={8}>
-                    <Statistic
-                      title="POIs Found"
-                      value={results.poi_count || 0}
-                      suffix="locations"
-                    />
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Statistic
-                      title="Analysis Area"
-                      value={results.analysis_area_km2 || 0}
-                      suffix="km²"
-                      precision={2}
-                    />
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Statistic
-                      title="Population Covered"
-                      value={results.population_covered || 0}
-                      suffix="people"
-                    />
-                  </Col>
-                </Row>
-              ) : (
-                <Text type="secondary">No summary data available</Text>
-              )}
-            </Card>
-
-            {/* Map Visualization */}
-            <Card title="Map Visualization" style={{ marginTop: '24px' }}>
-              <div style={{ 
-                height: '400px', 
-                background: '#f5f5f5', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                border: '1px dashed #d9d9d9',
-                borderRadius: '6px'
-              }}>
-                <Text type="secondary">Interactive map visualization coming soon</Text>
+        <>
+          {/* Integrated Results Dashboard */}
+          {isResultsLoading ? (
+            <Card>
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Spin size="large" />
+                <Title level={4} style={{ marginTop: '16px' }}>
+                  Loading Results
+                </Title>
+                <Paragraph type="secondary">
+                  Fetching your analysis results...
+                </Paragraph>
               </div>
             </Card>
-          </Col>
-
-          {/* Export and Actions */}
-          <Col xs={24} lg={8}>
-            <Card title="Export Results">
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Button 
-                  type="primary" 
-                  icon={<DownloadOutlined />}
-                  block
-                  onClick={() => handleExport('geojson' as ExportFormat)}
-                >
-                  Download GeoJSON
-                </Button>
-                <Button 
-                  icon={<DownloadOutlined />}
-                  block
-                  onClick={() => handleExport('csv' as ExportFormat)}
-                >
-                  Download CSV
-                </Button>
-                <Button 
-                  icon={<DownloadOutlined />}
-                  block
-                  onClick={() => handleExport('parquet' as ExportFormat)}
-                >
-                  Download Parquet
-                </Button>
-                <Button 
-                  icon={<ShareAltOutlined />}
-                  block
-                >
-                  Share Results
-                </Button>
-                
-                {/* Export Feedback Trigger */}
-                <FeedbackTrigger
-                  touchpoint="export_download"
-                  context={{
-                    jobId: jobId!,
-                    featureUsed: 'export',
-                  }}
-                  trigger="button"
-                  type="dashed"
-                  text="Rate Export Experience"
-                  tooltip="How was the export process?"
-                />
-              </Space>
+          ) : resultsError ? (
+            <Card>
+              <Alert
+                type="error"
+                message="Failed to load results"
+                description="There was an error loading your analysis results. Please try again."
+                action={
+                  <Button size="small" onClick={() => refetchResults()}>
+                    Retry
+                  </Button>
+                }
+              />
             </Card>
+          ) : (
+            <ResultsDashboard 
+              jobId={jobId!} 
+              onShare={(shareUrl) => {
+                trackEvent({
+                  event_name: 'results_shared',
+                  event_category: 'interaction',
+                  properties: {
+                    jobId,
+                    shareUrl,
+                  },
+                });
+                trackJourneyStep('results_shared');
+              }}
+            />
+          )}
 
-            {/* Job Details */}
-            <Card title="Job Details" style={{ marginTop: '24px' }}>
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Job ID">
-                  <Text code>{jobId}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Processing Time">
-                  {results?.processing_time_seconds ? 
-                    `${results.processing_time_seconds.toFixed(2)}s` : 
-                    'N/A'
-                  }
-                </Descriptions.Item>
-                <Descriptions.Item label="Started">
-                  {jobStatus?.started_at ? 
-                    new Date(jobStatus.started_at).toLocaleString() : 
-                    'N/A'
-                  }
-                </Descriptions.Item>
-                <Descriptions.Item label="Completed">
-                  {results?.completed_at ? 
-                    new Date(results.completed_at).toLocaleString() : 
-                    'N/A'
-                  }
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
-        </Row>
+          {/* Additional Feedback Section */}
+          <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
+            <Col xs={24}>
+              <Card>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Title level={4}>How was your experience?</Title>
+                  <Paragraph type="secondary">
+                    Your feedback helps us improve SocialMapper for all users.
+                  </Paragraph>
+                  <Space wrap>
+                    <FeedbackTrigger
+                      touchpoint="results_dashboard"
+                      context={{
+                        jobId: jobId!,
+                        featureUsed: 'results_view',
+                      }}
+                      trigger="button"
+                      type="primary"
+                      text="Rate Results Quality"
+                      tooltip="How helpful are these results?"
+                    />
+                    <FeedbackTrigger
+                      touchpoint="export_download"
+                      context={{
+                        jobId: jobId!,
+                        featureUsed: 'export',
+                      }}
+                      trigger="button"
+                      type="default"
+                      text="Rate Export Options"
+                      tooltip="How was the export process?"
+                    />
+                    <Button 
+                      onClick={() => navigate('/query')}
+                    >
+                      Run Another Analysis
+                    </Button>
+                  </Space>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </>
       )}
 
       {/* Auto-triggered Post-Analysis Feedback */}

@@ -5,7 +5,7 @@
 // Application info
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 export const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'SocialMapper';
-export const BUILD_DATE = __BUILD_DATE__ || new Date().toISOString();
+export const BUILD_DATE = (typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : new Date().toISOString());
 
 // API configuration
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';

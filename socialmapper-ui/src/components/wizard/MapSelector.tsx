@@ -97,10 +97,35 @@ const MapSelector: React.FC<MapSelectorProps> = ({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [-98.5795, 39.8283], // Geographic center of US
-      zoom: 4
+      zoom: 4,
+      // Enable touch interactions for mobile
+      touchZoomRotate: true,
+      touchPitch: false,
+      dragRotate: false
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl());
+    // Add navigation controls with compact option for mobile
+    map.current.addControl(
+      new mapboxgl.NavigationControl({
+        showCompass: false,
+        visualizePitch: false
+      }),
+      window.innerWidth <= 768 ? 'bottom-right' : 'top-right'
+    );
+
+    // Add geolocate control for mobile
+    if (window.innerWidth <= 768) {
+      map.current.addControl(
+        new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true
+          },
+          trackUserLocation: false,
+          showUserHeading: false
+        }),
+        'bottom-right'
+      );
+    }
 
     // Handle map clicks for location selection
     map.current.on('click', (e) => {
@@ -306,30 +331,61 @@ const MapSelector: React.FC<MapSelectorProps> = ({
         </Card>
       )}
 
-      {/* Map Container */}
+      {/* Map Container - Mobile Responsive */}
       <Card 
         style={{ marginBottom: 16 }}
         title="Interactive Map"
-        extra={selectedLocation && <Text type="success">Selected: {selectedLocation}</Text>}
+        extra={selectedLocation && (
+          <Text type="success" style={{ 
+            fontSize: window.innerWidth <= 576 ? '12px' : '14px',
+            display: 'block',
+            maxWidth: window.innerWidth <= 576 ? '150px' : 'auto',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {selectedLocation}
+          </Text>
+        )}
       >
         <div 
           ref={mapContainer}
           style={{ 
             width: '100%', 
-            height: '400px',
-            borderRadius: '6px'
+            height: window.innerWidth <= 576 ? '300px' : '400px',
+            borderRadius: '6px',
+            touchAction: 'none' // Better touch handling on mobile
           }}
         />
+        {window.innerWidth <= 576 && (
+          <Text type="secondary" style={{ 
+            fontSize: '11px', 
+            marginTop: '8px',
+            display: 'block',
+            textAlign: 'center'
+          }}>
+            Tap on the map or use search to select a location
+          </Text>
+        )}
       </Card>
 
-      {/* Popular Locations */}
-      <Card title="Popular Locations" size="small">
+      {/* Popular Locations - Mobile Optimized */}
+      <Card 
+        title="Popular Locations" 
+        size="small"
+        bodyStyle={{ padding: window.innerWidth <= 576 ? '8px' : '16px' }}
+      >
         <List
-          grid={{ gutter: 8, xs: 1, sm: 2, md: 2 }}
+          grid={{ 
+            gutter: window.innerWidth <= 576 ? 4 : 8, 
+            xs: 1, 
+            sm: 2, 
+            md: 2 
+          }}
           size="small"
           dataSource={popularLocations}
           renderItem={(location) => (
-            <List.Item>
+            <List.Item style={{ marginBottom: window.innerWidth <= 576 ? '4px' : '8px' }}>
               <Button
                 type="text"
                 icon={<EnvironmentOutlined />}
@@ -338,7 +394,9 @@ const MapSelector: React.FC<MapSelectorProps> = ({
                   width: '100%', 
                   textAlign: 'left', 
                   height: 'auto',
-                  whiteSpace: 'normal'
+                  whiteSpace: 'normal',
+                  fontSize: window.innerWidth <= 576 ? '12px' : '14px',
+                  padding: window.innerWidth <= 576 ? '4px 8px' : '4px 15px'
                 }}
               >
                 {location.display_name}
@@ -351,4 +409,4 @@ const MapSelector: React.FC<MapSelectorProps> = ({
   );
 };
 
-export default MapSelector;
+export default React.memo(MapSelector);

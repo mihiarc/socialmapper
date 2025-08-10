@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build outputs
+dist/
+build/
+coverage/
+.next/
+out/
+
+# Cache and temporary files
+.cache/
+.temp/
+.tmp/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+*.snap
+
+# Generated files
+*.generated.*
+stats.html
+stats.json
+
+# Environment files
+.env
+.env.*
+
+# Public assets
+public/
