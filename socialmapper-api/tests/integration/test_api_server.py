@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Test the API server with real HTTP requests.
-"""
+"""Test the API server with real HTTP requests."""
 
 import json
 import subprocess
@@ -23,13 +22,23 @@ def test_api_server():
     api_dir = Path(__file__).parent
 
     # Start the server process
-    server_process = subprocess.Popen([
-        sys.executable, "-m", "uvicorn",
-        "api_server.main:app",
-        "--host", "127.0.0.1",
-        "--port", "8000",
-        "--log-level", "info"
-    ], cwd=api_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    server_process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "api_server.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "8000",
+            "--log-level",
+            "info",
+        ],
+        cwd=api_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
     # Wait for server to start
     time.sleep(3)
@@ -58,13 +67,11 @@ def test_api_server():
             "geographic_level": "block_group",
             "travel_mode": "walk",
             "include_isochrones": True,
-            "include_demographics": True
+            "include_demographics": True,
         }
 
         response = requests.post(
-            f"{base_url}/api/v1/analysis/location",
-            json=analysis_request,
-            timeout=10
+            f"{base_url}/api/v1/analysis/location", json=analysis_request, timeout=10
         )
 
         print(f"Job submission: {response.status_code}")
@@ -85,15 +92,15 @@ def test_api_server():
 
             if response.status_code == 200:
                 status_data = response.json()
-                status = status_data['status']
-                progress = status_data['progress']
+                status = status_data["status"]
+                progress = status_data["progress"]
 
                 print(f"Attempt {attempt + 1}: {status} ({progress:.1%})")
 
-                if status == 'completed':
+                if status == "completed":
                     print("✅ Job completed!")
                     break
-                elif status == 'failed':
+                elif status == "failed":
                     print(f"❌ Job failed: {status_data.get('error', 'Unknown error')}")
                     return
             else:
@@ -111,7 +118,7 @@ def test_api_server():
             print(f"POI Count: {result_data.get('poi_count', 'N/A')}")
             print(f"Processing Time: {result_data.get('processing_time_seconds', 'N/A')}s")
 
-            demographics = result_data.get('demographics', {})
+            demographics = result_data.get("demographics", {})
             if demographics:
                 print(f"Demographics: {json.dumps(demographics, indent=2)}")
         else:

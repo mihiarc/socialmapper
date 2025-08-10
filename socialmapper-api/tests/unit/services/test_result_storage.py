@@ -25,7 +25,7 @@ class TestResultStorage:
         result_data = {
             "status": "completed",
             "data": {"test": "value"},
-            "metadata": {"created_at": datetime.now(UTC).isoformat()}
+            "metadata": {"created_at": datetime.now(UTC).isoformat()},
         }
 
         # Store result
@@ -167,7 +167,7 @@ class TestResultStorage:
 
         # Start multiple threads
         threads = []
-        for i in range(5):
+        for _i in range(5):
             t1 = threading.Thread(target=write_result)
             t2 = threading.Thread(target=read_result)
             threads.extend([t1, t2])
@@ -208,9 +208,9 @@ class TestResultStorage:
         result_data = {
             "census_data": [
                 {"tract": "123", "population": 1000},
-                {"tract": "456", "population": 2000}
+                {"tract": "456", "population": 2000},
             ],
-            "metadata": {"format": "test"}
+            "metadata": {"format": "test"},
         }
 
         # Store result

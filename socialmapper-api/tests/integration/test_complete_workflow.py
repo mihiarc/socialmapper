@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for complete analysis workflow including job completion.
-"""
+"""Test script for complete analysis workflow including job completion."""
 
 import json
 import sys
@@ -34,7 +33,7 @@ def test_complete_workflow():
         "geographic_level": "block_group",
         "travel_mode": "walk",
         "include_isochrones": True,
-        "include_demographics": True
+        "include_demographics": True,
     }
 
     response = client.post("/api/v1/analysis/location", json=analysis_request)
@@ -64,10 +63,10 @@ def test_complete_workflow():
             print(f"Progress: {status_data['progress']:.1%}")
             print(f"Message: {status_data.get('message', 'N/A')}")
 
-            if status_data['status'] == 'completed':
+            if status_data["status"] == "completed":
                 print("✅ Job completed successfully!")
                 break
-            elif status_data['status'] == 'failed':
+            elif status_data["status"] == "failed":
                 print("❌ Job failed!")
                 print(f"Error: {status_data.get('error', 'Unknown error')}")
                 return
@@ -92,11 +91,13 @@ def test_complete_workflow():
         print(f"Processing Time: {result_data.get('processing_time_seconds', 'N/A')} seconds")
 
         # Show some POIs if available
-        pois = result_data.get('pois', [])
+        pois = result_data.get("pois", [])
         if pois:
             print(f"\nFound {len(pois)} POIs:")
             for i, poi in enumerate(pois[:3]):  # Show first 3
-                print(f"  {i+1}. {poi.get('name', 'Unknown')} at ({poi.get('lat', 'N/A')}, {poi.get('lon', 'N/A')})")
+                print(
+                    f"  {i + 1}. {poi.get('name', 'Unknown')} at ({poi.get('lat', 'N/A')}, {poi.get('lon', 'N/A')})"
+                )
     else:
         print(f"Failed to retrieve results: {response.json()}")
         return
@@ -110,8 +111,10 @@ def test_complete_workflow():
         jobs_data = response.json()
         print(f"Total jobs: {jobs_data.get('total_jobs', 0)}")
         print("Jobs summary:")
-        for job_id_key, job_info in jobs_data.get('jobs', {}).items():
-            print(f"  {job_id_key}: {job_info.get('status', 'unknown')} - {job_info.get('location', 'N/A')}")
+        for job_id_key, job_info in jobs_data.get("jobs", {}).items():
+            print(
+                f"  {job_id_key}: {job_info.get('status', 'unknown')} - {job_info.get('location', 'N/A')}"
+            )
 
     # Step 5: Test job deletion
     print("\n5. Testing job deletion...")

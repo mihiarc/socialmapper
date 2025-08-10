@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for analysis API endpoints.
-"""
+"""Test script for analysis API endpoints."""
 
 import json
 import sys
@@ -47,7 +46,7 @@ def test_analysis_endpoints():
         "geographic_level": "block_group",
         "travel_mode": "walk",
         "include_isochrones": True,
-        "include_demographics": True
+        "include_demographics": True,
     }
 
     response = client.post("/api/v1/analysis/location", json=analysis_request)
@@ -89,7 +88,7 @@ def test_analysis_endpoints():
     invalid_request = {
         "location": "",  # Invalid empty location
         "poi_type": "amenity",
-        "poi_name": "library"
+        "poi_name": "library",
     }
 
     response = client.post("/api/v1/analysis/location", json=invalid_request)

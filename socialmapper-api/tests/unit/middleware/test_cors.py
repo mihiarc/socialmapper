@@ -9,10 +9,7 @@ class TestCORSMiddleware:
     @pytest.mark.unit
     def test_cors_headers_on_get(self, client):
         """Test CORS headers on GET request."""
-        response = client.get(
-            "/api/v1/health",
-            headers={"Origin": "http://localhost:8501"}
-        )
+        response = client.get("/api/v1/health", headers={"Origin": "http://localhost:8501"})
 
         assert response.status_code == 200
         assert "access-control-allow-origin" in response.headers
@@ -26,8 +23,8 @@ class TestCORSMiddleware:
             headers={
                 "Origin": "http://localhost:8501",
                 "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "content-type,x-api-key"
-            }
+                "Access-Control-Request-Headers": "content-type,x-api-key",
+            },
         )
 
         assert response.status_code == 200
@@ -49,10 +46,7 @@ class TestCORSMiddleware:
     @pytest.mark.unit
     def test_cors_actual_request_with_origin(self, client):
         """Test CORS headers on actual request with Origin header."""
-        response = client.get(
-            "/api/v1/health",
-            headers={"Origin": "http://localhost:8501"}
-        )
+        response = client.get("/api/v1/health", headers={"Origin": "http://localhost:8501"})
 
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "http://localhost:8501"
@@ -62,10 +56,7 @@ class TestCORSMiddleware:
         """Test that credentials are allowed for specific origins."""
         response = client.options(
             "/api/v1/health",
-            headers={
-                "Origin": "http://localhost:8501",
-                "Access-Control-Request-Method": "GET"
-            }
+            headers={"Origin": "http://localhost:8501", "Access-Control-Request-Method": "GET"},
         )
 
         # Should include credentials header for specific origins
@@ -77,10 +68,7 @@ class TestCORSMiddleware:
         """Test CORS max age header for caching preflight."""
         response = client.options(
             "/api/v1/analysis/location",
-            headers={
-                "Origin": "http://localhost:8501",
-                "Access-Control-Request-Method": "POST"
-            }
+            headers={"Origin": "http://localhost:8501", "Access-Control-Request-Method": "POST"},
         )
 
         assert response.status_code == 200

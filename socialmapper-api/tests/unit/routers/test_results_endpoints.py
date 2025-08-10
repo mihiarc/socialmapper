@@ -1,5 +1,4 @@
-"""Test script for the results and export endpoints.
-"""
+"""Test script for the results and export endpoints."""
 
 import asyncio
 
@@ -23,13 +22,10 @@ async def test_results_endpoints():
             "travel_time": 15,
             "census_variables": ["B01003_001E"],
             "geographic_level": "block_group",
-            "travel_mode": "walk"
+            "travel_mode": "walk",
         }
 
-        response = await client.post(
-            f"{BASE_URL}/analysis/location",
-            json=analysis_request
-        )
+        response = await client.post(f"{BASE_URL}/analysis/location", json=analysis_request)
 
         if response.status_code == 200:
             job_response = response.json()
@@ -43,21 +39,19 @@ async def test_results_endpoints():
         # Wait for job to complete
         print("\n2. Waiting for job to complete...")
         max_attempts = 10
-        for i in range(max_attempts):
+        for _i in range(max_attempts):
             await asyncio.sleep(1)
 
-            status_response = await client.get(
-                f"{BASE_URL}/analysis/{job_id}/status"
-            )
+            status_response = await client.get(f"{BASE_URL}/analysis/{job_id}/status")
 
             if status_response.status_code == 200:
                 status = status_response.json()
                 print(f"   Status: {status['status']} (progress: {status['progress']:.0%})")
 
-                if status['status'] == 'completed':
+                if status["status"] == "completed":
                     print("✓ Job completed successfully")
                     break
-                elif status['status'] == 'failed':
+                elif status["status"] == "failed":
                     print(f"✗ Job failed: {status.get('error', 'Unknown error')}")
                     return
             else:
@@ -66,9 +60,7 @@ async def test_results_endpoints():
 
         # Test getting results
         print("\n3. Testing GET /results/{job_id}...")
-        results_response = await client.get(
-            f"{BASE_URL}/results/{job_id}"
-        )
+        results_response = await client.get(f"{BASE_URL}/results/{job_id}")
 
         if results_response.status_code == 200:
             results = results_response.json()
@@ -83,8 +75,7 @@ async def test_results_endpoints():
         # Test CSV export
         print("\n4. Testing CSV export...")
         csv_response = await client.get(
-            f"{BASE_URL}/results/{job_id}/export",
-            params={"format": "csv"}
+            f"{BASE_URL}/results/{job_id}/export", params={"format": "csv"}
         )
 
         if csv_response.status_code == 200:
@@ -97,8 +88,7 @@ async def test_results_endpoints():
         # Test GeoJSON export
         print("\n5. Testing GeoJSON export...")
         geojson_response = await client.get(
-            f"{BASE_URL}/results/{job_id}/export",
-            params={"format": "geojson"}
+            f"{BASE_URL}/results/{job_id}/export", params={"format": "geojson"}
         )
 
         if geojson_response.status_code == 200:
@@ -118,12 +108,11 @@ async def test_results_endpoints():
             "job_id": job_id,
             "format": "geoparquet",
             "include_isochrones": True,
-            "include_demographics": True
+            "include_demographics": True,
         }
 
         export_response = await client.post(
-            f"{BASE_URL}/results/{job_id}/export",
-            json=export_request
+            f"{BASE_URL}/results/{job_id}/export", json=export_request
         )
 
         if export_response.status_code == 200:
@@ -138,9 +127,7 @@ async def test_results_endpoints():
 
         # Test deleting results
         print("\n7. Testing DELETE /results/{job_id}...")
-        delete_response = await client.delete(
-            f"{BASE_URL}/results/{job_id}"
-        )
+        delete_response = await client.delete(f"{BASE_URL}/results/{job_id}")
 
         if delete_response.status_code == 200:
             print("✓ Successfully deleted results")
@@ -151,9 +138,7 @@ async def test_results_endpoints():
 
         # Verify deletion
         print("\n8. Verifying deletion...")
-        verify_response = await client.get(
-            f"{BASE_URL}/results/{job_id}"
-        )
+        verify_response = await client.get(f"{BASE_URL}/results/{job_id}")
 
         if verify_response.status_code == 404:
             print("✓ Results properly deleted (404 returned)")

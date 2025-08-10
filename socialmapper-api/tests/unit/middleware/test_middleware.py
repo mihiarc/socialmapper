@@ -1,5 +1,4 @@
-"""Tests for API middleware components (rate limiting, authentication).
-"""
+"""Tests for API middleware components (rate limiting, authentication)."""
 
 from datetime import UTC, datetime
 
@@ -16,7 +15,7 @@ def settings():
     return Settings(
         rate_limit_per_minute=10,  # Low limit for testing
         api_auth_enabled=True,
-        api_keys="test-key-1,test-key-2"
+        api_keys="test-key-1,test-key-2",
     )
 
 
@@ -96,18 +95,18 @@ class TestRateLimiting:
         """Test that rate limits are per client IP."""
         # Make requests from first "client"
         for _ in range(5):
-            response = client.get("/api/v1/test", headers={
-                "X-API-Key": "test-key-1",
-                "X-Forwarded-For": "192.168.1.1"
-            })
+            response = client.get(
+                "/api/v1/test",
+                headers={"X-API-Key": "test-key-1", "X-Forwarded-For": "192.168.1.1"},
+            )
             assert response.status_code == 200
 
         # Make requests from second "client" - should not be rate limited
         for _ in range(5):
-            response = client.get("/api/v1/test", headers={
-                "X-API-Key": "test-key-1",
-                "X-Forwarded-For": "192.168.1.2"
-            })
+            response = client.get(
+                "/api/v1/test",
+                headers={"X-API-Key": "test-key-1", "X-Forwarded-For": "192.168.1.2"},
+            )
             assert response.status_code == 200
 
     def test_health_endpoint_exempt_from_rate_limit(self, client, settings):
@@ -177,7 +176,7 @@ class TestMiddlewareIntegration:
         assert response.status_code == 401
 
         # Requests with API key - should be rate limited
-        for i in range(settings.rate_limit_per_minute):
+        for _i in range(settings.rate_limit_per_minute):
             response = client.get("/api/v1/test", headers={"X-API-Key": "test-key-1"})
             assert response.status_code == 200
 
@@ -189,25 +188,24 @@ class TestMiddlewareIntegration:
         """Test that different API keys from same IP share rate limit."""
         # Use up half the limit with first key
         for _ in range(settings.rate_limit_per_minute // 2):
-            response = client.get("/api/v1/test", headers={
-                "X-API-Key": "test-key-1",
-                "X-Forwarded-For": "192.168.1.100"
-            })
+            response = client.get(
+                "/api/v1/test",
+                headers={"X-API-Key": "test-key-1", "X-Forwarded-For": "192.168.1.100"},
+            )
             assert response.status_code == 200
 
         # Use remaining limit with second key from same IP
         for _ in range(settings.rate_limit_per_minute // 2):
-            response = client.get("/api/v1/test", headers={
-                "X-API-Key": "test-key-2",
-                "X-Forwarded-For": "192.168.1.100"
-            })
+            response = client.get(
+                "/api/v1/test",
+                headers={"X-API-Key": "test-key-2", "X-Forwarded-For": "192.168.1.100"},
+            )
             assert response.status_code == 200
 
         # Next request should be rate limited regardless of key
-        response = client.get("/api/v1/test", headers={
-            "X-API-Key": "test-key-1",
-            "X-Forwarded-For": "192.168.1.100"
-        })
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "test-key-1", "X-Forwarded-For": "192.168.1.100"}
+        )
         assert response.status_code == 429
 
 

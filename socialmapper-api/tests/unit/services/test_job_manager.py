@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Test the job manager directly to verify it works correctly.
-"""
+"""Test the job manager directly to verify it works correctly."""
 
 import asyncio
 import sys
@@ -29,7 +28,7 @@ async def test_job_manager():
             poi_type="amenity",
             poi_name="library",
             travel_time=15,
-            census_variables=["B01003_001E"]
+            census_variables=["B01003_001E"],
         )
 
         # Submit job
@@ -53,7 +52,7 @@ async def test_job_manager():
             job = job_manager.get_job(job_id)
             print(f"After {waited}s: Status={job.status}, Progress={job.progress:.1%}")
 
-            if job.status.value in ['completed', 'failed']:
+            if job.status.value in ["completed", "failed"]:
                 break
 
         # Check final results
@@ -63,13 +62,13 @@ async def test_job_manager():
         print(f"Progress: {final_job.progress:.1%}")
         print(f"Message: {final_job.message}")
 
-        if final_job.status.value == 'completed':
+        if final_job.status.value == "completed":
             print(f"Processing time: {final_job.processing_time_seconds}s")
             print(f"Result keys: {list(final_job.result.keys()) if final_job.result else 'None'}")
             if final_job.result:
                 print(f"POI count: {final_job.result.get('poi_count', 'N/A')}")
             print("✅ Job completed successfully!")
-        elif final_job.status.value == 'failed':
+        elif final_job.status.value == "failed":
             print(f"Error: {final_job.error}")
             print("❌ Job failed!")
         else:

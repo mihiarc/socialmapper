@@ -3,7 +3,7 @@
 This test validates that task 4 requirements have been met:
 - Create Pydantic models for analysis requests and responses
 - Define job status and result models with proper validation
-- Implement error response models with standardized format
+- Implement error response models with standardized format.
 """
 
 import sys
@@ -59,7 +59,7 @@ def test_analysis_request_models():
         geographic_level=GeographicLevel.BLOCK_GROUP,
         travel_mode=TravelMode.WALK,
         include_isochrones=True,
-        include_demographics=True
+        include_demographics=True,
     )
     assert location_request.location == "Portland, OR"
     assert location_request.travel_time == 15
@@ -72,29 +72,23 @@ def test_analysis_request_models():
         latitude=45.5152,
         longitude=-122.6784,
         address="801 SW 10th Ave, Portland, OR",
-        category="library"
+        category="library",
     )
 
     custom_request = CustomPOIAnalysisRequest(
         location="Portland, OR",
         custom_pois=[custom_poi],
         travel_time=20,
-        travel_mode=TravelMode.BIKE
+        travel_mode=TravelMode.BIKE,
     )
     assert len(custom_request.custom_pois) == 1
     assert custom_request.custom_pois[0].name == "Central Library"
     print("✓ CustomPOIAnalysisRequest created and validated")
 
     # Test BatchAnalysisRequest
-    batch_item = BatchAnalysisItem(
-        id="item-1",
-        request=location_request
-    )
+    batch_item = BatchAnalysisItem(id="item-1", request=location_request)
 
-    batch_request = BatchAnalysisRequest(
-        items=[batch_item],
-        priority=1
-    )
+    batch_request = BatchAnalysisRequest(items=[batch_item], priority=1)
     assert len(batch_request.items) == 1
     assert batch_request.priority == 1
     print("✓ BatchAnalysisRequest created and validated")
@@ -104,9 +98,9 @@ def test_analysis_request_models():
         LocationAnalysisRequest(
             location="NY",  # Too short
             poi_type="amenity",
-            poi_name="library"
+            poi_name="library",
         )
-        assert False, "Should have failed validation"
+        raise AssertionError("Should have failed validation")
     except ValidationError:
         print("✓ Location validation working correctly")
 
@@ -114,9 +108,9 @@ def test_analysis_request_models():
         CustomPOILocation(
             name="Test",
             latitude=91,  # Invalid latitude
-            longitude=-122
+            longitude=-122,
         )
-        assert False, "Should have failed validation"
+        raise AssertionError("Should have failed validation")
     except ValidationError:
         print("✓ Coordinate validation working correctly")
 
@@ -130,7 +124,7 @@ def test_response_models():
         job_id="job-123",
         status=JobStatusEnum.PENDING,
         created_at=datetime.now(),
-        message="Job submitted successfully"
+        message="Job submitted successfully",
     )
     assert analysis_response.job_id == "job-123"
     assert analysis_response.status == JobStatusEnum.PENDING
@@ -143,7 +137,7 @@ def test_response_models():
         progress=0.5,
         message="Processing analysis...",
         created_at=datetime.now(),
-        updated_at=datetime.now()
+        updated_at=datetime.now(),
     )
     assert job_status.progress == 0.5
     assert job_status.status == JobStatusEnum.RUNNING
@@ -151,9 +145,7 @@ def test_response_models():
 
     # Test AnalysisResult
     location_request = LocationAnalysisRequest(
-        location="Portland, OR",
-        poi_type="amenity",
-        poi_name="library"
+        location="Portland, OR", poi_type="amenity", poi_name="library"
     )
 
     analysis_result = AnalysisResult(
@@ -165,7 +157,7 @@ def test_response_models():
         isochrones={"type": "FeatureCollection", "features": []},
         processing_time_seconds=45.2,
         created_at=datetime.now(),
-        completed_at=datetime.now()
+        completed_at=datetime.now(),
     )
     assert analysis_result.poi_count == 15
     assert "total_population" in analysis_result.demographics
@@ -182,7 +174,7 @@ def test_metadata_models():
         name="Total Population",
         concept="Total Population",
         group="Demographics",
-        universe="Total population"
+        universe="Total population",
     )
     assert census_var.code == "B01003_001E"
     assert census_var.name == "Total Population"
@@ -194,7 +186,7 @@ def test_metadata_models():
         name="library",
         description="Public library facility",
         category="Education & Culture",
-        common_names=["library", "public library", "branch library"]
+        common_names=["library", "public library", "branch library"],
     )
     assert poi_type.type == "amenity"
     assert poi_type.name == "library"
@@ -210,7 +202,7 @@ def test_metadata_models():
         latitude=45.5152,
         longitude=-122.6784,
         importance=0.8,
-        place_type="city"
+        place_type="city",
     )
     assert location_result.city == "Portland"
     assert location_result.latitude == 45.5152
@@ -226,7 +218,7 @@ def test_error_models():
         field="location",
         message="Location must be at least 3 characters long",
         invalid_value="NY",
-        constraint="min_length"
+        constraint="min_length",
     )
     assert validation_detail.field == "location"
     assert validation_detail.invalid_value == "NY"
@@ -236,7 +228,7 @@ def test_error_models():
     detailed_error = DetailedValidationError(
         error_code=ErrorCode.VALIDATION_ERROR,
         message="Request validation failed",
-        field_errors=[validation_detail]
+        field_errors=[validation_detail],
     )
     assert detailed_error.error_code == ErrorCode.VALIDATION_ERROR
     assert len(detailed_error.field_errors) == 1
@@ -247,7 +239,7 @@ def test_error_models():
         error_code=ErrorCode.RESOURCE_NOT_FOUND,
         message="Job not found",
         resource_type="job",
-        resource_id="job-123"
+        resource_id="job-123",
     )
     assert not_found_error.resource_type == "job"
     assert not_found_error.resource_id == "job-123"
@@ -260,7 +252,7 @@ def test_error_models():
         limit=100,
         window_seconds=60,
         retry_after_seconds=30,
-        remaining_requests=0
+        remaining_requests=0,
     )
     assert rate_limit_error.limit == 100
     assert rate_limit_error.retry_after_seconds == 30
@@ -271,7 +263,7 @@ def test_error_models():
         error_code=ErrorCode.PROCESSING_ERROR,
         message="Analysis processing failed",
         stage="isochrone_generation",
-        retry_after_seconds=60
+        retry_after_seconds=60,
     )
     assert processing_error.stage == "isochrone_generation"
     print("✓ ProcessingError created and validated")
@@ -283,10 +275,7 @@ def test_json_serialization():
 
     # Test request serialization
     request = LocationAnalysisRequest(
-        location="Portland, OR",
-        poi_type="amenity",
-        poi_name="library",
-        travel_time=15
+        location="Portland, OR", poi_type="amenity", poi_name="library", travel_time=15
     )
 
     # Serialize to JSON
@@ -302,9 +291,7 @@ def test_json_serialization():
 
     # Test response serialization
     response = AnalysisResponse(
-        job_id="job-123",
-        status=JobStatusEnum.PENDING,
-        created_at=datetime.now()
+        job_id="job-123", status=JobStatusEnum.PENDING, created_at=datetime.now()
     )
 
     json_str = response.model_dump_json()
@@ -317,12 +304,7 @@ def test_json_serialization():
     error = DetailedValidationError(
         error_code=ErrorCode.VALIDATION_ERROR,
         message="Validation failed",
-        field_errors=[
-            ValidationErrorDetail(
-                field="location",
-                message="Required field"
-            )
-        ]
+        field_errors=[ValidationErrorDetail(field="location", message="Required field")],
     )
 
     json_str = error.model_dump_json()
@@ -397,6 +379,7 @@ def main():
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

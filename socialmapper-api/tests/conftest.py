@@ -31,6 +31,7 @@ def test_settings() -> Settings:
     """Test settings with temporary directories."""
     # Create a minimal settings instance for testing
     import os
+
     os.environ["CORS_ORIGINS"] = "http://localhost:3000,http://localhost:8501,http://127.0.0.1:8501"
     os.environ["API_AUTH_ENABLED"] = "false"
     os.environ["RATE_LIMIT_PER_MINUTE"] = "60"
@@ -42,6 +43,7 @@ def test_settings() -> Settings:
 @pytest.fixture
 def app(test_settings):
     """Create a test FastAPI app instance."""
+
     # Override settings
     def override_get_settings():
         return test_settings
@@ -63,6 +65,7 @@ def client(app) -> Generator[TestClient, None, None]:
 async def async_client(app) -> AsyncGenerator:
     """Create an async test client."""
     from httpx import AsyncClient
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
 
@@ -96,10 +99,8 @@ def sample_analysis_request():
         "location": "Chapel Hill, NC",
         "travel_time_minutes": 15,
         "travel_mode": "drive",
-        "poi_types": {
-            "amenity": ["library"]
-        },
-        "census_variables": ["B01003_001E"]
+        "poi_types": {"amenity": ["library"]},
+        "census_variables": ["B01003_001E"],
     }
 
 
@@ -114,30 +115,32 @@ def sample_job_result():
                 {
                     "tract": "37135020501",
                     "B01003_001E": 5432,
-                    "geometry": {"type": "Polygon", "coordinates": []}
+                    "geometry": {"type": "Polygon", "coordinates": []},
                 }
             ],
             "isochrones": {
                 "type": "FeatureCollection",
-                "features": [{
-                    "type": "Feature",
-                    "geometry": {"type": "Polygon", "coordinates": []},
-                    "properties": {"time": 15}
-                }]
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Polygon", "coordinates": []},
+                        "properties": {"time": 15},
+                    }
+                ],
             },
             "map_files": {
                 "accessibility": "test_accessibility_map.png",
                 "distance": "test_distance_map.png",
-                "B01003_001E": "test_demographic_map.png"
-            }
+                "B01003_001E": "test_demographic_map.png",
+            },
         },
         "metadata": {
             "location": "Chapel Hill, NC",
             "travel_time": 15,
             "travel_mode": "drive",
             "created_at": "2025-01-21T10:00:00",
-            "completed_at": "2025-01-21T10:01:00"
-        }
+            "completed_at": "2025-01-21T10:01:00",
+        },
     }
 
 

@@ -1,5 +1,4 @@
-"""Unit tests for metadata endpoints (census variables, POI types, location search).
-"""
+"""Unit tests for metadata endpoints (census variables, POI types, location search)."""
 
 from api_server.main import app
 from fastapi.testclient import TestClient

@@ -1,5 +1,4 @@
-"""Test the cleanup functionality for expired results.
-"""
+"""Test the cleanup functionality for expired results."""
 
 import asyncio
 import json
@@ -28,11 +27,7 @@ def test_result_storage_ttl(temp_storage_path):
 
     # Save a result
     job_id = "test_job_123"
-    results = {
-        "poi_count": 5,
-        "demographics": {"population": 1000},
-        "analysis_area_km2": 10.5
-    }
+    results = {"poi_count": 5, "demographics": {"population": 1000}, "analysis_area_km2": 10.5}
 
     assert storage.save_results(job_id, results)
 

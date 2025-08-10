@@ -1,5 +1,4 @@
-"""Test script for the metadata endpoints (census variables, POI types, location search).
-"""
+"""Test script for the metadata endpoints (census variables, POI types, location search)."""
 
 import asyncio
 
@@ -23,7 +22,9 @@ async def test_metadata_endpoints():
             print("✓ Successfully retrieved census variables")
             print(f"   - Total variables: {census_data.get('total_count', 0)}")
             print(f"   - Categories: {', '.join(census_data.get('categories', []))}")
-            print(f"   - First variable: {census_data['variables'][0]['code']} - {census_data['variables'][0]['name']}")
+            print(
+                f"   - First variable: {census_data['variables'][0]['code']} - {census_data['variables'][0]['name']}"
+            )
         else:
             print(f"✗ Failed to get census variables: {census_response.status_code}")
             print(census_response.text)
@@ -31,8 +32,7 @@ async def test_metadata_endpoints():
         # Test census variables with filtering
         print("\n2. Testing census variables with group filter...")
         filtered_response = await client.get(
-            f"{BASE_URL}/census/variables",
-            params={"group": "Demographics"}
+            f"{BASE_URL}/census/variables", params={"group": "Demographics"}
         )
 
         if filtered_response.status_code == 200:
@@ -45,8 +45,7 @@ async def test_metadata_endpoints():
         # Test census variables with search
         print("\n3. Testing census variables with search...")
         search_response = await client.get(
-            f"{BASE_URL}/census/variables",
-            params={"search": "income"}
+            f"{BASE_URL}/census/variables", params={"search": "income"}
         )
 
         if search_response.status_code == 200:
@@ -65,9 +64,11 @@ async def test_metadata_endpoints():
             print("✓ Successfully retrieved POI types")
             print(f"   - Total POI types: {poi_data.get('total_count', 0)}")
             print(f"   - Categories: {', '.join(poi_data.get('categories', []))}")
-            if poi_data['poi_types']:
-                first_poi = poi_data['poi_types'][0]
-                print(f"   - First POI: {first_poi['type']}:{first_poi['name']} - {first_poi.get('description', 'N/A')}")
+            if poi_data["poi_types"]:
+                first_poi = poi_data["poi_types"][0]
+                print(
+                    f"   - First POI: {first_poi['type']}:{first_poi['name']} - {first_poi.get('description', 'N/A')}"
+                )
         else:
             print(f"✗ Failed to get POI types: {poi_response.status_code}")
             print(poi_response.text)
@@ -75,16 +76,15 @@ async def test_metadata_endpoints():
         # Test POI types with category filter
         print("\n5. Testing POI types with category filter...")
         category_response = await client.get(
-            f"{BASE_URL}/poi/types",
-            params={"category": "Healthcare"}
+            f"{BASE_URL}/poi/types", params={"category": "Healthcare"}
         )
 
         if category_response.status_code == 200:
             category_data = category_response.json()
             print("✓ Successfully filtered POI types")
             print(f"   - Healthcare POIs: {category_data.get('total_count', 0)}")
-            if category_data['poi_types']:
-                for poi in category_data['poi_types']:
+            if category_data["poi_types"]:
+                for poi in category_data["poi_types"]:
                     print(f"     • {poi['type']}:{poi['name']}")
         else:
             print(f"✗ Failed to filter POI types: {category_response.status_code}")
@@ -92,8 +92,7 @@ async def test_metadata_endpoints():
         # Test POI types with search
         print("\n6. Testing POI types with search...")
         poi_search_response = await client.get(
-            f"{BASE_URL}/poi/types",
-            params={"search": "library"}
+            f"{BASE_URL}/poi/types", params={"search": "library"}
         )
 
         if poi_search_response.status_code == 200:
@@ -106,8 +105,7 @@ async def test_metadata_endpoints():
         # Test location search endpoint
         print("\n7. Testing GET /geography/search...")
         location_response = await client.get(
-            f"{BASE_URL}/geography/search",
-            params={"q": "Portland"}
+            f"{BASE_URL}/geography/search", params={"q": "Portland"}
         )
 
         if location_response.status_code == 200:
@@ -115,9 +113,11 @@ async def test_metadata_endpoints():
             print("✓ Successfully searched locations")
             print(f"   - Query: {location_data.get('query')}")
             print(f"   - Results: {location_data.get('total_count', 0)}")
-            if location_data['results']:
-                for result in location_data['results']:
-                    print(f"     • {result['display_name']} ({result['latitude']}, {result['longitude']})")
+            if location_data["results"]:
+                for result in location_data["results"]:
+                    print(
+                        f"     • {result['display_name']} ({result['latitude']}, {result['longitude']})"
+                    )
         else:
             print(f"✗ Failed to search locations: {location_response.status_code}")
             print(location_response.text)
@@ -128,8 +128,7 @@ async def test_metadata_endpoints():
 
         for query in test_queries:
             query_response = await client.get(
-                f"{BASE_URL}/geography/search",
-                params={"q": query, "limit": 5}
+                f"{BASE_URL}/geography/search", params={"q": query, "limit": 5}
             )
 
             if query_response.status_code == 200:
@@ -141,8 +140,7 @@ async def test_metadata_endpoints():
         # Test pagination
         print("\n9. Testing pagination...")
         page_response = await client.get(
-            f"{BASE_URL}/census/variables",
-            params={"limit": 3, "offset": 2}
+            f"{BASE_URL}/census/variables", params={"limit": 3, "offset": 2}
         )
 
         if page_response.status_code == 200:

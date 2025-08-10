@@ -18,8 +18,8 @@ class TestErrorHandlingMiddleware:
             json={
                 "location": "",  # Empty location
                 "travel_time": -5,  # Negative time
-                "travel_mode": "invalid_mode"  # Invalid mode
-            }
+                "travel_mode": "invalid_mode",  # Invalid mode
+            },
         )
 
         assert response.status_code == 422
@@ -58,13 +58,13 @@ class TestErrorHandlingMiddleware:
     @pytest.mark.unit
     def test_internal_server_error(self, client, monkeypatch):
         """Test 500 error handling."""
+
         # Mock an internal error in the job manager
         def mock_create_job(*args, **kwargs):
             raise Exception("Internal error")
 
         monkeypatch.setattr(
-            "api_server.services.job_manager.JobManager.create_job",
-            mock_create_job
+            "api_server.services.job_manager.JobManager.create_job", mock_create_job
         )
 
         response = client.post(
@@ -74,8 +74,8 @@ class TestErrorHandlingMiddleware:
                 "poi_type": "amenity",
                 "poi_name": "library",
                 "travel_time": 15,
-                "travel_mode": "drive"
-            }
+                "travel_mode": "drive",
+            },
         )
 
         assert response.status_code == 500
@@ -86,15 +86,12 @@ class TestErrorHandlingMiddleware:
     @pytest.mark.unit
     def test_custom_http_exception(self, client, monkeypatch):
         """Test custom HTTP exception handling."""
+
         def mock_create_job(*args, **kwargs):
-            raise HTTPException(
-                status_code=503,
-                detail="Service temporarily unavailable"
-            )
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable")
 
         monkeypatch.setattr(
-            "api_server.services.job_manager.JobManager.create_job",
-            mock_create_job
+            "api_server.services.job_manager.JobManager.create_job", mock_create_job
         )
 
         response = client.post(
@@ -104,8 +101,8 @@ class TestErrorHandlingMiddleware:
                 "poi_type": "amenity",
                 "poi_name": "library",
                 "travel_time": 15,
-                "travel_mode": "walk"
-            }
+                "travel_mode": "walk",
+            },
         )
 
         assert response.status_code == 503
@@ -139,7 +136,7 @@ class TestErrorHandlingMiddleware:
         response = client.post(
             "/api/v1/analysis/location",
             data="{'invalid': json}",  # Malformed JSON
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 422

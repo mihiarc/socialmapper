@@ -1,6 +1,5 @@
 """Tests for health check endpoints."""
 
-
 import pytest
 
 
@@ -45,10 +44,7 @@ class TestHealthEndpoints:
     def test_health_check_response_headers(self, client):
         """Test health check response headers."""
         # Make request with Origin header to trigger CORS
-        response = client.get(
-            "/api/v1/health",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/api/v1/health", headers={"Origin": "http://localhost:3000"})
 
         # Check basic response
         assert response.status_code == 200
