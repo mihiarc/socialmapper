@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 
 import FeedbackModal from './FeedbackModal';
-import type { FeedbackTouchpoint, FeedbackRequest } from '@types/api';
+import type { FeedbackTouchpoint, FeedbackRequest } from "@/types/api";
 import { useSubmitFeedbackMutation } from '@store/api/feedbackApi';
 
 interface FeedbackTriggerProps {

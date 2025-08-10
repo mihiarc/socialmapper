@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import type { InterviewRequest as InterviewRequestType } from '@types/api';
+import type { InterviewRequest as InterviewRequestType } from "@/types/api";
 import { useRequestInterviewMutation } from '@store/api/feedbackApi';
 
 const { Title, Text, Paragraph } = Typography;

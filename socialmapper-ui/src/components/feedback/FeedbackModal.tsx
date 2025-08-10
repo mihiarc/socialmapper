@@ -30,7 +30,7 @@ import type {
   FeedbackRequest, 
   FeedbackType, 
   FeedbackTouchpoint 
-} from '@types/api';
+} from "@/types/api";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;

@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateJobStatus } from '@store/slices/analysisSlice';
-import type { JobStatusEnum } from '@types/api';
+import type { JobStatusEnum } from "@/types/api";
 
 interface ProgressEvent {
   job_id: string;

@@ -33,7 +33,7 @@ import {
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
 
-import type { FeatureRequest } from '@types/api';
+import type { FeatureRequest } from "@/types/api";
 import {
   useListFeatureRequestsQuery,
   useCreateFeatureRequestMutation,

@@ -8,7 +8,7 @@ import type {
   UserAnalyticsEvent, 
   UserJourneyStep,
   UserSession 
-} from '@types/api';
+} from "@/types/api";
 
 interface AnalyticsConfig {
   enableTracking?: boolean;

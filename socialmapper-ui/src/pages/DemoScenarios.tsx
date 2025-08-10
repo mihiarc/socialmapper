@@ -31,7 +31,7 @@ import {
 import { useSubmitLocationAnalysisMutation } from '@store/api/analysisApi';
 import { addActiveJob } from '@store/slices/analysisSlice';
 import { showSuccessNotification, showErrorNotification } from '@store/slices/uiSlice';
-import { TravelMode, GeographicLevel, type LocationAnalysisRequest } from '@types/api';
+import { TravelMode, GeographicLevel, type LocationAnalysisRequest } from "@/types/api";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;

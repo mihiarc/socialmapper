@@ -8,7 +8,7 @@ import {
   JobStatusEnum,
   TravelMode,
   type LocationAnalysisRequest,
-} from '@types/api';
+} from "@/types/api";
 
 export interface AnalysisConfiguration {
   // Location information

@@ -1,7 +1,7 @@
 /**
  * Form validation utilities
  */
-import type { LocationAnalysisRequest, CustomPOIAnalysisRequest } from '@types/api';
+import type { LocationAnalysisRequest, CustomPOIAnalysisRequest } from "@/types/api";
 
 export interface ValidationError {
   field: string;
