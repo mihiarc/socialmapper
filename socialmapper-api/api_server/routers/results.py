@@ -1,5 +1,4 @@
-"""Results and export endpoints for the SocialMapper API.
-"""
+"""Results and export endpoints for the SocialMapper API."""
 
 import csv
 import io
@@ -30,21 +29,21 @@ router = APIRouter()
 async def get_analysis_results(
     job_id: str,
     job_manager: JobManager = Depends(get_job_manager),
-    result_storage: ResultStorage = Depends(get_result_storage)
+    result_storage: ResultStorage = Depends(get_result_storage),
 ):
     """Get the complete results of an analysis job.
-    
+
     This endpoint retrieves the full analysis results including POI data,
     demographics, and isochrones for a completed job.
-    
+
     Args:
         job_id: Unique job identifier
         job_manager: Job manager dependency
         result_storage: Result storage dependency
-        
+
     Returns:
         AnalysisResult: Complete analysis results
-        
+
     Raises:
         HTTPException: If job not found or not completed
     """
@@ -59,8 +58,8 @@ async def get_analysis_results(
                 detail={
                     "error_code": "JOB_NOT_FOUND",
                     "message": f"Job {job_id} not found",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Check job status
@@ -69,10 +68,12 @@ async def get_analysis_results(
                 JobStatusEnum.PENDING: "Job is pending execution",
                 JobStatusEnum.RUNNING: f"Job is still running (progress: {job.progress:.0%})",
                 JobStatusEnum.FAILED: f"Job failed: {job.error}",
-                JobStatusEnum.CANCELLED: "Job was cancelled"
+                JobStatusEnum.CANCELLED: "Job was cancelled",
             }
 
-            status_code = 202 if job.status in [JobStatusEnum.PENDING, JobStatusEnum.RUNNING] else 422
+            status_code = (
+                202 if job.status in [JobStatusEnum.PENDING, JobStatusEnum.RUNNING] else 422
+            )
 
             raise HTTPException(
                 status_code=status_code,
@@ -80,8 +81,8 @@ async def get_analysis_results(
                     "error_code": f"JOB_{job.status.upper()}",
                     "message": status_messages.get(job.status, f"Job status: {job.status}"),
                     "progress": job.progress if job.status == JobStatusEnum.RUNNING else None,
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Get full results from storage
@@ -111,7 +112,7 @@ async def get_analysis_results(
             completed_at=job.completed_at,
             export_urls=export_urls,
             error=job.error,
-            error_details=job.error_details
+            error_details=job.error_details,
         )
 
         return result
@@ -125,8 +126,8 @@ async def get_analysis_results(
             detail={
                 "error_code": "INTERNAL_ERROR",
                 "message": "Failed to retrieve analysis results",
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
@@ -138,13 +139,13 @@ async def export_analysis_results(
     include_demographics: bool = True,
     job_manager: JobManager = Depends(get_job_manager),
     result_storage: ResultStorage = Depends(get_result_storage),
-    settings: Settings = Depends(get_settings)
+    settings: Settings = Depends(get_settings),
 ):
     """Export analysis results in the specified format.
-    
+
     This endpoint exports the analysis results in various formats including
     CSV, GeoJSON, Parquet, and GeoParquet.
-    
+
     Args:
         job_id: Unique job identifier
         format: Export format
@@ -153,10 +154,10 @@ async def export_analysis_results(
         job_manager: Job manager dependency
         result_storage: Result storage dependency
         settings: Application settings
-        
+
     Returns:
         FileResponse or StreamingResponse: Exported data
-        
+
     Raises:
         HTTPException: If job not found or export fails
     """
@@ -171,8 +172,8 @@ async def export_analysis_results(
                 detail={
                     "error_code": "JOB_NOT_FOUND",
                     "message": f"Job {job_id} not found",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         if job.status != JobStatusEnum.COMPLETED:
@@ -181,8 +182,8 @@ async def export_analysis_results(
                 detail={
                     "error_code": "JOB_NOT_COMPLETED",
                     "message": f"Job {job_id} is not completed (status: {job.status})",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Get results
@@ -196,8 +197,8 @@ async def export_analysis_results(
                 detail={
                     "error_code": "RESULTS_NOT_FOUND",
                     "message": f"Results not found for job {job_id}",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Export based on format
@@ -215,8 +216,8 @@ async def export_analysis_results(
                 detail={
                     "error_code": "INVALID_FORMAT",
                     "message": f"Unsupported export format: {format}",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
     except HTTPException:
@@ -229,8 +230,8 @@ async def export_analysis_results(
                 "error_code": "EXPORT_ERROR",
                 "message": "Failed to export analysis results",
                 "details": {"error": str(e)},
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
@@ -241,13 +242,13 @@ async def create_export_job(
     background_tasks: BackgroundTasks,
     job_manager: JobManager = Depends(get_job_manager),
     result_storage: ResultStorage = Depends(get_result_storage),
-    settings: Settings = Depends(get_settings)
+    settings: Settings = Depends(get_settings),
 ):
     """Create an asynchronous export job for analysis results.
-    
+
     This endpoint creates a background job to export large result sets
     asynchronously. Use this for large exports that may take time to process.
-    
+
     Args:
         job_id: Unique job identifier
         request: Export request parameters
@@ -255,10 +256,10 @@ async def create_export_job(
         job_manager: Job manager dependency
         result_storage: Result storage dependency
         settings: Application settings
-        
+
     Returns:
         ExportResponse: Export job information
-        
+
     Raises:
         HTTPException: If job not found or export creation fails
     """
@@ -273,8 +274,8 @@ async def create_export_job(
                 detail={
                     "error_code": "JOB_NOT_FOUND",
                     "message": f"Job {job_id} not found",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         if job.status != JobStatusEnum.COMPLETED:
@@ -283,22 +284,18 @@ async def create_export_job(
                 detail={
                     "error_code": "JOB_NOT_COMPLETED",
                     "message": f"Job {job_id} is not completed (status: {job.status})",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Create export job
-        export_id = f"export_{job_id}_{request.format.value}_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
+        export_id = (
+            f"export_{job_id}_{request.format.value}_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
+        )
 
         # Add background task to process export
         background_tasks.add_task(
-            _process_export_async,
-            export_id,
-            job_id,
-            request,
-            job_manager,
-            result_storage,
-            settings
+            _process_export_async, export_id, job_id, request, job_manager, result_storage, settings
         )
 
         # Return export job response
@@ -309,7 +306,7 @@ async def create_export_job(
             status=JobStatusEnum.PENDING,
             download_url=None,
             expires_at=datetime.now(UTC) + timedelta(hours=24),
-            file_size_bytes=None
+            file_size_bytes=None,
         )
 
         return response
@@ -324,8 +321,8 @@ async def create_export_job(
                 "error_code": "EXPORT_CREATION_ERROR",
                 "message": "Failed to create export job",
                 "details": {"error": str(e)},
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
@@ -333,21 +330,21 @@ async def create_export_job(
 async def delete_analysis_results(
     job_id: str,
     job_manager: JobManager = Depends(get_job_manager),
-    result_storage: ResultStorage = Depends(get_result_storage)
+    result_storage: ResultStorage = Depends(get_result_storage),
 ):
     """Delete analysis results and clean up associated data.
-    
+
     This endpoint removes the job and its results from storage. Use this
     to clean up completed jobs and free up storage space.
-    
+
     Args:
         job_id: Unique job identifier
         job_manager: Job manager dependency
         result_storage: Result storage dependency
-        
+
     Returns:
         Dict: Deletion confirmation
-        
+
     Raises:
         HTTPException: If job not found or deletion fails
     """
@@ -362,20 +359,20 @@ async def delete_analysis_results(
                 detail={
                     "error_code": "JOB_NOT_FOUND",
                     "message": f"Job {job_id} not found",
-                    "timestamp": datetime.now(UTC).isoformat()
-                }
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
             )
 
         # Delete from result storage
         result_storage.delete_results(job_id)
 
         # Delete from job manager
-        deleted = job_manager.delete_job(job_id)
+        job_manager.delete_job(job_id)
 
         return {
             "message": f"Results for job {job_id} deleted successfully",
             "job_id": job_id,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     except HTTPException:
@@ -388,27 +385,25 @@ async def delete_analysis_results(
                 "error_code": "DELETION_ERROR",
                 "message": "Failed to delete analysis results",
                 "details": {"error": str(e)},
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
 @router.post("/results/cleanup")
-async def cleanup_expired_results(
-    result_storage: ResultStorage = Depends(get_result_storage)
-):
+async def cleanup_expired_results(result_storage: ResultStorage = Depends(get_result_storage)):
     """Manually trigger cleanup of expired results.
-    
+
     This endpoint allows administrators to manually trigger the cleanup
     of expired analysis results from storage. This is in addition to the
     automatic periodic cleanup.
-    
+
     Args:
         result_storage: Result storage dependency
-        
+
     Returns:
         Dict: Cleanup summary including number of cleaned results
-        
+
     Raises:
         HTTPException: If cleanup fails
     """
@@ -430,14 +425,14 @@ async def cleanup_expired_results(
             "stats_before": {
                 "total_jobs": stats_before.get("total_jobs", 0),
                 "expired_jobs": stats_before.get("expired_jobs", 0),
-                "total_size_mb": stats_before.get("total_size_mb", 0)
+                "total_size_mb": stats_before.get("total_size_mb", 0),
             },
             "stats_after": {
                 "total_jobs": stats_after.get("total_jobs", 0),
                 "expired_jobs": stats_after.get("expired_jobs", 0),
-                "total_size_mb": stats_after.get("total_size_mb", 0)
+                "total_size_mb": stats_after.get("total_size_mb", 0),
             },
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     except Exception as e:
@@ -448,26 +443,24 @@ async def cleanup_expired_results(
                 "error_code": "CLEANUP_ERROR",
                 "message": "Failed to run cleanup",
                 "details": {"error": str(e)},
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
 @router.get("/results/storage/stats")
-async def get_storage_statistics(
-    result_storage: ResultStorage = Depends(get_result_storage)
-):
+async def get_storage_statistics(result_storage: ResultStorage = Depends(get_result_storage)):
     """Get storage statistics for analysis results.
-    
+
     This endpoint provides information about the current storage usage
     including total jobs, expired jobs, and storage size.
-    
+
     Args:
         result_storage: Result storage dependency
-        
+
     Returns:
         Dict: Storage statistics
-        
+
     Raises:
         HTTPException: If unable to get statistics
     """
@@ -481,7 +474,7 @@ async def get_storage_statistics(
             "total_size_bytes": stats.get("total_size_bytes", 0),
             "total_size_mb": stats.get("total_size_mb", 0),
             "storage_path": stats.get("storage_path", ""),
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     except Exception as e:
@@ -492,14 +485,17 @@ async def get_storage_statistics(
                 "error_code": "STATS_ERROR",
                 "message": "Failed to get storage statistics",
                 "details": {"error": str(e)},
-                "timestamp": datetime.now(UTC).isoformat()
-            }
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
         )
 
 
 # Helper functions for export formats
 
-def _export_csv(job_id: str, results: dict[str, Any], include_demographics: bool) -> StreamingResponse:
+
+def _export_csv(
+    job_id: str, results: dict[str, Any], include_demographics: bool
+) -> StreamingResponse:
     """Export results as CSV."""
     output = io.StringIO()
 
@@ -520,7 +516,7 @@ def _export_csv(job_id: str, results: dict[str, Any], include_demographics: bool
         job_id,
         results.get("poi_count", 0),
         results.get("analysis_area_km2", 0),
-        results.get("population_covered", 0)
+        results.get("population_covered", 0),
     ]
     if include_demographics:
         row.extend(demographics.values())
@@ -531,18 +527,15 @@ def _export_csv(job_id: str, results: dict[str, Any], include_demographics: bool
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode()),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename=socialmapper_results_{job_id}.csv"
-        }
+        headers={"Content-Disposition": f"attachment; filename=socialmapper_results_{job_id}.csv"},
     )
 
 
-def _export_geojson(job_id: str, results: dict[str, Any], include_isochrones: bool, include_demographics: bool) -> Response:
+def _export_geojson(
+    job_id: str, results: dict[str, Any], include_isochrones: bool, include_demographics: bool
+) -> Response:
     """Export results as GeoJSON."""
-    geojson_data = {
-        "type": "FeatureCollection",
-        "features": []
-    }
+    geojson_data = {"type": "FeatureCollection", "features": []}
 
     # Add isochrones if requested
     if include_isochrones and "isochrones" in results:
@@ -555,7 +548,7 @@ def _export_geojson(job_id: str, results: dict[str, Any], include_isochrones: bo
         "job_id": job_id,
         "poi_count": results.get("poi_count", 0),
         "analysis_area_km2": results.get("analysis_area_km2", 0),
-        "population_covered": results.get("population_covered", 0)
+        "population_covered": results.get("population_covered", 0),
     }
 
     if include_demographics and "demographics" in results:
@@ -566,11 +559,9 @@ def _export_geojson(job_id: str, results: dict[str, Any], include_isochrones: bo
         geojson_data["features"][0]["properties"].update(properties)
     else:
         # Create a point feature with properties
-        geojson_data["features"].append({
-            "type": "Feature",
-            "properties": properties,
-            "geometry": None
-        })
+        geojson_data["features"].append(
+            {"type": "Feature", "properties": properties, "geometry": None}
+        )
 
     # Return as JSON response
     return Response(
@@ -578,7 +569,7 @@ def _export_geojson(job_id: str, results: dict[str, Any], include_isochrones: bo
         media_type="application/geo+json",
         headers={
             "Content-Disposition": f"attachment; filename=socialmapper_results_{job_id}.geojson"
-        }
+        },
     )
 
 
@@ -594,7 +585,7 @@ def _export_parquet(job_id: str, results: dict[str, Any], include_demographics: 
             "job_id": [job_id],
             "poi_count": [results.get("poi_count", 0)],
             "analysis_area_km2": [results.get("analysis_area_km2", 0)],
-            "population_covered": [results.get("population_covered", 0)]
+            "population_covered": [results.get("population_covered", 0)],
         }
 
         # Add demographics if requested
@@ -608,7 +599,7 @@ def _export_parquet(job_id: str, results: dict[str, Any], include_demographics: 
 
         # Convert to Parquet bytes
         output = io.BytesIO()
-        df.to_parquet(output, engine='pyarrow', compression='snappy', index=False)
+        df.to_parquet(output, engine="pyarrow", compression="snappy", index=False)
         output.seek(0)
 
         return Response(
@@ -616,18 +607,20 @@ def _export_parquet(job_id: str, results: dict[str, Any], include_demographics: 
             media_type="application/octet-stream",
             headers={
                 "Content-Disposition": f"attachment; filename=socialmapper_results_{job_id}.parquet"
-            }
+            },
         )
     except ImportError as e:
         logger.warning(f"Parquet export requires pandas and pyarrow: {e}")
         return Response(
             content=b"Parquet export requires pandas and pyarrow to be installed",
             media_type="text/plain",
-            status_code=501
+            status_code=501,
         )
 
 
-def _export_geoparquet(job_id: str, results: dict[str, Any], include_isochrones: bool, include_demographics: bool) -> Response:
+def _export_geoparquet(
+    job_id: str, results: dict[str, Any], include_isochrones: bool, include_demographics: bool
+) -> Response:
     """Export results as GeoParquet."""
     try:
         import geopandas as gpd
@@ -671,7 +664,7 @@ def _export_geoparquet(job_id: str, results: dict[str, Any], include_isochrones:
 
         # Convert to GeoParquet bytes
         output = io.BytesIO()
-        gdf.to_parquet(output, compression='snappy', index=False)
+        gdf.to_parquet(output, compression="snappy", index=False)
         output.seek(0)
 
         return Response(
@@ -679,14 +672,14 @@ def _export_geoparquet(job_id: str, results: dict[str, Any], include_isochrones:
             media_type="application/octet-stream",
             headers={
                 "Content-Disposition": f"attachment; filename=socialmapper_results_{job_id}.geoparquet"
-            }
+            },
         )
     except ImportError as e:
         logger.warning(f"GeoParquet export requires geopandas: {e}")
         return Response(
             content=b"GeoParquet export requires geopandas to be installed",
             media_type="text/plain",
-            status_code=501
+            status_code=501,
         )
 
 
@@ -696,7 +689,7 @@ async def _process_export_async(
     request: ExportRequest,
     job_manager: JobManager,
     result_storage: ResultStorage,
-    settings: Settings
+    settings: Settings,
 ):
     """Process export asynchronously in the background."""
     try:

@@ -1,5 +1,4 @@
-"""API routers for different endpoint groups.
-"""
+"""API routers for different endpoint groups."""
 
 from . import analysis, health, metadata, results
 

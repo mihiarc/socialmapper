@@ -1,5 +1,4 @@
-"""Health check and status endpoints for the SocialMapper API.
-"""
+"""Health check and status endpoints for the SocialMapper API."""
 
 import platform
 import sys
@@ -16,6 +15,7 @@ router = APIRouter()
 
 class HealthResponse(BaseModel):
     """Health check response model."""
+
     status: str
     timestamp: datetime
     version: str
@@ -23,6 +23,7 @@ class HealthResponse(BaseModel):
 
 class StatusResponse(BaseModel):
     """Detailed status response model."""
+
     status: str
     timestamp: datetime
     version: str
@@ -33,24 +34,20 @@ class StatusResponse(BaseModel):
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Basic health check endpoint.
-    
+
     Returns:
         HealthResponse: Basic health status information
     """
-    return HealthResponse(
-        status="healthy",
-        timestamp=datetime.now(UTC),
-        version="0.1.0"
-    )
+    return HealthResponse(status="healthy", timestamp=datetime.now(UTC), version="0.1.0")
 
 
 @router.get("/status", response_model=StatusResponse)
 async def status_check(settings: Settings = Depends(get_settings)):
     """Detailed status endpoint with system information.
-    
+
     Args:
         settings: Application settings
-        
+
     Returns:
         StatusResponse: Detailed status information
     """
@@ -75,5 +72,5 @@ async def status_check(settings: Settings = Depends(get_settings)):
         timestamp=datetime.now(UTC),
         version="0.1.0",
         system_info=system_info,
-        configuration=config_info
+        configuration=config_info,
     )
