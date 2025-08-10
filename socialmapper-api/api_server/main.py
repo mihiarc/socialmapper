@@ -1,5 +1,4 @@
-"""FastAPI application entry point for SocialMapper API server.
-"""
+"""FastAPI application entry point for SocialMapper API server."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -27,8 +26,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize result storage
     init_result_storage(
-        storage_path=settings.result_storage_path,
-        ttl_hours=settings.result_ttl_hours
+        storage_path=settings.result_storage_path, ttl_hours=settings.result_ttl_hours
     )
     logger.info("Result storage initialized")
 
@@ -60,7 +58,7 @@ def create_app() -> FastAPI:
         version=settings.api_version,
         docs_url="/docs",
         redoc_url="/redoc",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     # Configure middleware
@@ -84,11 +82,8 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     settings = get_settings()
     uvicorn.run(
-        "api_server.main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=True,
-        log_level="info"
+        "api_server.main:app", host=settings.host, port=settings.port, reload=True, log_level="info"
     )
