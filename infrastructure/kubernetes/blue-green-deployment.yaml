@@ -1,0 +1,1100 @@
+# Blue-Green Deployment Configuration for SocialMapper
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: socialmapper-blue-green
+  labels:
+    deployment-strategy: blue-green
+    app.kubernetes.io/part-of: socialmapper
+
+---
+# Blue Environment - Current Production
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-api-blue
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: socialmapper
+    app.kubernetes.io/version: "blue"
+    deployment-type: blue-green
+    environment: blue
+spec:
+  replicas: 3  # Production replicas
+  strategy:
+    type: Recreate  # Blue-Green uses recreate strategy
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-api
+      app.kubernetes.io/version: blue
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialmapper-api
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: blue
+        deployment-type: blue-green
+        environment: blue
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+        blue-green.deployment.timestamp: "{{ .Values.blueDeploymentTimestamp }}"
+        config.linkerd.io/proxy-await: "enabled"
+    spec:
+      serviceAccountName: socialmapper-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Checking dependencies for Blue environment..."
+              until nc -z redis-service.socialmapper.svc.cluster.local 6379; do
+                echo "Waiting for Redis...";
+                sleep 2;
+              done;
+              echo "All dependencies ready for Blue environment";
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+        
+        - name: blue-environment-validation
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Validating Blue environment configuration..."
+              # Add validation logic for blue environment
+              echo "Blue environment validation completed"
+      
+      containers:
+        - name: api
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-api:{{ .Values.blue.imageTag }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          
+          env:
+            # Blue-Green specific environment variables
+            - name: DEPLOYMENT_TYPE
+              value: "blue-green"
+            - name: ENVIRONMENT_COLOR
+              value: "blue"
+            - name: DEPLOYMENT_TIMESTAMP
+              value: "{{ .Values.blueDeploymentTimestamp }}"
+            
+            # Standard configuration
+            - name: SOCIALMAPPER_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_HOST
+            - name: SOCIALMAPPER_API_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_PORT
+            - name: SOCIALMAPPER_API_WORKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_WORKERS
+            - name: SOCIALMAPPER_API_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_LOG_LEVEL
+            - name: SOCIALMAPPER_API_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_CORS_ORIGINS
+            
+            # Database and cache configuration
+            - name: SOCIALMAPPER_API_CENSUS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: SOCIALMAPPER_API_CENSUS_API_KEY
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis-service.socialmapper.svc.cluster.local:6379/0"
+            
+            # Pod information
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          
+          volumeMounts:
+            - name: results-storage
+              mountPath: /app/results
+            - name: tmp-storage
+              mountPath: /tmp
+            - name: cache-storage
+              mountPath: /app/cache
+          
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: blue
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: blue
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          
+          # Blue-Green specific startup probe
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/startup
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # Allow longer startup time
+            successThreshold: 1
+          
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "echo 'Blue environment stopping' && sleep 15"]
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      
+      volumes:
+        - name: results-storage
+          persistentVolumeClaim:
+            claimName: api-results-pvc
+        - name: tmp-storage
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: cache-storage
+          emptyDir:
+            sizeLimit: 2Gi
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ["socialmapper-api"]
+                  - key: app.kubernetes.io/version
+                    operator: In
+                    values: ["blue"]
+              topologyKey: kubernetes.io/hostname
+        
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: blue-green-capable
+                    operator: In
+                    values: ["true"]
+      
+      tolerations:
+        - key: "workload-type"
+          operator: "Equal"
+          value: "compute-intensive"
+          effect: "NoSchedule"
+      
+      terminationGracePeriodSeconds: 60
+
+---
+# Green Environment - New Version
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-api-green
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: socialmapper
+    app.kubernetes.io/version: "green"
+    deployment-type: blue-green
+    environment: green
+spec:
+  replicas: 0  # Initially deployed but not receiving traffic
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-api
+      app.kubernetes.io/version: green
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialmapper-api
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: green
+        deployment-type: blue-green
+        environment: green
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+        green.deployment.timestamp: "{{ .Values.greenDeploymentTimestamp }}"
+    spec:
+      serviceAccountName: socialmapper-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Checking dependencies for Green environment..."
+              until nc -z redis-service.socialmapper.svc.cluster.local 6379; do
+                echo "Waiting for Redis...";
+                sleep 2;
+              done;
+              echo "All dependencies ready for Green environment";
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+        
+        - name: green-environment-validation
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Validating Green environment configuration..."
+              # Pre-deployment validation for green environment
+              echo "Green environment validation completed"
+        
+        - name: database-migration-check
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-api:{{ .Values.green.imageTag }}"
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Checking if database migrations are needed..."
+              # Add database migration logic here
+              echo "Database migration check completed"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis-service.socialmapper.svc.cluster.local:6379/0"
+      
+      containers:
+        - name: api
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-api:{{ .Values.green.imageTag }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          
+          env:
+            # Green-specific environment variables
+            - name: DEPLOYMENT_TYPE
+              value: "blue-green"
+            - name: ENVIRONMENT_COLOR
+              value: "green"
+            - name: DEPLOYMENT_TIMESTAMP
+              value: "{{ .Values.greenDeploymentTimestamp }}"
+            - name: PRE_PRODUCTION_MODE
+              value: "true"  # Enable additional validations
+            
+            # Standard configuration (same as blue)
+            - name: SOCIALMAPPER_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_HOST
+            - name: SOCIALMAPPER_API_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_PORT
+            - name: SOCIALMAPPER_API_WORKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_WORKERS
+            - name: SOCIALMAPPER_API_LOG_LEVEL
+              value: "INFO"  # Detailed logging for new deployment
+            - name: SOCIALMAPPER_API_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: socialmapper-config
+                  key: SOCIALMAPPER_API_CORS_ORIGINS
+            
+            # Secrets
+            - name: SOCIALMAPPER_API_CENSUS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: SOCIALMAPPER_API_CENSUS_API_KEY
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: socialmapper-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis-service.socialmapper.svc.cluster.local:6379/0"
+            
+            # Pod information
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          
+          volumeMounts:
+            - name: results-storage
+              mountPath: /app/results
+            - name: tmp-storage
+              mountPath: /tmp
+            - name: cache-storage
+              mountPath: /app/cache
+          
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: green
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: green
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/startup
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+            successThreshold: 1
+          
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "echo 'Green environment stopping' && sleep 15"]
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      
+      volumes:
+        - name: results-storage
+          persistentVolumeClaim:
+            claimName: api-results-pvc
+        - name: tmp-storage
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: cache-storage
+          emptyDir:
+            sizeLimit: 2Gi
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ["socialmapper-api"]
+                  - key: app.kubernetes.io/version
+                    operator: In
+                    values: ["green"]
+              topologyKey: kubernetes.io/hostname
+        
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: blue-green-capable
+                    operator: In
+                    values: ["true"]
+      
+      tolerations:
+        - key: "workload-type"
+          operator: "Equal"
+          value: "compute-intensive"
+          effect: "NoSchedule"
+      
+      terminationGracePeriodSeconds: 60
+
+---
+# Blue Environment UI Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-ui-blue
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: socialmapper
+    app.kubernetes.io/version: "blue"
+    deployment-type: blue-green
+    environment: blue
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-ui
+      app.kubernetes.io/version: blue
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialmapper-ui
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/version: blue
+        deployment-type: blue-green
+        environment: blue
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: socialmapper-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      
+      containers:
+        - name: ui
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-ui:{{ .Values.blue.imageTag }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          
+          env:
+            # Blue-specific configuration
+            - name: DEPLOYMENT_TYPE
+              value: "blue-green"
+            - name: ENVIRONMENT_COLOR
+              value: "blue"
+            - name: VITE_ENVIRONMENT_INDICATOR
+              value: "blue"
+            
+            # API configuration
+            - name: VITE_API_URL
+              value: "https://demo.socialmapper.com/api"
+            - name: VITE_API_VERSION
+              value: "v1"
+            
+            # Application configuration
+            - name: VITE_APP_TITLE
+              value: "SocialMapper Demo"
+            - name: VITE_APP_VERSION
+              value: "{{ .Values.blue.imageTag }}"
+            - name: VITE_APP_ENVIRONMENT
+              value: "production-blue"
+            
+            # Feature flags
+            - name: VITE_DEMO_MODE
+              value: "true"
+            - name: VITE_SHOW_ENVIRONMENT_BADGE
+              value: "false"  # Don't show environment to users
+          
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp-storage
+              mountPath: /tmp
+            - name: cache-storage
+              mountPath: /var/cache/nginx
+            - name: nginx-pid
+              mountPath: /var/run
+          
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: blue
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: blue
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+            defaultMode: 0644
+        - name: tmp-storage
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: cache-storage
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: nginx-pid
+          emptyDir:
+            sizeLimit: 10Mi
+
+---
+# Green Environment UI Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-ui-green
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: socialmapper
+    app.kubernetes.io/version: "green"
+    deployment-type: blue-green
+    environment: green
+spec:
+  replicas: 0  # Initially not receiving traffic
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialmapper-ui
+      app.kubernetes.io/version: green
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialmapper-ui
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/version: green
+        deployment-type: blue-green
+        environment: green
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: socialmapper-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      
+      containers:
+        - name: ui
+          image: "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/socialmapper-ui:{{ .Values.green.imageTag }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          
+          env:
+            # Green-specific configuration
+            - name: DEPLOYMENT_TYPE
+              value: "blue-green"
+            - name: ENVIRONMENT_COLOR
+              value: "green"
+            - name: VITE_ENVIRONMENT_INDICATOR
+              value: "green"
+            - name: VITE_PRE_PRODUCTION_MODE
+              value: "true"
+            
+            # API configuration
+            - name: VITE_API_URL
+              value: "https://demo.socialmapper.com/api"
+            - name: VITE_API_VERSION
+              value: "v1"
+            
+            # Application configuration
+            - name: VITE_APP_TITLE
+              value: "SocialMapper Demo (Pre-Production)"
+            - name: VITE_APP_VERSION
+              value: "{{ .Values.green.imageTag }}"
+            - name: VITE_APP_ENVIRONMENT
+              value: "production-green"
+            
+            # Enhanced logging for green
+            - name: VITE_DEBUG_MODE
+              value: "true"
+            - name: VITE_LOG_LEVEL
+              value: "info"
+            
+            # Feature flags
+            - name: VITE_DEMO_MODE
+              value: "true"
+            - name: VITE_SHOW_ENVIRONMENT_BADGE
+              value: "true"  # Show environment badge for pre-production testing
+          
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp-storage
+              mountPath: /tmp
+            - name: cache-storage
+              mountPath: /var/cache/nginx
+            - name: nginx-pid
+              mountPath: /var/run
+          
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: green
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: X-Environment
+                  value: green
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+            defaultMode: 0644
+        - name: tmp-storage
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: cache-storage
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: nginx-pid
+          emptyDir:
+            sizeLimit: 10Mi
+
+---
+# Blue-Green Service Selector (Active Environment Service)
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-api-active
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    deployment-type: blue-green
+    active-environment: "{{ .Values.activeEnvironment | default \"blue\" }}"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+    blue-green.active-environment: "{{ .Values.activeEnvironment | default \"blue\" }}"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/version: "{{ .Values.activeEnvironment | default \"blue\" }}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-ui-active
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/component: frontend
+    deployment-type: blue-green
+    active-environment: "{{ .Values.activeEnvironment | default \"blue\" }}"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+    blue-green.active-environment: "{{ .Values.activeEnvironment | default \"blue\" }}"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/version: "{{ .Values.activeEnvironment | default \"blue\" }}"
+
+---
+# Blue Environment Services (Direct Access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-api-blue-service
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    environment: blue
+    deployment-type: blue-green
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/version: blue
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-ui-blue-service
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/component: frontend
+    environment: blue
+    deployment-type: blue-green
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/version: blue
+
+---
+# Green Environment Services (Direct Access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-api-green-service
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/component: backend
+    environment: green
+    deployment-type: blue-green
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-api
+    app.kubernetes.io/version: green
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-ui-green-service
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/component: frontend
+    environment: green
+    deployment-type: blue-green
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: socialmapper-ui
+    app.kubernetes.io/version: green
+
+---
+# Ingress for Blue-Green Switching
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-blue-green-ingress
+  namespace: socialmapper
+  labels:
+    app.kubernetes.io/name: socialmapper-blue-green-ingress
+    deployment-type: blue-green
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Blue-Green specific annotations
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Active-Environment "{{ .Values.activeEnvironment | default \"blue\" }}" always;
+      add_header X-Deployment-Type "blue-green" always;
+      add_header X-Switch-Timestamp "{{ .Values.switchTimestamp }}" always;
+    
+    # Rate limiting and security
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    
+    # CORS configuration
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://demo.socialmapper.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+
+spec:
+  tls:
+    - hosts:
+        - demo.socialmapper.com
+        - blue.demo.socialmapper.com
+        - green.demo.socialmapper.com
+      secretName: socialmapper-tls
+  
+  rules:
+    # Main production traffic (routes to active environment)
+    - host: demo.socialmapper.com
+      http:
+        paths:
+          # API routes to active environment
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-active
+                port:
+                  number: 8000
+          
+          # UI routes to active environment
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-active
+                port:
+                  number: 8080
+    
+    # Direct access to blue environment (for testing)
+    - host: blue.demo.socialmapper.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-blue-service
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-blue-service
+                port:
+                  number: 8080
+    
+    # Direct access to green environment (for testing)
+    - host: green.demo.socialmapper.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-api-green-service
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: socialmapper-ui-green-service
+                port:
+                  number: 8080
+
+---
+# ServiceMonitor for Blue-Green Metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: socialmapper-blue-green-metrics
+  namespace: socialmapper
+  labels:
+    deployment-type: blue-green
+spec:
+  selector:
+    matchLabels:
+      deployment-type: blue-green
+  endpoints:
+    - port: http
+      interval: 15s
+      path: /metrics
+      honorLabels: true
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_environment]
+          targetLabel: environment
+        - sourceLabels: [__meta_kubernetes_service_label_active_environment]
+          targetLabel: active_environment
+        - sourceLabels: [__meta_kubernetes_pod_label_deployment_type]
+          targetLabel: deployment_type

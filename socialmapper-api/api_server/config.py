@@ -70,6 +70,37 @@ class Settings(BaseSettings):
     # Development/Debug settings
     debug_mode: bool = Field(default=False, description="Enable debug mode")
     log_level: str = Field(default="INFO", description="Logging level")
+    
+    # Redis cache configuration
+    redis_host: str = Field(default="localhost", description="Redis server host")
+    redis_port: int = Field(default=6379, description="Redis server port")
+    redis_db: int = Field(default=0, description="Redis database number")
+    redis_password: str = Field(default="", description="Redis password")
+    cache_enabled: bool = Field(default=True, description="Enable Redis caching")
+    
+    # Database configuration
+    database_url: str = Field(default="", description="PostgreSQL connection URL")
+    db_host: str = Field(default="localhost", description="Database host")
+    db_port: int = Field(default=5432, description="Database port")
+    db_name: str = Field(default="socialmapper", description="Database name")
+    db_user: str = Field(default="postgres", description="Database user")
+    db_password: str = Field(default="", description="Database password")
+    db_pool_min_size: int = Field(default=10, description="Min database connections")
+    db_pool_max_size: int = Field(default=50, description="Max database connections")
+    
+    # WebSocket configuration
+    websocket_enabled: bool = Field(default=True, description="Enable WebSocket support")
+    websocket_heartbeat_interval: int = Field(default=30, description="WebSocket heartbeat interval in seconds")
+    
+    # Performance optimization
+    enable_response_compression: bool = Field(default=True, description="Enable response compression")
+    pagination_default_limit: int = Field(default=100, description="Default pagination limit")
+    pagination_max_limit: int = Field(default=1000, description="Maximum pagination limit")
+    
+    # Demo platform configuration
+    demo_mode_enabled: bool = Field(default=False, description="Enable demo mode restrictions")
+    demo_max_concurrent_jobs: int = Field(default=3, description="Max concurrent jobs per demo session")
+    demo_session_timeout_minutes: int = Field(default=60, description="Demo session timeout")
 
     @field_validator("api_keys", mode="before")
     @classmethod

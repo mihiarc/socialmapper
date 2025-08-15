@@ -1,8 +1,8 @@
 /**
  * ProgressTracker Component - Real-time analysis progress tracking
- * Uses Server-Sent Events for live progress updates during analysis
+ * Uses WebSocket for live bidirectional progress updates during analysis
  */
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { 
   Progress, 
   Card, 
@@ -27,9 +27,10 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateJobStatus, completeJob, removeActiveJob } from '@/store/slices/analysisSlice';
+import { removeActiveJob } from '@/store/slices/analysisSlice';
 import { useDeleteAnalysisJobMutation } from '@/store/api/analysisApi';
 import { JobStatusEnum } from '@/types/api';
+import { websocketService, type WebSocketMessage } from '@/services/websocket';
 
 const { Title, Text } = Typography;
 const { Step } = Steps;
@@ -91,124 +92,104 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   showEstimatedTime = true
 }) => {
   const dispatch = useAppDispatch();
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'closed'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'disconnected'>('connecting');
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [estimatedCompletion, setEstimatedCompletion] = useState<string>('');
   const [currentStage, setCurrentStage] = useState<string>('initializing');
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   const { activeJobs } = useAppSelector(state => state.analysis);
   const currentJob = activeJobs.find(job => job.id === jobId);
 
   const [deleteJob] = useDeleteAnalysisJobMutation();
 
-  // Initialize Server-Sent Events connection
+  // Initialize WebSocket connection
   useEffect(() => {
     if (!jobId) return;
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
-    const eventSource = new EventSource(`${API_BASE_URL}/analysis/${jobId}/progress`);
-    eventSourceRef.current = eventSource;
+    let unsubscribe: (() => void) | undefined;
+    let mounted = true;
 
-    eventSource.onopen = () => {
-      setConnectionStatus('connected');
-      console.log('SSE connection opened for job:', jobId);
-    };
-
-    eventSource.onmessage = (event) => {
+    const connectWebSocket = async () => {
       try {
-        const data = JSON.parse(event.data);
-        handleProgressUpdate(data);
+        setConnectionStatus('connecting');
+        await websocketService.connect(jobId);
+        
+        if (!mounted) return;
+        
+        setConnectionStatus('connected');
+        setReconnectAttempt(0);
+        console.log('WebSocket connected for job:', jobId);
+
+        // Subscribe to messages
+        unsubscribe = websocketService.subscribe(jobId, (message: WebSocketMessage) => {
+          if (!mounted) return;
+          
+          handleWebSocketMessage(message);
+        });
       } catch (error) {
-        console.error('Failed to parse progress update:', error);
+        console.error('Failed to connect WebSocket:', error);
+        if (mounted) {
+          setConnectionStatus('error');
+          // Retry with exponential backoff
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000);
+          setTimeout(() => {
+            if (mounted) {
+              setReconnectAttempt(prev => prev + 1);
+              connectWebSocket();
+            }
+          }, delay);
+        }
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      setConnectionStatus('error');
-      
-      // Retry connection after 5 seconds
-      setTimeout(() => {
-        if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
-          setConnectionStatus('connecting');
-          // Will be recreated by useEffect re-run
-        }
-      }, 5000);
-    };
+    connectWebSocket();
 
-    // Custom event handlers for specific events
-    eventSource.addEventListener('progress', (event) => {
-      const data = JSON.parse(event.data);
-      handleProgressUpdate(data);
-    });
-
-    eventSource.addEventListener('stage_change', (event) => {
-      const data = JSON.parse(event.data);
-      setCurrentStage(data.stage);
-    });
-
-    eventSource.addEventListener('completed', (event) => {
-      const data = JSON.parse(event.data);
-      handleJobCompletion(data);
-    });
-
-    eventSource.addEventListener('failed', (event) => {
-      const data = JSON.parse(event.data);
-      handleJobFailure(data);
-    });
+    // Monitor connection status
+    const statusInterval = setInterval(() => {
+      if (mounted) {
+        const state = websocketService.getConnectionState(jobId);
+        setConnectionStatus(state === 'closed' ? 'disconnected' : state);
+      }
+    }, 1000);
 
     return () => {
-      eventSource.close();
-      setConnectionStatus('closed');
+      mounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      websocketService.disconnect(jobId);
+      clearInterval(statusInterval);
     };
   }, [jobId]);
 
-  // Handle progress updates from SSE
-  const handleProgressUpdate = useCallback((data: any) => {
-    const { job_id, status, progress, message, stage, estimated_completion } = data;
-    
+  // Handle WebSocket messages
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     setLastUpdate(new Date().toLocaleTimeString());
     
-    if (stage) {
-      setCurrentStage(stage);
+    switch (message.type) {
+      case 'progress':
+      case 'stage_change':
+        if (message.data.stage) {
+          setCurrentStage(message.data.stage);
+        }
+        if (message.data.estimated_completion) {
+          setEstimatedCompletion(message.data.estimated_completion);
+        }
+        break;
+        
+      case 'completed':
+        setConnectionStatus('disconnected');
+        onComplete?.(message.job_id);
+        break;
+        
+      case 'failed':
+        setErrorDetails(message.data.error_details || message.data.error || 'Unknown error occurred');
+        setConnectionStatus('disconnected');
+        break;
     }
-    
-    if (estimated_completion) {
-      setEstimatedCompletion(estimated_completion);
-    }
-
-    // Update Redux state
-    dispatch(updateJobStatus({
-      id: job_id,
-      status: status || JobStatusEnum.RUNNING,
-      progress: progress || 0,
-      message: message || ''
-    }));
-  }, [dispatch]);
-
-  // Handle job completion
-  const handleJobCompletion = useCallback((data: any) => {
-    dispatch(completeJob(data.job_id));
-    setConnectionStatus('closed');
-    onComplete?.(data.job_id);
-  }, [dispatch, onComplete]);
-
-  // Handle job failure
-  const handleJobFailure = useCallback((data: any) => {
-    const { job_id, error, error_details } = data;
-    
-    dispatch(updateJobStatus({
-      id: job_id,
-      status: JobStatusEnum.FAILED,
-      progress: 0,
-      message: error || 'Analysis failed'
-    }));
-    
-    setErrorDetails(error_details || error || 'Unknown error occurred');
-    setConnectionStatus('closed');
-  }, [dispatch]);
+  }, [onComplete]);
 
   // Cancel job
   const handleCancelJob = useCallback(async () => {
@@ -221,7 +202,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         try {
           await deleteJob(jobId);
           dispatch(removeActiveJob(jobId));
-          eventSourceRef.current?.close();
+          websocketService.disconnect(jobId);
           onCancel?.(jobId);
         } catch (error) {
           console.error('Failed to cancel job:', error);
@@ -231,10 +212,17 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   }, [jobId, deleteJob, dispatch, onCancel]);
 
   // Retry connection
-  const handleRetryConnection = useCallback(() => {
-    setConnectionStatus('connecting');
-    // The useEffect will recreate the connection
-  }, []);
+  const handleRetryConnection = useCallback(async () => {
+    try {
+      setConnectionStatus('connecting');
+      setReconnectAttempt(0);
+      await websocketService.connect(jobId);
+      setConnectionStatus('connected');
+    } catch (error) {
+      console.error('Failed to reconnect:', error);
+      setConnectionStatus('error');
+    }
+  }, [jobId]);
 
   // Get current progress stage
   const getCurrentStageIndex = () => {
@@ -293,7 +281,13 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         extra={
           <Space>
             {connectionStatus === 'connected' && (
-              <Tag color="green">Live Updates</Tag>
+              <Tag color="green">Live Updates (WebSocket)</Tag>
+            )}
+            {connectionStatus === 'connecting' && (
+              <Tag color="blue">Connecting...</Tag>
+            )}
+            {reconnectAttempt > 0 && connectionStatus === 'connecting' && (
+              <Tag color="orange">Reconnecting (Attempt {reconnectAttempt})</Tag>
             )}
             {connectionStatus === 'error' && (
               <Button size="small" icon={<ReloadOutlined />} onClick={handleRetryConnection}>
@@ -401,10 +395,10 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         )}
 
         {/* Connection Status */}
-        {connectionStatus === 'error' && (
+        {(connectionStatus === 'error' || connectionStatus === 'disconnected') && (
           <Alert
-            message="Connection Error"
-            description="Lost connection to progress updates. Click Retry to reconnect."
+            message="Connection Lost"
+            description={`WebSocket connection to progress updates was lost. ${reconnectAttempt > 0 ? `Reconnection attempt ${reconnectAttempt}...` : 'Click Retry to reconnect.'}`}
             type="warning"
             showIcon
             action={
@@ -415,12 +409,17 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
           />
         )}
 
-        {/* Last Update Time */}
-        {lastUpdate && connectionStatus === 'connected' && (
-          <Text type="secondary" style={{ fontSize: '11px', float: 'right' }}>
-            Last update: {lastUpdate}
+        {/* Last Update Time and Connection Info */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+          {lastUpdate && connectionStatus === 'connected' && (
+            <Text type="secondary" style={{ fontSize: '11px' }}>
+              Last update: {lastUpdate}
+            </Text>
+          )}
+          <Text type="secondary" style={{ fontSize: '10px' }}>
+            Connection: {connectionStatus}
           </Text>
-        )}
+        </div>
       </Card>
     </div>
   );

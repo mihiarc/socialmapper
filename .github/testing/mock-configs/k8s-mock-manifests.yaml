@@ -1,0 +1,438 @@
+# Mock Kubernetes Manifests for Testing
+# These manifests create a simplified version of the production environment
+# for testing deployment processes without requiring real cloud resources
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: socialmapper-test
+  labels:
+    environment: test
+    app: socialmapper
+    
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: socialmapper-mock-config
+  namespace: socialmapper-test
+data:
+  DATABASE_URL: "postgresql://testuser:testpass@mock-postgres:5432/socialmapper_test"
+  REDIS_URL: "redis://mock-redis:6379/0"
+  LOG_LEVEL: "DEBUG"
+  ENVIRONMENT: "test"
+  API_BASE_URL: "http://mock-api:8000"
+  FRONTEND_URL: "http://mock-frontend:3000"
+  
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: socialmapper-mock-secrets
+  namespace: socialmapper-test
+type: Opaque
+data:
+  # Base64 encoded mock values
+  CENSUS_API_KEY: bW9ja19jZW5zdXNfYXBpX2tleQ==  # mock_census_api_key
+  MAPBOX_TOKEN: cGsudGVzdC5tb2NrLnRva2Vu  # pk.test.mock.token
+  DATABASE_PASSWORD: dGVzdHBhc3M=  # testpass
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-mock-api
+  namespace: socialmapper-test
+  labels:
+    app: socialmapper-api
+    component: backend
+    environment: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: socialmapper-api
+  template:
+    metadata:
+      labels:
+        app: socialmapper-api
+        component: backend
+    spec:
+      containers:
+      - name: api
+        image: socialmapper-api:test
+        imagePullPolicy: Never  # Use local images for testing
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: socialmapper-mock-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: socialmapper-mock-config
+              key: REDIS_URL
+        - name: CENSUS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: socialmapper-mock-secrets
+              key: CENSUS_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+            
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialmapper-mock-frontend
+  namespace: socialmapper-test
+  labels:
+    app: socialmapper-frontend
+    component: frontend
+    environment: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: socialmapper-frontend
+  template:
+    metadata:
+      labels:
+        app: socialmapper-frontend
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: socialmapper-frontend:test
+        imagePullPolicy: Never  # Use local images for testing
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: socialmapper-mock-config
+              key: API_BASE_URL
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-mock-api-service
+  namespace: socialmapper-test
+  labels:
+    app: socialmapper-api
+spec:
+  selector:
+    app: socialmapper-api
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP
+  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: socialmapper-mock-frontend-service
+  namespace: socialmapper-test
+  labels:
+    app: socialmapper-frontend
+spec:
+  selector:
+    app: socialmapper-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  type: ClusterIP
+  
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialmapper-mock-ingress
+  namespace: socialmapper-test
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: test.socialmapper.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: socialmapper-mock-api-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: socialmapper-mock-frontend-service
+            port:
+              number: 80
+              
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mock-postgres-pvc
+  namespace: socialmapper-test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-postgres
+  namespace: socialmapper-test
+  labels:
+    app: postgres
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: "socialmapper_test"
+        - name: POSTGRES_USER
+          value: "testuser"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: socialmapper-mock-secrets
+              key: DATABASE_PASSWORD
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - testuser
+            - -d
+            - socialmapper_test
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - testuser
+            - -d
+            - socialmapper_test
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: mock-postgres-pvc
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-postgres
+  namespace: socialmapper-test
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  type: ClusterIP
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-redis
+  namespace: socialmapper-test
+  labels:
+    app: redis
+    component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command: ["redis-server"]
+        args: ["--appendonly", "yes"]
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-redis
+  namespace: socialmapper-test
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  type: ClusterIP
+  
+---
+# Job to run database migrations
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: socialmapper-mock-migrate
+  namespace: socialmapper-test
+  labels:
+    app: socialmapper
+    component: migration
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: socialmapper-api:test
+        imagePullPolicy: Never
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: socialmapper-mock-config
+              key: DATABASE_URL
+        command: ["python", "-m", "alembic", "upgrade", "head"]
+        
+---
+# HorizontalPodAutoscaler for testing autoscaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: socialmapper-mock-api-hpa
+  namespace: socialmapper-test
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: socialmapper-mock-api
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

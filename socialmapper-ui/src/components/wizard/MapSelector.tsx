@@ -139,6 +139,60 @@ const MapSelector: React.FC<MapSelectorProps> = ({
         map.current = null;
       }
     };
+  }, [enableBoundingBox, drawingMode, onBoundingBoxChange]);
+
+  // Update bounding box visual on map
+  const updateBoundingBoxVisual = useCallback((bounds: [number, number, number, number]) => {
+    if (!map.current) return;
+    
+    const sourceId = 'bounding-box';
+    const layerId = 'bounding-box-fill';
+    
+    const [minLng, minLat, maxLng, maxLat] = bounds;
+    
+    const data = {
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[
+          [minLng, minLat],
+          [maxLng, minLat],
+          [maxLng, maxLat],
+          [minLng, maxLat],
+          [minLng, minLat]
+        ]]
+      },
+      properties: {}
+    };
+    
+    if (map.current.getSource(sourceId)) {
+      (map.current.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(data);
+    } else {
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: data
+      });
+      
+      map.current.addLayer({
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': '#1890ff',
+          'fill-opacity': 0.2
+        }
+      });
+      
+      map.current.addLayer({
+        id: 'bounding-box-outline',
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': '#1890ff',
+          'line-width': 2
+        }
+      });
+    }
   }, []);
 
   // Handle map click location selection

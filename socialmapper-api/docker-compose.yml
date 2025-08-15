@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database with optimized settings
+  postgres:
+    image: postgres:16-alpine
+    container_name: socialmapper-postgres
+    environment:
+      POSTGRES_DB: socialmapper
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: socialmapper_secret
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --data-checksums"
+      POSTGRES_HOST_AUTH_METHOD: md5
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - socialmapper-network
+
+  # Redis cache with persistence
+  redis:
+    image: redis:7-alpine
+    container_name: socialmapper-redis
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --tcp-backlog 511
+      --tcp-keepalive 60
+      --timeout 0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - socialmapper-network
+
+  # Redis Commander for monitoring (optional, development only)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: socialmapper-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - socialmapper-network
+    profiles:
+      - dev
+
+  # pgAdmin for PostgreSQL management (optional, development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: socialmapper-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@socialmapper.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - socialmapper-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  socialmapper-network:
+    driver: bridge

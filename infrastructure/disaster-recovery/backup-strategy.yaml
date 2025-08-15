@@ -1,0 +1,793 @@
+# Comprehensive Disaster Recovery and Backup Strategy for SocialMapper
+# This configuration implements automated backups, disaster recovery procedures,
+# and business continuity planning to achieve 99.9% uptime
+
+---
+# Namespace for backup operations
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backup-system
+  labels:
+    name: backup-system
+    purpose: disaster-recovery
+
+---
+# Service Account for backup operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-operator
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: backup-operator
+    app.kubernetes.io/component: service-account
+
+---
+# ClusterRole for backup operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backup-operator
+  labels:
+    app.kubernetes.io/name: backup-operator
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["persistentvolumes", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["snapshot.storage.k8s.io"]
+  resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# ClusterRoleBinding for backup operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backup-operator
+  labels:
+    app.kubernetes.io/name: backup-operator
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: backup-operator
+subjects:
+- kind: ServiceAccount
+  name: backup-operator
+  namespace: backup-system
+
+---
+# VolumeSnapshotClass for EBS snapshots
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: ebs-snapshot-class
+  labels:
+    app.kubernetes.io/name: ebs-snapshot-class
+    app.kubernetes.io/component: storage
+driver: ebs.csi.aws.com
+deletionPolicy: Retain
+parameters:
+  tagSpecification_1: "Project=socialmapper"
+  tagSpecification_2: "Environment=production"
+  tagSpecification_3: "BackupType=automated"
+
+---
+# ConfigMap for backup configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: backup-config
+    app.kubernetes.io/component: configuration
+data:
+  backup-policy.yaml: |
+    # SocialMapper Backup Policy Configuration
+    backup_policy:
+      retention:
+        daily_backups: 7      # Keep 7 daily backups
+        weekly_backups: 4     # Keep 4 weekly backups
+        monthly_backups: 12   # Keep 12 monthly backups
+        yearly_backups: 3     # Keep 3 yearly backups
+      
+      schedule:
+        database_backup: "0 2 * * *"      # Daily at 2 AM UTC
+        volume_snapshot: "0 3 * * *"      # Daily at 3 AM UTC
+        config_backup: "0 4 * * 0"        # Weekly on Sunday at 4 AM UTC
+        full_system_backup: "0 1 1 * *"   # Monthly on 1st at 1 AM UTC
+      
+      targets:
+        - name: postgresql
+          type: database
+          namespace: socialmapper
+          priority: critical
+          encryption: true
+        - name: redis
+          type: cache
+          namespace: socialmapper
+          priority: high
+          encryption: true
+        - name: application-data
+          type: volume
+          namespace: socialmapper
+          priority: critical
+          encryption: true
+        - name: monitoring-data
+          type: volume
+          namespace: monitoring
+          priority: medium
+          encryption: false
+        - name: application-configs
+          type: kubernetes-resources
+          namespace: socialmapper
+          priority: critical
+          encryption: true
+    
+    disaster_recovery:
+      rto: 15  # Recovery Time Objective: 15 minutes
+      rpo: 60  # Recovery Point Objective: 60 minutes
+      
+      failover_regions:
+        primary: us-east-1
+        secondary: us-west-2
+      
+      automated_failover:
+        enabled: true
+        health_check_interval: 5  # minutes
+        failure_threshold: 3      # consecutive failures
+        
+      notification:
+        email: "ops@socialmapper.com"
+        slack_webhook: "https://hooks.slack.com/services/..."
+        pagerduty_key: "CHANGE_ME"
+
+---
+# CronJob for PostgreSQL Database Backups
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgresql-backup
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: postgresql-backup
+    app.kubernetes.io/component: database-backup
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM UTC
+  timeZone: "UTC"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 3600  # 1 hour timeout
+      
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: postgresql-backup
+            backup-type: database
+        
+        spec:
+          serviceAccountName: backup-operator
+          restartPolicy: OnFailure
+          
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+          
+          initContainers:
+          - name: wait-for-db
+            image: postgres:15-alpine
+            command: ['sh', '-c']
+            args:
+            - |
+              until pg_isready -h postgresql-service.socialmapper.svc.cluster.local -p 5432 -U postgres; do
+                echo "Waiting for PostgreSQL...";
+                sleep 5;
+              done;
+              echo "PostgreSQL is ready!";
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-credentials
+                  key: password
+          
+          containers:
+          - name: pg-dump
+            image: postgres:15-alpine
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - |
+              set -e
+              
+              # Set backup variables
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="socialmapper_backup_${TIMESTAMP}.sql"
+              S3_PATH="s3://socialmapper-backups-${ENVIRONMENT}/database/${BACKUP_FILE}"
+              
+              echo "Starting PostgreSQL backup at $(date)"
+              echo "Backup file: ${BACKUP_FILE}"
+              
+              # Create database dump
+              pg_dump \
+                -h postgresql-service.socialmapper.svc.cluster.local \
+                -p 5432 \
+                -U postgres \
+                -d socialmapper \
+                --verbose \
+                --no-password \
+                --format=custom \
+                --compress=9 \
+                --file="/tmp/${BACKUP_FILE}"
+              
+              # Verify backup file
+              if [ ! -f "/tmp/${BACKUP_FILE}" ] || [ ! -s "/tmp/${BACKUP_FILE}" ]; then
+                echo "ERROR: Backup file is missing or empty!"
+                exit 1
+              fi
+              
+              # Encrypt backup file
+              openssl enc -aes-256-cbc -salt \
+                -in "/tmp/${BACKUP_FILE}" \
+                -out "/tmp/${BACKUP_FILE}.enc" \
+                -k "${BACKUP_ENCRYPTION_KEY}"
+              
+              # Upload to S3 with versioning
+              aws s3 cp "/tmp/${BACKUP_FILE}.enc" "${S3_PATH}.enc" \
+                --metadata "backup-type=postgresql,timestamp=${TIMESTAMP},environment=${ENVIRONMENT}" \
+                --storage-class STANDARD_IA
+              
+              # Verify upload
+              aws s3 ls "${S3_PATH}.enc" || {
+                echo "ERROR: Failed to upload backup to S3!"
+                exit 1
+              }
+              
+              # Clean up local files
+              rm -f "/tmp/${BACKUP_FILE}" "/tmp/${BACKUP_FILE}.enc"
+              
+              # Update backup status
+              kubectl create configmap "postgresql-backup-status-${TIMESTAMP}" \
+                --namespace=backup-system \
+                --from-literal=status="success" \
+                --from-literal=timestamp="${TIMESTAMP}" \
+                --from-literal=file="${BACKUP_FILE}" \
+                --from-literal=s3-path="${S3_PATH}.enc"
+              
+              echo "PostgreSQL backup completed successfully at $(date)"
+            
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-credentials
+                  key: password
+            - name: BACKUP_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-encryption-keys
+                  key: database-key
+            - name: ENVIRONMENT
+              value: "production"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: secret-access-key
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: false  # Need write access for dumps
+            
+            volumeMounts:
+            - name: tmp-storage
+              mountPath: /tmp
+          
+          volumes:
+          - name: tmp-storage
+            emptyDir:
+              sizeLimit: 5Gi
+
+---
+# CronJob for Volume Snapshots
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: volume-snapshot-backup
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: volume-snapshot-backup
+    app.kubernetes.io/component: volume-backup
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM UTC
+  timeZone: "UTC"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800  # 30 minutes timeout
+      
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: volume-snapshot-backup
+            backup-type: volume
+        
+        spec:
+          serviceAccountName: backup-operator
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: snapshot-creator
+            image: bitnami/kubectl:1.28
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - |
+              set -e
+              
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              echo "Starting volume snapshot backup at $(date)"
+              
+              # Get all PVCs in socialmapper namespace
+              PVCs=$(kubectl get pvc -n socialmapper -o jsonpath='{.items[*].metadata.name}')
+              
+              for pvc in $PVCs; do
+                echo "Creating snapshot for PVC: $pvc"
+                
+                # Create VolumeSnapshot
+                cat <<EOF | kubectl apply -f -
+              apiVersion: snapshot.storage.k8s.io/v1
+              kind: VolumeSnapshot
+              metadata:
+                name: ${pvc}-snapshot-${TIMESTAMP}
+                namespace: socialmapper
+                labels:
+                  app.kubernetes.io/name: ${pvc}-snapshot
+                  app.kubernetes.io/component: backup
+                  backup-type: automated
+                  timestamp: "${TIMESTAMP}"
+              spec:
+                volumeSnapshotClassName: ebs-snapshot-class
+                source:
+                  persistentVolumeClaimName: ${pvc}
+              EOF
+                
+                # Wait for snapshot to be ready
+                kubectl wait --for=condition=ReadyToUse \
+                  volumesnapshot/${pvc}-snapshot-${TIMESTAMP} \
+                  -n socialmapper \
+                  --timeout=300s
+                
+                echo "Snapshot created successfully for PVC: $pvc"
+              done
+              
+              # Clean up old snapshots (keep only last 7 days)
+              echo "Cleaning up old snapshots..."
+              CUTOFF_DATE=$(date -d '7 days ago' +%Y%m%d)
+              
+              kubectl get volumesnapshot -n socialmapper \
+                -o jsonpath='{.items[?(@.metadata.labels.backup-type=="automated")].metadata.name}' | \
+                tr ' ' '\n' | \
+                while read snapshot; do
+                  if [[ $snapshot =~ -([0-9]{8})-[0-9]{6}$ ]]; then
+                    SNAPSHOT_DATE=${BASH_REMATCH[1]}
+                    if [[ $SNAPSHOT_DATE < $CUTOFF_DATE ]]; then
+                      echo "Deleting old snapshot: $snapshot"
+                      kubectl delete volumesnapshot $snapshot -n socialmapper || echo "Failed to delete $snapshot"
+                    fi
+                  fi
+                done
+              
+              echo "Volume snapshot backup completed at $(date)"
+            
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: true
+
+---
+# CronJob for Configuration Backup
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: config-backup
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: config-backup
+    app.kubernetes.io/component: config-backup
+spec:
+  schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM UTC
+  timeZone: "UTC"
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: config-backup
+            backup-type: configuration
+        
+        spec:
+          serviceAccountName: backup-operator
+          restartPolicy: OnFailure
+          
+          containers:
+          - name: config-exporter
+            image: bitnami/kubectl:1.28
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - |
+              set -e
+              
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_DIR="/tmp/config-backup-${TIMESTAMP}"
+              
+              echo "Starting configuration backup at $(date)"
+              mkdir -p "$BACKUP_DIR"
+              
+              # Backup Kubernetes resources
+              NAMESPACES=("socialmapper" "monitoring" "backup-system")
+              RESOURCES=("configmaps" "secrets" "deployments" "services" "ingresses" "persistentvolumeclaims")
+              
+              for ns in "${NAMESPACES[@]}"; do
+                echo "Backing up namespace: $ns"
+                mkdir -p "$BACKUP_DIR/$ns"
+                
+                for resource in "${RESOURCES[@]}"; do
+                  echo "Exporting $resource from $ns..."
+                  kubectl get $resource -n $ns -o yaml > "$BACKUP_DIR/$ns/$resource.yaml" 2>/dev/null || echo "No $resource found in $ns"
+                done
+              done
+              
+              # Backup Helm releases
+              if command -v helm &> /dev/null; then
+                echo "Backing up Helm releases..."
+                mkdir -p "$BACKUP_DIR/helm"
+                helm list --all-namespaces -o yaml > "$BACKUP_DIR/helm/releases.yaml" || echo "No Helm releases found"
+              fi
+              
+              # Create tarball
+              cd /tmp
+              tar -czf "config-backup-${TIMESTAMP}.tar.gz" "config-backup-${TIMESTAMP}"
+              
+              # Encrypt backup
+              openssl enc -aes-256-cbc -salt \
+                -in "config-backup-${TIMESTAMP}.tar.gz" \
+                -out "config-backup-${TIMESTAMP}.tar.gz.enc" \
+                -k "${BACKUP_ENCRYPTION_KEY}"
+              
+              # Upload to S3
+              S3_PATH="s3://socialmapper-backups-production/configurations/config-backup-${TIMESTAMP}.tar.gz.enc"
+              aws s3 cp "config-backup-${TIMESTAMP}.tar.gz.enc" "$S3_PATH" \
+                --metadata "backup-type=configuration,timestamp=${TIMESTAMP},environment=production"
+              
+              # Verify upload
+              aws s3 ls "$S3_PATH" || {
+                echo "ERROR: Failed to upload configuration backup to S3!"
+                exit 1
+              }
+              
+              # Clean up
+              rm -rf "$BACKUP_DIR" "config-backup-${TIMESTAMP}.tar.gz" "config-backup-${TIMESTAMP}.tar.gz.enc"
+              
+              echo "Configuration backup completed successfully at $(date)"
+            
+            env:
+            - name: BACKUP_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-encryption-keys
+                  key: config-key
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: secret-access-key
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+              readOnlyRootFilesystem: false
+            
+            volumeMounts:
+            - name: tmp-storage
+              mountPath: /tmp
+          
+          volumes:
+          - name: tmp-storage
+            emptyDir:
+              sizeLimit: 1Gi
+
+---
+# Service to monitor backup status
+apiVersion: v1
+kind: Service
+metadata:
+  name: backup-monitor
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: backup-monitor
+    app.kubernetes.io/component: monitoring
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: backup-monitor
+
+---
+# Deployment for backup monitoring service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backup-monitor
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: backup-monitor
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backup-monitor
+  
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backup-monitor
+        app.kubernetes.io/component: monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    
+    spec:
+      serviceAccountName: backup-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: backup-monitor
+        image: python:3.11-slim
+        command: ["python3"]
+        args:
+        - -c
+        - |
+          import time
+          import logging
+          from http.server import HTTPServer, BaseHTTPRequestHandler
+          from datetime import datetime, timedelta
+          import subprocess
+          import json
+          import threading
+          
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+          
+          class BackupMetrics:
+              def __init__(self):
+                  self.last_database_backup = None
+                  self.last_volume_snapshot = None
+                  self.last_config_backup = None
+                  self.backup_failures = 0
+          
+          metrics = BackupMetrics()
+          
+          class MetricsHandler(BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path == '/metrics':
+                      self.send_response(200)
+                      self.send_header('Content-type', 'text/plain')
+                      self.end_headers()
+                      
+                      response = f"""# HELP backup_last_success_timestamp Timestamp of last successful backup
+          # TYPE backup_last_success_timestamp gauge
+          backup_last_success_timestamp{{type="database"}} {metrics.last_database_backup or 0}
+          backup_last_success_timestamp{{type="volume"}} {metrics.last_volume_snapshot or 0}
+          backup_last_success_timestamp{{type="config"}} {metrics.last_config_backup or 0}
+          
+          # HELP backup_failures_total Total number of backup failures
+          # TYPE backup_failures_total counter
+          backup_failures_total {metrics.backup_failures}
+          """
+                      self.wfile.write(response.encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+          
+          def monitor_backups():
+              while True:
+                  try:
+                      # Check backup job status
+                      result = subprocess.run(['kubectl', 'get', 'jobs', '-n', 'backup-system', '-o', 'json'], 
+                                            capture_output=True, text=True)
+                      if result.returncode == 0:
+                          jobs = json.loads(result.stdout)
+                          for job in jobs.get('items', []):
+                              job_name = job['metadata']['name']
+                              if 'postgresql-backup' in job_name:
+                                  if job.get('status', {}).get('succeeded'):
+                                      metrics.last_database_backup = time.time()
+                              elif 'volume-snapshot' in job_name:
+                                  if job.get('status', {}).get('succeeded'):
+                                      metrics.last_volume_snapshot = time.time()
+                              elif 'config-backup' in job_name:
+                                  if job.get('status', {}).get('succeeded'):
+                                      metrics.last_config_backup = time.time()
+                              
+                              if job.get('status', {}).get('failed'):
+                                  metrics.backup_failures += 1
+                  
+                  except Exception as e:
+                      logger.error(f"Error monitoring backups: {e}")
+                  
+                  time.sleep(60)  # Check every minute
+          
+          # Start monitoring thread
+          monitor_thread = threading.Thread(target=monitor_backups, daemon=True)
+          monitor_thread.start()
+          
+          # Start HTTP server
+          server = HTTPServer(('0.0.0.0', 8080), MetricsHandler)
+          logger.info("Backup monitor started on port 8080")
+          server.serve_forever()
+        
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          readOnlyRootFilesystem: true
+        
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+---
+# Secret placeholders - These should be created with actual values in production
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-credentials
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: postgresql-credentials
+    app.kubernetes.io/component: authentication
+type: Opaque
+data:
+  password: cG9zdGdyZXNfcGFzc3dvcmQ=  # base64 encoded - CHANGE IN PRODUCTION
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-encryption-keys
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: backup-encryption-keys
+    app.kubernetes.io/component: encryption
+type: Opaque
+data:
+  database-key: ZGF0YWJhc2VfZW5jcnlwdGlvbl9rZXk=  # base64 encoded - CHANGE IN PRODUCTION
+  config-key: Y29uZmlnX2VuY3J5cHRpb25fa2V5    # base64 encoded - CHANGE IN PRODUCTION
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-backup-credentials
+  namespace: backup-system
+  labels:
+    app.kubernetes.io/name: aws-backup-credentials
+    app.kubernetes.io/component: authentication
+type: Opaque
+data:
+  access-key-id: QUtJQUlPU0ZPRE5OMDdFWEFNUExF      # base64 encoded - CHANGE IN PRODUCTION  
+  secret-access-key: d0phbHJYVXRuRkVNSS9LN21ERW5nL2JQeFJmaUNZRVhBTVBMRUtFWQ==  # base64 encoded - CHANGE IN PRODUCTION

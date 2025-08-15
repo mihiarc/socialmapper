@@ -76,6 +76,8 @@ data:
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
+        scrape_interval: 15s
+        metrics_path: /metrics
 
       # Kubernetes API server
       - job_name: 'kubernetes-apiservers'
@@ -134,7 +136,7 @@ data:
           action: replace
           target_label: kubernetes_pod_name
 
-      # SocialMapper API
+      # SocialMapper API - Enhanced with more detailed metrics
       - job_name: 'socialmapper-api'
         kubernetes_sd_configs:
         - role: endpoints
@@ -156,8 +158,40 @@ data:
           target_label: pod
         - source_labels: [__meta_kubernetes_namespace]
           target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          target_label: app
+        - source_labels: [__meta_kubernetes_pod_label_version]
+          target_label: version
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        metrics_path: /metrics
+        
+      # SocialMapper API Business Metrics
+      - job_name: 'socialmapper-api-business'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - socialmapper
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: socialmapper-api-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: http
+        - source_labels: [__address__]
+          target_label: __address__
+          regex: (.+)
+          replacement: $1
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+        scrape_interval: 30s
+        metrics_path: /api/v1/metrics/business
 
-      # Redis
+      # Redis - Enhanced metrics collection
       - job_name: 'redis'
         kubernetes_sd_configs:
         - role: endpoints
@@ -171,6 +205,22 @@ data:
         - source_labels: [__meta_kubernetes_endpoint_port_name]
           action: keep
           regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: instance
+        scrape_interval: 30s
+        
+      # Redis Exporter for detailed Redis metrics
+      - job_name: 'redis-exporter'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - socialmapper
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: redis-exporter-service
+        scrape_interval: 30s
 
       # Node Exporter
       - job_name: 'node-exporter'
@@ -184,54 +234,153 @@ data:
           action: keep
           regex: node-exporter
 
-      # AWS Load Balancer metrics (if available)
+      # Kube-state-metrics for Kubernetes object metrics
+      - job_name: 'kube-state-metrics'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - monitoring
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: kube-state-metrics
+        scrape_interval: 30s
+        
+      # cAdvisor for container metrics
+      - job_name: 'cadvisor'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/\${1}/proxy/metrics/cadvisor
+        scrape_interval: 30s
+        
+      # AWS Load Balancer metrics (CloudWatch exporter)
       - job_name: 'aws-load-balancer'
-        static_configs:
-          - targets: []  # Will be populated by service discovery
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - monitoring
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: cloudwatch-exporter
+        scrape_interval: 60s
 
   alerts.yml: |
     groups:
     - name: socialmapper-alerts
       rules:
-      # High CPU usage
-      - alert: HighCPUUsage
-        expr: cpu_usage_active > 80
+      # High CPU usage - Node level
+      - alert: HighNodeCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80% for more than 5 minutes"
-
-      # High memory usage
-      - alert: HighMemoryUsage
-        expr: memory_usage_percentage > 85
+          summary: "High node CPU usage detected on {{ $labels.instance }}"
+          description: "Node CPU usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-cpu-usage"
+          
+      # High CPU usage - Pod level
+      - alert: HighPodCPUUsage
+        expr: (rate(container_cpu_usage_seconds_total{container!="POD",namespace="socialmapper"}[5m]) * 100) > 80
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 85% for more than 5 minutes"
+          summary: "High pod CPU usage detected"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has high CPU usage: {{ $value }}%"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-pod-cpu"
 
-      # API response time
-      - alert: HighAPIResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="socialmapper-api"}[5m])) > 5
+      # High memory usage - Node level
+      - alert: HighNodeMemoryUsage
+        expr: ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High node memory usage detected on {{ $labels.instance }}"
+          description: "Node memory usage is above 85% for more than 5 minutes. Current usage: {{ $value }}%"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-memory-usage"
+          
+      # High memory usage - Pod level
+      - alert: HighPodMemoryUsage
+        expr: (container_memory_usage_bytes{container!="POD",namespace="socialmapper"} / container_spec_memory_limit_bytes{container!="POD",namespace="socialmapper"} * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High pod memory usage detected"
+          description: "Pod {{ $labels.pod }} memory usage is above 85% of limit: {{ $value }}%"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-pod-memory"
+
+      # API response time - P95
+      - alert: HighAPIResponseTimeP95
+        expr: histogram_quantile(0.95, rate(fastapi_request_duration_seconds_bucket{job="socialmapper-api"}[5m])) > 2
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: "High API response time"
-          description: "95th percentile response time is above 5 seconds"
+          summary: "High API P95 response time: {{ $labels.method }} {{ $labels.path }}"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.method }} {{ $labels.path }}"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-api-latency"
+          
+      # API response time - P99 Critical
+      - alert: CriticalAPIResponseTimeP99
+        expr: histogram_quantile(0.99, rate(fastapi_request_duration_seconds_bucket{job="socialmapper-api"}[5m])) > 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical API P99 response time: {{ $labels.method }} {{ $labels.path }}"
+          description: "99th percentile response time is {{ $value }}s for {{ $labels.method }} {{ $labels.path }}"
+          runbook_url: "https://docs.socialmapper.com/runbooks/critical-api-latency"
 
-      # API error rate
-      - alert: HighAPIErrorRate
-        expr: rate(http_requests_total{job="socialmapper-api",status=~"5.."}[5m]) / rate(http_requests_total{job="socialmapper-api"}[5m]) > 0.05
+      # API error rate - 5xx errors
+      - alert: HighAPI5xxErrorRate
+        expr: |
+          (
+            rate(fastapi_requests_total{job="socialmapper-api",status=~"5.."}[5m])
+            /
+            rate(fastapi_requests_total{job="socialmapper-api"}[5m])
+          ) * 100 > 5
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "High API error rate"
-          description: "API error rate is above 5% for more than 2 minutes"
+          summary: "High API 5xx error rate: {{ $labels.method }} {{ $labels.path }}"
+          description: "API 5xx error rate is {{ $value }}% for {{ $labels.method }} {{ $labels.path }}"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-error-rate"
+          
+      # API error rate - 4xx errors (client errors)
+      - alert: HighAPI4xxErrorRate
+        expr: |
+          (
+            rate(fastapi_requests_total{job="socialmapper-api",status=~"4.."}[5m])
+            /
+            rate(fastapi_requests_total{job="socialmapper-api"}[5m])
+          ) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API 4xx error rate: {{ $labels.method }} {{ $labels.path }}"
+          description: "API 4xx error rate is {{ $value }}% for {{ $labels.method }} {{ $labels.path }}"
+          runbook_url: "https://docs.socialmapper.com/runbooks/high-client-errors"
 
       # Redis connectivity
       - alert: RedisDown

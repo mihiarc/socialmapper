@@ -1,0 +1,679 @@
+# Advanced Deployment Strategies Workflow
+name: Advanced Deployment Strategies
+
+on:
+  push:
+    branches: [main, develop, release/*]
+    paths:
+      - 'socialmapper/**'
+      - 'socialmapper-api/**'
+      - 'socialmapper-ui/**'
+      - 'infrastructure/**'
+      - '.github/workflows/advanced-deployment.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'socialmapper/**'
+      - 'socialmapper-api/**'
+      - 'socialmapper-ui/**'
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      deployment_strategy:
+        description: 'Deployment strategy to use'
+        required: true
+        type: choice
+        options:
+        - canary
+        - blue-green
+        - rolling-update
+        default: 'canary'
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+        - staging
+        - production
+        default: 'staging'
+      canary_percentage:
+        description: 'Initial canary traffic percentage (for canary deployments)'
+        required: false
+        default: '5'
+        type: choice
+        options:
+        - '5'
+        - '10'
+        - '25'
+        - '50'
+      skip_validation:
+        description: 'Skip deployment validation'
+        required: false
+        default: false
+        type: boolean
+      force_deployment:
+        description: 'Force deployment even if health checks fail'
+        required: false
+        default: false
+        type: boolean
+      rollback_on_failure:
+        description: 'Automatically rollback on deployment failure'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  EKS_CLUSTER_NAME: socialmapper-prod
+  DEPLOYMENT_TIMEOUT: 900  # 15 minutes
+  VALIDATION_TIMEOUT: 600  # 10 minutes
+  ROLLBACK_TIMEOUT: 300    # 5 minutes
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # ==================== Pre-Deployment Setup ====================
+  
+  setup-deployment:
+    name: Setup Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      deployment_strategy: ${{ steps.strategy.outputs.deployment_strategy }}
+      target_environment: ${{ steps.environment.outputs.target_environment }}
+      image_tag: ${{ steps.version.outputs.image_tag }}
+      deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+      canary_percentage: ${{ steps.strategy.outputs.canary_percentage }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Determine deployment strategy
+        id: strategy
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deployment_strategy=${{ github.event.inputs.deployment_strategy }}" >> $GITHUB_OUTPUT
+            echo "canary_percentage=${{ github.event.inputs.canary_percentage }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "deployment_strategy=blue-green" >> $GITHUB_OUTPUT
+            echo "canary_percentage=5" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "deployment_strategy=canary" >> $GITHUB_OUTPUT
+            echo "canary_percentage=10" >> $GITHUB_OUTPUT
+          else
+            echo "deployment_strategy=rolling-update" >> $GITHUB_OUTPUT
+            echo "canary_percentage=5" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Determine target environment
+        id: environment
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target_environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "target_environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "target_environment=staging" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Generate version and deployment ID
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            IMAGE_TAG="${{ github.sha }}"
+          else
+            IMAGE_TAG="pr-${{ github.event.number }}-${{ github.sha }}"
+          fi
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Generate deployment ID
+        id: deployment
+        run: |
+          DEPLOYMENT_ID="deploy-$(date +%Y%m%d-%H%M%S)-${{ github.run_number }}"
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+      
+      - name: Create deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: '${{ steps.environment.outputs.target_environment }}',
+              description: 'Advanced deployment using ${{ steps.strategy.outputs.deployment_strategy }} strategy',
+              auto_merge: false,
+              required_contexts: []
+            });
+            
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'in_progress',
+              description: 'Deployment started with ${{ steps.strategy.outputs.deployment_strategy }} strategy'
+            });
+
+  # ==================== Build and Push Images ====================
+  
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [setup-deployment]
+    outputs:
+      api_image: ${{ steps.images.outputs.api_image }}
+      ui_image: ${{ steps.images.outputs.ui_image }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./socialmapper-api
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/socialmapper-api:${{ needs.setup-deployment.outputs.image_tag }}
+            ${{ env.ECR_REGISTRY }}/socialmapper-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            deployment.strategy=${{ needs.setup-deployment.outputs.deployment_strategy }}
+            deployment.id=${{ needs.setup-deployment.outputs.deployment_id }}
+      
+      - name: Build and push UI image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./socialmapper-ui
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/socialmapper-ui:${{ needs.setup-deployment.outputs.image_tag }}
+            ${{ env.ECR_REGISTRY }}/socialmapper-ui:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            deployment.strategy=${{ needs.setup-deployment.outputs.deployment_strategy }}
+            deployment.id=${{ needs.setup-deployment.outputs.deployment_id }}
+      
+      - name: Set image outputs
+        id: images
+        run: |
+          echo "api_image=${{ env.ECR_REGISTRY }}/socialmapper-api:${{ needs.setup-deployment.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          echo "ui_image=${{ env.ECR_REGISTRY }}/socialmapper-ui:${{ needs.setup-deployment.outputs.image_tag }}" >> $GITHUB_OUTPUT
+      
+      - name: Scan images for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.images.outputs.api_image }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  # ==================== Canary Deployment Strategy ====================
+  
+  deploy-canary:
+    name: Canary Deployment
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, build-and-push]
+    if: needs.setup-deployment.outputs.deployment_strategy == 'canary'
+    environment:
+      name: ${{ needs.setup-deployment.outputs.target_environment }}-canary
+      url: https://demo.socialmapper.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Install and setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Deploy canary version
+        id: deploy
+        run: |
+          # Install Istio if not present
+          if ! kubectl get namespace istio-system; then
+            echo "Installing Istio..."
+            curl -L https://istio.io/downloadIstio | sh -
+            cd istio-*
+            sudo cp bin/istioctl /usr/local/bin/
+            istioctl install --set values.defaultRevision=default -y
+          fi
+          
+          # Apply canary deployment
+          envsubst < infrastructure/kubernetes/canary-deployment.yaml | kubectl apply -f -
+          
+          # Set initial canary traffic percentage
+          kubectl patch virtualservice socialmapper-api-canary -n socialmapper --type='json' \
+            -p='[{"op": "replace", "path": "/spec/http/0/route/0/weight", "value": ${{ (100 - needs.setup-deployment.outputs.canary_percentage) | int }}},
+                {"op": "replace", "path": "/spec/http/0/route/1/weight", "value": ${{ needs.setup-deployment.outputs.canary_percentage }}}]'
+          
+          echo "Canary deployment initiated with ${{ needs.setup-deployment.outputs.canary_percentage }}% traffic"
+        env:
+          IMAGE_TAG: ${{ needs.setup-deployment.outputs.image_tag }}
+          CANARY_PERCENTAGE: ${{ needs.setup-deployment.outputs.canary_percentage }}
+      
+      - name: Wait for canary deployment
+        run: |
+          echo "Waiting for canary deployment to be ready..."
+          kubectl wait --for=condition=available --timeout=600s deployment/socialmapper-api-canary -n socialmapper
+          kubectl wait --for=condition=available --timeout=600s deployment/socialmapper-ui-canary -n socialmapper
+      
+      - name: Run canary validation
+        id: validation
+        run: |
+          python3 .github/scripts/canary-validation.py \
+            --namespace socialmapper \
+            --canary-percentage ${{ needs.setup-deployment.outputs.canary_percentage }} \
+            --validation-duration 300 \
+            --success-threshold 0.99
+      
+      - name: Gradual traffic increase
+        if: steps.validation.outputs.validation_passed == 'true'
+        run: |
+          # Increase traffic gradually: 5% -> 25% -> 50% -> 100%
+          for percentage in 25 50 100; do
+            echo "Increasing canary traffic to ${percentage}%"
+            
+            # Update traffic split
+            kubectl patch virtualservice socialmapper-api-canary -n socialmapper --type='json' \
+              -p="[{\"op\": \"replace\", \"path\": \"/spec/http/0/route/0/weight\", \"value\": $((100 - percentage))},
+                  {\"op\": \"replace\", \"path\": \"/spec/http/0/route/1/weight\", \"value\": ${percentage}}]"
+            
+            # Wait and validate
+            sleep 60
+            python3 .github/scripts/canary-validation.py \
+              --namespace socialmapper \
+              --canary-percentage ${percentage} \
+              --validation-duration 180 \
+              --success-threshold 0.98
+            
+            if [ $? -ne 0 ]; then
+              echo "Validation failed at ${percentage}% traffic. Initiating rollback."
+              exit 1
+            fi
+          done
+      
+      - name: Promote canary to stable
+        if: steps.validation.outputs.validation_passed == 'true'
+        run: |
+          echo "Promoting canary to stable..."
+          
+          # Update stable deployment with canary image
+          kubectl set image deployment/socialmapper-api -n socialmapper \
+            api=${{ needs.build-and-push.outputs.api_image }}
+          kubectl set image deployment/socialmapper-ui -n socialmapper \
+            ui=${{ needs.build-and-push.outputs.ui_image }}
+          
+          # Wait for stable rollout
+          kubectl rollout status deployment/socialmapper-api -n socialmapper --timeout=600s
+          kubectl rollout status deployment/socialmapper-ui -n socialmapper --timeout=600s
+          
+          # Remove canary deployments
+          kubectl delete deployment socialmapper-api-canary -n socialmapper
+          kubectl delete deployment socialmapper-ui-canary -n socialmapper
+          
+          echo "Canary promotion completed successfully"
+
+  # ==================== Blue-Green Deployment Strategy ====================
+  
+  deploy-blue-green:
+    name: Blue-Green Deployment
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, build-and-push]
+    if: needs.setup-deployment.outputs.deployment_strategy == 'blue-green'
+    environment:
+      name: ${{ needs.setup-deployment.outputs.target_environment }}-blue-green
+      url: https://demo.socialmapper.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Determine current environment
+        id: current_env
+        run: |
+          # Check which environment is currently active
+          CURRENT_ENV=$(kubectl get service socialmapper-api-active -n socialmapper -o jsonpath='{.metadata.labels.active-environment}' || echo "blue")
+          NEW_ENV=$(if [ "$CURRENT_ENV" = "blue" ]; then echo "green"; else echo "blue"; fi)
+          
+          echo "current_environment=$CURRENT_ENV" >> $GITHUB_OUTPUT
+          echo "new_environment=$NEW_ENV" >> $GITHUB_OUTPUT
+          echo "Current active environment: $CURRENT_ENV"
+          echo "Deploying to environment: $NEW_ENV"
+      
+      - name: Deploy to inactive environment
+        run: |
+          # Scale up the inactive environment
+          kubectl scale deployment socialmapper-api-${{ steps.current_env.outputs.new_environment }} -n socialmapper --replicas=3
+          kubectl scale deployment socialmapper-ui-${{ steps.current_env.outputs.new_environment }} -n socialmapper --replicas=2
+          
+          # Update the inactive environment with new images
+          kubectl set image deployment/socialmapper-api-${{ steps.current_env.outputs.new_environment }} -n socialmapper \
+            api=${{ needs.build-and-push.outputs.api_image }}
+          kubectl set image deployment/socialmapper-ui-${{ steps.current_env.outputs.new_environment }} -n socialmapper \
+            ui=${{ needs.build-and-push.outputs.ui_image }}
+          
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/socialmapper-api-${{ steps.current_env.outputs.new_environment }} -n socialmapper --timeout=600s
+          kubectl rollout status deployment/socialmapper-ui-${{ steps.current_env.outputs.new_environment }} -n socialmapper --timeout=600s
+        env:
+          IMAGE_TAG: ${{ needs.setup-deployment.outputs.image_tag }}
+          GREEN_DEPLOYMENT_TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      
+      - name: Run pre-production validation
+        id: validation
+        run: |
+          echo "Running comprehensive validation on ${{ steps.current_env.outputs.new_environment }} environment..."
+          
+          # Test the inactive environment directly
+          python3 .github/scripts/blue-green-validation.py \
+            --target-environment ${{ steps.current_env.outputs.new_environment }} \
+            --namespace socialmapper \
+            --validation-duration 300 \
+            --comprehensive-tests true
+          
+          if [ $? -eq 0 ]; then
+            echo "validation_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "validation_passed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Switch traffic to new environment
+        if: steps.validation.outputs.validation_passed == 'true'
+        run: |
+          echo "Switching traffic from ${{ steps.current_env.outputs.current_environment }} to ${{ steps.current_env.outputs.new_environment }}..."
+          
+          # Update service selectors to point to new environment
+          kubectl patch service socialmapper-api-active -n socialmapper \
+            -p '{"spec":{"selector":{"app.kubernetes.io/version":"${{ steps.current_env.outputs.new_environment }}"}}}'
+          kubectl patch service socialmapper-ui-active -n socialmapper \
+            -p '{"spec":{"selector":{"app.kubernetes.io/version":"${{ steps.current_env.outputs.new_environment }}"}}}'
+          
+          # Update labels to reflect new active environment
+          kubectl label service socialmapper-api-active -n socialmapper \
+            active-environment=${{ steps.current_env.outputs.new_environment }} --overwrite
+          kubectl label service socialmapper-ui-active -n socialmapper \
+            active-environment=${{ steps.current_env.outputs.new_environment }} --overwrite
+          
+          # Update ingress annotations
+          kubectl annotate ingress socialmapper-blue-green-ingress -n socialmapper \
+            blue-green.active-environment=${{ steps.current_env.outputs.new_environment }} --overwrite
+          
+          echo "Traffic successfully switched to ${{ steps.current_env.outputs.new_environment }} environment"
+      
+      - name: Post-switch validation
+        if: steps.validation.outputs.validation_passed == 'true'
+        run: |
+          echo "Running post-switch validation..."
+          sleep 60  # Allow traffic to stabilize
+          
+          python3 .github/scripts/post-switch-validation.py \
+            --namespace socialmapper \
+            --active-environment ${{ steps.current_env.outputs.new_environment }} \
+            --validation-duration 180
+          
+          if [ $? -ne 0 ]; then
+            echo "Post-switch validation failed. Initiating immediate rollback."
+            exit 1
+          fi
+      
+      - name: Scale down old environment
+        if: steps.validation.outputs.validation_passed == 'true'
+        run: |
+          echo "Scaling down old environment: ${{ steps.current_env.outputs.current_environment }}"
+          
+          # Keep old environment running with minimal replicas for quick rollback
+          kubectl scale deployment socialmapper-api-${{ steps.current_env.outputs.current_environment }} -n socialmapper --replicas=1
+          kubectl scale deployment socialmapper-ui-${{ steps.current_env.outputs.current_environment }} -n socialmapper --replicas=1
+
+  # ==================== Rolling Update Strategy ====================
+  
+  deploy-rolling:
+    name: Rolling Update Deployment
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, build-and-push]
+    if: needs.setup-deployment.outputs.deployment_strategy == 'rolling-update'
+    environment:
+      name: ${{ needs.setup-deployment.outputs.target_environment }}
+      url: https://demo.socialmapper.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Deploy with rolling update
+        run: |
+          # Update deployment images
+          kubectl set image deployment/socialmapper-api -n socialmapper \
+            api=${{ needs.build-and-push.outputs.api_image }}
+          kubectl set image deployment/socialmapper-ui -n socialmapper \
+            ui=${{ needs.build-and-push.outputs.ui_image }}
+          
+          # Monitor rollout
+          kubectl rollout status deployment/socialmapper-api -n socialmapper --timeout=600s
+          kubectl rollout status deployment/socialmapper-ui -n socialmapper --timeout=600s
+          
+          echo "Rolling update completed successfully"
+
+  # ==================== Deployment Validation ====================
+  
+  validate-deployment:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, deploy-canary, deploy-blue-green, deploy-rolling]
+    if: always() && (needs.deploy-canary.result == 'success' || needs.deploy-blue-green.result == 'success' || needs.deploy-rolling.result == 'success')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Run comprehensive health checks
+        run: |
+          python3 .github/scripts/deployment-health-check.py \
+            --namespace socialmapper \
+            --deployment-strategy ${{ needs.setup-deployment.outputs.deployment_strategy }} \
+            --validation-timeout ${{ env.VALIDATION_TIMEOUT }}
+      
+      - name: Run performance validation
+        run: |
+          # Run k6 performance tests
+          docker run --rm -i grafana/k6 run - < performance/k6/tests/comprehensive-api.js
+      
+      - name: Run security validation
+        run: |
+          # Run OWASP ZAP baseline scan
+          docker run -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py \
+            -t https://demo.socialmapper.com -J zap-report.json || true
+
+  # ==================== Rollback Mechanism ====================
+  
+  rollback-deployment:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, deploy-canary, deploy-blue-green, deploy-rolling, validate-deployment]
+    if: always() && (needs.deploy-canary.result == 'failure' || needs.deploy-blue-green.result == 'failure' || needs.deploy-rolling.result == 'failure' || needs.validate-deployment.result == 'failure')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Execute rollback strategy
+        run: |
+          python3 .github/scripts/rollback-deployment.py \
+            --deployment-strategy ${{ needs.setup-deployment.outputs.deployment_strategy }} \
+            --namespace socialmapper \
+            --rollback-timeout ${{ env.ROLLBACK_TIMEOUT }}
+      
+      - name: Validate rollback
+        run: |
+          python3 .github/scripts/validate-rollback.py \
+            --namespace socialmapper \
+            --validation-duration 180
+
+  # ==================== Notification and Reporting ====================
+  
+  notify-deployment-status:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [setup-deployment, deploy-canary, deploy-blue-green, deploy-rolling, validate-deployment, rollback-deployment]
+    if: always()
+    
+    steps:
+      - name: Determine deployment result
+        id: result
+        run: |
+          if [[ "${{ needs.deploy-canary.result }}" == "success" || "${{ needs.deploy-blue-green.result }}" == "success" || "${{ needs.deploy-rolling.result }}" == "success" ]] && [[ "${{ needs.validate-deployment.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=Deployment completed successfully using ${{ needs.setup-deployment.outputs.deployment_strategy }} strategy" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.rollback-deployment.result }}" == "success" ]]; then
+            echo "status=rollback" >> $GITHUB_OUTPUT
+            echo "message=Deployment failed and was successfully rolled back" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "message=Deployment failed using ${{ needs.setup-deployment.outputs.deployment_strategy }} strategy" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Update deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: '${{ needs.setup-deployment.outputs.target_environment }}',
+              per_page: 1
+            });
+            
+            if (deployments.data.length > 0) {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployments.data[0].id,
+                state: '${{ steps.result.outputs.status }}' === 'success' ? 'success' : 'failure',
+                description: '${{ steps.result.outputs.message }}'
+              });
+            }
+      
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              channel: '#deployments',
+              attachments: [{
+                color: '${{ steps.result.outputs.status == 'success' && 'good' || 'danger' }}',
+                title: 'SocialMapper Deployment ${{ steps.result.outputs.status == 'success' && 'Successful' || 'Failed' }}',
+                text: '${{ steps.result.outputs.message }}',
+                fields: [
+                  {
+                    title: 'Strategy',
+                    value: '${{ needs.setup-deployment.outputs.deployment_strategy }}',
+                    short: true
+                  },
+                  {
+                    title: 'Environment',
+                    value: '${{ needs.setup-deployment.outputs.target_environment }}',
+                    short: true
+                  },
+                  {
+                    title: 'Image Tag',
+                    value: '${{ needs.setup-deployment.outputs.image_tag }}',
+                    short: true
+                  },
+                  {
+                    title: 'Commit',
+                    value: '${{ github.sha }}',
+                    short: true
+                  }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()

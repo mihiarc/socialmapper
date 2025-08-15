@@ -1,0 +1,588 @@
+# Default values for socialmapper-monitoring
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  # Environment (production, staging, development)
+  environment: production
+  # Cluster name for labeling
+  clusterName: socialmapper-prod
+  # AWS region
+  region: us-east-1
+  # Domain for monitoring services
+  domain: socialmapper.com
+  # Enable resource quotas and limits
+  resourceQuotas: true
+  # Storage class for persistent volumes
+  storageClass: gp3
+  # Timezone
+  timezone: UTC
+
+# Namespace configuration
+namespace:
+  create: true
+  name: monitoring
+  labels:
+    name: monitoring
+    environment: "{{ .Values.global.environment }}"
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  # Use community Prometheus operator
+  useOperator: true
+  
+  # Prometheus server configuration
+  server:
+    image:
+      repository: prom/prometheus
+      tag: v2.48.0
+      pullPolicy: IfNotPresent
+    
+    replicas: 1
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "4Gi"
+        cpu: "2"
+    
+    # Storage configuration
+    storage:
+      enabled: true
+      size: 50Gi
+      storageClass: "{{ .Values.global.storageClass }}"
+      accessMode: ReadWriteOnce
+      retention: "15d"
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      fsGroup: 65534
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 9090
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    
+    # Ingress configuration
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/auth-type: basic
+        nginx.ingress.kubernetes.io/auth-secret: prometheus-auth
+        nginx.ingress.kubernetes.io/auth-realm: "Authentication Required - Prometheus"
+      hosts:
+        - host: "prometheus.{{ .Values.global.domain }}"
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: prometheus-tls
+          hosts:
+            - "prometheus.{{ .Values.global.domain }}"
+  
+  # Configuration
+  config:
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: "{{ .Values.global.clusterName }}"
+        environment: "{{ .Values.global.environment }}"
+    
+    # Scrape configs will be managed by Prometheus Operator
+    scrape_configs: []
+    
+    # Rule files for alerting
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+    
+    # Alertmanager integration
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - "alertmanager:9093"
+
+# Grafana configuration
+grafana:
+  enabled: true
+  
+  image:
+    repository: grafana/grafana
+    tag: "10.2.0"
+    pullPolicy: IfNotPresent
+  
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  
+  # Admin credentials (use secrets in production)
+  adminUser: admin
+  adminPassword: ""  # Will be set via secret
+  
+  # Storage configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "{{ .Values.global.storageClass }}"
+    accessMode: ReadWriteOnce
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    fsGroup: 472
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+    annotations: {}
+  
+  # Ingress configuration
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: grafana-auth
+      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required - Grafana"
+    hosts:
+      - host: "monitoring.{{ .Values.global.domain }}"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - "monitoring.{{ .Values.global.domain }}"
+  
+  # Configuration
+  config:
+    server:
+      root_url: "https://monitoring.{{ .Values.global.domain }}"
+      serve_from_sub_path: false
+    
+    security:
+      admin_user: "{{ .Values.grafana.adminUser }}"
+      # admin_password will be set via secret
+      disable_gravatar: true
+      cookie_secure: true
+      cookie_samesite: strict
+    
+    users:
+      allow_sign_up: false
+      auto_assign_org: true
+      auto_assign_org_role: Viewer
+    
+    auth:
+      disable_login_form: false
+      disable_signout_menu: false
+    
+    auth.anonymous:
+      enabled: false
+    
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
+    
+    log:
+      mode: console
+      level: info
+  
+  # Data sources
+  datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus:9090
+      access: proxy
+      isDefault: true
+      editable: true
+      jsonData:
+        timeInterval: 15s
+  
+  # Dashboard providers
+  dashboardProviders:
+    - name: socialmapper
+      orgId: 1
+      folder: SocialMapper
+      type: file
+      disableDeletion: false
+      updateIntervalSeconds: 30
+      options:
+        path: /var/lib/grafana/dashboards/socialmapper
+  
+  # Dashboards configuration
+  dashboards:
+    enabled: true
+    # Custom dashboards will be loaded from configmaps
+
+# AlertManager configuration
+alertmanager:
+  enabled: true
+  
+  image:
+    repository: prom/alertmanager
+    tag: v0.26.0
+    pullPolicy: IfNotPresent
+  
+  replicas: 2  # High availability
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # Storage configuration
+  storage:
+    enabled: true
+    size: 10Gi
+    storageClass: "{{ .Values.global.storageClass }}"
+    accessMode: ReadWriteOnce
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    fsGroup: 65534
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 9093
+    annotations: {}
+  
+  # Ingress configuration
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: alertmanager-auth
+      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required - AlertManager"
+    hosts:
+      - host: "alertmanager.{{ .Values.global.domain }}"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: alertmanager-tls
+        hosts:
+          - "alertmanager.{{ .Values.global.domain }}"
+  
+  # Configuration
+  config:
+    global:
+      smtp_smarthost: localhost:587
+      smtp_from: "alerts@{{ .Values.global.domain }}"
+      smtp_require_tls: true
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: default-receiver
+    
+    receivers:
+      - name: default-receiver
+        webhook_configs:
+          - url: http://webhook-service:5001/
+            send_resolved: true
+
+# Kube-state-metrics configuration
+kubeStateMetrics:
+  enabled: true
+  
+  image:
+    repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+    tag: v2.10.0
+    pullPolicy: IfNotPresent
+  
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    fsGroup: 65534
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+  
+  # RBAC configuration
+  rbac:
+    create: true
+  
+  serviceAccount:
+    create: true
+    name: kube-state-metrics
+
+# Node Exporter configuration
+nodeExporter:
+  enabled: true
+  
+  image:
+    repository: prom/node-exporter
+    tag: v1.7.0
+    pullPolicy: IfNotPresent
+  
+  # DaemonSet configuration
+  daemonset:
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 9100
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9100"
+  
+  # Host network access
+  hostNetwork: true
+  hostPID: true
+
+# Service Monitors for Prometheus Operator
+serviceMonitors:
+  enabled: true
+  
+  # Application service monitors
+  socialmapperApi:
+    enabled: true
+    selector:
+      matchLabels:
+        app: socialmapper-api
+    endpoints:
+      - port: http
+        interval: 30s
+        path: /metrics
+  
+  redis:
+    enabled: true
+    selector:
+      matchLabels:
+        app: redis
+    endpoints:
+      - port: metrics
+        interval: 30s
+        path: /metrics
+
+# Pod Monitors for Prometheus Operator
+podMonitors:
+  enabled: true
+
+# Prometheus Rules for alerting
+prometheusRules:
+  enabled: true
+  groups:
+    - name: socialmapper-alerts
+      rules:
+        # Include all custom rules from the enhanced configuration
+
+# Network Policies
+networkPolicies:
+  enabled: true
+  
+  # Default deny all ingress
+  denyAll:
+    enabled: false
+  
+  # Allow communication between monitoring components
+  allowMonitoring:
+    enabled: true
+    ingress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                name: monitoring
+        ports:
+          - protocol: TCP
+            port: 9090  # Prometheus
+          - protocol: TCP
+            port: 3000  # Grafana
+          - protocol: TCP
+            port: 9093  # AlertManager
+          - protocol: TCP
+            port: 8080  # kube-state-metrics
+          - protocol: TCP
+            port: 9100  # node-exporter
+
+# Resource Quotas
+resourceQuotas:
+  enabled: "{{ .Values.global.resourceQuotas }}"
+  hard:
+    requests.cpu: "4"
+    requests.memory: "8Gi"
+    limits.cpu: "8"
+    limits.memory: "16Gi"
+    persistentvolumeclaims: "10"
+
+# Limit Ranges
+limitRanges:
+  enabled: "{{ .Values.global.resourceQuotas }}"
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 10m
+        memory: 32Mi
+      default:
+        cpu: 100m
+        memory: 128Mi
+      max:
+        cpu: 2
+        memory: 4Gi
+
+# Pod Disruption Budgets
+podDisruptionBudgets:
+  prometheus:
+    enabled: true
+    minAvailable: 1
+  
+  grafana:
+    enabled: true
+    minAvailable: 1
+  
+  alertmanager:
+    enabled: true
+    minAvailable: 1
+
+# Authentication secrets
+auth:
+  # Basic auth for web interfaces
+  basic:
+    enabled: true
+    # Credentials will be set via external secrets or manually
+    users: {}
+  
+  # SSL/TLS certificates
+  tls:
+    enabled: true
+    # Certificates managed by cert-manager
+
+# Cost optimization settings
+costOptimization:
+  enabled: true
+  
+  # Use spot instances for non-critical components
+  spotInstances:
+    enabled: false
+    nodeSelector:
+      node.kubernetes.io/instance-type: spot
+    tolerations:
+      - key: "node.kubernetes.io/spot"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+  
+  # Resource efficiency
+  resourceEfficiency:
+    enabled: true
+    # Reduce resource requests for development
+    development:
+      resourceMultiplier: 0.5
+    # Optimize for production
+    production:
+      resourceMultiplier: 1.0
+
+# Backup and disaster recovery
+backup:
+  enabled: false
+  
+  # Backup Prometheus data
+  prometheus:
+    enabled: false
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention: "30d"
+  
+  # Backup Grafana dashboards and config
+  grafana:
+    enabled: false
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention: "30d"
+
+# External integrations
+integrations:
+  # AWS CloudWatch metrics
+  cloudWatch:
+    enabled: false
+    region: "{{ .Values.global.region }}"
+  
+  # External alerting services
+  alerting:
+    slack:
+      enabled: false
+      webhookUrl: ""
+    
+    pagerduty:
+      enabled: false
+      serviceKey: ""
+    
+    email:
+      enabled: false
+      smtpHost: ""
+      smtpPort: 587
+      username: ""
+      password: ""
+
+# Development and testing
+development:
+  enabled: false
+  
+  # Reduce resources for development
+  reducedResources: true
+  
+  # Enable additional debugging
+  debug: true
+  
+  # Use NodePort services for easy access
+  useNodePorts: false

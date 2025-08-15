@@ -8,7 +8,17 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import App from './App';
 import { store } from '@store/index';
 import { antdTheme } from '@utils/theme';
+import { performanceMonitor } from '@utils/performance';
 import './styles/globals.css';
+
+// Initialize performance monitoring
+if (typeof window !== 'undefined') {
+  // Start performance monitoring
+  performanceMonitor.recordFeatureUsage('app-start');
+  
+  // Log initial page load
+  console.log('SocialMapper UI starting with performance monitoring enabled');
+}
 
 // React Query configuration for API caching and synchronization
 const queryClient = new QueryClient({
