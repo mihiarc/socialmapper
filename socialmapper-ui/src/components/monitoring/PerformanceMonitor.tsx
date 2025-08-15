@@ -8,7 +8,7 @@ import {
   DashboardOutlined, 
   ThunderboltOutlined, 
   ClockCircleOutlined,
-  ExclamationTriangleOutlined
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { usePerformanceMonitoring, PerformanceMetrics, PERFORMANCE_THRESHOLDS } from '../../utils/performance';
 
@@ -57,6 +57,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [showDetails, performanceMonitoring, onPerformanceIssue]);
 
   const checkPerformanceIssues = (currentMetrics: PerformanceMetrics) => {
@@ -234,7 +235,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
           message="Performance Issue Detected"
           description="Some performance metrics are below recommended thresholds. Check the details below."
           type="warning"
-          icon={<ExclamationTriangleOutlined />}
+          icon={<ExclamationCircleOutlined />}
           style={{ marginBottom: 16 }}
         />
       )}

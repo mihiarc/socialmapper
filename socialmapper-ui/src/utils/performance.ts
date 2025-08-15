@@ -105,7 +105,7 @@ class PerformanceMonitor {
   private initializeWebVitals(): void {
     const handleMetric = (metric: Metric) => {
       const metricName = metric.name.toLowerCase() as keyof PerformanceMetrics;
-      this.metrics[metricName] = metric.value;
+      (this.metrics as any)[metricName] = metric.value;
       
       // Log performance issues
       this.logPerformanceIssue(metric);
@@ -232,7 +232,8 @@ class PerformanceMonitor {
         entries.forEach((entry) => {
           // Monitor API calls specifically
           if (entry.name.includes('/api/')) {
-            const duration = entry.responseEnd - entry.requestStart;
+            const resourceEntry = entry as PerformanceResourceTiming;
+            const duration = resourceEntry.responseEnd - resourceEntry.requestStart;
             this.recordApiResponse(entry.name, duration);
           }
         });
