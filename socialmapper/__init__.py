@@ -70,7 +70,6 @@ from .census import (
     StateFormat,
     VariableFormat,
     get_census_system,
-    get_legacy_adapter,
 )
 
 # Import neighbor functionality for direct access
@@ -181,7 +180,6 @@ __all__ = [
     "get_counties_from_pois",
     # Neighbor functions
     "get_geography_from_point",
-    "get_legacy_adapter",
     "get_runtime_config",
     "tutorial_error_handler",
 ]

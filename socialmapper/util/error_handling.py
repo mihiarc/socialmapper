@@ -3,11 +3,10 @@
 Provides utilities for consistent error handling across the codebase.
 """
 
-from __future__ import annotations
-
 import functools
 import logging
 import sys
+from collections.abc import Callable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -17,9 +16,6 @@ from ..exceptions import (
     format_error_for_log,
     format_error_for_user,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)

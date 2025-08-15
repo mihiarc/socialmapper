@@ -8,14 +8,12 @@ This module provides a comprehensive exception system with:
 - Structured logging support
 """
 
-from __future__ import annotations
-
 import json
 import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 
 class ErrorSeverity(Enum):
@@ -142,17 +140,17 @@ class SocialMapperError(Exception):
         """Get complete traceback including chained exceptions."""
         return "".join(traceback.format_exception(type(self), self, self.__traceback__))
 
-    def add_suggestion(self, suggestion: str) -> SocialMapperError:
+    def add_suggestion(self, suggestion: str) -> Self:
         """Add a suggestion for resolving the error."""
         self.context.suggestions.append(suggestion)
         return self
 
-    def with_operation(self, operation: str) -> SocialMapperError:
+    def with_operation(self, operation: str) -> Self:
         """Set the operation context."""
         self.context.operation = operation
         return self
 
-    def with_details(self, **details) -> SocialMapperError:
+    def with_details(self, **details) -> Self:
         """Add additional context details."""
         self.context.details.update(details)
         return self

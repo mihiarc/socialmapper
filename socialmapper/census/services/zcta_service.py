@@ -591,32 +591,3 @@ class ZctaService:
         logger.info(f"Retrieved census data for {len(combined_data)} ZCTA-variable combinations")
 
         return combined_data
-
-    def create_legacy_streaming_interface(self):
-        """Create a legacy streaming interface compatible with old adapters.
-
-        Returns:
-            Object with legacy streaming methods
-        """
-
-        class LegacyZctaInterface:
-            def __init__(self, zcta_service):
-                self._zcta_service = zcta_service
-
-            def get_zctas(self, state_fips_list: list[str]) -> gpd.GeoDataFrame:
-                """Legacy method: Get ZCTAs for multiple states."""
-                return self._zcta_service.get_zctas_for_states(state_fips_list)
-
-            def get_census_data(
-                self,
-                geoids: list[str],
-                variables: list[str],
-                api_key: str | None = None,
-                geographic_level: str = "zcta",
-            ) -> pd.DataFrame:
-                """Legacy method: Get census data for ZCTAs."""
-                return self._zcta_service.get_census_data(
-                    geoids, variables, api_key, geographic_level
-                )
-
-        return LegacyZctaInterface(self)

@@ -130,24 +130,3 @@ if _ASYNC_AVAILABLE:
             "run_async_analysis",
         ]
     )
-
-
-# Deprecation warnings for old API
-def run_socialmapper(*args, **kwargs):
-    """Deprecated: Use SocialMapperClient instead.
-
-    This function is maintained for backward compatibility only.
-    """
-    import warnings
-
-    warnings.warn(
-        "run_socialmapper is deprecated. Use SocialMapperClient instead. "
-        "The legacy core module has been removed.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    raise ImportError(
-        "Legacy run_socialmapper function is no longer available. "
-        "Please use SocialMapperClient for modern functionality."
-    )

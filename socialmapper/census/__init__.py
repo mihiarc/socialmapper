@@ -601,24 +601,6 @@ def get_census_system(
     return builder.build()
 
 
-def get_legacy_adapter(census_system: CensusSystem | None = None):
-    """Legacy adapter functionality has been integrated into the modern CensusSystem.
-
-    This function now returns the CensusSystem directly as it provides all
-    the functionality that was previously in the legacy adapter.
-
-    Args:
-        census_system: Optional CensusSystem instance (creates default if None)
-
-    Returns:
-        CensusSystem instance with full legacy compatibility
-    """
-    if census_system is None:
-        census_system = get_census_system()
-
-    return census_system
-
-
 def get_streaming_census_manager(cache_census_data: bool = False, cache_dir: str | None = None):
     """Modern replacement for legacy streaming census manager.
 

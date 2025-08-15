@@ -3,8 +3,6 @@
 This module provides utilities to make tutorials more robust and user-friendly.
 """
 
-from __future__ import annotations
-
 import sys
 from contextlib import contextmanager
 from typing import Any
