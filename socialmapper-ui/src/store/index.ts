@@ -33,7 +33,7 @@ export const store = configureStore({
       .concat(metadataApi.middleware)
       .concat(feedbackApi.middleware),
   
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.MODE !== 'production',
 });
 
 // Enable listener behavior for the store

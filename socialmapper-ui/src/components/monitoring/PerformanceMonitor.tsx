@@ -33,7 +33,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
   useEffect(() => {
     // Only show in development or when explicitly enabled
-    const shouldShow = process.env.NODE_ENV === 'development' || 
+    const shouldShow = import.meta.env.MODE === 'development' || 
                       localStorage.getItem('show-performance-monitor') === 'true' ||
                       showDetails;
     
@@ -272,7 +272,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         </Panel>
       </Collapse>
 
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.MODE === 'development' && (
         <div style={{ marginTop: 16, fontSize: 12, color: '#666' }}>
           Session: {metrics.sessionId} | Viewport: {metrics.viewport} | Connection: {metrics.connection}
         </div>

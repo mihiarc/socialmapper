@@ -438,8 +438,8 @@ class PerformanceMonitor {
 
 // Export singleton instance
 export const performanceMonitor = new PerformanceMonitor({
-  enabled: process.env.NODE_ENV === 'production',
-  analyticsEndpoint: process.env.REACT_APP_ANALYTICS_ENDPOINT
+  enabled: import.meta.env.MODE === 'production',
+  analyticsEndpoint: import.meta.env.VITE_ANALYTICS_ENDPOINT
 });
 
 // React hook for performance monitoring

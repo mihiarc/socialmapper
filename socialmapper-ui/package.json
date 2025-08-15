@@ -1,0 +1,88 @@
+{
+  "name": "socialmapper-ui",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:analyze": "vite-bundle-visualizer",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:ci": "vitest run --coverage --reporter=json --reporter=default",
+    "test:coverage:report": "vitest run --coverage.reporter=text-summary --coverage.reporter=lcov",
+    "typecheck": "tsc --noEmit",
+    "size:check": "size-limit",
+    "precommit": "lint-staged",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@reduxjs/toolkit": "^2.0.1",
+    "react-redux": "^9.0.4",
+    "antd": "^5.14.0",
+    "mapbox-gl": "^3.1.0",
+    "react-map-gl": "^7.1.7",
+    "@turf/turf": "^6.5.0",
+    "axios": "^1.6.5",
+    "date-fns": "^3.2.0",
+    "react-router-dom": "^6.21.1",
+    "recharts": "^2.10.3",
+    "@ant-design/icons": "^5.2.6",
+    "web-vitals": "^3.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/mapbox-gl": "^2.7.19",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vitest": "^1.1.0",
+    "@vitest/ui": "^1.1.0",
+    "@vitest/coverage-v8": "^1.1.0",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/jest-dom": "^6.1.6",
+    "@testing-library/user-event": "^14.5.2",
+    "jsdom": "^23.1.0",
+    "prettier": "^3.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "size-limit": "^11.0.1",
+    "@size-limit/preset-app": "^11.0.1",
+    "vite-bundle-visualizer": "^1.0.0",
+    "audit-ci": "^6.6.1",
+    "terser": "^5.28.0"
+  },
+  "size-limit": [
+    {
+      "path": "dist/assets/js/*.js",
+      "limit": "2 MB"
+    },
+    {
+      "path": "dist/assets/css/*.css",
+      "limit": "100 KB"
+    }
+  ],
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,json,css,md}": [
+      "prettier --write"
+    ]
+  }
+}

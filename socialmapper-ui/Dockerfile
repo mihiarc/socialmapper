@@ -1,7 +1,7 @@
 # Multi-stage build for SocialMapper React UI
 
 # Dependencies stage - cache dependencies separately
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN npm install --only=production --no-audit --no-fund && \
     npm cache clean --force
 
 # Build stage
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
