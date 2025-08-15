@@ -5,7 +5,7 @@
 aws_region      = "us-east-1"
 environment     = "production"
 cluster_name    = "socialmapper"
-cluster_version = "1.28"
+cluster_version = "1.31"
 
 # Domain and SSL
 domain_name = "demo.socialmapper.com"
