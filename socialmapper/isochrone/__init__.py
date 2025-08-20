@@ -71,6 +71,7 @@ def create_isochrone_from_poi(
     simplify_tolerance: float | None = None,
     use_parquet: bool = True,
     travel_mode: TravelMode = TravelMode.DRIVE,
+    restrict_to_country: str | None = None,
 ) -> str | gpd.GeoDataFrame:
     """Create an isochrone from a POI using modern optimized methods.
 
@@ -82,6 +83,8 @@ def create_isochrone_from_poi(
         simplify_tolerance (float, optional): Tolerance for geometry simplification
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
         travel_mode (TravelMode): Mode of travel (walk, bike, drive)
+        restrict_to_country (str, optional): ISO 3166-1 alpha-2 country code (e.g., 'US')
+                                            to restrict roads to that country only
 
     Returns:
         Union[str, gpd.GeoDataFrame]: File path if save_file=True, or GeoDataFrame if save_file=False
