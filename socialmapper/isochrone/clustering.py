@@ -425,6 +425,71 @@ def create_isochrone_from_poi_with_network(
             logger.warning(f"No reachable nodes for POI {poi.get('id', 'unknown')}")
             return None
 
+        # Calculate distance statistics using Dijkstra's algorithm
+        # Get shortest paths by travel time to all reachable nodes
+        paths_by_time = nx.single_source_dijkstra_path_length(
+            network,
+            poi_node,
+            cutoff=travel_time_minutes * 60,  # seconds
+            weight="travel_time"
+        )
+        
+        # Calculate actual distances along shortest paths
+        distances_m = []
+        for target_node in paths_by_time.keys():
+            if target_node != poi_node:
+                try:
+                    # Get shortest path (sequence of nodes)
+                    path = nx.shortest_path(
+                        network,
+                        poi_node,
+                        target_node,
+                        weight="travel_time"
+                    )
+                    
+                    # Sum edge lengths along the path
+                    total_distance = 0.0
+                    for i in range(len(path) - 1):
+                        # Get edge data between consecutive nodes
+                        edge_data = network.get_edge_data(path[i], path[i+1])
+                        if edge_data:
+                            # Handle multi-edges by taking the shortest length
+                            if isinstance(edge_data, dict):
+                                # If multiple edges exist, get the minimum length
+                                min_length = min(
+                                    e.get("length", 0) for e in edge_data.values()
+                                )
+                                total_distance += min_length
+                    
+                    if total_distance > 0:
+                        distances_m.append(total_distance)
+                except (nx.NetworkXNoPath, KeyError):
+                    # Skip nodes that can't be reached or have missing data
+                    continue
+        
+        # Calculate distance statistics
+        if distances_m:
+            min_distance_m = min(distances_m)
+            max_distance_m = max(distances_m)
+            avg_distance_m = sum(distances_m) / len(distances_m)
+            
+            # Convert to kilometers
+            min_distance_km = min_distance_m / 1000.0
+            max_distance_km = max_distance_m / 1000.0
+            avg_distance_km = avg_distance_m / 1000.0
+            
+            # Calculate median and standard deviation
+            import numpy as np
+            median_distance_km = np.median(distances_m) / 1000.0
+            std_dev_km = np.std(distances_m) / 1000.0 if len(distances_m) > 1 else 0.0
+        else:
+            # Default values if no distances calculated
+            min_distance_km = 0.0
+            max_distance_km = 0.0
+            avg_distance_km = 0.0
+            median_distance_km = 0.0
+            std_dev_km = 0.0
+
         # Create isochrone polygon from reachable nodes
         node_points = [Point((data["x"], data["y"])) for node, data in subgraph.nodes(data=True)]
 
