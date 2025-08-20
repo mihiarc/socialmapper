@@ -36,7 +36,7 @@ class ExtractedEntity:
 class LocationEntity(ExtractedEntity):
     """Location entity with geographic information."""
 
-    location_name: str
+    location_name: str = ""
     location_type: str = "city"  # city, state, address, coordinates
     coordinates: tuple[float, float] | None = None
 
@@ -48,7 +48,7 @@ class LocationEntity(ExtractedEntity):
 class POIEntity(ExtractedEntity):
     """Point of Interest entity."""
 
-    poi_category: str
+    poi_category: str = ""
     osm_type: str | None = None
     osm_name: str | None = None
 
@@ -60,7 +60,7 @@ class POIEntity(ExtractedEntity):
 class TimeConstraintEntity(ExtractedEntity):
     """Time-based constraint entity."""
 
-    minutes: int
+    minutes: int = 0
     constraint_type: str = "within"  # within, under, maximum, etc.
 
     def __post_init__(self):
@@ -71,8 +71,8 @@ class TimeConstraintEntity(ExtractedEntity):
 class DistanceConstraintEntity(ExtractedEntity):
     """Distance-based constraint entity."""
 
-    distance: float
-    unit: str  # miles, km, meters
+    distance: float = 0.0
+    unit: str = "km"  # miles, km, meters
     constraint_type: str = "within"
 
     def __post_init__(self):
@@ -83,7 +83,7 @@ class DistanceConstraintEntity(ExtractedEntity):
 class DemographicEntity(ExtractedEntity):
     """Demographic constraint entity."""
 
-    demographic_type: str
+    demographic_type: str = ""
     value_type: str = "categorical"  # categorical, numeric, range
     value: str | float | tuple[float, float] = None
 
@@ -95,7 +95,7 @@ class DemographicEntity(ExtractedEntity):
 class TravelModeEntity(ExtractedEntity):
     """Travel mode entity."""
 
-    mode: str  # walk, drive, bike, transit
+    mode: str = "drive"  # walk, drive, bike, transit
 
     def __post_init__(self):
         self.entity_type = EntityType.TRAVEL_MODE
