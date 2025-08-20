@@ -119,6 +119,7 @@ def create_isochrone_from_poi(
         cluster_size=1,
         cache=cache,
         travel_mode=travel_mode,
+        restrict_to_country=restrict_to_country,
     )
 
     if graph is None:
