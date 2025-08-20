@@ -515,6 +515,7 @@ def download_and_cache_network(
     cluster_size: int = 1,
     cache: ModernNetworkCache | None = None,
     travel_mode: TravelMode | None = None,
+    restrict_to_country: str | None = None,
 ) -> nx.MultiDiGraph | None:
     """Download network and store in cache, or retrieve from cache if available.
 
@@ -525,6 +526,8 @@ def download_and_cache_network(
         cluster_size: Number of POIs this network will serve
         cache: Cache instance to use (uses global cache if None)
         travel_mode: Travel mode (walk, bike, drive)
+        restrict_to_country: ISO 3166-1 alpha-2 country code (e.g., 'US' for United States)
+                           to restrict network to roads within that country only
 
     Returns:
         Network graph or None if download failed
