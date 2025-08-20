@@ -174,8 +174,7 @@ class WebSocketService {
           id: jobId,
           status: message.data.status || JobStatusEnum.RUNNING,
           progress: message.data.progress || 0,
-          message: message.data.message || '',
-          stage: message.data.stage
+          message: message.data.message || ''
         }));
         break;
 
@@ -190,8 +189,7 @@ class WebSocketService {
           id: jobId,
           status: JobStatusEnum.FAILED,
           progress: 0,
-          message: message.data.error || 'Analysis failed',
-          error: message.data.error_details
+          message: message.data.error || 'Analysis failed'
         }));
         // Auto-disconnect after failure
         setTimeout(() => this.disconnect(jobId), 1000);

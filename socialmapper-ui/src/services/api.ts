@@ -159,6 +159,23 @@ class ApiClient {
     const response = await this.client.get('/analysis/jobs');
     return response.data;
   }
+
+  // Generic HTTP methods for demo scenarios and other uses
+  async get<T = any>(url: string, config?: any): Promise<AxiosResponse<T>> {
+    return this.client.get<T>(url, config);
+  }
+
+  async post<T = any>(url: string, data?: any, config?: any): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(url, data, config);
+  }
+
+  async put<T = any>(url: string, data?: any, config?: any): Promise<AxiosResponse<T>> {
+    return this.client.put<T>(url, data, config);
+  }
+
+  async delete<T = any>(url: string, config?: any): Promise<AxiosResponse<T>> {
+    return this.client.delete<T>(url, config);
+  }
 }
 
 // Export singleton instance

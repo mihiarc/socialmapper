@@ -39,7 +39,7 @@ env:
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   EKS_CLUSTER_NAME: socialmapper-prod
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
 
 jobs:
   # Enhanced Security and Code Quality Checks

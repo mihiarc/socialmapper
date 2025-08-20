@@ -8,7 +8,7 @@ import logging
 import sys
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
 from ..exceptions import (
     ErrorSeverity,

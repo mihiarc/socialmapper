@@ -162,7 +162,7 @@ async def get_job_status(
         
         # Add performance metrics if requested
         if include_performance and hasattr(job_manager, 'get_performance_stats'):
-            status.performance_stats = job_manager.get_performance_stats()
+            status.performance_stats = await job_manager.get_performance_stats()
         
         return status
 
@@ -415,7 +415,7 @@ async def get_performance_metrics(
         job_manager = get_job_manager(request)
         
         if hasattr(job_manager, 'get_performance_stats'):
-            stats = job_manager.get_performance_stats()
+            stats = await job_manager.get_performance_stats()
         else:
             stats = {"message": "Performance stats not available"}
         

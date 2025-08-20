@@ -150,7 +150,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
     const statusInterval = setInterval(() => {
       if (mounted) {
         const state = websocketService.getConnectionState(jobId);
-        setConnectionStatus(state === 'closed' ? 'disconnected' : state);
+        setConnectionStatus(state);
       }
     }, 1000);
 

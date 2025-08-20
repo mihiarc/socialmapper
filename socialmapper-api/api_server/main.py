@@ -9,7 +9,7 @@ from .config import get_settings
 from .middleware import setup_api_key_auth, setup_cors, setup_error_handling, setup_rate_limiting
 from .middleware.metrics import setup_metrics
 from .middleware.compression import setup_compression
-from .routers import analysis, health, metadata, results, feedback, websocket
+from .routers import analysis, health, metadata, results, feedback, websocket, demo
 from .services.cleanup_scheduler import get_cleanup_scheduler, init_cleanup_scheduler
 from .services.enhanced_job_manager import EnhancedJobManager
 from .services.result_storage import init_result_storage
@@ -122,6 +122,7 @@ def create_app() -> FastAPI:
     app.include_router(results.router, prefix="/api/v1", tags=["results"])
     app.include_router(metadata.router, prefix="/api/v1", tags=["metadata"])
     app.include_router(feedback.router, prefix="/api/v1", tags=["feedback"])
+    app.include_router(demo.router, prefix="/api/v1", tags=["demo"])
     
     # Include WebSocket router for real-time updates
     if settings.websocket_enabled:

@@ -85,7 +85,7 @@ class FeedbackSummary(BaseResponse):
 class UserAnalyticsEvent(BaseModel):
     """Model for user analytics events."""
     event_name: str
-    event_category: str = Field(..., regex="^(navigation|interaction|conversion|error)$")
+    event_category: str = Field(..., pattern="^(navigation|interaction|conversion|error)$")
     properties: Optional[Dict[str, Any]] = None
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
     session_id: Optional[str] = None
@@ -157,7 +157,7 @@ class FeatureRequest(BaseResponse):
 class FeatureVoteRequest(BaseModel):
     """Request model for voting on features."""
     feature_id: str
-    vote_type: str = Field(..., regex="^(upvote|downvote)$")
+    vote_type: str = Field(..., pattern="^(upvote|downvote)$")
 
 
 class FeatureVote(BaseResponse):
@@ -197,7 +197,7 @@ class InterviewStatus(str, Enum):
 class InterviewRequest(BaseModel):
     """Request model for scheduling interviews."""
     name: str = Field(..., min_length=2, max_length=100)
-    email: str = Field(..., regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    email: str = Field(..., pattern=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
     user_type: UserType
     research_focus: Optional[str] = Field(None, max_length=500)
     preferred_times: List[str] = Field(..., min_items=1, max_items=5)

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     print(f"CORS origins: {settings.cors_origins}")
 
     uvicorn.run(
-        app,
+        "api_server.main:app",
         host=settings.host,
         port=settings.port,
         reload=True,

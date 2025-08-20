@@ -364,7 +364,7 @@ class EnhancedJobManager(JobManager):
             except Exception as e:
                 logger.error(f"Error in session cleanup: {e}")
     
-    def get_performance_stats(self) -> Dict[str, Any]:
+    async def get_performance_stats(self) -> Dict[str, Any]:
         """Get performance statistics."""
         if not self.processing_times:
             avg_time = 0

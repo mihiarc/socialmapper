@@ -45,7 +45,7 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   K6_VERSION: 'v0.47.0'
   PERFORMANCE_RESULTS_RETENTION_DAYS: 30
 

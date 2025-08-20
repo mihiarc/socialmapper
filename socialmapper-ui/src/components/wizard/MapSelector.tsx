@@ -139,7 +139,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
         map.current = null;
       }
     };
-  }, [enableBoundingBox, drawingMode, onBoundingBoxChange]);
+  }, []);
 
   // Update bounding box visual on map
   const updateBoundingBoxVisual = useCallback((bounds: [number, number, number, number]) => {

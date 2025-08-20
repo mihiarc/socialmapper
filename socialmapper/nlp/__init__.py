@@ -15,27 +15,27 @@ Example:
     ```
 """
 
-from .processor import NLQueryProcessor
 from .entities import (
+    DemographicEntity,
     EntityType,
     ExtractedEntity,
     LocationEntity,
     POIEntity,
     TimeConstraintEntity,
-    DemographicEntity,
 )
-from .intents import QueryIntent, IntentClassifier
+from .intents import IntentClassifier, QueryIntent
+from .processor import NLQueryProcessor
 from .translator import QueryTranslator
 
 __all__ = [
-    "NLQueryProcessor", 
+    "DemographicEntity",
     "EntityType",
     "ExtractedEntity",
-    "LocationEntity", 
-    "POIEntity",
-    "TimeConstraintEntity",
-    "DemographicEntity",
-    "QueryIntent",
     "IntentClassifier",
+    "LocationEntity",
+    "NLQueryProcessor",
+    "POIEntity",
+    "QueryIntent",
     "QueryTranslator",
+    "TimeConstraintEntity",
 ]

@@ -329,11 +329,17 @@ class PerformanceMonitor {
     }
   }
 
-  public recordFeatureUsage(feature: string): void {
+  public recordFeatureUsage(feature: string, metadata?: Record<string, any>): void {
     if (!this.metrics.featureUsage) {
       this.metrics.featureUsage = {};
     }
+    // Track usage count
     this.metrics.featureUsage[feature] = (this.metrics.featureUsage[feature] || 0) + 1;
+    
+    // Optionally log metadata for debugging/analytics
+    if (metadata && this.isEnabled) {
+      console.debug(`Feature usage: ${feature}`, metadata);
+    }
   }
 
   public recordUserEngagement(startTime: number): void {

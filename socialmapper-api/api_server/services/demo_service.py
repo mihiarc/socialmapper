@@ -7,11 +7,12 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import hashlib
 
-from socialmapper import SocialMapperBuilder
-from socialmapper.data import POICategory
+# from socialmapper import SocialMapperBuilder  # Not needed for demo submission
+# from socialmapper.data import POICategory  # Not needed for demo submission
 
 from ..services.cache_service import CacheService
-from ..services.job_manager import JobManager, JobPriority
+from ..services.job_manager import JobManager
+from ..services.enhanced_job_manager import JobPriority
 from ..models.analysis import AnalysisRequest, AnalysisResponse
 
 logger = logging.getLogger(__name__)
@@ -123,45 +124,21 @@ class DemoScenarioService:
             metadata={
                 'scenario_id': scenario_id,
                 'scenario_name': scenario['name'],
-                'is_demo': True
+                'is_demo': True,
+                'insights': scenario['insights']
             }
         )
         
-        # Wait for completion (with timeout)
-        timeout = scenario['estimated_runtime_seconds'] * 2  # 2x buffer
-        start_time = datetime.now()
-        
-        while (datetime.now() - start_time).seconds < timeout:
-            job_status = await self.job_manager.get_job_status(job_id)
-            
-            if job_status['status'] == 'completed':
-                result = job_status['result']
-                
-                # Add scenario insights to result
-                result['insights'] = scenario['insights']
-                result['scenario_metadata'] = {
-                    'id': scenario_id,
-                    'name': scenario['name'],
-                    'description': scenario['description']
-                }
-                
-                # Cache the result
-                if self.cache_service:
-                    await self.cache_service.set_demo_data(
-                        scenario['cache_key'],
-                        result,
-                        ttl_hours=24  # Cache demo results for 24 hours
-                    )
-                
-                return result
-            
-            elif job_status['status'] == 'failed':
-                raise Exception(f"Demo scenario failed: {job_status.get('error', 'Unknown error')}")
-            
-            # Wait before checking again
-            await asyncio.sleep(2)
-        
-        raise TimeoutError(f"Demo scenario timed out after {timeout} seconds")
+        # Return the job ID immediately so the frontend can track progress
+        return {
+            'job_id': job_id,
+            'scenario_metadata': {
+                'id': scenario_id,
+                'name': scenario['name'],
+                'description': scenario['description'],
+                'estimated_runtime_seconds': scenario['estimated_runtime_seconds']
+            }
+        }
     
     async def warm_cache(self):
         """Pre-generate and cache all demo scenarios.
@@ -173,8 +150,9 @@ class DemoScenarioService:
         for scenario_id in self.scenarios:
             try:
                 logger.info(f"Warming cache for scenario: {scenario_id}")
-                await self.run_scenario(scenario_id, use_cache=False)
-                logger.info(f"Successfully cached scenario: {scenario_id}")
+                # For cache warming, we just submit the job - we don't need to wait
+                result = await self.run_scenario(scenario_id, use_cache=False)
+                logger.info(f"Successfully submitted scenario for caching: {scenario_id}, job_id: {result['job_id']}")
             except Exception as e:
                 logger.error(f"Failed to warm cache for {scenario_id}: {e}")
         

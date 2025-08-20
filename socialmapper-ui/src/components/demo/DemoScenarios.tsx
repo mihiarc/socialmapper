@@ -83,19 +83,24 @@ export const DemoScenarios: React.FC = () => {
       clearInterval(progressInterval);
       setProgress(100);
 
-      // Navigate to results with the data
+      // Navigate to results with the job ID
       setTimeout(() => {
-        navigate('/results', { 
-          state: { 
-            results: response.data,
-            isDemo: true,
-            scenarioName: scenario.name 
-          }
-        });
+        const jobId = response.data.job_id || response.data.id;
+        if (jobId) {
+          navigate(`/results/${jobId}`, { 
+            state: { 
+              isDemo: true,
+              scenarioName: scenario.name 
+            }
+          });
+        } else {
+          throw new Error('No job ID returned from demo scenario');
+        }
       }, 500);
 
     } catch (err) {
-      setError(`Failed to run scenario: ${err.message}`);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(`Failed to run scenario: ${errorMessage}`);
       setRunningScenario(null);
       setProgress(0);
     }

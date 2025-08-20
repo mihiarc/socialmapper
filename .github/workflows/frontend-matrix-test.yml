@@ -14,11 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        node-version: [18, 20, 21]
+        node-version: [20, 22]
         exclude:
           # Exclude some combinations to save CI time
           - os: macos-latest
-            node-version: 18
+            node-version: 20
     
     defaults:
       run:

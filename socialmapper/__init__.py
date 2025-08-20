@@ -141,11 +141,11 @@ from .tutorial_helper import tutorial_error_handler
 # Import NLP module if available
 try:
     from .nlp import (
-        NLQueryProcessor,
-        EntityType,
-        QueryIntent,
-        IntentClassifier,
         EntityExtractor,
+        EntityType,
+        IntentClassifier,
+        NLQueryProcessor,
+        QueryIntent,
         QueryTranslator,
     )
     _NLP_AVAILABLE = True
