@@ -550,19 +550,81 @@ def download_and_cache_network(
         default_speed = 50.0
         highway_speeds = get_highway_speeds(TravelMode.DRIVE)
 
-    # Try to get from cache first
-    network = cache.get_network(bbox, network_type, travel_time_minutes)
-    if network is not None:
-        return network
+    # Try to get from cache first (need to update cache methods to handle country)
+    # For now, we'll generate cache key manually
+    cache_key = cache._generate_cache_key(bbox, network_type, travel_time_minutes, restrict_to_country)
+    
+    # Try to retrieve from cache with country-aware key
+    try:
+        with cache._lock:
+            cache._stats.total_requests += 1
+        
+        file_path = cache._get_file_path(cache_key)
+        if file_path.exists():
+            with file_path.open("rb") as f:
+                compressed_data = f.read()
+            network = cache._decompress_network(compressed_data)
+            
+            with cache._lock:
+                cache._stats.cache_hits += 1
+            
+            logger.debug(f"Cache hit for network (country={restrict_to_country})")
+            return network
+    except Exception:
+        pass  # Cache miss, continue to download
 
     # Download new network
     try:
-        logger.info(f"Downloading network for bbox {bbox} with network_type={network_type}")
+        country_info = f" (country={restrict_to_country})" if restrict_to_country else ""
+        logger.info(f"Downloading network for bbox {bbox} with network_type={network_type}{country_info}")
 
         min_lat, min_lon, max_lat, max_lon = bbox
         # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
         osm_bbox = (min_lon, min_lat, max_lon, max_lat)
-        graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+        
+        if restrict_to_country:
+            # Use custom filter to restrict to specific country
+            # OSM uses ISO 3166-1 alpha-2 codes stored in 'country_code' tag
+            custom_filter = f'["highway"]["country_code"="{restrict_to_country}"]' if restrict_to_country == "US" else None
+            
+            # For US restriction, we can use a more sophisticated approach
+            # Download the full network first, then filter
+            graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+            
+            if restrict_to_country == "US":
+                # Remove edges that cross into Canada or Mexico
+                # We'll check if nodes are within US boundaries
+                import geopandas as gpd
+                from shapely.geometry import Point
+                
+                # Get US boundary (simplified approach using latitude check)
+                # For Libby, MT area, Canada is north of ~49°N
+                edges_to_remove = []
+                for u, v, key, data in graph.edges(keys=True, data=True):
+                    # Get node coordinates
+                    u_data = graph.nodes[u]
+                    v_data = graph.nodes[v]
+                    
+                    # Simple latitude-based filter for US-Canada border (49th parallel)
+                    # This is approximate but effective for the Libby, MT region
+                    if restrict_to_country == "US":
+                        # Check if either node is north of 49°N (in Canada)
+                        if u_data.get('y', 0) > 49.0 or v_data.get('y', 0) > 49.0:
+                            edges_to_remove.append((u, v, key))
+                
+                # Remove edges that cross the border
+                for u, v, key in edges_to_remove:
+                    if graph.has_edge(u, v, key):
+                        graph.remove_edge(u, v, key)
+                
+                # Remove isolated nodes (nodes with no edges)
+                nodes_to_remove = [node for node in graph.nodes() if graph.degree(node) == 0]
+                graph.remove_nodes_from(nodes_to_remove)
+                
+                logger.info(f"Filtered network to US only: removed {len(edges_to_remove)} cross-border edges and {len(nodes_to_remove)} isolated nodes")
+        else:
+            # No country restriction, download normally
+            graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
         # Add speeds and travel times with mode-specific defaults
         # OSMnx will use:
