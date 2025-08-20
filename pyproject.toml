@@ -51,6 +51,7 @@ dependencies = [
     "scikit-learn>=1.7.0", # Latest version as of Jun 2025
     "typer>=0.16.0", # Latest version as of 2025
     "pytest>=8.4.1",
+    "folium>=0.20.0",
 ]
 
 [project.optional-dependencies]
