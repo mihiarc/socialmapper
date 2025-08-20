@@ -515,6 +515,22 @@ def create_isochrone_from_poi_with_network(
         )
         isochrone_gdf["travel_time_minutes"] = travel_time_minutes
         isochrone_gdf["travel_mode"] = travel_mode.value
+        
+        # Add distance statistics
+        isochrone_gdf["min_distance_km"] = min_distance_km
+        isochrone_gdf["max_distance_km"] = max_distance_km
+        isochrone_gdf["avg_distance_km"] = avg_distance_km
+        isochrone_gdf["median_distance_km"] = median_distance_km
+        isochrone_gdf["std_dev_distance_km"] = std_dev_km
+        isochrone_gdf["reachable_nodes"] = len(subgraph.nodes)
+        isochrone_gdf["analyzed_paths"] = len(distances_m)
+        
+        # Log distance statistics for debugging
+        logger.info(
+            f"Distance stats for {poi.get('id', 'unknown')} at {travel_time_minutes} min: "
+            f"min={min_distance_km:.2f}km, max={max_distance_km:.2f}km, "
+            f"avg={avg_distance_km:.2f}km, nodes={len(subgraph.nodes)}"
+        )
 
         return isochrone_gdf
 
