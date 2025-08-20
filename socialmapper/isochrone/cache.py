@@ -117,12 +117,15 @@ class ModernNetworkCache:
             conn.commit()
 
     def _generate_cache_key(
-        self, bbox: tuple[float, float, float, float], network_type: str, travel_time_minutes: int
+        self, bbox: tuple[float, float, float, float], network_type: str, travel_time_minutes: int,
+        country: str | None = None
     ) -> str:
         """Generate unique cache key for network parameters."""
         # Round bbox to reduce cache fragmentation
         rounded_bbox = tuple(round(coord, 4) for coord in bbox)
-        key_data = f"{rounded_bbox}_{network_type}_{travel_time_minutes}"
+        # Include country restriction in cache key if specified
+        country_str = f"_{country}" if country else ""
+        key_data = f"{rounded_bbox}_{network_type}_{travel_time_minutes}{country_str}"
         # Use full SHA256 hash for better security and uniqueness
         return hashlib.sha256(key_data.encode()).hexdigest()
 
