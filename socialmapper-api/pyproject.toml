@@ -24,6 +24,7 @@ dependencies = [
     "aioredis>=2.0.1",
     "fastapi-mcp>=0.4.0",
     "rich>=13.0.0",
+    "httpx>=0.28.1",
 ]
 requires-python = ">=3.11"
 

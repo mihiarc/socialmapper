@@ -16,6 +16,7 @@ from .services.result_storage import init_result_storage
 from .services.feedback_service import init_feedback_service
 from .services.cache_service import get_cache_service, CacheServiceSingleton
 from .services.database_service import DatabaseServiceSingleton
+from .services.mcp_service import init_mcp_service, shutdown_mcp_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -69,10 +70,26 @@ async def lifespan(app: FastAPI):
     # Store job manager for access in routes
     app.state.job_manager = job_manager
     
+    # Initialize MCP service if enabled
+    if settings.mcp_enabled:
+        try:
+            mcp_service = await init_mcp_service(app, settings)
+            app.state.mcp_service = mcp_service
+            logger.info(f"MCP service initialized at {settings.mcp_mount_path}")
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP service: {e}")
+            if settings.debug_mode:
+                raise
+    
     yield
     
     # Shutdown
     logger.info("Shutting down SocialMapper API server...")
+    
+    # Shutdown MCP service if running
+    if hasattr(app.state, "mcp_service"):
+        await shutdown_mcp_service()
+        logger.info("MCP service shut down")
     
     if hasattr(app.state, "job_manager"):
         await app.state.job_manager.stop()
