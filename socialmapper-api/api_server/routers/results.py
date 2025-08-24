@@ -102,6 +102,7 @@ async def get_analysis_results(
             status=job.status,
             request=job.request,
             poi_count=full_results.get("poi_count") if full_results else None,
+            pois=full_results.get("pois") if full_results else None,
             demographics=full_results.get("demographics") if full_results else None,
             isochrones=full_results.get("isochrones") if full_results else None,
             analysis_area_km2=full_results.get("analysis_area_km2") if full_results else None,
