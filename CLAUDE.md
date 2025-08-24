@@ -92,7 +92,36 @@ MCP (Model Context Protocol) is a standardized protocol that allows AI assistant
 - Batch processing for multiple locations
 - Export functionality in multiple formats
 
-### Quick Start
+### 🚀 Claude Code Integration (Recommended)
+
+For the easiest MCP integration experience, we provide a published NPM package that connects Claude Code directly to SocialMapper:
+
+#### Installation
+```bash
+# Install the MCP server package
+npm install -g socialmapper-mcp-server
+
+# Add to Claude Code
+claude mcp add socialmapper --scope user -- npx socialmapper-mcp-server
+```
+
+#### Usage
+Once connected, you can ask Claude Code natural language questions like:
+- *"What types of places can SocialMapper analyze?"*
+- *"Analyze libraries within 15 minutes walking distance of downtown Denver"*  
+- *"Show me available demographic variables for census analysis"*
+- *"Run a demo scenario to see how accessibility analysis works"*
+
+**Package Details:**
+- **NPM Package**: `socialmapper-mcp-server`
+- **NPM Registry**: https://www.npmjs.com/package/socialmapper-mcp-server
+- **GitHub**: https://github.com/mihiarc/socialmapper/tree/main/socialmapper-api
+- **Tools**: 8 MCP tools for comprehensive spatial analysis
+- **Dependencies**: Python 3.11+ with automatic dependency management
+
+### Manual Setup (Advanced)
+
+For advanced users or custom integrations, you can set up MCP manually:
 
 #### 1. Enable MCP Integration
 
