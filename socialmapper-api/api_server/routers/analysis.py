@@ -195,6 +195,7 @@ async def get_analysis_result(job_id: str, job_manager: JobManager = Depends(get
             status=job.status,
             request=job.request,
             poi_count=job.result.get("poi_count") if job.result else None,
+            pois=job.result.get("pois") if job.result else None,
             demographics=job.result.get("demographics") if job.result else None,
             isochrones=job.result.get("isochrones") if job.result else None,
             processing_time_seconds=job.processing_time_seconds,
