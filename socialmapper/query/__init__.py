@@ -14,8 +14,16 @@ from .polygon_queries import (
     query_pois_in_polygon,
 )
 
+# Export OSMnx query functions
+from .osmnx_query import (
+    build_osmnx_tags,
+    query_pois_osmnx,
+    query_pois_with_fallback,
+)
+
 __all__ = [
     "build_overpass_query",
+    "build_osmnx_tags",
     "build_poi_discovery_query",
     "create_poi_config",
     "format_results",
@@ -24,6 +32,8 @@ __all__ = [
     "query_pois",
     "query_pois_from_isochrone",
     "query_pois_in_polygon",
+    "query_pois_osmnx",
+    "query_pois_with_fallback",
     "save_json",
 ]
 

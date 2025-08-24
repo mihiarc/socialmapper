@@ -223,7 +223,6 @@ def extract_poi_data(
     """
     from ..census import get_census_system
     from ..census.services.geography_service import StateFormat
-    from ..query import build_overpass_query, create_poi_config, format_results, query_overpass
 
     # Get census system for state normalization
     census_system = get_census_system()
@@ -269,7 +268,7 @@ def extract_poi_data(
         print(f"Using {len(poi_data['pois'])} custom coordinates from {custom_coords_path}")
 
     else:
-        # Query POIs from OpenStreetMap
+        # Query POIs from OpenStreetMap using OSMnx
         print("\n=== Querying Points of Interest ===")
 
         if not (geocode_area and poi_type and poi_name):
@@ -284,21 +283,20 @@ def extract_poi_data(
             else None
         )
 
-        # Create POI configuration
-        config = create_poi_config(
-            geocode_area=geocode_area,
-            state=state_abbr,
-            city=city or geocode_area,
-            poi_type=poi_type,
-            poi_name=poi_name,
-            additional_tags=additional_tags,
-        )
         print(f"Querying OpenStreetMap for: {geocode_area} - {poi_type} - {poi_name}")
 
-        # Execute query with error handling
-        query = build_overpass_query(config)
+        # Use the new OSMnx-based query method
+        from ..query.osmnx_query import query_pois_with_fallback
+        
         try:
-            raw_results = query_overpass(query)
+            poi_data = query_pois_with_fallback(
+                location=geocode_area,
+                poi_type=poi_type,
+                poi_name=poi_name,
+                state=state_abbr,
+                additional_tags=additional_tags,
+                use_overpass_fallback=True,  # Enable fallback for robustness
+            )
         except (URLError, OSError) as e:
             error_msg = str(e)
             if "Connection refused" in error_msg:
@@ -315,12 +313,10 @@ def extract_poi_data(
             else:
                 raise ValueError(f"Error querying OpenStreetMap: {error_msg}") from e
 
-        poi_data = format_results(raw_results, config)
-
-        # Generate base filename from POI configuration
-        poi_type_str = config.get("type", "poi")
-        poi_name_str = config.get("name", "custom").replace(" ", "_").lower()
-        location = config.get("geocode_area", "").replace(" ", "_").lower()
+        # Generate base filename from POI parameters
+        poi_type_str = poi_type
+        poi_name_str = poi_name.replace(" ", "_").lower()
+        location = geocode_area.replace(" ", "_").lower()
 
         if location:
             base_filename = f"{location}_{poi_type_str}_{poi_name_str}"
@@ -343,15 +339,10 @@ def extract_poi_data(
 
         print(f"Found {len(poi_data['pois'])} POIs")
 
-        # Extract state from config if available
-        state_name = config.get("state")
-        if state_name:
-            state_abbr = census_system.normalize_state(
-                state_name, to_format=StateFormat.ABBREVIATION
-            )
-            if state_abbr and state_abbr not in state_abbreviations:
-                state_abbreviations.append(state_abbr)
-                print(f"Using state from parameters: {state_name} ({state_abbr})")
+        # Extract state from parameters if available
+        if state_abbr and state_abbr not in state_abbreviations:
+            state_abbreviations.append(state_abbr)
+            print(f"Using state from parameters: {state} ({state_abbr})")
 
     # Validate that we have POIs to process
     if not poi_data or "pois" not in poi_data or not poi_data["pois"]:
