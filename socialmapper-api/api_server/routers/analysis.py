@@ -190,6 +190,17 @@ async def get_analysis_result(job_id: str, job_manager: JobManager = Depends(get
             )
 
         # Job completed successfully
+        # Handle isochrones field - parse if it's a string
+        isochrones_data = job.result.get("isochrones") if job.result else None
+        if isochrones_data and isinstance(isochrones_data, str):
+            import json
+            try:
+                isochrones_data = json.loads(isochrones_data)
+            except json.JSONDecodeError:
+                # If parsing fails, set to None rather than failing the whole request
+                logger.warning(f"Failed to parse isochrones data for job {job_id}")
+                isochrones_data = None
+        
         result = AnalysisResult(
             job_id=job.id,
             status=job.status,
@@ -197,7 +208,7 @@ async def get_analysis_result(job_id: str, job_manager: JobManager = Depends(get
             poi_count=job.result.get("poi_count") if job.result else None,
             pois=job.result.get("pois") if job.result else None,
             demographics=job.result.get("demographics") if job.result else None,
-            isochrones=job.result.get("isochrones") if job.result else None,
+            isochrones=isochrones_data,
             processing_time_seconds=job.processing_time_seconds,
             created_at=job.created_at,
             started_at=job.started_at,
