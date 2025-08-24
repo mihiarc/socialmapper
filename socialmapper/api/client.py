@@ -375,8 +375,14 @@ class SocialMapperClient:
                 return self._run_poi_discovery_analysis(config, on_progress)
 
             # Run standard pipeline - filter out POI discovery specific config
+            # Also filter out other fields that aren't part of PipelineConfig
+            excluded_fields = {
+                "poi_categories", "exclude_poi_categories", "max_pois_per_category",
+                "enable_isochrones", "poi_discovery_enabled", "poi_discovery_config"
+            }
             pipeline_config_dict = {
-                k: v for k, v in config.items() if not k.startswith("poi_discovery")
+                k: v for k, v in config.items() 
+                if not k.startswith("poi_discovery") and k not in excluded_fields
             }
             pipeline_config = PipelineConfig(**pipeline_config_dict)
             orchestrator = PipelineOrchestrator(pipeline_config)
