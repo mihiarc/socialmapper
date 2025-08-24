@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from .base import (
     BaseResponse,
@@ -25,7 +25,7 @@ class BaseAnalysisRequest(BaseModel):
 
     travel_time: int = Field(15, ge=1, le=120, description="Travel time in minutes")
     census_variables: list[str] = Field(
-        default=["B01003_001E"], description="List of Census variable codes"
+        default=[], description="List of Census variable codes (optional if demographics not needed)"
     )
     geographic_level: GeographicLevel = Field(
         GeographicLevel.BLOCK_GROUP, description="Geographic analysis level"
@@ -34,21 +34,31 @@ class BaseAnalysisRequest(BaseModel):
     include_isochrones: bool = Field(True, description="Include isochrone polygons in results")
     include_demographics: bool = Field(True, description="Include demographic analysis")
 
-    @field_validator("census_variables")
-    @classmethod
-    def validate_census_variables(cls, v):
-        """Validate census variables list."""
-        if not v:
-            raise ValueError("At least one census variable must be specified")
-        # Basic validation for census variable format
-        for var in v:
+    @model_validator(mode='after')
+    def validate_census_requirements(self):
+        """Validate census variables based on demographics flag."""
+        # If demographics are not included, census variables are optional
+        if not self.include_demographics:
+            self.census_variables = []
+            return self
+        
+        # If demographics are included and no census variables provided, add default
+        if not self.census_variables:
+            self.census_variables = ["B01003_001E"]
+        
+        # Validate and clean census variables
+        validated_vars = []
+        for var in self.census_variables:
             if not var or not var.strip():
-                raise ValueError("Census variable cannot be empty")
-            # Check basic census variable format (letter + numbers + underscore + numbers + letter)
+                continue  # Skip empty variables
             var_clean = var.strip()
             if len(var_clean) < MIN_CENSUS_VARIABLE_LENGTH:
                 raise ValueError(f"Census variable '{var_clean}' appears to be too short")
-        return [var.strip() for var in v]
+            validated_vars.append(var_clean)
+        
+        # Ensure at least one valid variable when demographics are included
+        self.census_variables = validated_vars if validated_vars else ["B01003_001E"]
+        return self
 
 
 class LocationAnalysisRequest(BaseAnalysisRequest):
@@ -290,6 +300,9 @@ class AnalysisResult(BaseResponse):
 
     # Results data
     poi_count: int | None = Field(None, ge=0, description="Number of POIs found")
+    pois: list[dict[str, Any]] | None = Field(
+        None, description="List of POI details including name, location, and attributes"
+    )
     demographics: dict[str, Any] | None = Field(None, description="Demographic analysis results")
     isochrones: dict[str, Any] | None = Field(
         None, description="Isochrone polygon data (GeoJSON format)"
