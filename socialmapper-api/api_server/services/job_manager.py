@@ -181,6 +181,33 @@ class JobManager:
             else:
                 city = location_parts[0].strip()
                 state = location_parts[1].strip()
+            
+            # Normalize common multi-word city names that need hyphens for OpenStreetMap
+            # This helps when users type names without hyphens
+            city_normalizations = {
+                "fuquay varina": "Fuquay-Varina",
+                "winston salem": "Winston-Salem",
+                "chapel hill": "Chapel Hill",  # Keep as-is with space
+                "kitty hawk": "Kitty Hawk",  # Keep as-is with space
+                "kill devil hills": "Kill Devil Hills",  # Keep as-is with space
+                "holly springs": "Holly Springs",  # Keep as-is with space
+                "morrisville": "Morrisville",
+                "carrboro": "Carrboro",
+                "wake forest": "Wake Forest",  # Keep as-is with space
+                "new york": "New York",  # Keep as-is with space
+                "los angeles": "Los Angeles",  # Keep as-is with space
+                "san francisco": "San Francisco",  # Keep as-is with space
+                "st louis": "St. Louis",
+                "st paul": "St. Paul",
+                "st petersburg": "St. Petersburg",
+            }
+            
+            # Check if the city needs normalization (case-insensitive)
+            city_lower = city.lower()
+            if city_lower in city_normalizations:
+                normalized_city = city_normalizations[city_lower]
+                logger.info(f"Normalized city name from '{city}' to '{normalized_city}'")
+                city = normalized_city
 
             # Prepare options for analyze_location
             # Note: geographic_level should be passed as the enum value string (e.g., "block_group")
@@ -241,7 +268,15 @@ class JobManager:
             
             # Filter out fields that PipelineConfig doesn't accept
             # These are POI discovery related and not needed for standard analysis
-            fields_to_remove = ['poi_categories', 'exclude_poi_categories', 'max_pois_per_category']
+            fields_to_remove = [
+                'poi_categories', 
+                'exclude_poi_categories', 
+                'max_pois_per_category',
+                'poi_discovery_enabled',
+                'poi_discovery_location',
+                'poi_discovery_travel_time',
+                'poi_discovery_travel_mode'
+            ]
             for field in fields_to_remove:
                 config.pop(field, None)
             
