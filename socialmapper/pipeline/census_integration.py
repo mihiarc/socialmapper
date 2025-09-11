@@ -5,7 +5,7 @@ from typing import Any, Tuple, List
 import geopandas as gpd
 import pandas as pd
 
-from ..census_simple import (
+from ..census import (
     get_census_data_for_isochrone,
     normalize_variables,
     CensusClient,

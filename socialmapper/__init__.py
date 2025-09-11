@@ -54,7 +54,7 @@ from .api import (
 )
 
 # Simple census data functions
-from .census_simple import (
+from .census import (
     CensusClient,
     get_census_data,
     get_census_data_for_isochrone,

@@ -33,7 +33,7 @@ import httpx
 
 # Note: ratelimit import removed - not currently used
 # Import simple census utilities
-from ..census_simple import normalize_variables, CensusClient
+from ..census import normalize_variables, CensusClient
 
 # Census variable utilities
 def census_code_to_name(census_code: str) -> str:
@@ -77,7 +77,7 @@ def get_census_api_key() -> str | None:
 
 
 # Legacy mappings for backward compatibility
-from ..census_simple import VARIABLE_MAPPING as CENSUS_VARIABLE_MAPPING
+from ..census import VARIABLE_MAPPING as CENSUS_VARIABLE_MAPPING
 
 # Simple colormap mapping
 VARIABLE_COLORMAPS = {

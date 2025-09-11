@@ -9,7 +9,7 @@ from typing import Any
 import geopandas as gpd
 import pandas as pd
 
-from ..census_simple import (
+from ..census import (
     get_census_data_for_isochrone,
     get_demographics_for_isochrone,
     normalize_variables,
