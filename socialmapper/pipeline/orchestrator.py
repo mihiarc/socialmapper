@@ -201,8 +201,8 @@ class PipelineOrchestrator:
     
     def _create_location_poi(self) -> tuple[dict[str, Any], str, list[str], bool]:
         """Create a single POI at the analysis location for demographic-only analysis."""
-        import requests
-        from time import sleep
+        from ..geocoding import geocode_address
+        from ..geocoding.models import AddressInput, GeocodingConfig, AddressProvider
         
         # Get the location string
         if self.config.geocode_area:
@@ -212,56 +212,48 @@ class PipelineOrchestrator:
         else:
             raise ValueError("No location provided for demographic analysis")
         
-        # Use Nominatim directly for city-level geocoding
-        try:
-            # Rate limit for Nominatim
-            sleep(1)
-            
-            url = "https://nominatim.openstreetmap.org/search"
-            params = {
-                "q": location_str,
-                "format": "json",
-                "limit": 1,
-                "countrycodes": "us"
-            }
-            headers = {"User-Agent": "SocialMapper/1.0"}
-            
-            response = requests.get(url, params=params, headers=headers, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            if not data:
-                raise ValueError(f"Could not geocode location: {location_str}")
-            
-            result = data[0]
-            lat = float(result['lat'])
-            lon = float(result['lon'])
-            
-        except Exception as e:
-            # Fallback to hardcoded coordinates for common locations
-            fallback_coords = {
-                "Chapel Hill, NC": (35.9132, -79.0558),
-                "Raleigh, NC": (35.7796, -78.6382),
-                "Durham, NC": (35.9940, -78.8986),
-            }
-            
-            if location_str in fallback_coords:
-                lat, lon = fallback_coords[location_str]
-            else:
-                raise ValueError(f"Failed to geocode location: {location_str}. Error: {e}")
+        # Use proper geocoding engine with Nominatim priority for city-level
+        config = GeocodingConfig(
+            primary_provider=AddressProvider.NOMINATIM,
+            fallback_providers=[AddressProvider.CENSUS],
+            min_quality_threshold=None  # Accept any result for city-level
+        )
+        
+        # Create address input for city-level geocoding
+        address_input = AddressInput(address=location_str)
+        
+        # Use the geocoding engine
+        from ..geocoding.engine import AddressGeocodingEngine
+        engine = AddressGeocodingEngine(config)
+        result = engine.geocode_address(address_input)
+        
+        if not result or not result.success:
+            # More robust error message
+            error_msg = f"Failed to geocode location: {location_str}"
+            if result and result.error_message:
+                error_msg += f". Reason: {result.error_message}"
+            raise ValueError(error_msg)
         
         # Create a single POI at the location
         poi_data = {
             "pois": [{
-                "name": "Analysis Location",
-                "latitude": lat,
-                "longitude": lon,
+                "name": "Analysis Location", 
+                "latitude": result.latitude,
+                "longitude": result.longitude,
                 "address": location_str
             }]
         }
         
-        # Return in same format as extract_poi_data
-        state_abbr = self.config.state if self.config.state else location_str.split(',')[-1].strip()
+        # Extract state more robustly
+        if self.config.state:
+            state_abbr = self.config.state
+        elif result.state:
+            state_abbr = result.state
+        else:
+            # Try to extract from location string
+            parts = location_str.split(',')
+            state_abbr = parts[-1].strip() if len(parts) > 1 else ""
+        
         return (poi_data, location_str, [state_abbr], False)
 
     def _validate_coordinates(self) -> None:
