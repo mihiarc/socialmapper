@@ -213,21 +213,23 @@ class PipelineOrchestrator:
         
         # Geocode the address
         result = geocode_address(location_str)
-        if not result or not result.get('success'):
+        
+        # Check if geocoding was successful (result is a GeocodingResult object)
+        if not result or not result.success:
             raise ValueError(f"Failed to geocode location: {location_str}")
         
         # Create a single POI at the location
         poi_data = {
             "poi_data": [{
                 "name": "Analysis Location",
-                "latitude": result['latitude'],
-                "longitude": result['longitude'],
+                "latitude": result.latitude,
+                "longitude": result.longitude,
                 "address": location_str
             }]
         }
         
         # Return in same format as extract_poi_data
-        state_abbr = self.config.state if self.config.state else result.get('state', '')
+        state_abbr = self.config.state if self.config.state else 'NC'  # Default or extract from result
         return (poi_data, location_str, [state_abbr], False)
 
     def _validate_coordinates(self) -> None:
