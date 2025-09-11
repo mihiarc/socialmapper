@@ -59,6 +59,10 @@ try:
         analyze_schools,
         analyze_hospitals, 
         analyze_parks,
+        discover_food_access,
+        discover_healthcare_access,
+        compare_locations,
+        analyze_custom_pois,
     )
     _SIMPLE_API_AVAILABLE = True
 except ImportError as e:
@@ -206,6 +210,10 @@ if _SIMPLE_API_AVAILABLE:
             "analyze_schools", 
             "analyze_hospitals",
             "analyze_parks",
+            "discover_food_access",
+            "discover_healthcare_access",
+            "compare_locations",
+            "analyze_custom_pois",
             # Simple API exceptions
             "SimpleError",
             "SimpleValidationError",

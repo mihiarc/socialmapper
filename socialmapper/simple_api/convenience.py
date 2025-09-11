@@ -384,3 +384,6 @@ def analyze_custom_pois(
         census_variables=census_variables,
         output_dir=output_dir
     )
+
+
+# Note: discover_food_access and discover_healthcare_access are already defined above

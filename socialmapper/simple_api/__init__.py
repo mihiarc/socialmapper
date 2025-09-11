@@ -32,6 +32,10 @@ from .convenience import (
     analyze_schools,
     analyze_hospitals,
     analyze_parks,
+    discover_food_access,
+    discover_healthcare_access,
+    compare_locations,
+    analyze_custom_pois,
 )
 
 __all__ = [
@@ -50,4 +54,8 @@ __all__ = [
     "analyze_schools",
     "analyze_hospitals",
     "analyze_parks",
+    "discover_food_access",
+    "discover_healthcare_access",
+    "compare_locations",
+    "analyze_custom_pois",
 ]
