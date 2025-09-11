@@ -71,7 +71,8 @@ class RichProgressWrapper:
         except Exception:
             # If we can't start the progress display (e.g., another is active),
             # fallback to simple print statements
-            console.print(f"🔄 {desc}")
+            total_msg = f" ({self.total} items)" if self.total else ""
+            console.print(f"🔄 {desc}{total_msg}")
             self.progress_instance = None
             self.task_id = None
 
@@ -98,12 +99,8 @@ class RichProgressWrapper:
                 self.progress_instance.update(self.task_id, advance=n)
         self.position += n
 
-        # If no progress display, show periodic updates
-        if (
-            self.progress_instance is None
-            and self.total
-            and self.position % max(1, self.total // 10) == 0
-        ):
+        # If no progress display, show individual updates for detailed tracking
+        if self.progress_instance is None and self.total:
             percentage = (self.position / self.total) * 100
             console.print(f"  Progress: {self.position}/{self.total} ({percentage:.1f}%)")
 
