@@ -33,7 +33,7 @@ try:
 except PackageNotFoundError:
     __version__ = "1.0.0"  # Major version for API consolidation
 
-# Main API - Simple, Pythonic interface
+# Main API - Simple, direct functions
 from .api import (
     AnalysisError,
     AnalysisResult,
@@ -42,15 +42,7 @@ from .api import (
     SocialMapper,
     SocialMapperError,
     ValidationError,
-    analyze_custom_pois,
-    analyze_hospitals,
-    analyze_libraries,
-    analyze_parks,
-    analyze_schools,
-    compare_locations,
-    discover_food_access,
-    discover_healthcare_access,
-    quick_analysis,
+    create_isochrone,
 )
 
 # Simple census data functions
@@ -113,27 +105,18 @@ from .exceptions import (
 from .tutorial_helper import tutorial_error_handler
 
 
-# Public API
+# Public API - Simplified and focused on core functionality
 __all__ = [
     # Core API
     "SocialMapper",
-    "AnalysisResult",
+    "create_isochrone",
+    "AnalysisResult", 
     "POIResult",
     # Exceptions
     "SocialMapperError",
     "ValidationError",
     "AnalysisError",
     "APIError",
-    # Convenience functions
-    "quick_analysis",
-    "analyze_libraries",
-    "analyze_schools",
-    "analyze_hospitals",
-    "analyze_parks",
-    "discover_food_access",
-    "discover_healthcare_access",
-    "compare_locations",
-    "analyze_custom_pois",
     # Census functions
     "CensusClient",
     "get_census_data",
