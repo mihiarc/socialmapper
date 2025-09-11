@@ -1,147 +1,122 @@
-# SocialMapper MCP Server v1.0.0 Release Notes
+# SocialMapper API Server Release Notes
 
-🎉 **Major Release: Model Context Protocol Integration**
+## Version 0.2.0 - Major Cleanup Release
 
-## 🚀 What's New
+🧹 **Major Cleanup: Removed Experimental Features**
 
-### MCP Server for Claude Code Integration
-We're excited to announce the release of the **SocialMapper MCP Server**, bringing powerful spatial analysis capabilities directly to Claude Code through the Model Context Protocol (MCP).
+This release focuses on code simplification and maintainability by removing experimental features that were not ready for production.
 
-### 📦 Package Information
-- **Package Name**: `socialmapper-mcp-server`
-- **Version**: 1.0.0
-- **NPM Registry**: https://www.npmjs.com/package/socialmapper-mcp-server
-- **Installation**: `npm install -g socialmapper-mcp-server`
+### Key Changes
 
-## ✨ Features
+#### Removed Features
+- **MCP Integration**: Removed experimental Model Context Protocol support
+- **Duplicate Job Managers**: Consolidated job management into single implementation
+- **Redundant Analysis Routers**: Merged analysis endpoints into single router
+- **Experimental Middleware**: Removed MCP-specific middleware and context handlers
 
-### 8 Available MCP Tools
-1. **`analyze_location`** - Submit location-based accessibility analysis
-2. **`get_analysis_status`** - Check analysis job progress  
-3. **`get_results`** - Retrieve completed analysis results
-4. **`get_poi_types`** - List available POI categories and types
-5. **`get_census_variables`** - Get available demographic variables
-6. **`get_demo_scenarios`** - View available demo analyses
-7. **`run_demo_scenario`** - Execute pre-built demo scenarios
-8. **`list_results`** - List all completed analyses
+#### Code Quality Improvements
+- **Reduced Codebase**: Removed ~2,000 lines of experimental/duplicate code
+- **Simplified Configuration**: Removed 25+ MCP-related environment variables
+- **Better Test Coverage**: Focused testing on core functionality (56% → target 75%)
+- **Cleaner Dependencies**: Removed fastapi-mcp and related dependencies
 
-### Claude Code Integration
-- **Natural Language Interface**: Ask questions like "What libraries are within 15 minutes of downtown?"
-- **Real-time Analysis**: Submit and track spatial analysis jobs through conversation
-- **Rich Responses**: AI-optimized formatting with emojis and structured content
-- **Cross-platform Support**: Works on macOS, Linux, and Windows
+#### Architecture Simplification
+- **Single Job Manager**: Enhanced job manager with prioritization and caching
+- **Unified Error Handling**: Consolidated error handling middleware
+- **Streamlined Middleware**: Reduced from 10+ to 6 essential middleware components
+- **Core API Focus**: Concentrated on REST API functionality
 
-### Technical Innovations
-- **Custom FastAPI-MCP Bridge**: Seamless translation between stdio and HTTP protocols
-- **Intelligent Dependency Management**: Automatic Python dependency resolution using uv with pip fallbacks
-- **Zero NPM Dependencies**: Lightweight 7.9KB package with no node_modules bloat
+### Breaking Changes
 
-## 🔧 Quick Start
+⚠️ **Configuration Changes**:
+- All `SOCIALMAPPER_API_MCP_*` environment variables removed
+- MCP endpoints (`/api/v1/mcp/*`) no longer available
+- MCP health endpoint (`/mcp/status`) removed
 
-### Prerequisites
-1. **SocialMapper API Server** running locally
-2. **Census API Key** (free from api.census.gov)
-3. **Claude Code** installed
+⚠️ **Import Changes**:
+- `api_server.services.mcp_service` module removed
+- `api_server.services.mcp_metrics` module removed
+- `api_server.middleware.mcp_context` module removed
+- `api_server.routers.mcp` module removed
 
-### Installation
-```bash
-# 1. Install the MCP server
-npm install -g socialmapper-mcp-server
+### Migration Guide
 
-# 2. Start SocialMapper API with MCP enabled
-cd path/to/socialmapper/socialmapper-api
-export SOCIALMAPPER_API_MCP_ENABLED=true
-export SOCIALMAPPER_API_CENSUS_API_KEY=your_api_key
-uv run python -m api_server.main
+If you were using MCP functionality:
 
-# 3. Add to Claude Code
-claude mcp add socialmapper --scope user -- npx socialmapper-mcp-server
-```
+1. **Remove MCP Configuration**:
+   ```bash
+   # Remove these from your .env file:
+   # SOCIALMAPPER_API_MCP_ENABLED=true
+   # SOCIALMAPPER_API_MCP_*=...
+   ```
 
-## 💬 Usage Examples
+2. **Update Dependencies**:
+   ```bash
+   uv pip install -r requirements.txt  # Will remove fastapi-mcp
+   ```
 
-Once connected, you can ask Claude Code:
+3. **Use REST API Instead**:
+   ```bash
+   # Instead of MCP tools, use direct HTTP calls:
+   curl -X POST "http://localhost:8000/api/v1/analysis/location" \
+     -H "Content-Type: application/json" \
+     -d '{"location": "Chapel Hill, NC", ...}'
+   ```
 
-- *"What types of places can SocialMapper analyze?"*
-- *"Analyze libraries within 15 minutes walking distance of downtown Denver"*
-- *"Show me available demographic variables for census analysis"*
-- *"Run a demo scenario to see how accessibility analysis works"*
-- *"Check the status of my analysis job"*
-- *"Show me the results of my completed analysis"*
+### Core API Endpoints (Unchanged)
 
-## 🏗️ Architecture
+All main functionality remains available through REST endpoints:
 
-The MCP server consists of:
+- **Analysis**: `POST /api/v1/analysis/location`
+- **Job Status**: `GET /api/v1/analysis/{job_id}/status`
+- **Results**: `GET /api/v1/analysis/{job_id}/result`
+- **Metadata**: `GET /api/v1/metadata/poi-types`
+- **Demo**: `POST /api/v1/demo/run/{scenario_id}`
 
-1. **Node.js Wrapper** (`bin/socialmapper-mcp.js`)
-   - Cross-platform executable handling Python dependencies
-   - Intelligent fallback from uv → python3 → python
+### Performance Improvements
 
-2. **FastAPI-MCP Bridge** (`fastapi_mcp_bridge.py`)
-   - Custom protocol translation layer
-   - Converts MCP stdio ↔ HTTP requests to SocialMapper API
-   - Enhanced AI-friendly response formatting
+- **Faster Startup**: Removed complex MCP initialization
+- **Lower Memory**: Eliminated duplicate services and caching layers
+- **Cleaner Logs**: Removed verbose MCP performance logging
+- **Better Error Handling**: Simplified error propagation
 
-3. **SocialMapper API Integration**
-   - Direct connection to existing FastAPI endpoints
-   - Leverages all existing spatial analysis capabilities
-   - Real-time job status and progress tracking
+### Development Benefits
 
-## 🔍 What's Under the Hood
-
-### Protocol Innovation
-The biggest technical challenge was bridging FastAPI-MCP (HTTP-based) with standard MCP (stdio-based). We solved this with a custom bridge that:
-- Listens for JSON-RPC on stdin
-- Translates to HTTP calls to SocialMapper API  
-- Formats responses optimally for AI consumption
-- Handles errors and timeouts gracefully
-
-### Dependency Strategy
-Instead of bundling Python dependencies, we use intelligent runtime resolution:
-1. **Preferred**: `uv run --with httpx --with asyncio` (automatic dependency installation)
-2. **Fallback**: `python3 -m pip install httpx` then run
-3. **Last resort**: Plain Python execution with clear error messages
-
-## 📊 Impact & Benefits
-
-### For Users
-- **Seamless Spatial Analysis**: Natural language access to complex GIS operations
-- **No Learning Curve**: Use familiar conversational interface instead of APIs
-- **Real-time Insights**: Interactive exploration of demographic and accessibility data
-
-### For Developers
-- **MCP Integration Pattern**: Reference implementation for FastAPI → MCP bridges
-- **Cross-platform Distribution**: NPM packaging strategy for Python-based tools
-- **Zero-dependency Philosophy**: Lightweight packages with runtime dependency resolution
-
-## 🔮 Future Roadmap
-
-- **Enhanced Visualizations**: Direct map rendering in Claude Code interface
-- **Additional Data Sources**: GTFS transit data, OpenStreetMap routing
-- **Batch Processing**: Support for analyzing multiple locations simultaneously
-- **Custom Analysis Types**: User-defined spatial analysis workflows
-
-## 🤝 Contributing
-
-The MCP server is part of the main SocialMapper repository:
-- **Repository**: https://github.com/mihiarc/socialmapper
-- **MCP Code**: `socialmapper-api/` directory
-- **Issues**: https://github.com/mihiarc/socialmapper/issues
-
-## 📄 License
-
-MIT License - same as SocialMapper core project
-
-## 🎯 Get Started Today
-
-```bash
-npm install -g socialmapper-mcp-server
-claude mcp add socialmapper --scope user -- npx socialmapper-mcp-server
-```
-
-**Transform your spatial analysis workflow with the power of conversational AI!** 🌍✨
+- **Easier Testing**: Focused test suite on core functionality
+- **Simpler Debugging**: Removed complex middleware chains
+- **Better Documentation**: Clear focus on REST API capabilities
+- **Reduced Complexity**: Single job manager, unified routing
 
 ---
 
-*Released: August 24, 2025*
-*SocialMapper Team*
+## Version 0.1.0 - Initial API Release
+
+🚀 **Initial Release: SocialMapper API Server**
+
+### Features
+
+#### Core Functionality
+- **RESTful API**: FastAPI-based spatial analysis service
+- **Job Management**: Background processing with status tracking
+- **POI Analysis**: Points of Interest discovery and analysis
+- **Census Integration**: US Census demographic data access
+- **Demo Scenarios**: Pre-built analysis examples
+
+#### API Endpoints
+- Analysis submission and tracking
+- Metadata discovery (POI types, census variables)
+- Results management and export
+- Health monitoring and status
+
+#### Infrastructure
+- **Authentication**: API key-based security
+- **Rate Limiting**: Request throttling and client management
+- **Caching**: Redis-based performance optimization
+- **Database**: PostgreSQL support for persistent storage
+- **WebSocket**: Real-time job progress updates
+
+#### Development
+- **Testing**: Comprehensive test suite with pytest
+- **Documentation**: OpenAPI/Swagger integration
+- **Docker**: Containerized deployment support
+- **Configuration**: Environment-based settings management
