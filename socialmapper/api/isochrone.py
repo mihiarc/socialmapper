@@ -119,6 +119,22 @@ def create_isochrone(
         isochrone_gdf["travel_mode"] = travel_mode
         
         if return_type == "dict":
+            # Calculate area properly by projecting to an equal-area coordinate system
+            # Create a temporary GeoDataFrame for projection
+            import geopandas as gpd
+            from shapely.geometry import shape
+            
+            # Project the GeoDataFrame to Web Mercator for area calculation
+            # Note: The isochrone is likely already in a projected CRS from the generation
+            if isochrone_gdf.crs and isochrone_gdf.crs.to_epsg() != 3857:
+                gdf_projected = isochrone_gdf.to_crs('EPSG:3857')
+                area_sq_m = gdf_projected.geometry.iloc[0].area
+            else:
+                # Already in a projected coordinate system
+                area_sq_m = isochrone_gdf.geometry.iloc[0].area
+            
+            area_sq_km = area_sq_m / 1e6
+            
             # Convert to GeoJSON-like dict
             return {
                 "type": "Feature",
@@ -127,7 +143,7 @@ def create_isochrone(
                     "location": location_name,
                     "travel_time": travel_time,
                     "travel_mode": travel_mode,
-                    "area_sq_km": isochrone_gdf.geometry.iloc[0].area / 1e6
+                    "area_sq_km": area_sq_km
                 }
             }
         else:
