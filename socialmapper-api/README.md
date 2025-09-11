@@ -1,10 +1,10 @@
-# SocialMapper MCP Server
+# SocialMapper API Server
 
-A Model Context Protocol (MCP) server that provides AI assistants with access to SocialMapper's spatial analysis capabilities.
+A FastAPI backend server that provides REST API access to SocialMapper's spatial analysis capabilities.
 
 ## Overview
 
-SocialMapper is a powerful spatial analysis platform that helps understand community accessibility patterns, demographic distributions, and Points of Interest (POI) relationships. This MCP server exposes SocialMapper's functionality to AI assistants like Claude Code.
+SocialMapper is a powerful spatial analysis platform that helps understand community accessibility patterns, demographic distributions, and Points of Interest (POI) relationships. This API server exposes SocialMapper's functionality through RESTful endpoints.
 
 ## Features
 
@@ -34,132 +34,145 @@ SocialMapper is a powerful spatial analysis platform that helps understand commu
 ### Prerequisites
 
 1. **Python 3.11+** with `uv` package manager
-2. **SocialMapper API server** running locally
-3. **Census API Key** (free from [api.census.gov](https://api.census.gov/data/key_signup.html))
+2. **Census API Key** (free from [api.census.gov](https://api.census.gov/data/key_signup.html))
 
 ### Quick Start
 
-1. **Install the MCP server package:**
+1. **Clone and setup:**
    ```bash
-   npm install -g socialmapper-mcp-server
-   ```
-
-2. **Start the SocialMapper API server:**
-   ```bash
-   # Navigate to your SocialMapper installation
-   cd path/to/socialmapper/socialmapper-api
+   git clone https://github.com/mihiarc/socialmapper.git
+   cd socialmapper/socialmapper-api
    
-   # Set environment variables
-   export SOCIALMAPPER_API_MCP_ENABLED=true
-   export SOCIALMAPPER_API_CENSUS_API_KEY=your_census_api_key
-   
-   # Start the server
-   uv run uvicorn api_server.main:app --host 0.0.0.0 --port 8000
+   # Create virtual environment and install dependencies
+   uv venv
+   uv pip install -r requirements.txt
    ```
 
-3. **Add to Claude Code:**
+2. **Configure environment:**
    ```bash
-   claude mcp add socialmapper --scope user -- npx socialmapper-mcp-server
+   cp .env.example .env
+   # Edit .env and add your Census API key:
+   # SOCIALMAPPER_API_CENSUS_API_KEY=your_key_here
    ```
 
-## Available Tools
+3. **Start the API server:**
+   ```bash
+   uv run python run_server.py
+   ```
+
+4. **Access the API:**
+   - API Documentation: http://localhost:8000/docs
+   - Interactive API: http://localhost:8000/redoc
+   - Health Check: http://localhost:8000/api/v1/health
+
+## API Endpoints
 
 ### Core Analysis
-- **`analyze_location`** - Submit location-based accessibility analysis
-- **`get_analysis_status`** - Check analysis job progress  
-- **`get_results`** - Retrieve completed analysis results
+- `POST /api/v1/analysis/location` - Submit location analysis
+- `GET /api/v1/analysis/{job_id}/status` - Check job status
+- `GET /api/v1/analysis/{job_id}/result` - Get analysis results
 
 ### Metadata
-- **`get_poi_types`** - List available POI categories and types
-- **`get_census_variables`** - Get available demographic variables
+- `GET /api/v1/metadata/poi-types` - Available POI categories
+- `GET /api/v1/metadata/census-variables` - Census data variables
 
-### Demo & Examples
-- **`get_demo_scenarios`** - View available demo analyses
-- **`run_demo_scenario`** - Execute pre-built demo scenarios
+### Results Management
+- `GET /api/v1/results/` - List all results
+- `GET /api/v1/results/{job_id}` - Get specific result
+- `DELETE /api/v1/results/{job_id}` - Delete result
 
-### Results Management  
-- **`list_results`** - List all completed analyses
-
-## Usage Examples
-
-Once connected to Claude Code, you can use natural language:
-
-- *"What types of places can SocialMapper analyze?"*
-- *"Analyze libraries within 15 minutes walking distance of downtown Denver"*
-- *"Show me available demographic variables for census analysis"*
-- *"Run a demo scenario to see how accessibility analysis works"*
-- *"Check the status of my analysis job"*
-- *"Show me the results of my completed analysis"*
+### Demo
+- `GET /api/v1/demo/scenarios` - Available demo scenarios
+- `POST /api/v1/demo/run/{scenario_id}` - Run demo scenario
 
 ## Configuration
 
-### Environment Variables
-
-Set these in your SocialMapper API server environment:
+Key environment variables:
 
 ```bash
 # Required
-SOCIALMAPPER_API_MCP_ENABLED=true
-SOCIALMAPPER_API_CENSUS_API_KEY=your_api_key
+SOCIALMAPPER_API_CENSUS_API_KEY=your_census_api_key
 
-# Optional
-SOCIALMAPPER_API_MCP_AUTH_ENABLED=false
-SOCIALMAPPER_API_MCP_RATE_LIMIT_PER_MINUTE=60
-SOCIALMAPPER_API_MCP_TOOL_TIMEOUT=30
-```
+# Optional - Server
+SOCIALMAPPER_API_HOST=0.0.0.0
+SOCIALMAPPER_API_PORT=8000
 
-### Advanced Configuration
+# Optional - Performance
+SOCIALMAPPER_API_MAX_CONCURRENT_JOBS=10
+SOCIALMAPPER_API_RATE_LIMIT_PER_MINUTE=60
+SOCIALMAPPER_API_ENABLE_RESPONSE_COMPRESSION=true
 
-For custom server URLs or advanced settings, see the [full documentation](https://github.com/mihiarc/socialmapper).
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Server not responding"**
-   - Ensure SocialMapper API server is running on localhost:8000
-   - Check that MCP is enabled in server configuration
-
-2. **"Census API errors"**
-   - Verify your Census API key is valid
-   - Check the key is properly set in environment variables
-
-3. **"Tool not found"**
-   - Restart Claude Code after adding the MCP server
-   - Verify the server was added with correct scope
-
-### Debug Mode
-
-Run with debug logging:
-```bash
-SOCIALMAPPER_API_LOG_LEVEL=DEBUG uv run uvicorn api_server.main:app --reload
+# Optional - Authentication
+SOCIALMAPPER_API_API_AUTH_ENABLED=false
+SOCIALMAPPER_API_API_KEYS=your-secret-key
 ```
 
 ## Development
 
-### Local Development
+### Running Tests
+```bash
+uv run python -m pytest tests/ -v
+```
 
-1. Clone the SocialMapper repository
-2. Navigate to `socialmapper-api/`
-3. Install dependencies: `uv pip install -e .`
-4. Start development server: `uv run uvicorn api_server.main:app --reload`
+### Code Quality
+```bash
+# Linting and formatting
+uv run ruff check .
+uv run ruff format .
 
-### Contributing
+# Type checking
+uv run mypy api_server/
+```
 
-See [CONTRIBUTING.md](https://github.com/mihiarc/socialmapper/blob/main/CONTRIBUTING.md) for development guidelines.
+### Docker Development
+```bash
+# Start with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f api
+
+# Stop services
+docker-compose down
+```
+
+## Usage Examples
+
+### Submit Analysis
+```bash
+curl -X POST "http://localhost:8000/api/v1/analysis/location" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "location": "Chapel Hill, NC",
+    "poi_type": "amenity",
+    "poi_name": "library",
+    "travel_time": 15,
+    "census_variables": ["B01003_001E"]
+  }'
+```
+
+### Check Status
+```bash
+curl "http://localhost:8000/api/v1/analysis/{job_id}/status"
+```
+
+### Get Results
+```bash
+curl "http://localhost:8000/api/v1/analysis/{job_id}/result"
+```
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/mihiarc/socialmapper/blob/main/LICENSE) file.
+MIT License - see LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes with tests
+4. Submit a pull request
 
 ## Support
 
-- 📚 [Documentation](https://mihiarc.github.io/socialmapper)
-- 🐛 [Issues](https://github.com/mihiarc/socialmapper/issues)
-- 💬 [Discussions](https://github.com/mihiarc/socialmapper/discussions)
-
-## Related
-
-- [SocialMapper Core](https://github.com/mihiarc/socialmapper) - Main spatial analysis library
-- [Model Context Protocol](https://modelcontextprotocol.io) - Open standard for AI tool integration
-- [Claude Code](https://claude.ai/code) - AI-powered development assistant
+- GitHub Issues: https://github.com/mihiarc/socialmapper/issues
+- Documentation: See `/docs` folder for detailed API documentation
