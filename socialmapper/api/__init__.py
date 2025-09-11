@@ -4,17 +4,17 @@ Direct access to core spatial analysis functions without unnecessary abstraction
 
 Example:
     ```python
-    from socialmapper.api import create_isochrone, SocialMapper
+    from socialmapper.api import create_isochrone
     
     # Simple isochrone creation
     isochrone = create_isochrone("San Francisco, CA", travel_time=15)
     
-    # Or use the client for API key management
-    mapper = SocialMapper(api_key="your-census-key")
+    # Set Census API key if needed
+    import os
+    os.environ['CENSUS_API_KEY'] = "your-census-key"
     ```
 """
 
-from .client import SocialMapper
 from .exceptions import AnalysisError, APIError, SocialMapperError, ValidationError
 from .isochrone import create_isochrone
 from .results import AnalysisResult, POIResult
@@ -22,8 +22,6 @@ from .results import AnalysisResult, POIResult
 __all__ = [
     # Core functions
     "create_isochrone",
-    # Client (minimal, mainly for API key management)
-    "SocialMapper",
     # Result types (kept for backward compatibility)
     "AnalysisResult",
     "POIResult",

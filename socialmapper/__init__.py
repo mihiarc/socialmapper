@@ -39,7 +39,6 @@ from .api import (
     AnalysisResult,
     APIError,
     POIResult,
-    SocialMapper,
     SocialMapperError,
     ValidationError,
     create_isochrone,
@@ -108,7 +107,6 @@ from .tutorial_helper import tutorial_error_handler
 # Public API - Simplified and focused on core functionality
 __all__ = [
     # Core API
-    "SocialMapper",
     "create_isochrone",
     "AnalysisResult", 
     "POIResult",
