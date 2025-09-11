@@ -32,22 +32,10 @@ from typing import Optional
 import httpx
 
 # Note: ratelimit import removed - not currently used
-# Import modern census system for census utilities
-from ..census import get_census_system
+# Import simple census utilities
+from ..census import normalize_variables, CensusClient
 
-# Create a default system instance for utility functions
-_census_system = None
-
-
-def _get_census_system():
-    """Get the census system instance."""
-    global _census_system
-    if _census_system is None:
-        _census_system = get_census_system()
-    return _census_system
-
-
-# Census variable utilities - now using modern system
+# Census variable utilities
 def census_code_to_name(census_code: str) -> str:
     """Convert a census variable code to its human-readable name."""
     return _get_census_system()._variable_service.code_to_name(census_code)
@@ -60,22 +48,27 @@ def census_name_to_code(name: str) -> str:
 
 def normalize_census_variable(variable: str) -> str:
     """Normalize a census variable to its code form."""
-    return _get_census_system()._variable_service.normalize_variable(variable)
+    normalized = normalize_variables([variable])
+    return normalized[0] if normalized else variable
 
 
 def get_readable_census_variable(variable: str) -> str:
     """Get a human-readable representation of a census variable."""
-    return _get_census_system()._variable_service.get_readable_variable(variable)
+    # For now, just return the variable as-is
+    # Could be extended with a reverse mapping if needed
+    return variable
 
 
 def get_readable_census_variables(variables: list[str]) -> list[str]:
     """Get human-readable representations for a list of census variables."""
-    return _get_census_system()._variable_service.get_readable_variables(variables)
+    return [get_readable_census_variable(v) for v in variables]
 
 
 def validate_census_variable(variable: str) -> bool:
     """Validate a census variable code or name."""
-    return _get_census_system()._variable_service.validate_variable(variable)
+    # Check if it normalizes to something
+    normalized = normalize_variables([variable])
+    return len(normalized) > 0
 
 
 def get_census_api_key() -> str | None:
@@ -84,8 +77,15 @@ def get_census_api_key() -> str | None:
 
 
 # Legacy mappings for backward compatibility
-CENSUS_VARIABLE_MAPPING = _get_census_system()._variable_service.VARIABLE_MAPPING
-VARIABLE_COLORMAPS = _get_census_system()._variable_service.VARIABLE_COLORMAPS
+from ..census import VARIABLE_MAPPING as CENSUS_VARIABLE_MAPPING
+
+# Simple colormap mapping
+VARIABLE_COLORMAPS = {
+    'B01003_001E': 'Blues',  # Population
+    'B19013_001E': 'Greens',  # Income
+    'B01002_001E': 'Oranges',  # Age
+    'B17001_002E': 'Reds',  # Poverty
+}
 
 
 # Add north arrow utility function

@@ -19,7 +19,7 @@ from ..exceptions import (
 from ..io import IOManager
 from ..isochrone import TravelMode
 from ..util.error_handling import ErrorCollector, error_context, log_error
-from .census import integrate_census_data
+from .census_integration import integrate_census_with_isochrone
 from .export import export_pipeline_outputs
 from .extraction import extract_poi_data
 from .isochrone import generate_isochrones
@@ -281,16 +281,13 @@ class PipelineOrchestrator:
     def _integrate_census(self):
         """Integrate census data."""
         poi_data = self.stage_outputs["extract"][0]
-        state_abbreviations = self.stage_outputs["extract"][2]
         isochrone_gdf = self.stage_outputs["isochrone"]
 
-        return integrate_census_data(
+        return integrate_census_with_isochrone(
             isochrone_gdf=isochrone_gdf,
             census_variables=self.config.census_variables,
             api_key=self.config.api_key,
             poi_data=poi_data,
-            geographic_level=self.config.geographic_level,
-            state_abbreviations=state_abbreviations,
             travel_time=self.config.travel_time,
         )
 
