@@ -44,7 +44,29 @@ except ImportError:
 
 # Note: setup_directory removed from exports - use internal modules directly
 
-# Import modern API (recommended)
+# Import simple API (recommended, new in v0.9.0)
+try:
+    from .simple_api import (
+        SocialMapper,
+        AnalysisResult,
+        POIResult,
+        SocialMapperError as SimpleError,
+        ValidationError as SimpleValidationError,
+        AnalysisError as SimpleAnalysisError,
+        APIError as SimpleAPIError,
+        quick_analysis,
+        analyze_libraries,
+        analyze_schools,
+        analyze_hospitals, 
+        analyze_parks,
+    )
+    _SIMPLE_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Simple API not available: {e}")
+    _SIMPLE_API_AVAILABLE = False
+
+# Import legacy complex API (deprecated)
+import warnings
 try:
     from .api import (
         Err,
@@ -52,14 +74,27 @@ try:
         Result,
         SocialMapperBuilder,
         SocialMapperClient,
-        analyze_location,
-        quick_analysis,
+        analyze_location as legacy_analyze_location,
     )
+    
+    # Add deprecation warning for complex API usage
+    _original_client_init = SocialMapperClient.__init__
+    def _deprecated_client_init(self, *args, **kwargs):
+        warnings.warn(
+            "SocialMapperClient is deprecated. Use the simpler 'SocialMapper' class instead:\n"
+            "  from socialmapper import SocialMapper\n"
+            "  mapper = SocialMapper()\n" 
+            "  result = mapper.analyze_location('City, State', poi_types=['library'])",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return _original_client_init(self, *args, **kwargs)
+    SocialMapperClient.__init__ = _deprecated_client_init
 
-    _MODERN_API_AVAILABLE = True
+    _LEGACY_API_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: Modern API not available: {e}")
-    _MODERN_API_AVAILABLE = False
+    print(f"Warning: Legacy API not available: {e}")
+    _LEGACY_API_AVAILABLE = False
 
 # Import modern census system
 from .census import (
@@ -154,50 +189,75 @@ except ImportError:
 
 # Build __all__ based on available features
 __all__ = [
+    # Tutorial helpers
+    "tutorial_error_handler",
+]
+
+# Add simple API items (recommended)
+if _SIMPLE_API_AVAILABLE:
+    __all__.extend(
+        [
+            # Simple API (primary interface)
+            "SocialMapper",
+            "AnalysisResult", 
+            "POIResult",
+            "quick_analysis",
+            "analyze_libraries",
+            "analyze_schools", 
+            "analyze_hospitals",
+            "analyze_parks",
+            # Simple API exceptions
+            "SimpleError",
+            "SimpleValidationError",
+            "SimpleAnalysisError",
+            "SimpleAPIError",
+        ]
+    )
+
+# Add legacy API items (deprecated)
+if _LEGACY_API_AVAILABLE:
+    __all__.extend(
+        [
+            # Legacy complex API (deprecated)
+            "SocialMapperClient",
+            "SocialMapperBuilder", 
+            "Err",
+            "Ok",
+            "Result",
+            "legacy_analyze_location",
+        ]
+    )
+
+# Add core infrastructure
+__all__.extend([
     # Backend configuration
     "BackendConfig",
-    "CacheStrategy",
-    "CensusAPIError",
+    "get_api_base_url",
+    "get_backend_config", 
+    "get_runtime_config",
+    # Census system
     "CensusSystem",
     "CensusSystemBuilder",
+    "get_census_system",
+    "CacheStrategy",
+    "RepositoryType",
+    "StateFormat",
+    "VariableFormat",
+    # Geography functions
+    "get_geography_from_point",
+    "get_counties_from_pois",
+    # Error handling (legacy)
+    "SocialMapperError",
+    "ValidationError",
+    "CensusAPIError",
     "ConfigurationError",
     "DataProcessingError",
     "ExternalAPIError",
     "InvalidLocationError",
     "MissingAPIKeyError",
-    "NoDataFoundError",
+    "NoDataFoundError", 
     "OSMAPIError",
-    "RepositoryType",
-    # Error handling
-    "SocialMapperError",
-    "StateFormat",
-    "ValidationError",
-    "VariableFormat",
-    "get_api_base_url",
-    "get_backend_config",
-    # Modern census system
-    "get_census_system",
-    "get_counties_from_pois",
-    # Neighbor functions
-    "get_geography_from_point",
-    "get_runtime_config",
-    "tutorial_error_handler",
-]
-
-# Add API items if available
-if _MODERN_API_AVAILABLE:
-    __all__.extend(
-        [
-            "Err",
-            "Ok",
-            "Result",
-            "SocialMapperBuilder",
-            # Modern API (primary interface)
-            "SocialMapperClient",
-            "analyze_location",
-            "quick_analysis",
-        ]
-    )
+])
 
 # Add visualization items if available
 if _VISUALIZATION_AVAILABLE:
