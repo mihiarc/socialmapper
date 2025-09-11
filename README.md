@@ -237,31 +237,58 @@ with SocialMapperClient() as client:
     result = client.run_analysis(config)
 ```
 
-### Command Line Interface
+### Python API Interface
 
-SocialMapper also provides a powerful command-line interface:
+SocialMapper provides a modern, powerful Python API:
 
-```bash
-# Show help
-uv run socialmapper --help
+```python
+from socialmapper import SocialMapperClient, quick_analysis
 
-# Analyze libraries in Chicago
-uv run socialmapper --poi --geocode-area "Chicago" --state "Illinois" \
-    --poi-type "amenity" --poi-name "library" --travel-time 15 \
-    --census-variables total_population median_household_income
+# Quick analysis helper
+result = quick_analysis(
+    "Chicago, IL", 
+    "amenity:library", 
+    travel_time=15,
+    census_variables=["total_population", "median_household_income"]
+)
 
-# Use custom coordinates
-uv run socialmapper --custom-coords "path/to/coordinates.csv" \
-    --travel-time 20 --census-variables total_population median_household_income
-
-# Use ZIP codes instead of block groups
-uv run socialmapper --poi --geocode-area "Denver" --state "Colorado" \
-    --poi-type "amenity" --poi-name "hospital" --geographic-level zcta
-
-# Analyze walking access to parks
-uv run socialmapper --poi --geocode-area "Portland" --state "Oregon" \
-    --poi-type "leisure" --poi-name "park" --travel-time 15 \
-    --travel-mode walk
+# Advanced usage with client
+with SocialMapperClient() as client:
+    # Analyze libraries in Chicago
+    result = client.analyze(
+        "Chicago, IL", "amenity", "library",
+        travel_time=15,
+        census_variables=["total_population", "median_household_income"]
+    )
+    
+    # Use custom coordinates
+    from socialmapper.api import analyze_custom_pois
+    result = analyze_custom_pois(
+        "path/to/coordinates.csv",
+        travel_time=20,
+        census_variables=["total_population", "median_household_income"]
+    )
+    
+    # Use ZIP codes instead of block groups  
+    analysis = (
+        client.create_analysis()
+        .with_location("Denver", "Colorado")
+        .with_osm_pois("amenity", "hospital")
+        .with_geographic_level("zcta")
+        .build()
+    )
+    result = client.run_analysis(analysis)
+    
+    # Analyze walking access to parks
+    analysis = (
+        client.create_analysis()
+        .with_location("Portland", "Oregon") 
+        .with_osm_pois("leisure", "park")
+        .with_travel_time(15)
+        .with_travel_mode("walk")
+        .build()
+    )
+    result = client.run_analysis(analysis)
 ```
 
 ### Travel Modes
@@ -324,12 +351,19 @@ with SocialMapperClient() as client:
 
 You can specify points of interest with direct command-line parameters.
 
-#### Using the Command Line
+#### Using the Python API
 
-You can run the tool directly with POI parameters:
+You can run the analysis using the Python API:
 
-```bash
-socialmapper --poi --geocode-area "Fuquay-Varina" --state "North Carolina" --poi-type "amenity" --poi-name "library" --travel-time 15 --census-variables total_population median_household_income
+```python
+from socialmapper import quick_analysis
+
+result = quick_analysis(
+    "Fuquay-Varina, North Carolina",
+    "amenity:library", 
+    travel_time=15,
+    census_variables=["total_population", "median_household_income"]
+)
 ```
 
 ### POI Types and Names Reference
@@ -395,23 +429,43 @@ The results will be found in the `output/` directory:
 Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Map supermarkets with travel times and income data to identify areas with limited food access.
-   ```bash
-   socialmapper --poi --geocode-area "Chicago" --state "Illinois" --poi-type "shop" --poi-name "supermarket" --travel-time 20 --census-variables total_population median_household_income
+   ```python
+   result = quick_analysis(
+       "Chicago, Illinois", 
+       "shop:supermarket", 
+       travel_time=20,
+       census_variables=["total_population", "median_household_income"]
+   )
    ```
 
 2. **Healthcare Access**: Map hospitals and clinics with population and age demographics.
-   ```bash
-   socialmapper --poi --geocode-area "Los Angeles" --state "California" --poi-type "amenity" --poi-name "hospital" --travel-time 30 --census-variables total_population median_age
+   ```python
+   result = quick_analysis(
+       "Los Angeles, California", 
+       "amenity:hospital", 
+       travel_time=30,
+       census_variables=["total_population", "median_age"]
+   )
    ```
 
 3. **Educational Resource Distribution**: Map schools and libraries with educational attainment data.
-   ```bash
-   socialmapper --poi --geocode-area "Boston" --state "Massachusetts" --poi-type "amenity" --poi-name "school" --travel-time 15 --census-variables total_population education_bachelors_plus
+   ```python
+   result = quick_analysis(
+       "Boston, Massachusetts", 
+       "amenity:school", 
+       travel_time=15,
+       census_variables=["total_population", "education_bachelors_plus"]
+   )
    ```
 
 4. **Park Access Equity**: Map parks with demographic and income data to assess equitable access.
-   ```bash
-   socialmapper --poi --geocode-area "Miami" --state "Florida" --poi-type "leisure" --poi-name "park" --travel-time 10 --census-variables total_population median_household_income white_population black_population
+   ```python
+   result = quick_analysis(
+       "Miami, Florida", 
+       "leisure:park", 
+       travel_time=10,
+       census_variables=["total_population", "median_household_income", "white_population", "black_population"]
+   )
    ```
 
 ## Learn More
@@ -461,14 +515,18 @@ uv run pytest
 
 The v0.7.0 release simplifies the package architecture. Here's how to migrate:
 
-#### For CLI/API Users
-No changes needed! The core functionality remains the same:
-```bash
-# Continue using the CLI as before
-socialmapper --poi --geocode-area "NYC" --poi-type "amenity" --poi-name "library"
+#### For Python API Users
+The enhanced Python API provides all functionality:
+```python
+# Use the modern Python API
+from socialmapper import SocialMapperClient, quick_analysis
 
-# Or the Python API
-from socialmapper import SocialMapperClient
+# Quick analysis
+result = quick_analysis("NYC, NY", "amenity:library")
+
+# Advanced usage
+with SocialMapperClient() as client:
+    result = client.analyze("NYC, NY", "amenity", "library")
 ```
 
 #### For Streamlit UI Users

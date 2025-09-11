@@ -71,16 +71,12 @@ SOCIALMAPPER_ENABLE_API_SERVER=true
 SOCIALMAPPER_ENABLE_SEPARATED_UI=true
 ```
 
-**CLI Management:**
-```bash
-# Check current status
-socialmapper feature-flags status
-
-# Set mode
-socialmapper feature-flags set-mode separated
-
-# Validate configuration
-socialmapper feature-flags validate
+**Python API Management:**
+```python
+# Use Python API for configuration
+from socialmapper import SocialMapperClient
+client = SocialMapperClient()
+client.configure_backend(enable_api=True, ui_mode="separated")
 ```
 
 ## 📁 Directory Structure
@@ -99,8 +95,7 @@ socialmapper/
 │   └── setup-dev.sh         # Automated setup script
 ├── socialmapper/config/
 │   └── feature_flags.py      # Feature flag system
-├── socialmapper/cli/
-│   └── feature_flags.py      # CLI commands for feature flags
+# CLI removed - use Python API instead
 ├── socialmapper/ui/
 │   └── compatibility.py      # Backward compatibility layer
 ├── .env.feature-flags-example # Feature flag configuration template
@@ -169,9 +164,11 @@ streamlit run streamlit_app.py --server.port 8501
 ```
 
 ### Hybrid Mode (Both UIs Available)
-```bash
-# Configure for hybrid mode
-socialmapper feature-flags set-mode hybrid
+```python
+# Configure for hybrid mode using Python API
+from socialmapper import SocialMapperClient
+client = SocialMapperClient()
+client.configure_backend(ui_mode="hybrid")
 
 # Both the original and new UIs will be available
 ```
@@ -186,7 +183,7 @@ python3 test_feature_flags.py
 
 This tests:
 - Feature flag system functionality
-- CLI integration
+- Python API integration
 - Development environment setup
 - File structure validation
 

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "socialmapper"
-version = "0.8.0"
-description = "An open-source Python backend toolkit for spatial analysis, demographic mapping, and geospatial data processing"
+version = "0.9.0"
+description = "A Python library for spatial analysis, demographic mapping, and geospatial data processing with a modern API"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = {file = "LICENSE"}
@@ -49,7 +49,7 @@ dependencies = [
     "matplotlib>=3.10.3", # Latest version as of May 2025
     "contextily>=1.6.2", # Latest version as of 2025
     "scikit-learn>=1.7.0", # Latest version as of Jun 2025
-    "typer>=0.16.0", # Latest version as of 2025
+    # "typer>=0.16.0" - removed with CLI interface
     "pytest>=8.4.1",
     "folium>=0.20.0",
 ]
@@ -74,8 +74,8 @@ api = [
 "Homepage" = "https://github.com/mihiarc/socialmapper"
 "Bug Tracker" = "https://github.com/mihiarc/socialmapper/issues"
 
-[project.scripts]
-socialmapper = "socialmapper.cli:main"
+# CLI interface removed - use Python API instead:
+# from socialmapper import SocialMapperClient, quick_analysis
 
 [tool.hatch.build.targets.wheel]
 packages = ["socialmapper"]
