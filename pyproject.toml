@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "socialmapper"
-version = "0.9.0"
+version = "1.0.0"
 description = "A Python library for spatial analysis, demographic mapping, and geospatial data processing with a modern API"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -74,8 +74,8 @@ api = [
 "Homepage" = "https://github.com/mihiarc/socialmapper"
 "Bug Tracker" = "https://github.com/mihiarc/socialmapper/issues"
 
-# CLI interface removed - use Python API instead:
-# from socialmapper import SocialMapperClient, quick_analysis
+# Use Python API:
+# from socialmapper import SocialMapper, quick_analysis
 
 [tool.hatch.build.targets.wheel]
 packages = ["socialmapper"]
