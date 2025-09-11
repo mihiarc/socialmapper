@@ -49,8 +49,8 @@ from .api import (
 from .census import (
     CensusClient,
     get_census_data,
-    get_census_data_for_isochrone,
-    get_demographics_for_isochrone,
+    get_census_data_for_polygon,
+    get_demographics_for_polygon,
     geocode_point,
     normalize_variables,
 )
@@ -120,8 +120,8 @@ __all__ = [
     # Census functions
     "CensusClient",
     "get_census_data",
-    "get_census_data_for_isochrone",
-    "get_demographics_for_isochrone",
+    "get_census_data_for_polygon",
+    "get_demographics_for_polygon",
     "geocode_point",
     "normalize_variables",
     # Configuration
