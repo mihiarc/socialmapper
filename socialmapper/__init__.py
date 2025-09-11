@@ -53,34 +53,15 @@ from .api import (
     quick_analysis,
 )
 
-# Census system infrastructure
-from .census import (
-    CacheStrategy,
-    CensusSystem,
-    CensusSystemBuilder,
-    RepositoryType,
-    StateFormat,
-    VariableFormat,
-    get_census_system,
+# Simple census data functions
+from .census_simple import (
+    CensusClient,
+    get_census_data,
+    get_census_data_for_isochrone,
+    get_demographics_for_isochrone,
+    geocode_point,
+    normalize_variables,
 )
-
-# Geography utilities
-try:
-    from .census.infrastructure.geocoder import CensusGeocoder
-    from .census.services.geography_service import GeographyService
-
-    def get_geography_from_point(lat: float, lon: float):
-        """Get geographic identifiers for a point."""
-        census_system = get_census_system()
-        return census_system.get_geography_from_point(lat, lon)
-
-    def get_counties_from_pois(pois, include_neighbors: bool = True):
-        """Get counties for POIs."""
-        census_system = get_census_system()
-        return census_system.get_counties_from_pois(pois, include_neighbors)
-
-except ImportError:
-    pass
 
 # Visualization (optional)
 try:
@@ -153,17 +134,13 @@ __all__ = [
     "discover_healthcare_access",
     "compare_locations",
     "analyze_custom_pois",
-    # Census system
-    "CensusSystem",
-    "CensusSystemBuilder",
-    "get_census_system",
-    "CacheStrategy",
-    "RepositoryType",
-    "StateFormat",
-    "VariableFormat",
-    # Geography utilities
-    "get_geography_from_point",
-    "get_counties_from_pois",
+    # Census functions
+    "CensusClient",
+    "get_census_data",
+    "get_census_data_for_isochrone",
+    "get_demographics_for_isochrone",
+    "geocode_point",
+    "normalize_variables",
     # Configuration
     "BackendConfig",
     "get_api_base_url",

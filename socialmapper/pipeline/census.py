@@ -7,8 +7,16 @@ import logging
 from typing import Any
 
 import geopandas as gpd
+import pandas as pd
 
-from ..census import get_census_system
+from ..census_simple import (
+    get_census_data_for_isochrone,
+    get_demographics_for_isochrone,
+    normalize_variables,
+    CensusClient,
+    fetch_block_groups,
+    geocode_point
+)
 from ..progress import get_progress_bar
 
 logger = logging.getLogger(__name__)
@@ -49,9 +57,6 @@ def integrate_census_data(
 
     print("\n=== Integrating Census Data ===")
 
-    # Get census system
-    census_system = get_census_system()
-
     if debug_mode:
         logger.debug(f"Isochrone GDF shape: {isochrone_gdf.shape}")
         logger.debug(f"POI data keys: {list(poi_data.keys())}")
@@ -59,33 +64,11 @@ def integrate_census_data(
         logger.debug(f"Census variables requested: {census_variables}")
         logger.debug(f"Geographic level: {geographic_level}")
 
-    # Process variables - normalize them to census codes
-    census_codes = []
-
-    for var in census_variables:
-        # Normalize the variable to its census code(s)
-        normalized = census_system._variable_service.normalize_variable(var)
-        if isinstance(normalized, list):
-            # Calculated variable - add all component codes
-            census_codes.extend(normalized)
-        else:
-            # Simple variable - add the single code
-            census_codes.append(normalized)
-
-    # Remove duplicates while preserving order
-    census_codes = list(dict.fromkeys(census_codes))
-
-    # Display human-readable names for requested census variables
-    readable_names = []
-    for var in census_variables:
-        normalized = census_system._variable_service.normalize_variable(var)
-        if isinstance(normalized, list):
-            # It's a calculated variable
-            readable_names.append(census_system._variable_service.get_readable_variable(var))
-        else:
-            readable_names.append(census_system._variable_service.get_readable_variable(normalized))
-
-    print(f"Requesting census data for: {', '.join(readable_names)}")
+    # Normalize variables to census codes
+    census_codes = normalize_variables(census_variables)
+    
+    # Display what we're fetching
+    print(f"Requesting census data for: {', '.join(census_variables)}")
     print(f"Geographic level: {geographic_level}")
 
     # Get geographic units based on level
