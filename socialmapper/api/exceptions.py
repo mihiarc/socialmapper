@@ -203,10 +203,30 @@ def validate_poi_types(poi_types: list) -> None:
         )
     
     if poi_types is not None:
+        # Common POI types that are supported
+        valid_poi_types = {
+            'library', 'school', 'hospital', 'restaurant', 'park', 'pharmacy',
+            'bank', 'post_office', 'fire_station', 'police', 'cafe', 'bar',
+            'fuel', 'place_of_worship', 'theatre', 'cinema', 'university',
+            'college', 'clinic', 'dentist', 'veterinary', 'marketplace',
+            'supermarket', 'convenience', 'bakery', 'butcher', 'fast_food',
+            'pub', 'nightclub', 'gym', 'sports_centre', 'swimming_pool',
+            'museum', 'art_gallery', 'library', 'community_centre'
+        }
+        
         for poi_type in poi_types:
             if not isinstance(poi_type, str):
                 raise ValidationError(
                     "All POI types must be strings",
                     field="poi_types",
                     value=poi_type
+                )
+            
+            # Check if POI type is valid
+            if poi_type not in valid_poi_types:
+                raise ValidationError(
+                    f"Unknown POI type: {poi_type}",
+                    field="poi_types",
+                    value=poi_type,
+                    valid_options=list(sorted(valid_poi_types))[:10]  # Show first 10
                 )

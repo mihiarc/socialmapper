@@ -145,7 +145,6 @@ visual-config-ui/
 
 #### **Integration Points**
 - **SocialMapperBuilder API**: Direct mapping to existing builder methods
-- **NLP Module**: Optional natural language input field
 - **Job Manager**: WebSocket subscription for progress tracking
 - **Result Storage**: Direct access to completed analyses
 

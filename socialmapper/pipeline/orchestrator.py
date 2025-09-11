@@ -44,6 +44,7 @@ class PipelineConfig:
     name_field: str | None = None
     type_field: str | None = None
     max_poi_count: int | None = None
+    skip_poi_discovery: bool = False  # For demographic-only analysis
 
     # Analysis configuration
     travel_time: int = 15
@@ -79,12 +80,14 @@ class PipelineConfig:
                     reason="Either geocode_area or city/state must be provided",
                 )
 
-            if not self.poi_type or not self.poi_name:
-                raise InvalidConfigurationError(
-                    field="POI",
-                    value=f"type={self.poi_type}, name={self.poi_name}",
-                    reason="Both poi_type and poi_name must be provided",
-                )
+            # Only require POI configuration if not skipping POI discovery
+            if not self.skip_poi_discovery:
+                if not self.poi_type or not self.poi_name:
+                    raise InvalidConfigurationError(
+                        field="POI",
+                        value=f"type={self.poi_type}, name={self.poi_name}",
+                        reason="Both poi_type and poi_name must be provided",
+                    )
 
         # Validate geographic level
         valid_levels = ["block-group", "zcta"]
@@ -145,12 +148,25 @@ class PipelineOrchestrator:
         """Define the pipeline stages."""
         stages = [
             PipelineStage("setup", self._setup_environment, "Setting up pipeline environment"),
-            PipelineStage("extract", self._extract_poi_data, "Extracting POI data"),
-            PipelineStage("validate", self._validate_coordinates, "Validating POI coordinates"),
+        ]
+        
+        # Only add POI stages if not skipping POI discovery
+        if not self.config.skip_poi_discovery:
+            stages.extend([
+                PipelineStage("extract", self._extract_poi_data, "Extracting POI data"),
+                PipelineStage("validate", self._validate_coordinates, "Validating POI coordinates"),
+            ])
+        else:
+            # For demographic-only analysis, create a dummy POI at the location
+            stages.append(
+                PipelineStage("extract", self._create_location_poi, "Creating location point")
+            )
+        
+        stages.extend([
             PipelineStage("isochrone", self._generate_isochrones, "Generating isochrones"),
             PipelineStage("census", self._integrate_census, "Integrating census data"),
             PipelineStage("export", self._export_outputs, "Exporting results"),
-        ]
+        ])
 
         # Add mapping stage if enabled
         if self.config.create_maps:
@@ -182,6 +198,63 @@ class PipelineOrchestrator:
             type_field=self.config.type_field,
             max_poi_count=self.config.max_poi_count,
         )
+    
+    def _create_location_poi(self) -> tuple[dict[str, Any], str, list[str], bool]:
+        """Create a single POI at the analysis location for demographic-only analysis."""
+        from ..geocoding import geocode_address
+        from ..geocoding.models import AddressInput, GeocodingConfig, AddressProvider
+        
+        # Get the location string
+        if self.config.geocode_area:
+            location_str = self.config.geocode_area
+        elif self.config.city and self.config.state:
+            location_str = f"{self.config.city}, {self.config.state}"
+        else:
+            raise ValueError("No location provided for demographic analysis")
+        
+        # Use proper geocoding engine with Nominatim priority for city-level
+        config = GeocodingConfig(
+            primary_provider=AddressProvider.NOMINATIM,
+            fallback_providers=[AddressProvider.CENSUS],
+            min_quality_threshold=None  # Accept any result for city-level
+        )
+        
+        # Create address input for city-level geocoding
+        address_input = AddressInput(address=location_str)
+        
+        # Use the geocoding engine
+        from ..geocoding.engine import AddressGeocodingEngine
+        engine = AddressGeocodingEngine(config)
+        result = engine.geocode_address(address_input)
+        
+        if not result or not result.success:
+            # More robust error message
+            error_msg = f"Failed to geocode location: {location_str}"
+            if result and result.error_message:
+                error_msg += f". Reason: {result.error_message}"
+            raise ValueError(error_msg)
+        
+        # Create a single POI at the location
+        poi_data = {
+            "pois": [{
+                "name": "Analysis Location", 
+                "latitude": result.latitude,
+                "longitude": result.longitude,
+                "address": location_str
+            }]
+        }
+        
+        # Extract state more robustly
+        if self.config.state:
+            state_abbr = self.config.state
+        elif result.state:
+            state_abbr = result.state
+        else:
+            # Try to extract from location string
+            parts = location_str.split(',')
+            state_abbr = parts[-1].strip() if len(parts) > 1 else ""
+        
+        return (poi_data, location_str, [state_abbr], False)
 
     def _validate_coordinates(self) -> None:
         """Validate POI coordinates."""
