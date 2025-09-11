@@ -1,60 +1,35 @@
-"""Pythonic API for SocialMapper.
+"""Simplified SocialMapper API.
 
-This module provides a clean, intuitive interface that follows Python conventions.
+Direct access to core spatial analysis functions without unnecessary abstractions.
 
 Example:
     ```python
-    from socialmapper import SocialMapper, quick_analysis
+    from socialmapper.api import create_isochrone, SocialMapper
     
-    # Simple one-liner
-    result = quick_analysis("San Francisco, CA", "amenity:library")
-    print(f"Found {result['poi_count']} libraries")
+    # Simple isochrone creation
+    isochrone = create_isochrone("San Francisco, CA", travel_time=15)
     
-    # Full client usage
+    # Or use the client for API key management
     mapper = SocialMapper(api_key="your-census-key")
-    result = mapper.analyze_location(
-        "Chicago, IL",
-        poi_types=["library", "school"], 
-        travel_time=15,
-        census_variables=["total_population", "median_household_income"]
-    )
-    print(f"Analysis complete: {result.poi_count} POIs found")
     ```
 """
 
 from .client import SocialMapper
-from .convenience import (
-    analyze_custom_pois,
-    analyze_hospitals,
-    analyze_libraries,
-    analyze_parks,
-    analyze_schools,
-    compare_locations,
-    discover_food_access,
-    discover_healthcare_access,
-    quick_analysis,
-)
 from .exceptions import AnalysisError, APIError, SocialMapperError, ValidationError
+from .isochrone import create_isochrone
 from .results import AnalysisResult, POIResult
 
 __all__ = [
-    # Core classes
+    # Core functions
+    "create_isochrone",
+    # Client (minimal, mainly for API key management)
     "SocialMapper",
+    # Result types (kept for backward compatibility)
     "AnalysisResult",
     "POIResult",
     # Exceptions
     "SocialMapperError",
-    "ValidationError",
+    "ValidationError", 
     "AnalysisError",
     "APIError",
-    # Convenience functions
-    "quick_analysis",
-    "analyze_libraries",
-    "analyze_schools",
-    "analyze_hospitals",
-    "analyze_parks",
-    "discover_food_access",
-    "discover_healthcare_access",
-    "compare_locations",
-    "analyze_custom_pois",
 ]
