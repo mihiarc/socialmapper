@@ -17,7 +17,6 @@ Prerequisites:
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-
     load_dotenv()
 except ImportError:
     # dotenv not available - continue without it
@@ -29,7 +28,7 @@ from pathlib import Path
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper import SocialMapperBuilder, SocialMapperClient, tutorial_error_handler
+from socialmapper import SocialMapper, tutorial_error_handler
 
 
 def main():
@@ -41,14 +40,12 @@ def main():
 
     # Step 1: Define search parameters
     print("Step 1: Defining search parameters...")
-    geocode_area = "Wake County"
-    state = "North Carolina"
-    poi_type = "amenity"  # OpenStreetMap category
-    poi_name = "library"  # Specific type within category
+    location = "Wake County, North Carolina"
+    poi_types = ["library"]
     travel_time = 15  # minutes
 
-    print(f"  📍 Location: {geocode_area}, {state}")
-    print(f"  🏛️  POI Type: {poi_type} - {poi_name}")
+    print(f"  📍 Location: {location}")
+    print(f"  🏛️  POI Types: {', '.join(poi_types)}")
     print(f"  ⏱️  Travel Time: {travel_time} minutes\n")
 
     # Step 2: Set census variables to analyze
@@ -64,63 +61,58 @@ def main():
     print("  🎨 Creating choropleth maps...")
 
     # Use tutorial error handler for better error messages
-    with tutorial_error_handler("Getting Started Tutorial"), SocialMapperClient() as client:
-        # Build configuration using fluent interface
-        config = (
-            SocialMapperBuilder()
-            .with_location(geocode_area, state)
-            .with_osm_pois(poi_type, poi_name)
-            .with_travel_time(travel_time)
-            .with_census_variables(*census_variables)
-            .with_exports(csv=True, isochrones=False, maps=True)  # Enable map generation
-            .build()
-        )
+    try:
+        with tutorial_error_handler("Getting Started Tutorial"):
+            # Initialize SocialMapper client
+            mapper = SocialMapper()
+            
+            # Run analysis with simple, direct API
+            result = mapper.analyze_location(
+                location=location,
+                poi_types=poi_types,
+                travel_time=travel_time,
+                census_variables=census_variables,
+                output_dir="output",
+                create_maps=True
+            )
 
-        # Run analysis
-        result = client.run_analysis(config)
+            print("\n✅ Analysis complete!\n")
 
-        # Handle result using pattern matching
-        if result.is_err():
-            error = result.unwrap_err()
-            # The error will be handled by tutorial_error_handler
-            raise error.cause if error.cause else ValueError(error.message)
+            # Step 4: Explore results
+            print("Step 4: Results summary:")
+            print(f"  🏛️  Found {result.poi_count} libraries")
+            print(f"  📊 Census data collected for {result.census_units_analyzed} block groups")
+            print(f"  🗺️  Analysis area: {result.isochrone_area_km2:.2f} km²")
 
-        # Get successful result
-        analysis_result = result.unwrap()
+            # Show demographics if available
+            if result.demographics:
+                print(f"  👥 Total population in area: {result.demographics.get('total_population', 'N/A'):,}")
+                print(f"  💰 Median household income: ${result.demographics.get('median_household_income', 0):,}")
+                print(f"  📅 Median age: {result.demographics.get('median_age', 'N/A')} years")
 
-        print("\n✅ Analysis complete!\n")
+            # Show generated files
+            if result.files_created:
+                print("\n📁 Results saved to output/ directory:")
+                for file_path in result.files_created:
+                    print(f"   - {file_path}")
 
-        # Step 4: Explore results
-        print("Step 4: Results summary:")
-        print(f"  🏛️  Found {analysis_result.poi_count} libraries")
-        print(
-            f"  📊 Census data collected for {analysis_result.census_units_analyzed} block groups"
-        )
+            # Check for generated maps
+            map_dir = Path("output/maps")
+            if map_dir.exists():
+                map_files = list(map_dir.glob("*.png"))
+                if map_files:
+                    print("\n🗺️  Choropleth maps generated:")
+                    for map_file in sorted(map_files):
+                        print(f"   - {map_file.name}")
+                    print("\n   Open these files to visualize:")
+                    print("   - Population density patterns")
+                    print("   - Income distribution")
+                    print("   - Age demographics")
+                    print("   - Travel distance to libraries")
 
-        # Show metadata
-        if analysis_result.metadata:
-            travel_time = analysis_result.metadata.get("travel_time", 15)
-            print(f"  ⏱️  Analysis performed with {travel_time} minute travel time")
-
-        # Show generated files
-        if analysis_result.files_generated:
-            print("\n📁 Results saved to output/ directory:")
-            for file_type, file_path in analysis_result.files_generated.items():
-                print(f"   - {file_type}: {file_path}")
-
-        # Check for generated maps
-        map_dir = Path("output/maps")
-        if map_dir.exists():
-            map_files = list(map_dir.glob("*.png"))
-            if map_files:
-                print("\n🗺️  Choropleth maps generated:")
-                for map_file in sorted(map_files):
-                    print(f"   - {map_file.name}")
-                print("\n   Open these files to visualize:")
-                print("   - Population density patterns")
-                print("   - Income distribution")
-                print("   - Age demographics")
-                print("   - Travel distance to libraries")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 1
 
     print("\n🎉 Tutorial complete! Next steps:")
     print("- View the generated choropleth maps in output/maps/")
@@ -128,6 +120,11 @@ def main():
     print("- Try different POI types: 'school', 'hospital', 'park'")
     print("- Adjust travel time: 5, 10, 20, 30 minutes")
     print("- Add more census variables for richer analysis")
+    print("\n💡 Simple API highlights:")
+    print("- No builders or configuration objects needed")
+    print("- Direct results without unwrapping")
+    print("- Standard Python exceptions")
+    print("- Clean, readable code")
 
     return 0
 
