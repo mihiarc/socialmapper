@@ -131,19 +131,6 @@ from .exceptions import (
 # Tutorial helpers
 from .tutorial_helper import tutorial_error_handler
 
-# NLP capabilities (optional)
-try:
-    from .nlp import (
-        EntityExtractor,
-        EntityType,
-        IntentClassifier,
-        NLQueryProcessor,
-        QueryIntent,
-        QueryTranslator,
-    )
-    _NLP_AVAILABLE = True
-except ImportError:
-    _NLP_AVAILABLE = False
 
 # Public API
 __all__ = [
@@ -203,14 +190,4 @@ if _VISUALIZATION_AVAILABLE:
         "ColorScheme",
         "MapConfig",
         "MapType",
-    ])
-
-if _NLP_AVAILABLE:
-    __all__.extend([
-        "EntityExtractor",
-        "EntityType",
-        "IntentClassifier",
-        "NLQueryProcessor",
-        "QueryIntent",
-        "QueryTranslator",
     ])

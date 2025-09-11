@@ -17,7 +17,7 @@ class TestResultTypes:
 
     def test_err_creation(self):
         """Test creating an Err result."""
-        error = Error(ErrorType.VALIDATION, "Something went wrong")
+        error = Error("Something went wrong", ErrorType.VALIDATION)
         result = Err(error)
         assert result.is_ok() is False
         assert result.is_err() is True
@@ -123,7 +123,7 @@ class TestResultTypes:
 
         def divide(a: int, b: int) -> Result[float, Error]:
             if b == 0:
-                return Err(Error(ErrorType.VALIDATION, "Division by zero"))
+                return Err(Error("Division by zero", ErrorType.VALIDATION))
             return Ok(a / b)
 
         result1 = divide(10, 2)

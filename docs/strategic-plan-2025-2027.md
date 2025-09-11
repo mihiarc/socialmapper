@@ -163,20 +163,6 @@ To establish SocialMapper as the leading open-source platform for community equi
 - Export functionality for configurations
 - User testing report with recommendations
 
-#### Project 1.3: Enhanced NLP Capabilities  
-**Project Manager:** AI/ML Engineer  
-**Duration:** 10 weeks  
-**Budget:** $100K  
-
-**Scope:**
-- Expand natural language query processing
-- Implement context-aware POI categorization
-- Develop query suggestion engine
-- Create semantic search capabilities
-
-**Deliverables:**
-- Natural language query processor
-- 500+ POI category mappings
 - Query suggestion API
 - Documentation and usage examples
 

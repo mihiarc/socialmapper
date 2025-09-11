@@ -142,7 +142,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Unexpected error in POI discovery: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.POI_DISCOVERY,
+                    ErrorType.POI_DISCOVERY,
                     message=f"Unexpected error during POI discovery: {e!s}",
                     cause=e,
                 )
@@ -177,7 +177,7 @@ class NearbyPOIDiscoveryStage:
                 if geocoding_result.quality.value == "failed":
                     return Err(
                         Error(
-                            type=ErrorType.LOCATION_GEOCODING,
+                            ErrorType.LOCATION_GEOCODING,
                             message=f"Failed to geocode address: {self.config.location}",
                             context={"address": self.config.location},
                         )
@@ -189,7 +189,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error geocoding origin: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.LOCATION_GEOCODING,
+                    error_type=ErrorType.LOCATION_GEOCODING,
                     message=f"Error geocoding origin location: {e!s}",
                     cause=e,
                 )
@@ -232,7 +232,7 @@ class NearbyPOIDiscoveryStage:
                 if isochrone_gdf is None or isochrone_gdf.empty:
                     return Err(
                         Error(
-                            type=ErrorType.ISOCHRONE_GENERATION,
+                            error_type=ErrorType.ISOCHRONE_GENERATION,
                             message="Failed to generate isochrone for origin location",
                             context={
                                 "origin": origin_coords,
@@ -248,7 +248,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error generating isochrone: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.ISOCHRONE_GENERATION,
+                    error_type=ErrorType.ISOCHRONE_GENERATION,
                     message=f"Error generating isochrone: {e!s}",
                     cause=e,
                 )
@@ -270,7 +270,7 @@ class NearbyPOIDiscoveryStage:
             if isochrone_gdf.empty:
                 return Err(
                     Error(
-                        type=ErrorType.POI_QUERY,
+                        error_type=ErrorType.POI_QUERY,
                         message="Isochrone is empty, cannot query POIs",
                     )
                 )
@@ -293,7 +293,7 @@ class NearbyPOIDiscoveryStage:
                 if not pois:
                     return Err(
                         Error(
-                            type=ErrorType.POI_QUERY,
+                            error_type=ErrorType.POI_QUERY,
                             message="No POIs found within the travel time isochrone",
                             context={
                                 "isochrone_area_km2": self.results.isochrone_area_km2,
@@ -308,7 +308,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error querying POIs: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.POI_QUERY,
+                    error_type=ErrorType.POI_QUERY,
                     message=f"Error querying POIs in isochrone: {e!s}",
                     cause=e,
                 )
@@ -442,7 +442,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error processing POIs: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.PROCESSING,
+                    error_type=ErrorType.PROCESSING,
                     message=f"Error processing POI data: {e!s}",
                     cause=e,
                 )
@@ -522,7 +522,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error exporting results: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.PROCESSING,
+                    error_type=ErrorType.PROCESSING,
                     message=f"Error exporting results: {e!s}",
                     cause=e,
                 )
@@ -687,7 +687,7 @@ class NearbyPOIDiscoveryStage:
         except ImportError:
             return Err(
                 Error(
-                    type=ErrorType.PROCESSING,
+                    error_type=ErrorType.PROCESSING,
                     message="Folium not installed. Install with: pip install folium",
                 )
             )
@@ -695,7 +695,7 @@ class NearbyPOIDiscoveryStage:
             logger.error(f"Error creating map: {e}", exc_info=True)
             return Err(
                 Error(
-                    type=ErrorType.PROCESSING,
+                    error_type=ErrorType.PROCESSING,
                     message=f"Error creating map: {e!s}",
                     cause=e,
                 )
@@ -754,7 +754,7 @@ def execute_poi_discovery_pipeline(
     except InvalidConfigurationError as e:
         return Err(
             Error(
-                type=ErrorType.CONFIGURATION,
+                error_type=ErrorType.CONFIGURATION,
                 message=str(e),
                 cause=e,
             )
@@ -763,7 +763,7 @@ def execute_poi_discovery_pipeline(
         logger.error(f"Unexpected error in POI discovery pipeline: {e}", exc_info=True)
         return Err(
             Error(
-                type=ErrorType.POI_DISCOVERY,
+                error_type=ErrorType.POI_DISCOVERY,
                 message=f"Unexpected error: {e!s}",
                 cause=e,
             )
