@@ -6,10 +6,13 @@ Learn how to create travel-time polygons (isochrones) using the direct API.
 No client class needed - just simple function calls.
 
 What you'll learn:
-- Creating isochrones from addresses
 - Creating isochrones from coordinates
 - Different travel modes (drive, walk, bike)
 - Getting results as GeoDataFrame or dictionary
+- Comparing travel times and areas
+
+NOTE: Due to geocoding service limitations, this tutorial uses coordinates
+instead of addresses. See CITY_COORDINATES below for common locations.
 """
 
 import sys
@@ -19,26 +22,47 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from socialmapper.api import create_isochrone
 import json
 
+# Common city coordinates (since geocoding may be unavailable)
+CITY_COORDINATES = {
+    "Portland, OR": (45.5152, -122.6784),
+    "San Francisco, CA": (37.7749, -122.4194),
+    "Seattle, WA": (47.6062, -122.3321),
+    "New York, NY": (40.7128, -74.0060),
+    "Raleigh, NC": (35.7796, -78.6382),
+    "Durham, NC": (35.9940, -78.8986),
+    "Chapel Hill, NC": (35.9132, -79.0558),
+    "Cary, NC": (35.7915, -78.7811),
+}
 
-def example_1_address_isochrone():
-    """Create an isochrone from a city/address."""
-    print("\n📍 Example 1: Isochrone from Address")
+
+def example_1_coordinate_isochrone():
+    """Create an isochrone from coordinates."""
+    print("\n📍 Example 1: Isochrone from Coordinates")
     print("-" * 40)
     
-    # Create a 15-minute driving isochrone from downtown Portland
-    isochrone = create_isochrone(
-        location="Portland, OR",
-        travel_time=15,
-        travel_mode="drive"
-    )
+    # Portland, OR coordinates
+    lat, lon = CITY_COORDINATES["Portland, OR"]
     
-    print(f"✅ Created isochrone for Portland, OR")
-    print(f"   Shape type: {type(isochrone)}")
-    print(f"   Geometry type: {isochrone.geometry.iloc[0].geom_type}")
-    print(f"   Travel time: {isochrone['travel_time'].iloc[0]} minutes")
-    print(f"   Travel mode: {isochrone['travel_mode'].iloc[0]}")
-    
-    return isochrone
+    try:
+        # Create a 15-minute driving isochrone
+        isochrone = create_isochrone(
+            location=(lat, lon),
+            travel_time=15,
+            travel_mode="drive"
+        )
+        
+        print(f"✅ Created isochrone for Portland, OR ({lat}, {lon})")
+        print(f"   Shape type: {type(isochrone)}")
+        print(f"   Geometry type: {isochrone.geometry.iloc[0].geom_type}")
+        print(f"   Travel time: {isochrone['travel_time'].iloc[0]} minutes")
+        print(f"   Travel mode: {isochrone['travel_mode'].iloc[0]}")
+        
+        return isochrone
+        
+    except Exception as e:
+        print(f"⚠️ Failed to create isochrone: {e}")
+        print("   This may be due to network issues or service availability")
+        return None
 
 
 def example_2_coordinate_isochrone():
@@ -87,9 +111,12 @@ def example_4_json_output():
     print("\n📊 Example 4: JSON Output Format")
     print("-" * 40)
     
+    # Seattle, WA coordinates
+    lat, lon = 47.6062, -122.3321
+    
     # Create isochrone and get as dictionary
     iso_dict = create_isochrone(
-        location="Seattle, WA",
+        location=(lat, lon),
         travel_time=15,
         travel_mode="drive",
         return_type="dict"  # Return as dictionary instead of GeoDataFrame
@@ -146,7 +173,7 @@ def main():
     
     try:
         # Run examples
-        example_1_address_isochrone()
+        example_1_coordinate_isochrone()
         example_2_coordinate_isochrone()
         example_3_bike_isochrone()
         example_4_json_output()
