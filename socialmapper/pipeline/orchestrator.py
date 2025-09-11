@@ -252,7 +252,7 @@ class PipelineOrchestrator:
         
         # Create a single POI at the location
         poi_data = {
-            "poi_data": [{
+            "pois": [{
                 "name": "Analysis Location",
                 "latitude": lat,
                 "longitude": lon,
