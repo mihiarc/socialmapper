@@ -18,8 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper import (
-    get_census_data_for_isochrone,
-    get_demographics_for_isochrone,
+    get_census_data_for_polygon,
+    get_demographics_for_polygon,
     geocode_point,
     normalize_variables
 )
@@ -41,8 +41,8 @@ def example_1_basic_census():
     
     # Get census data for this area
     print("Fetching census data...")
-    census_data = get_census_data_for_isochrone(
-        isochrone=isochrone,
+    census_data = get_census_data_for_polygon(
+        polygon=isochrone,
         variables=["B01003_001E"],  # Total population
         year=2022
     )
@@ -73,9 +73,8 @@ def example_2_demographics():
     
     # Get standard demographic variables
     print("Fetching demographic data...")
-    demographics = get_demographics_for_isochrone(
-        isochrone=isochrone,
-        year=2022
+    demographics = get_demographics_for_polygon(
+        polygon=isochrone
     )
     
     if demographics is not None and not demographics.empty:
@@ -165,8 +164,8 @@ def example_5_custom_variables():
     ]
     
     print("Fetching custom variables...")
-    census_data = get_census_data_for_isochrone(
-        isochrone=isochrone,
+    census_data = get_census_data_for_polygon(
+        polygon=isochrone,
         variables=variables,
         year=2022
     )

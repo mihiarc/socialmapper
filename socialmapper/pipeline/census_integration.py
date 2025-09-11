@@ -6,10 +6,10 @@ import geopandas as gpd
 import pandas as pd
 
 from ..census import (
-    get_census_data_for_isochrone,
+    get_census_data_for_polygon,
     normalize_variables,
     CensusClient,
-    get_demographics_for_isochrone
+    get_demographics_for_polygon
 )
 from ..distance import add_travel_distances
 from ..progress import get_progress_bar
@@ -44,7 +44,7 @@ def integrate_census_with_isochrone(
     
     # Get census data for the isochrone area
     with get_progress_bar(total=1, desc="🏛️ Fetching Census Data", unit="query") as pbar:
-        census_data = get_census_data_for_isochrone(
+        census_data = get_census_data_for_polygon(
             isochrone_gdf, 
             census_codes,
             api_key=api_key
@@ -95,4 +95,4 @@ def get_demographic_summary(
     Returns:
         Dict with demographic statistics
     """
-    return get_demographics_for_isochrone(isochrone_gdf, api_key)
+    return get_demographics_for_polygon(isochrone_gdf, api_key)

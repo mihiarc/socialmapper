@@ -107,31 +107,40 @@ class CensusClient:
             return f"zip code tabulation area:{','.join(units)}"
 
 
-def get_census_data_for_isochrone(
-    isochrone: gpd.GeoDataFrame,
+def get_census_data_for_polygon(
+    polygon: gpd.GeoDataFrame,
     variables: List[str],
     api_key: Optional[str] = None,
     year: int = 2023
 ) -> pd.DataFrame:
-    """Get census data for all block groups within an isochrone.
+    """Get census data for all block groups within any polygon.
     
-    This is the main function users should use - it takes an isochrone
-    and returns census data for the area it covers.
+    This is a general-purpose function that works with any polygon geometry,
+    not just isochrones. Users can pass polygons from any GIS tool.
     
     Args:
-        isochrone: GeoDataFrame containing isochrone polygon(s)
+        polygon: GeoDataFrame containing polygon geometry (any source)
         variables: List of census variables to fetch
         api_key: Census API key (optional, uses env var if not provided)
         year: Census year (default: 2023)
         
     Returns:
-        DataFrame with census data for all block groups in the isochrone
+        DataFrame with census data for all block groups in the polygon
+        
+    Example:
+        # Works with isochrones
+        iso = create_isochrone(location, travel_time=15)
+        data = get_census_data_for_polygon(iso, ["B01003_001E"])
+        
+        # Also works with any other polygon
+        my_polygon = gpd.read_file("study_area.shp")
+        data = get_census_data_for_polygon(my_polygon, ["B01003_001E"])
     """
-    # Get block groups that intersect the isochrone
-    block_groups = get_block_groups_for_polygon(isochrone)
+    # Get block groups that intersect the polygon
+    block_groups = get_block_groups_for_polygon(polygon)
     
     if block_groups.empty:
-        logger.warning("No block groups found for isochrone")
+        logger.warning("No block groups found for polygon")
         return pd.DataFrame()
     
     # Extract block group GEOIDs
@@ -146,6 +155,8 @@ def get_census_data_for_isochrone(
         census_data = block_groups.merge(census_data, on='GEOID', how='left')
     
     return census_data
+
+
 
 
 def get_block_groups_for_polygon(polygon: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -399,18 +410,30 @@ def get_census_data(
 
 
 # Convenience functions for common use cases
-def get_demographics_for_isochrone(
-    isochrone: gpd.GeoDataFrame,
+def get_demographics_for_polygon(
+    polygon: gpd.GeoDataFrame,
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Get common demographic statistics for an isochrone area.
+    """Get common demographic statistics for any polygon area.
+    
+    Works with any polygon geometry - isochrones, custom study areas,
+    administrative boundaries, or polygons from GIS tools.
     
     Args:
-        isochrone: GeoDataFrame with isochrone polygon
+        polygon: GeoDataFrame with polygon geometry (any source)
         api_key: Census API key
         
     Returns:
         Dict with demographic summary statistics
+        
+    Example:
+        # With isochrone
+        iso = create_isochrone(location, travel_time=15)
+        demographics = get_demographics_for_polygon(iso)
+        
+        # With custom polygon
+        study_area = gpd.read_file("my_area.geojson")
+        demographics = get_demographics_for_polygon(study_area)
     """
     # Common demographic variables
     variables = [
@@ -422,7 +445,7 @@ def get_demographics_for_isochrone(
     ]
     
     # Get census data
-    data = get_census_data(isochrone, variables, api_key)
+    data = get_census_data(polygon, variables, api_key)
     
     if data.empty:
         return {}
