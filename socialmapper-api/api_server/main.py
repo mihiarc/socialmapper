@@ -9,16 +9,13 @@ from .config import get_settings
 from .middleware import setup_api_key_auth, setup_cors, setup_error_handling, setup_rate_limiting
 from .middleware.metrics import setup_metrics
 from .middleware.compression import setup_compression
-from .middleware.mcp_context import setup_mcp_context_middleware
-from .routers import analysis, health, metadata, results, feedback, websocket, demo, mcp
+from .routers import analysis, health, metadata, results, feedback, websocket, demo
 from .services.cleanup_scheduler import get_cleanup_scheduler, init_cleanup_scheduler
 from .services.enhanced_job_manager import EnhancedJobManager
 from .services.result_storage import init_result_storage
 from .services.feedback_service import init_feedback_service
 from .services.cache_service import get_cache_service, CacheServiceSingleton
 from .services.database_service import DatabaseServiceSingleton
-from .services.mcp_service import init_mcp_service, shutdown_mcp_service
-from .services.mcp_metrics import init_mcp_metrics_collector, shutdown_mcp_metrics_collector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -72,41 +69,10 @@ async def lifespan(app: FastAPI):
     # Store job manager for access in routes
     app.state.job_manager = job_manager
     
-    # Initialize MCP service if enabled
-    if settings.mcp_enabled:
-        try:
-            mcp_service = await init_mcp_service(app, settings)
-            app.state.mcp_service = mcp_service
-            logger.info(f"MCP service initialized at {settings.mcp_mount_path}")
-            
-            # Initialize MCP metrics collector if enabled
-            if settings.mcp_metrics_enabled:
-                mcp_metrics = await init_mcp_metrics_collector(
-                    retention_hours=settings.mcp_metrics_retention_hours,
-                    enable_detailed_tracking=settings.mcp_metrics_detailed_tracking
-                )
-                app.state.mcp_metrics = mcp_metrics
-                logger.info("MCP metrics collector initialized")
-                
-        except Exception as e:
-            logger.error(f"Failed to initialize MCP service: {e}")
-            if settings.debug_mode:
-                raise
-    
     yield
     
     # Shutdown
     logger.info("Shutting down SocialMapper API server...")
-    
-    # Shutdown MCP service if running
-    if hasattr(app.state, "mcp_service"):
-        await shutdown_mcp_service()
-        logger.info("MCP service shut down")
-        
-        # Shutdown MCP metrics collector if running
-        if hasattr(app.state, "mcp_metrics"):
-            await shutdown_mcp_metrics_collector()
-            logger.info("MCP metrics collector shut down")
     
     if hasattr(app.state, "job_manager"):
         await app.state.job_manager.stop()
@@ -150,14 +116,6 @@ def create_app() -> FastAPI:
     # Setup comprehensive metrics collection
     setup_metrics(app)
     
-    # Setup MCP context middleware if MCP is enabled
-    if settings.mcp_enabled:
-        setup_mcp_context_middleware(
-            app,
-            enable_performance_logging=settings.mcp_enable_performance_logging,
-            enable_request_logging=settings.mcp_enable_request_logging,
-            performance_threshold_ms=settings.mcp_performance_threshold_ms
-        )
 
     # Include routers
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
@@ -170,10 +128,6 @@ def create_app() -> FastAPI:
     # Include WebSocket router for real-time updates
     if settings.websocket_enabled:
         app.include_router(websocket.router, prefix="/api/v1", tags=["websocket"])
-    
-    # Include MCP router if enabled
-    if settings.mcp_enabled:
-        app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])
 
     return app
 
