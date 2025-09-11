@@ -101,48 +101,6 @@ class Settings(BaseSettings):
     demo_mode_enabled: bool = Field(default=False, description="Enable demo mode restrictions")
     demo_max_concurrent_jobs: int = Field(default=3, description="Max concurrent jobs per demo session")
     demo_session_timeout_minutes: int = Field(default=60, description="Demo session timeout")
-    
-    # MCP (Model Context Protocol) configuration
-    mcp_enabled: bool = Field(default=True, description="Enable MCP integration")
-    mcp_mount_path: str = Field(default="/mcp", description="Path to mount MCP server")
-    mcp_auth_enabled: bool = Field(default=True, description="Enable MCP authentication")
-    mcp_allowed_tools: list[str] = Field(
-        default=[],
-        description="List of allowed MCP tools (empty list allows all)"
-    )
-    mcp_tool_timeout: int = Field(default=30, description="Default timeout for MCP tools in seconds")
-    mcp_max_concurrent: int = Field(default=10, description="Maximum concurrent MCP requests")
-    mcp_cache_enabled: bool = Field(default=True, description="Enable MCP response caching")
-    mcp_cache_ttl: int = Field(default=300, description="MCP cache TTL in seconds")
-    mcp_rate_limit_per_minute: int = Field(default=60, description="MCP rate limit per minute")
-    
-    # MCP context middleware configuration
-    mcp_enable_performance_logging: bool = Field(
-        default=True, 
-        description="Enable MCP performance metrics logging"
-    )
-    mcp_enable_request_logging: bool = Field(
-        default=True, 
-        description="Enable MCP request/response logging"
-    )
-    mcp_performance_threshold_ms: float = Field(
-        default=1000.0, 
-        description="Threshold for slow MCP request warnings in milliseconds"
-    )
-    
-    # MCP metrics configuration
-    mcp_metrics_enabled: bool = Field(
-        default=True, 
-        description="Enable detailed MCP metrics collection"
-    )
-    mcp_metrics_retention_hours: int = Field(
-        default=24, 
-        description="Hours to retain detailed MCP metrics"
-    )
-    mcp_metrics_detailed_tracking: bool = Field(
-        default=True, 
-        description="Enable detailed per-invocation tracking"
-    )
 
     @field_validator("api_keys", mode="before")
     @classmethod
@@ -151,16 +109,6 @@ class Settings(BaseSettings):
         if isinstance(v, list):
             return ",".join(v)
         return v
-    
-    @field_validator("mcp_allowed_tools", mode="before")
-    @classmethod
-    def parse_mcp_allowed_tools(cls, v):
-        """Parse MCP allowed tools from comma-separated string or list."""
-        if isinstance(v, str):
-            if not v.strip():
-                return []
-            return [tool.strip() for tool in v.split(",") if tool.strip()]
-        return v or []
 
     @field_validator("log_level")
     @classmethod
