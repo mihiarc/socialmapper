@@ -1,4 +1,4 @@
-# 🏘️ SocialMapper: Backend Toolkit for Spatial Analysis
+# 🏘️ SocialMapper: Python Toolkit for Spatial Analysis
 
 [![PyPI version](https://badge.fury.io/py/socialmapper.svg)](https://badge.fury.io/py/socialmapper)
 [![Python Versions](https://img.shields.io/pypi/pyversions/socialmapper.svg)](https://pypi.org/project/socialmapper/)
@@ -6,15 +6,12 @@
 [![PyPI Status](https://img.shields.io/pypi/status/socialmapper.svg)](https://pypi.org/project/socialmapper/)
 [![Downloads](https://static.pepy.tech/badge/socialmapper)](https://pepy.tech/project/socialmapper)
 
-SocialMapper is an open-source Python **backend toolkit** for spatial analysis, demographic mapping, and geospatial data processing. It provides comprehensive APIs and services for understanding community connections, accessibility patterns, and demographic insights.
-
-This repository contains the **core backend functionality** and API services. For frontend applications, see [socialmapper-frontend](https://github.com/mihiarc/socialmapper-frontend).
+SocialMapper is an open-source Python toolkit for spatial analysis, demographic mapping, and geospatial data processing. It provides comprehensive functionality for understanding community connections, accessibility patterns, and demographic insights.
 
 ## 🏗️ Repository Structure
 
-- **🔧 Core Backend Package** (`socialmapper/`) - Python toolkit for spatial analysis
-- **🚀 API Service** (`socialmapper-api/`) - FastAPI REST service for web applications
-- **📚 Documentation** (`docs/`) - Comprehensive guides and API reference
+- **🔧 Core Package** (`socialmapper/`) - Python toolkit for spatial analysis
+- **📚 Documentation** (`docs/`) - Comprehensive guides and reference
 - **🧪 Examples** (`examples/`) - Python usage examples and tutorials
 
 ## 🌟 Key Capabilities
@@ -35,13 +32,11 @@ SocialMapper helps you understand how people connect with important places in th
 
 ## What's New in v0.7.0 🎉
 
-### Major Architecture Update: Complete Backend-Only Design
+### Major Architecture Update: Simplified Python Package
 
-- **🏗️ Backend-Only Repository** - This repository now contains only backend components and APIs
-- **🚀 Separate Frontend Repository** - Modern React frontend available at [socialmapper-frontend](https://github.com/mihiarc/socialmapper-frontend)
-- **🔌 Enhanced REST API** - Full-featured FastAPI backend service in `socialmapper-api/`
-- **📦 Clean Installation** - Simple backend installation with `pip install socialmapper`
-- **🔧 API Server Support** - Optional API server dependencies with `pip install socialmapper[api]`
+- **📦 Clean Installation** - Simple installation with `pip install socialmapper`
+- **🔧 Focused Toolkit** - Streamlined Python package for spatial analysis
+- **📚 Enhanced Documentation** - Improved guides and examples
 
 ### Previous v0.6.2 Updates
 
@@ -464,7 +459,7 @@ uv run pytest
 
 ### Migrating to v0.7.0
 
-The v0.7.0 release introduces a separated architecture with optional UI components. Here's how to migrate:
+The v0.7.0 release simplifies the package architecture. Here's how to migrate:
 
 #### For CLI/API Users
 No changes needed! The core functionality remains the same:
@@ -485,20 +480,17 @@ The Streamlit UI is now optional and will be removed in a future version. You ha
    streamlit run streamlit_app.py
    ```
 
-2. **Switch to the new React UI** (recommended):
-   - Backend: See [socialmapper-api/README.md](socialmapper-api/README.md)
-   - Frontend: Visit [socialmapper-ui](https://github.com/mihiarc/socialmapper-ui)
-
-3. **Use the REST API directly**:
+2. **Use the Python API directly** (recommended):
    ```python
-   import httpx
+   from socialmapper import SocialMapperClient
    
-   # Start analysis via API
-   response = httpx.post("http://localhost:8000/api/v1/analysis/location", json={
-       "latitude": 40.7128,
-       "longitude": -74.0060,
-       "poi_types": ["library"]
-   })
+   # Initialize client and run analysis
+   client = SocialMapperClient()
+   results = client.analyze_location(
+       latitude=40.7128,
+       longitude=-74.0060,
+       poi_types=["library"]
+   )
    ```
 
 #### For Package Developers

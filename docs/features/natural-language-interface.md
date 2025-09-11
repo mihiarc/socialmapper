@@ -304,33 +304,37 @@ async def nlp_analysis_workflow(query: str):
     return analysis
 ```
 
-### With Web Interface
+### With Batch Processing
 ```python
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from socialmapper.nlp import NLQueryProcessor
+from socialmapper.api import SocialMapperClient
 
-app = FastAPI()
-processor = NLQueryProcessor()
-
-class QueryRequest(BaseModel):
-    query: str
-
-@app.post("/analyze")
-async def analyze_natural_query(request: QueryRequest):
-    result = await processor.process_natural_query(request.query)
+def process_queries_batch(queries: list[str]) -> list[dict]:
+    """Process multiple natural language queries in batch."""
+    processor = NLQueryProcessor()
+    client = SocialMapperClient()
+    results = []
     
-    if result.is_err():
-        raise HTTPException(400, detail=result.unwrap_err().message)
+    for query in queries:
+        result = processor.process_natural_query(query)
+        
+        if result.is_ok():
+            query_result = result.unwrap()
+            results.append({
+                "query": query,
+                "intent": query_result.intent.primary_intent.name,
+                "confidence": query_result.intent.confidence,
+                "entities": len(query_result.entities),
+                "config": query_result.config,
+                "suggestions": query_result.suggestions
+            })
+        else:
+            results.append({
+                "query": query,
+                "error": result.unwrap_err().message
+            })
     
-    query_result = result.unwrap()
-    
-    return {
-        "intent": query_result.intent.primary_intent.name,
-        "confidence": query_result.intent.confidence,
-        "entities": len(query_result.entities),
-        "config": query_result.config,
-        "suggestions": query_result.suggestions
-    }
+    return results
 ```
 
 ### With Command Line

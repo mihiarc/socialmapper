@@ -9,12 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Major Features
 
-#### 🏗️ **Complete Frontend-Backend Separation**
-- **Architectural overhaul** separating frontend and backend components
-- **New API server** with FastAPI-based backend (`socialmapper-api/`)
-- **Enhanced Docker support** with development and production configurations
-- **RESTful API endpoints** for all core functionality
-- **Microservices architecture** enabling independent scaling and deployment
+#### 🏗️ **Enhanced Toolkit Architecture**
+- **Architectural improvements** focusing on core Python toolkit
+- **Enhanced functionality** with improved Python API
+- **Streamlined installation** with simplified dependencies
+- **Core analysis capabilities** with comprehensive toolkit support
 
 #### 🗺️ **Nearby POI Discovery System**
 - **Comprehensive POI discovery pipeline** for finding points of interest
@@ -33,13 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ New Features
 
-#### **API Infrastructure**
-- **FastAPI-based REST API** with comprehensive endpoint coverage
-- **Authentication and rate limiting** middleware
-- **CORS support** for cross-origin requests
-- **Health check endpoints** for monitoring
-- **Result storage system** with cleanup scheduling
-- **Job management** for asynchronous processing
+#### **Core Infrastructure**
+- **Enhanced Python API** with comprehensive functionality
+- **Improved error handling** and validation
+- **Better performance** for analysis operations
+- **Result management system** with cleanup utilities
+- **Async processing support** for large datasets
 
 #### **POI Discovery Components**
 - **POI categorization engine** with hierarchical taxonomy
