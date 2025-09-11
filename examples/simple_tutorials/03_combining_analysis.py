@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper.api import create_isochrone
-from socialmapper import get_census_data_for_isochrone, get_demographics_for_isochrone
+from socialmapper import get_census_data_for_polygon, get_demographics_for_polygon
 import pandas as pd
 
 
@@ -38,9 +38,8 @@ def example_1_basic_combination():
     
     # Step 2: Get demographics
     print("Step 2: Adding demographic data...")
-    demographics = get_demographics_for_isochrone(
-        isochrone=isochrone,
-        year=2022
+    demographics = get_demographics_for_polygon(
+        polygon=isochrone
     )
     
     if demographics is not None and not demographics.empty:
@@ -96,8 +95,8 @@ def example_2_accessibility_analysis():
             travel_mode="drive"
         )
         
-        demographics = get_census_data_for_isochrone(
-            isochrone=isochrone,
+        demographics = get_census_data_for_polygon(
+            polygon=isochrone,
             variables=["B01003_001E"],  # Total population
             year=2022
         )
@@ -255,8 +254,8 @@ def example_5_custom_workflow():
         travel_mode="drive"
     )
     
-    demographics = get_census_data_for_isochrone(
-        isochrone=isochrone_gdf,
+    demographics = get_census_data_for_polygon(
+        polygon=isochrone_gdf,
         variables=["B01003_001E", "B08301_010E"],  # Population & transit users
         year=2022
     )

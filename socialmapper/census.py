@@ -209,7 +209,12 @@ def identify_states_counties(polygon: gpd.GeoDataFrame) -> List[Tuple[str, str]]
         List of (state_fips, county_fips) tuples
     """
     # Get polygon centroid for geocoding
-    centroid = polygon.geometry.centroid.iloc[0]
+    # Ensure we're in WGS84 (EPSG:4326) for lat/lon coordinates
+    if polygon.crs and polygon.crs != 'EPSG:4326':
+        polygon_wgs84 = polygon.to_crs('EPSG:4326')
+        centroid = polygon_wgs84.geometry.centroid.iloc[0]
+    else:
+        centroid = polygon.geometry.centroid.iloc[0]
     lat, lon = centroid.y, centroid.x
     
     # Use census geocoder to identify location
@@ -378,7 +383,7 @@ def get_census_data(
     # Handle different location types
     if isinstance(location, gpd.GeoDataFrame):
         # Isochrone or polygon
-        return get_census_data_for_isochrone(location, variables, api_key, year)
+        return get_census_data_for_polygon(location, variables, api_key, year)
     
     elif isinstance(location, list):
         # List of GEOIDs

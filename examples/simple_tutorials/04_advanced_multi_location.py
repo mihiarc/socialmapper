@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper.api import create_isochrone
-from socialmapper import get_census_data_for_isochrone
+from socialmapper import get_census_data_for_polygon
 import pandas as pd
 from typing import List, Dict, Tuple
 
@@ -111,8 +111,8 @@ def example_2_service_overlap():
     
     # Get population in each area
     for name, iso in isochrones:
-        demographics = get_census_data_for_isochrone(
-            isochrone=iso,
+        demographics = get_census_data_for_polygon(
+            polygon=iso,
             variables=["B01003_001E"],
             year=2022
         )
@@ -265,8 +265,8 @@ def example_5_time_distance_analysis():
             travel_mode="drive"
         )
         
-        demographics = get_census_data_for_isochrone(
-            isochrone=iso_gdf,
+        demographics = get_census_data_for_polygon(
+            polygon=iso_gdf,
             variables=["B01003_001E"],
             year=2022
         )

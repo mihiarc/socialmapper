@@ -32,9 +32,9 @@ Work directly with census and demographic data.
 - Custom census variables
 
 ```python
-from socialmapper import get_census_data_for_isochrone
+from socialmapper import get_census_data_for_polygon
 
-demographics = get_census_data_for_isochrone(isochrone, variables=["B01003_001E"])
+demographics = get_census_data_for_polygon(polygon, variables=["B01003_001E"])
 ```
 
 ### 3. [Combining Analysis](03_combining_analysis.py)
@@ -49,7 +49,7 @@ Combine spatial and demographic analysis for insights.
 isochrone = create_isochrone("Durham, NC", travel_time=15)
 
 # Add demographics
-demographics = get_demographics_for_isochrone(isochrone)
+demographics = get_demographics_for_polygon(isochrone)
 ```
 
 ### 4. [Advanced Multi-Location](04_advanced_multi_location.py)
@@ -108,7 +108,7 @@ Build complex analyses from simple parts:
 iso = create_isochrone(location, time=15)
 
 # Step 2: Get demographics
-demo = get_census_data_for_isochrone(iso, variables)
+demo = get_census_data_for_polygon(iso, variables)
 
 # Step 3: Analyze results
 population = demo['B01003_001E'].sum()
@@ -141,7 +141,7 @@ for mode in ["drive", "bike", "walk"]:
 ### Analyze demographic reach
 ```python
 iso = create_isochrone(store_location, travel_time=10)
-customers = get_census_data_for_isochrone(iso, ["B01003_001E"])
+customers = get_census_data_for_polygon(iso, ["B01003_001E"])
 ```
 
 ## 🛠️ Requirements
