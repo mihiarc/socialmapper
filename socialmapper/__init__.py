@@ -1,153 +1,37 @@
-"""SocialMapper: Backend Toolkit for Spatial Analysis.
+"""SocialMapper: Simple spatial analysis API.
 
-An open-source Python backend toolkit for spatial analysis, demographic mapping,
-and geospatial data processing. Clean, Pythonic API for community mapping.
+Five core functions for all your spatial analysis needs:
+- create_isochrone: Generate travel-time polygons
+- get_census_blocks: Fetch census block groups for an area
+- get_census_data: Get demographic data from US Census
+- create_map: Generate choropleth map visualizations
+- get_poi: Find points of interest near locations
 """
 
-# Load environment variables from .env file as early as possible
+# Load environment variables from .env file if available
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    # dotenv not available - continue without it
     pass
 
-# Configure logging and warnings for clean user experience
-try:
-    from .util.logging_config import configure_logging
-    configure_logging()
-except ImportError:
-    pass
-
-try:
-    from .util.warnings_config import setup_production_environment
-    setup_production_environment(verbose=False)
-except ImportError:
-    pass
-
-# Version information
-from importlib.metadata import PackageNotFoundError, version
-
-try:
-    __version__ = version("socialmapper")
-except PackageNotFoundError:
-    __version__ = "1.0.0"  # Major version for API consolidation
-
-# Main API - Simple, direct functions
+# Import the 5 core API functions
 from .api import (
-    AnalysisError,
-    AnalysisResult,
-    APIError,
-    POIResult,
-    SocialMapper,
-    SocialMapperError,
-    ValidationError,
     create_isochrone,
-)
-
-# Simple census data functions
-from .census import (
-    CensusClient,
+    get_census_blocks,
     get_census_data,
-    get_census_data_for_polygon,
-    get_demographics_for_polygon,
-    geocode_point,
-    normalize_variables,
+    create_map,
+    get_poi,
 )
 
-# Visualization (optional)
-try:
-    from .visualization import ChoroplethMap, ColorScheme, MapConfig, MapType
-    _VISUALIZATION_AVAILABLE = True
-except ImportError:
-    _VISUALIZATION_AVAILABLE = False
+# Version
+__version__ = "2.0.0"
 
-# Backend configuration
-from .config.feature_flags import (
-    BackendConfig,
-    get_api_base_url,
-    get_backend_config,
-    get_runtime_config,
-)
-
-# Error handling infrastructure
-from .exceptions import (
-    AnalysisError as LegacyAnalysisError,
-)
-from .exceptions import (
-    CensusAPIError,
-    ConfigurationError,
-    DataProcessingError,
-    ExternalAPIError,
-    FileSystemError,
-    GeocodingError,
-    InvalidCensusVariableError,
-    InvalidLocationError,
-    InvalidTravelTimeError,
-    IsochroneGenerationError,
-    MapGenerationError,
-    MissingAPIKeyError,
-    NetworkAnalysisError,
-    NoDataFoundError,
-    OSMAPIError,
-    VisualizationError,
-    format_error_for_user,
-    handle_with_context,
-)
-from .exceptions import (
-    SocialMapperError as LegacySocialMapperError,
-)
-from .exceptions import (
-    ValidationError as LegacyValidationError,
-)
-
-# Tutorial helpers
-from .tutorial_helper import tutorial_error_handler
-
-
-# Public API - Simplified and focused on core functionality
+# Public API - just the 5 functions
 __all__ = [
-    # Core API
-    "SocialMapper",
     "create_isochrone",
-    "AnalysisResult", 
-    "POIResult",
-    # Exceptions
-    "SocialMapperError",
-    "ValidationError",
-    "AnalysisError",
-    "APIError",
-    # Census functions
-    "CensusClient",
+    "get_census_blocks",
     "get_census_data",
-    "get_census_data_for_polygon",
-    "get_demographics_for_polygon",
-    "geocode_point",
-    "normalize_variables",
-    # Configuration
-    "BackendConfig",
-    "get_api_base_url",
-    "get_backend_config",
-    "get_runtime_config",
-    # Legacy error handling
-    "LegacyAnalysisError",
-    "CensusAPIError",
-    "ConfigurationError",
-    "DataProcessingError",
-    "ExternalAPIError",
-    "InvalidLocationError",
-    "MissingAPIKeyError",
-    "NoDataFoundError",
-    "OSMAPIError",
-    # Tutorial helpers
-    "tutorial_error_handler",
+    "create_map",
+    "get_poi",
 ]
-
-# Add optional components
-if _VISUALIZATION_AVAILABLE:
-    __all__.extend([
-        "ChoroplethMap",
-        "ColorScheme",
-        "MapConfig",
-        "MapType",
-    ])
