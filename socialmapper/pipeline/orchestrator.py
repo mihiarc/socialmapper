@@ -367,6 +367,35 @@ class PipelineOrchestrator:
             travel_time=self.config.travel_time,
         )
 
+    def run_stages(self, stage_names: list[str]) -> dict[str, Any]:
+        """Run specific pipeline stages.
+
+        Args:
+            stage_names: List of stage names to run
+
+        Returns:
+            Dictionary containing results from executed stages
+        """
+        # Validate stage names
+        available_stages = {stage.name for stage in self.stages}
+        invalid_stages = set(stage_names) - available_stages
+        if invalid_stages:
+            raise ValueError(f"Invalid stages: {invalid_stages}. Available: {available_stages}")
+
+        # Filter stages to run
+        stages_to_run = [s for s in self.stages if s.name in stage_names]
+
+        # Execute selected stages
+        for stage in stages_to_run:
+            try:
+                result = stage.execute()
+                self.stage_outputs[stage.name] = result
+            except Exception as e:
+                self._handle_stage_error(stage.name, e)
+                raise
+
+        return self.stage_outputs
+
     def run(self, skip_on_error: bool = False) -> dict[str, Any]:
         """Execute the pipeline.
 

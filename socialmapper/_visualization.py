@@ -16,18 +16,20 @@ def generate_choropleth_map(
     gdf: gpd.GeoDataFrame,
     column: str,
     title: Optional[str] = None,
-    save_path: Optional[str] = None
+    save_path: Optional[str] = None,
+    format: str = "png"
 ) -> Optional[bytes]:
     """Generate a choropleth map from geodata.
-    
+
     Args:
         gdf: GeoDataFrame with geometry and data
         column: Column name to visualize
         title: Optional map title
         save_path: Optional path to save the map
-    
+        format: Output format (png, pdf, svg)
+
     Returns:
-        PNG bytes if save_path is None, otherwise None
+        Image bytes if save_path is None, otherwise None
     """
     # Create figure and axis
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
@@ -108,14 +110,14 @@ def generate_choropleth_map(
     
     # Save or return bytes
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, format=format, dpi=150, bbox_inches='tight')
         plt.close()
         logger.info(f"Map saved to {save_path}")
         return None
     else:
         # Return as bytes
         buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(buf, format=format, dpi=150, bbox_inches='tight')
         plt.close()
         buf.seek(0)
         return buf.read()
