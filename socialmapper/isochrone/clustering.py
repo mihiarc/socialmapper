@@ -594,3 +594,22 @@ def benchmark_clustering_performance(
             ),
         },
     }
+
+
+def create_single_poi_cluster(
+    poi: dict[str, Any],
+    travel_time_minutes: int = 15
+) -> OptimizedPOICluster:
+    """Create a cluster containing a single POI.
+
+    This is used for retry logic when concurrent processing fails.
+
+    Args:
+        poi: POI dictionary with lat/lon coordinates
+        travel_time_minutes: Travel time for isochrone generation
+
+    Returns:
+        OptimizedPOICluster containing the single POI
+    """
+    cluster_id = f"single_{poi.get('id', 'unknown')}_{travel_time_minutes}"
+    return OptimizedPOICluster(cluster_id, [poi])

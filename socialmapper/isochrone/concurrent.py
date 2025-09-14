@@ -133,6 +133,124 @@ class ConcurrentIsochroneProcessor:
 
         return network_workers, isochrone_workers
 
+    def _validate_isochrone_size(
+        self,
+        isochrone_gdf: gpd.GeoDataFrame,
+        travel_time_minutes: int,
+        travel_mode: TravelMode
+    ) -> bool:
+        """Validate if isochrone size is reasonable for the given travel time.
+
+        Args:
+            isochrone_gdf: Generated isochrone GeoDataFrame
+            travel_time_minutes: Travel time in minutes
+            travel_mode: Mode of travel
+
+        Returns:
+            True if isochrone size is reasonable, False if abnormally small
+        """
+        if isochrone_gdf.empty:
+            return False
+
+        # Calculate area in square kilometers
+        area_sq_km = isochrone_gdf.geometry.area.sum() / 1_000_000
+
+        # Define minimum expected areas based on travel mode and time
+        # These are conservative estimates for detecting severe truncation
+        if travel_mode == TravelMode.DRIVE:
+            # For driving, expect at least 1 sq km per minute in rural areas
+            min_expected_area = travel_time_minutes * 0.5
+        elif travel_mode == TravelMode.BIKE:
+            # For biking, expect at least 0.3 sq km per minute
+            min_expected_area = travel_time_minutes * 0.2
+        else:  # WALK
+            # For walking, expect at least 0.1 sq km per minute
+            min_expected_area = travel_time_minutes * 0.05
+
+        # Check if area is suspiciously small
+        if area_sq_km < min_expected_area:
+            logger.warning(
+                f"Isochrone area {area_sq_km:.1f} km² is below minimum "
+                f"expected {min_expected_area:.1f} km² for {travel_time_minutes} min {travel_mode.value}"
+            )
+            return False
+
+        # Also check polygon complexity (vertex count)
+        if hasattr(isochrone_gdf.iloc[0].geometry, 'exterior'):
+            vertex_count = len(isochrone_gdf.iloc[0].geometry.exterior.coords)
+            if vertex_count < 20:  # Very simple polygon indicates truncation
+                logger.warning(f"Isochrone has only {vertex_count} vertices, suggesting truncation")
+                return False
+
+        return True
+
+    def _retry_with_fresh_network(
+        self,
+        poi: dict[str, Any],
+        travel_time_minutes: int,
+        travel_mode: TravelMode
+    ) -> gpd.GeoDataFrame | None:
+        """Retry isochrone generation with a fresh network download.
+
+        This is used when concurrent processing produces a truncated isochrone.
+
+        Args:
+            poi: POI dictionary
+            travel_time_minutes: Travel time limit
+            travel_mode: Mode of travel
+
+        Returns:
+            Regenerated isochrone or None if failed
+        """
+        try:
+            from .clustering import create_single_poi_cluster
+            from .cache import download_and_cache_network
+
+            # Create a single-POI cluster
+            single_cluster = create_single_poi_cluster(poi, travel_time_minutes)
+
+            # Download network specifically for this POI (bypassing shared network)
+            bbox = single_cluster.get_network_bbox(travel_time_minutes)
+
+            # Force a fresh download by using a unique cache key
+            import time
+            unique_suffix = f"_retry_{time.time()}"
+
+            network = download_and_cache_network(
+                bbox=bbox,
+                travel_time_minutes=travel_time_minutes,
+                cluster_size=1,
+                cache=self.cache,
+                travel_mode=travel_mode,
+            )
+
+            if network is None:
+                logger.error(f"Failed to download retry network for POI {poi.get('id', 'unknown')}")
+                return None
+
+            # Generate isochrone with fresh network
+            isochrone_gdf = create_isochrone_from_poi_with_network(
+                poi=poi,
+                network=network,
+                network_crs=network.graph["crs"],
+                travel_time_minutes=travel_time_minutes,
+                travel_mode=travel_mode,
+            )
+
+            if isochrone_gdf is not None:
+                # Validate the retry result
+                if self._validate_isochrone_size(isochrone_gdf, travel_time_minutes, travel_mode):
+                    logger.info(f"Successfully regenerated isochrone for POI {poi.get('id', 'unknown')}")
+                    return isochrone_gdf
+                else:
+                    logger.error(f"Retry still produced small isochrone for POI {poi.get('id', 'unknown')}")
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to retry isochrone generation: {e}")
+            return None
+
     def _download_cluster_network(
         self,
         cluster: OptimizedPOICluster,
@@ -186,8 +304,24 @@ class ConcurrentIsochroneProcessor:
                 )
 
                 if isochrone_gdf is not None:
-                    isochrones.append(isochrone_gdf)
-                    self._stats.isochrones_generated += 1
+                    # Validate isochrone size
+                    if self._validate_isochrone_size(isochrone_gdf, travel_time_minutes, travel_mode):
+                        isochrones.append(isochrone_gdf)
+                        self._stats.isochrones_generated += 1
+                    else:
+                        logger.warning(
+                            f"Isochrone for POI {poi.get('id', 'unknown')} is abnormally small. "
+                            f"Retrying with individual network download."
+                        )
+                        # Try to regenerate with fresh network download
+                        retry_isochrone = self._retry_with_fresh_network(
+                            poi, travel_time_minutes, travel_mode
+                        )
+                        if retry_isochrone is not None:
+                            isochrones.append(retry_isochrone)
+                            self._stats.isochrones_generated += 1
+                        else:
+                            self._stats.failed_isochrones += 1
                 else:
                     self._stats.failed_isochrones += 1
 
