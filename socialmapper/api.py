@@ -1,19 +1,32 @@
-"""SocialMapper: Simple, direct API for spatial analysis.
+"""SocialMapper: Refactored API following SOLID principles.
 
-Nine core functions for all your spatial analysis needs.
+This is a refactored version of the original api.py that follows SOLID principles
+more closely by separating concerns, extracting validators, and using helper functions.
 """
 
-import os
 import json
-from pathlib import Path
+import logging
 from typing import Optional, Union, List, Dict, Any, Tuple
-import requests
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point, Polygon, shape
-import matplotlib.pyplot as plt
+from shapely.geometry import shape
 from geopy.distance import geodesic
-import logging
+
+from .api_config import (
+    IsochroneConfig,
+    CensusConfig,
+    PoiConfig,
+    MapConfig,
+    MultipleAnalysisConfig,
+    ReportConfig
+)
+from .validators import validate_location_input, validate_export_format
+from .helpers import (
+    resolve_coordinates,
+    calculate_polygon_area,
+    create_circular_geometry,
+    extract_geometry_from_geojson
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,59 +78,27 @@ def create_isochrone(
     >>> iso['properties']['travel_mode']
     'drive'
     """
-    # Import internal modules
-    from ._geocoding import geocode_location
+    config = IsochroneConfig(location, travel_time, travel_mode)
+    return _create_isochrone_from_config(config)
+
+
+def _create_isochrone_from_config(config: IsochroneConfig) -> Dict[str, Any]:
+    """Internal function to create isochrone from configuration."""
     from ._isochrone import generate_isochrone
-    
-    # Validate inputs
-    if not 1 <= travel_time <= 120:
-        raise ValueError(
-            f"Travel time must be between 1 and 120 minutes, "
-            f"got {travel_time}"
-        )
-    
-    if travel_mode not in ["drive", "walk", "bike"]:
-        raise ValueError(
-            f"Travel mode must be 'drive', 'walk', or 'bike', "
-            f"got {travel_mode}"
-        )
-    
-    # Get coordinates
-    if isinstance(location, str):
-        coords = geocode_location(location)
-        if not coords:
-            raise ValueError(f"Could not geocode location: {location}")
-        lat, lon = coords
-        location_name = location
-    else:
-        lat, lon = location
-        if not -90 <= lat <= 90 or not -180 <= lon <= 180:
-            raise ValueError(f"Invalid coordinates: {location}")
-        location_name = f"{lat:.4f}, {lon:.4f}"
-    
-    # Generate isochrone
-    polygon = generate_isochrone(lat, lon, travel_time, travel_mode)
-    
-    # Calculate area
-    from shapely.ops import transform
-    import pyproj
-    
-    # Project to equal area projection for accurate area calculation
-    project = pyproj.Transformer.from_crs(
-        'EPSG:4326', 'EPSG:3857', always_xy=True
-    ).transform
-    projected_polygon = transform(project, polygon)
-    area_sq_m = projected_polygon.area
-    area_sq_km = area_sq_m / 1_000_000
-    
-    # Return GeoJSON
+
+    coords, location_name = resolve_coordinates(config.location)
+    lat, lon = coords
+
+    polygon = generate_isochrone(lat, lon, config.travel_time, config.travel_mode)
+    area_sq_km = calculate_polygon_area(polygon)
+
     return {
         "type": "Feature",
         "geometry": polygon.__geo_interface__,
         "properties": {
             "location": location_name,
-            "travel_time": travel_time,
-            "travel_mode": travel_mode,
+            "travel_time": config.travel_time,
+            "travel_mode": config.travel_mode,
             "area_sq_km": area_sq_km
         }
     }
@@ -180,45 +161,14 @@ def get_census_blocks(
     '060750201001'
     """
     from ._census import fetch_block_groups_for_area
-    
-    # Validate inputs
-    if polygon is None and location is None:
-        raise ValueError("Must provide either polygon or location")
-    
-    if polygon is not None and location is not None:
-        raise ValueError("Provide either polygon or location, not both")
-    
-    # Get geometry
+
+    validate_location_input(polygon, location)
+
     if polygon:
-        # Extract geometry from GeoJSON
-        if "geometry" in polygon:
-            geom = shape(polygon["geometry"])
-        else:
-            geom = shape(polygon)
+        geom = extract_geometry_from_geojson(polygon)
     else:
-        # Create circle from point
-        from shapely.geometry import Point
-        from shapely.ops import transform
-        import pyproj
-        
-        lat, lon = location
-        
-        # Create point and buffer in meters
-        point = Point(lon, lat)
-        
-        # Project to Web Mercator for accurate buffering
-        project_to_mercator = pyproj.Transformer.from_crs(
-            'EPSG:4326', 'EPSG:3857', always_xy=True
-        ).transform
-        project_to_wgs84 = pyproj.Transformer.from_crs(
-            'EPSG:3857', 'EPSG:4326', always_xy=True
-        ).transform
-        
-        point_mercator = transform(project_to_mercator, point)
-        buffer_mercator = point_mercator.buffer(radius_km * 1000)
-        geom = transform(project_to_wgs84, buffer_mercator)
-    
-    # Fetch block groups
+        geom = create_circular_geometry(location, radius_km)
+
     return fetch_block_groups_for_area(geom)
 
 
@@ -255,17 +205,6 @@ def get_census_data(
         - For polygon/GEOIDs: {geoid: {variable: value, ...}, ...}
         - For point: {variable: value, ...}
 
-    Notes
-    -----
-    This function supports demographic-only analysis without POIs.
-    It automatically determines the appropriate census geography
-    level and can aggregate data across multiple census units.
-
-    See Also
-    --------
-    get_census_blocks : Get census block group boundaries
-    create_isochrone : Create travel-time polygons
-
     Examples
     --------
     >>> # From an isochrone
@@ -278,53 +217,45 @@ def get_census_data(
     >>> data = get_census_data(["060750201001"], ["B01003_001E"])
     >>> data["060750201001"]["B01003_001E"]
     2543
-
-    >>> # From a point location
-    >>> data = get_census_data((39.7392, -104.9903), ["population"])
-    >>> data["population"]
-    3421
     """
+    config = CensusConfig(location, variables, year)
+    return _get_census_data_from_config(config)
+
+
+def _get_census_data_from_config(config: CensusConfig) -> Dict[str, Any]:
+    """Internal function to get census data from configuration."""
     from ._census import fetch_census_data, normalize_variable_names
-    
-    # Normalize variables
-    var_codes = normalize_variable_names(variables)
-    
-    # Determine GEOIDs based on location type
+
+    var_codes = normalize_variable_names(config.variables)
+    geoids = _resolve_geoids_from_location(config.location)
+
+    data = fetch_census_data(geoids, var_codes, config.year)
+
+    if isinstance(config.location, tuple):
+        return data.get(geoids[0], {}) if geoids else {}
+    else:
+        return data
+
+
+def _resolve_geoids_from_location(location) -> List[str]:
+    """Resolve location to list of GEOIDs."""
     if isinstance(location, dict):
-        # GeoJSON - get census blocks first
         blocks = get_census_blocks(polygon=location)
-        geoids = [b["geoid"] for b in blocks]
-        
+        return [b["geoid"] for b in blocks]
     elif isinstance(location, list):
-        # List of GEOIDs
-        geoids = location
-        
+        return location
     elif isinstance(location, tuple):
-        # Point - get single block group
         from ._geocoding import get_census_geography
         geo_info = get_census_geography(location[0], location[1])
         if not geo_info:
             raise ValueError(
-                f"Could not identify census geography for "
-                f"point: {location}"
+                f"Could not identify census geography for point: {location}"
             )
-        geoids = [geo_info["geoid"]]
+        return [geo_info["geoid"]]
     else:
         raise ValueError(
-            "Location must be GeoJSON dict, list of GEOIDs, "
-            "or (lat, lon) tuple"
+            "Location must be GeoJSON dict, list of GEOIDs, or (lat, lon) tuple"
         )
-    
-    # Fetch census data
-    data = fetch_census_data(geoids, var_codes, year)
-    
-    # Format return based on input type
-    if isinstance(location, tuple):
-        # Return single dict for point query
-        return data.get(geoids[0], {}) if geoids else {}
-    else:
-        # Return dict keyed by GEOID
-        return data
 
 
 def create_map(
@@ -389,95 +320,95 @@ def create_map(
     ...           save_path="output.shp",
     ...           export_format="shapefile")
     """
-    from ._visualization import generate_choropleth_map
-    
-    # Convert to GeoDataFrame if needed
+    config = MapConfig(data, column, title, save_path, export_format)
+    return _create_map_from_config(config)
+
+
+def _create_map_from_config(config: MapConfig) -> Optional[Union[bytes, Dict]]:
+    """Internal function to create map from configuration."""
+    validate_export_format(config.export_format)
+
+    gdf = _convert_data_to_geodataframe(config.data)
+
+    if config.column not in gdf.columns:
+        raise ValueError(f"Column '{config.column}' not found in data")
+
+    if config.export_format in ["png", "pdf", "svg"]:
+        return _create_image_map(gdf, config)
+    elif config.export_format == "geojson":
+        return _create_geojson_export(gdf, config.save_path)
+    elif config.export_format == "shapefile":
+        return _create_shapefile_export(gdf, config.save_path)
+
+
+def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
+    """Convert various data formats to GeoDataFrame."""
     if isinstance(data, list):
-        # List of dicts
-        import geopandas as gpd
-        from shapely.geometry import shape
-        
         geometries = []
         attributes = []
-        
+
         for item in data:
             if "geometry" not in item:
                 raise ValueError("Each item must have a 'geometry' field")
-            
+
             if isinstance(item["geometry"], dict):
                 geom = shape(item["geometry"])
             else:
                 geom = item["geometry"]
             geometries.append(geom)
-            
-            # Copy attributes except geometry
+
             attrs = {k: v for k, v in item.items() if k != "geometry"}
             attributes.append(attrs)
-        
-        gdf = gpd.GeoDataFrame(
-            attributes, geometry=geometries, crs="EPSG:4326"
-        )
-        
+
+        return gpd.GeoDataFrame(attributes, geometry=geometries, crs="EPSG:4326")
+
     elif isinstance(data, pd.DataFrame):
-        # Convert DataFrame to GeoDataFrame
         if "geometry" not in data.columns:
             raise ValueError("DataFrame must have a 'geometry' column")
-        gdf = gpd.GeoDataFrame(data, geometry="geometry", crs="EPSG:4326")
-        
+        return gpd.GeoDataFrame(data, geometry="geometry", crs="EPSG:4326")
+
     elif isinstance(data, gpd.GeoDataFrame):
-        gdf = data
-        
+        return data
+
     else:
         raise ValueError(
             "Data must be a list of dicts, DataFrame, or GeoDataFrame"
         )
-    
-    # Check column exists
-    if column not in gdf.columns:
-        raise ValueError(f"Column '{column}' not found in data")
 
-    # Validate export format
-    valid_formats = ["png", "pdf", "svg", "geojson", "shapefile"]
-    if export_format not in valid_formats:
-        raise ValueError(
-            f"Export format must be one of {valid_formats}, "
-            f"got '{export_format}'"
-        )
 
-    # Handle different export formats
-    if export_format in ["png", "pdf", "svg"]:
-        # Image-based map visualization
-        return generate_choropleth_map(
-            gdf, column, title, save_path, format=export_format
-        )
+def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
+    """Create image-based map visualization."""
+    from ._visualization import generate_choropleth_map
 
-    elif export_format == "geojson":
-        # Export as GeoJSON
-        if save_path:
-            from .io.writers import write_geojson
-            write_geojson(gdf, Path(save_path))
-            return None
-        else:
-            # Return GeoJSON dict
-            return json.loads(gdf.to_json())
+    return generate_choropleth_map(
+        gdf, config.column, config.title, config.save_path, format=config.export_format
+    )
 
-    elif export_format == "shapefile":
-        # Export as Shapefile (requires save_path)
-        if not save_path:
-            raise ValueError("save_path is required for shapefile export")
 
+def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
+    """Create GeoJSON export."""
+    if save_path:
+        from .io.writers import write_geojson
         from pathlib import Path
-        output_path = Path(save_path)
-        # Ensure .shp extension
-        if not output_path.suffix:
-            output_path = output_path.with_suffix('.shp')
-
-        # Create directory if needed
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Save shapefile
-        gdf.to_file(output_path, driver='ESRI Shapefile')
+        write_geojson(gdf, Path(save_path))
         return None
+    else:
+        return json.loads(gdf.to_json())
+
+
+def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
+    """Create Shapefile export."""
+    if not save_path:
+        raise ValueError("save_path is required for shapefile export")
+
+    from pathlib import Path
+    output_path = Path(save_path)
+    if not output_path.suffix:
+        output_path = output_path.with_suffix('.shp')
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    gdf.to_file(output_path, driver='ESRI Shapefile')
+    return None
 
 
 def get_poi(
@@ -539,108 +470,88 @@ def get_poi(
     >>> pois = get_poi((47.6062, -122.3321), travel_time=15)
     >>> pois[0]['distance_km']
     0.542
-
-    >>> # All POIs with validation disabled
-    >>> pois = get_poi((37.7749, -122.4194),
-    ...               limit=50, validate_coords=False)
     """
-    from ._geocoding import geocode_location
+    config = PoiConfig(location, categories, travel_time, limit, validate_coords)
+    return _get_poi_from_config(config)
+
+
+def _get_poi_from_config(config: PoiConfig) -> List[Dict[str, Any]]:
+    """Internal function to get POI from configuration."""
     from ._osm import query_pois
-    
-    # Get coordinates
-    if isinstance(location, str):
-        coords = geocode_location(location)
-        if not coords:
-            raise ValueError(f"Could not geocode location: {location}")
-        lat, lon = coords
-    else:
-        lat, lon = location
-        if not -90 <= lat <= 90 or not -180 <= lon <= 180:
-            raise ValueError(f"Invalid coordinates: {location}")
-    
-    # Determine search area
-    if travel_time:
-        # Create isochrone boundary
-        iso = create_isochrone(
-            (lat, lon), travel_time=travel_time, travel_mode="drive"
-        )
-        search_area = shape(iso["geometry"])
-    else:
-        # Use 5km radius
-        from shapely.geometry import Point
-        from shapely.ops import transform
-        import pyproj
-        
-        point = Point(lon, lat)
-        
-        # Project to Web Mercator for accurate buffering
-        project_to_mercator = pyproj.Transformer.from_crs(
-            'EPSG:4326', 'EPSG:3857', always_xy=True
-        ).transform
-        project_to_wgs84 = pyproj.Transformer.from_crs(
-            'EPSG:3857', 'EPSG:4326', always_xy=True
-        ).transform
-        
-        point_mercator = transform(project_to_mercator, point)
-        buffer_mercator = point_mercator.buffer(5000)  # 5km
-        search_area = transform(project_to_wgs84, buffer_mercator)
-    
-    # Query POIs
-    pois = query_pois(search_area, categories)
 
-    # Validate coordinates if requested
-    if validate_coords and pois:
-        from ._validation import validate_poi_coordinates
+    coords, _ = resolve_coordinates(config.location)
+    lat, lon = coords
 
-        valid_pois = []
-        invalid_count = 0
+    search_area = _create_search_area(coords, config.travel_time)
+    pois = query_pois(search_area, config.categories)
 
-        for poi in pois:
-            if validate_poi_coordinates(poi["lat"], poi["lon"]):
-                valid_pois.append(poi)
-            else:
-                invalid_count += 1
-                logger.warning(
-                    f"Invalid coordinates for POI "
-                    f"'{poi.get('name', 'Unknown')}': "
-                    f"({poi['lat']}, {poi['lon']})"
-                )
+    if config.validate_coords:
+        pois = _validate_and_filter_pois(pois)
 
-        if invalid_count > 0:
-            logger.info(
-                f"Filtered out {invalid_count} POIs with "
-                f"invalid coordinates"
-            )
+    _calculate_poi_distances(pois, coords, config.validate_coords)
 
-        pois = valid_pois
-
-    # Calculate distances from origin
-    origin = (lat, lon)
-    for poi in pois:
-        poi_coords = (poi["lat"], poi["lon"])
-        try:
-            poi["distance_km"] = geodesic(origin, poi_coords).kilometers
-        except (ValueError, Exception) as e:
-            # If distance calculation fails (e.g., invalid coords)
-            logger.debug(f"Could not calculate distance for POI: {e}")
-            if validate_coords:
-                # If validation is on, mark with inf to filter later
-                poi["distance_km"] = float('inf')
-            else:
-                # If validation is off, keep POI with None distance
-                poi["distance_km"] = None
-
-    # Sort by distance (None values will be at the end)
     pois.sort(
         key=lambda x: x["distance_km"]
         if x["distance_km"] is not None else float('inf')
     )
 
-    # Only filter out invalid POIs if validation was requested
-    if validate_coords:
+    if config.validate_coords:
         pois = [p for p in pois if p["distance_km"] != float('inf')]
 
-    return pois[:limit]
+    return pois[:config.limit]
+
+
+def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int]):
+    """Create search area geometry based on travel time or default radius."""
+    lat, lon = coords
+
+    if travel_time:
+        iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode="drive")
+        return shape(iso["geometry"])
+    else:
+        from .constants import DEFAULT_SEARCH_RADIUS_KM
+        return create_circular_geometry(coords, DEFAULT_SEARCH_RADIUS_KM)
+
+
+def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Validate POI coordinates and filter invalid ones."""
+    from ._validation import validate_poi_coordinates
+
+    valid_pois = []
+    invalid_count = 0
+
+    for poi in pois:
+        if validate_poi_coordinates(poi["lat"], poi["lon"]):
+            valid_pois.append(poi)
+        else:
+            invalid_count += 1
+            logger.warning(
+                f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': "
+                f"({poi['lat']}, {poi['lon']})"
+            )
+
+    if invalid_count > 0:
+        logger.info(f"Filtered out {invalid_count} POIs with invalid coordinates")
+
+    return valid_pois
+
+
+def _calculate_poi_distances(
+    pois: List[Dict[str, Any]],
+    origin: Tuple[float, float],
+    validate_coords: bool
+):
+    """Calculate distances from origin to POIs."""
+    for poi in pois:
+        poi_coords = (poi["lat"], poi["lon"])
+        try:
+            poi["distance_km"] = geodesic(origin, poi_coords).kilometers
+        except (ValueError, Exception) as e:
+            logger.debug(f"Could not calculate distance for POI: {e}")
+            if validate_coords:
+                poi["distance_km"] = float('inf')
+            else:
+                poi["distance_km"] = None
 
 
 def analyze_multiple_pois(
@@ -679,16 +590,6 @@ def analyze_multiple_pois(
         - 'comparison': Comparative metrics (if compare=True)
         - 'metadata': Analysis parameters
 
-    Raises
-    ------
-    ValueError
-        If travel_time or travel_mode are invalid.
-
-    Notes
-    -----
-    Errors for individual locations are captured in the results
-    rather than raising exceptions, allowing partial success.
-
     Examples
     --------
     >>> # Analyze three cities
@@ -699,39 +600,29 @@ def analyze_multiple_pois(
     ... )
     >>> results['comparison']['population']['highest']
     'San Francisco, CA'
-
-    >>> # Analyze specific coordinates
-    >>> results = analyze_multiple_pois(
-    ...     [(45.5152, -122.6784), (47.6062, -122.3321)],
-    ...     travel_time=15
-    ... )
-    >>> len(results['locations'])
-    2
     """
-    if variables is None:
-        variables = ["population"]
+    config = MultipleAnalysisConfig(locations, travel_time, travel_mode, variables, compare)
+    return _analyze_multiple_from_config(config)
 
+
+def _analyze_multiple_from_config(config: MultipleAnalysisConfig) -> Dict[str, Any]:
+    """Internal function to analyze multiple locations."""
     results = {
         "locations": [],
         "metadata": {
-            "travel_time": travel_time,
-            "travel_mode": travel_mode,
-            "variables": variables
+            "travel_time": config.travel_time,
+            "travel_mode": config.travel_mode,
+            "variables": config.variables
         }
     }
 
-    # Analyze each location
-    for loc in locations:
+    for loc in config.locations:
         try:
-            # Create isochrone
-            iso = create_isochrone(loc, travel_time, travel_mode)
+            iso = create_isochrone(loc, config.travel_time, config.travel_mode)
+            census_data = get_census_data(iso, config.variables)
 
-            # Get census data
-            census_data = get_census_data(iso, variables)
-
-            # Aggregate statistics
             aggregated = {}
-            for var in variables:
+            for var in config.variables:
                 values = [
                     data.get(var, 0) for data in census_data.values()
                     if data.get(var) is not None
@@ -753,7 +644,6 @@ def analyze_multiple_pois(
                 "aggregated": aggregated,
                 "block_group_count": len(census_data)
             }
-
             results["locations"].append(location_result)
 
         except Exception as e:
@@ -764,36 +654,34 @@ def analyze_multiple_pois(
                 "error": str(e)
             })
 
-    # Add comparison if requested
-    if compare and len(results["locations"]) > 1:
-        comparison = {}
-
-        for var in variables:
-            var_comparison = []
-            for loc_result in results["locations"]:
-                if ("aggregated" in loc_result and
-                        var in loc_result["aggregated"]):
-                    var_comparison.append({
-                        "location": loc_result["location"],
-                        **loc_result["aggregated"][var]
-                    })
-
-            if var_comparison:
-                # Sort by total
-                var_comparison.sort(
-                    key=lambda x: x.get("total", 0), reverse=True
-                )
-                comparison[var] = {
-                    "ranked": var_comparison,
-                    "highest": (var_comparison[0]["location"]
-                                if var_comparison else None),
-                    "lowest": (var_comparison[-1]["location"]
-                               if var_comparison else None)
-                }
-
-        results["comparison"] = comparison
+    if config.compare and len(results["locations"]) > 1:
+        results["comparison"] = _create_comparison_analysis(results["locations"], config.variables)
 
     return results
+
+
+def _create_comparison_analysis(locations: List[Dict], variables: List[str]) -> Dict:
+    """Create comparative analysis across locations."""
+    comparison = {}
+
+    for var in variables:
+        var_comparison = []
+        for loc_result in locations:
+            if ("aggregated" in loc_result and var in loc_result["aggregated"]):
+                var_comparison.append({
+                    "location": loc_result["location"],
+                    **loc_result["aggregated"][var]
+                })
+
+        if var_comparison:
+            var_comparison.sort(key=lambda x: x.get("total", 0), reverse=True)
+            comparison[var] = {
+                "ranked": var_comparison,
+                "highest": var_comparison[0]["location"] if var_comparison else None,
+                "lowest": var_comparison[-1]["location"] if var_comparison else None
+            }
+
+    return comparison
 
 
 def import_poi_csv(
@@ -805,9 +693,6 @@ def import_poi_csv(
 ) -> List[Dict[str, Any]]:
     """
     Import points of interest from a CSV file.
-
-    Parses CSV files with flexible column mapping to extract
-    POI data in a standardized format.
 
     Parameters
     ----------
@@ -825,42 +710,17 @@ def import_poi_csv(
     Returns
     -------
     list of dict
-        POIs in standard format, each containing:
-        - 'name': POI name
-        - 'lat': Latitude coordinate
-        - 'lon': Longitude coordinate
-        - 'type': POI category/type
-        - 'tags': Dict of additional columns
-
-    Raises
-    ------
-    FileNotFoundError
-        If CSV file does not exist.
-    ValueError
-        If required columns not found or no valid POIs.
+        POIs in standard format.
 
     Examples
     --------
-    >>> # Import with standard column names
     >>> pois = import_poi_csv("locations.csv")
     >>> len(pois)
     42
-
-    >>> # Import with custom column names
-    >>> pois = import_poi_csv(
-    ...     "businesses.csv",
-    ...     name_field="business_name",
-    ...     lat_field="lat",
-    ...     lon_field="lng"
-    ... )
-    >>> pois[0]['name']
-    'Coffee Shop'
     """
     from ._csv_import import parse_csv_pois
 
-    return parse_csv_pois(
-        csv_path, name_field, lat_field, lon_field, type_field
-    )
+    return parse_csv_pois(csv_path, name_field, lat_field, lon_field, type_field)
 
 
 def generate_report(
@@ -872,17 +732,10 @@ def generate_report(
     """
     Generate a formatted report from analysis results.
 
-    Creates professional reports from SocialMapper analysis
-    data in HTML or PDF format.
-
     Parameters
     ----------
     analysis_data : dict
-        Analysis results from API functions. Can include:
-        - 'isochrone': From create_isochrone()
-        - 'census_data': From get_census_data()
-        - 'pois': From get_poi()
-        - 'metadata': Additional information
+        Analysis results from API functions.
     format : {'html', 'pdf'}, optional
         Output format. Default is 'html'.
     template : str, optional
@@ -896,33 +749,28 @@ def generate_report(
         - HTML format: HTML string
         - PDF format: PDF bytes
 
-    Raises
-    ------
-    ValueError
-        If format is not 'html' or 'pdf'.
-
     Examples
     --------
-    >>> # Generate report from isochrone analysis
     >>> iso = create_isochrone("Boston, MA", travel_time=15)
-    >>> census = get_census_data(iso,
-    ...                         ["population", "median_income"])
+    >>> census = get_census_data(iso, ["population"])
     >>> report_html = generate_report({
     ...     "isochrone": iso,
     ...     "census_data": census
     ... })
-
-    >>> # Generate PDF report
-    >>> report_pdf = generate_report(
-    ...     analysis_data,
-    ...     format="pdf",
-    ...     include_maps=False
-    ... )
     """
+    config = ReportConfig(analysis_data, format, template, include_maps)
+    return _generate_report_from_config(config)
+
+
+def _generate_report_from_config(config: ReportConfig) -> Union[str, bytes]:
+    """Internal function to generate report from configuration."""
     from ._reporting import create_analysis_report
 
     return create_analysis_report(
-        analysis_data, format, template, include_maps
+        config.analysis_data,
+        config.format,
+        config.template,
+        config.include_maps
     )
 
 
@@ -933,80 +781,35 @@ def run_pipeline(
     """
     Run the full SocialMapper pipeline with custom configuration.
 
-    Provides access to the complete pipeline functionality including
-    batch processing, advanced validation, and comprehensive reporting.
-
     Parameters
     ----------
     config : dict
-        Pipeline configuration with keys:
-        - 'geocode_area': Location string or None
-        - 'poi_type': POI type to search for
-        - 'poi_name': POI name pattern
-        - 'travel_time': Travel time in minutes (default: 15)
-        - 'travel_mode': "drive", "walk", or "bike"
-        - 'census_variables': List of census variables
-        - 'output_dir': Output directory (default: "output")
-        - 'export_csv': Whether to export CSV (default: True)
-        - 'create_maps': Whether to create maps (default: True)
+        Pipeline configuration.
     stages : list of str, optional
-        Specific stages to run. Options:
-        ["setup", "extract", "validate", "isochrone",
-         "census", "export", "maps", "report"]
-        If None, runs all stages. Default is None.
+        Specific stages to run. Default is None (all stages).
 
     Returns
     -------
     dict
-        Pipeline results containing:
-        - 'poi_data': Extracted POI data
-        - 'census_data': Census analysis results
-        - 'maps': Generated map files
-        - 'csv_data': Exported CSV path
-        - 'reports': Generated reports
-
-    Raises
-    ------
-    ValueError
-        If configuration is invalid or required fields are missing.
-    ImportError
-        If pipeline dependencies are not available.
-
-    See Also
-    --------
-    create_isochrone : Create travel-time polygons
-    get_census_data : Get census demographic data
-    get_poi : Get points of interest
+        Pipeline results.
 
     Examples
     --------
-    >>> # Run full pipeline for schools
     >>> results = run_pipeline({
     ...     "geocode_area": "Chicago, IL",
     ...     "poi_type": "school",
-    ...     "poi_name": "elementary",
     ...     "travel_time": 20,
-    ...     "census_variables": ["population", "median_income"]
+    ...     "census_variables": ["population"]
     ... })
-    >>> results['poi_data']['metadata']['source']
-    'OpenStreetMap'
-
-    >>> # Run specific stages only
-    >>> results = run_pipeline(
-    ...     config,
-    ...     stages=["setup", "extract", "validate"]
-    ... )
     """
     from .pipeline.orchestrator import PipelineConfig, PipelineOrchestrator
 
-    # Create pipeline config
     pipeline_config = PipelineConfig(**config)
-
-    # Create and run orchestrator
     orchestrator = PipelineOrchestrator(pipeline_config)
 
-    # Run specific stages or all
     if stages:
         return orchestrator.run_stages(stages)
     else:
         return orchestrator.run()
+
+
