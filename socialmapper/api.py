@@ -265,7 +265,61 @@ def create_map(
     save_path: Optional[str] = None,
     export_format: str = "png"
 ) -> Optional[Union[bytes, Dict]]:
-    """Create a choropleth map using configuration object."""
+    """
+    Create a choropleth map visualization.
+
+    Generates a thematic map where geographic areas are colored
+    according to the values of a data variable.
+
+    Parameters
+    ----------
+    data : list of dict, DataFrame, or GeoDataFrame
+        Geographic data to visualize:
+        - list: Dicts with 'geometry' key and data columns
+        - DataFrame: Must have a 'geometry' column
+        - GeoDataFrame: GeoPandas GeoDataFrame
+    column : str
+        Name of the data column to visualize on the map.
+    title : str, optional
+        Title to display on the map. Default is None.
+    save_path : str, optional
+        Path to save the map file. If None, returns data.
+        Default is None.
+    export_format : {'png', 'pdf', 'svg', 'geojson', 'shapefile'}, optional
+        Output format for the map. Default is 'png'.
+
+    Returns
+    -------
+    bytes, dict, or None
+        - Image formats (png/pdf/svg): bytes if save_path is None
+        - geojson: dict if save_path is None
+        - shapefile: None (requires save_path)
+        - All formats: None if save_path is provided
+
+    Raises
+    ------
+    ValueError
+        If column not found in data, invalid export format,
+        or shapefile format without save_path.
+
+    Examples
+    --------
+    >>> # Create map from census blocks
+    >>> blocks = get_census_blocks(location=(40.7128, -74.0060),
+    ...                           radius_km=2)
+    >>> census = get_census_data([b["geoid"] for b in blocks],
+    ...                         ["population"])
+    >>> for block in blocks:
+    ...     block["population"] = census.get(block["geoid"], {}).get(
+    ...         "population", 0)
+    >>> img_bytes = create_map(blocks, "population",
+    ...                       title="Population by Block Group")
+
+    >>> # Save as shapefile
+    >>> create_map(blocks, "population",
+    ...           save_path="output.shp",
+    ...           export_format="shapefile")
+    """
     config = MapConfig(data, column, title, save_path, export_format)
     return _create_map_from_config(config)
 
@@ -455,7 +509,8 @@ def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int])
         iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode="drive")
         return shape(iso["geometry"])
     else:
-        return create_circular_geometry(coords, 5.0)  # 5km radius
+        from .constants import DEFAULT_SEARCH_RADIUS_KM
+        return create_circular_geometry(coords, DEFAULT_SEARCH_RADIUS_KM)
 
 
 def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

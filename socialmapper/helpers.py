@@ -1,4 +1,9 @@
-"""Helper functions for SocialMapper API."""
+"""Helper functions for SocialMapper API.
+
+This module provides reusable utility functions for common operations
+across the SocialMapper API, including coordinate resolution, geometry
+calculations, and data format conversions.
+"""
 
 from typing import Tuple, Union, Dict, Any
 from shapely.geometry import Point, shape
