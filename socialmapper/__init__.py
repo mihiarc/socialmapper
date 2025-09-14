@@ -25,7 +25,7 @@ from .api import (
 )
 
 # Version
-__version__ = "2.0.0"
+__version__ = "0.8.0"
 
 # Public API - just the 5 functions
 __all__ = [
