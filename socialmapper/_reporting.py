@@ -2,6 +2,7 @@
 
 import json
 import logging
+import html
 from typing import Dict, Any, Union
 from datetime import datetime
 
@@ -55,7 +56,7 @@ def generate_html_report(
     stats = calculate_statistics(census_data)
 
     # Build HTML
-    html = f"""<!DOCTYPE html>
+    html_str = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -154,24 +155,30 @@ def generate_html_report(
 
     # Location Information
     if isochrone:
-        html += f"""
+        # Escape user-provided data to prevent XSS
+        location = html.escape(str(isochrone['properties']['location']))
+        travel_time = int(isochrone['properties']['travel_time'])
+        travel_mode = html.escape(str(isochrone['properties']['travel_mode']).title())
+        area = float(isochrone['properties']['area_sq_km'])
+
+        html_str += f"""
     <div class="section">
         <h2>Location Analysis</h2>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value">{isochrone['properties']['location']}</div>
+                <div class="stat-value">{location}</div>
                 <div class="stat-label">Location</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{isochrone['properties']['travel_time']} min</div>
+                <div class="stat-value">{travel_time} min</div>
                 <div class="stat-label">Travel Time</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{isochrone['properties']['travel_mode'].title()}</div>
+                <div class="stat-value">{travel_mode}</div>
                 <div class="stat-label">Travel Mode</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{isochrone['properties']['area_sq_km']:.1f} km²</div>
+                <div class="stat-value">{area:.1f} km²</div>
                 <div class="stat-label">Coverage Area</div>
             </div>
         </div>
@@ -180,7 +187,7 @@ def generate_html_report(
 
     # Census Data Statistics
     if census_data and stats:
-        html += f"""
+        html_str += f"""
     <div class="section">
         <h2>Demographic Statistics</h2>
         <div class="stats-grid">
@@ -198,20 +205,23 @@ def generate_html_report(
                 else:
                     display_value = str(value)
 
-                html += f"""
+                # Escape labels to prevent XSS
+                escaped_label = html.escape(label)
+                escaped_value = html.escape(str(display_value))
+                html_str += f"""
             <div class="stat-card">
-                <div class="stat-value">{display_value}</div>
-                <div class="stat-label">{label}</div>
+                <div class="stat-value">{escaped_value}</div>
+                <div class="stat-label">{escaped_label}</div>
             </div>
 """
-        html += """
+        html_str += """
         </div>
     </div>
 """
 
     # Census Block Groups Table
     if census_data:
-        html += """
+        html_str += """
     <div class="section">
         <h2>Census Block Groups</h2>
         <table>
@@ -223,15 +233,15 @@ def generate_html_report(
         if census_data:
             first_geoid = next(iter(census_data.keys()))
             for var in census_data[first_geoid].keys():
-                html += f"                    <th>{var.replace('_', ' ').title()}</th>\n"
-        html += """                </tr>
+                html_str += f"                    <th>{var.replace('_', ' ').title()}</th>\n"
+        html_str += """                </tr>
             </thead>
             <tbody>
 """
         # Add data rows (limit to first 20 for readability)
         for i, (geoid, data) in enumerate(census_data.items()):
             if i >= 20:
-                html += f"""
+                html_str += f"""
                 <tr>
                     <td colspan="100%" style="text-align: center; font-style: italic;">
                         ... and {len(census_data) - 20} more block groups
@@ -240,23 +250,25 @@ def generate_html_report(
 """
                 break
 
-            html += f"                <tr>\n                    <td>{geoid}</td>\n"
+            # Escape GEOID to prevent XSS
+            escaped_geoid = html.escape(str(geoid))
+            html_str += f"                <tr>\n                    <td>{escaped_geoid}</td>\n"
             for value in data.values():
                 if isinstance(value, (int, float)):
                     display_val = f"{value:,.0f}" if value == int(value) else f"{value:,.2f}"
                 else:
-                    display_val = str(value) if value is not None else "N/A"
-                html += f"                    <td>{display_val}</td>\n"
-            html += "                </tr>\n"
+                    display_val = html.escape(str(value)) if value is not None else "N/A"
+                html_str += f"                    <td>{display_val}</td>\n"
+            html_str += "                </tr>\n"
 
-        html += """            </tbody>
+        html_str += """            </tbody>
         </table>
     </div>
 """
 
     # POIs section
     if pois:
-        html += f"""
+        html_str += f"""
     <div class="section">
         <h2>Points of Interest</h2>
         <p>Found {len(pois)} POIs in the analysis area</p>
@@ -271,28 +283,32 @@ def generate_html_report(
             <tbody>
 """
         for poi in pois[:20]:  # Limit to first 20
-            html += f"""
+            # Escape POI data to prevent XSS
+            poi_name = html.escape(str(poi.get('name', 'Unknown')))
+            poi_type = html.escape(str(poi.get('type', 'Unknown')))
+            distance = poi.get('distance_km', 0)
+            html_str += f"""
                 <tr>
-                    <td>{poi.get('name', 'Unknown')}</td>
-                    <td>{poi.get('type', 'Unknown')}</td>
-                    <td>{poi.get('distance_km', 0):.2f}</td>
+                    <td>{poi_name}</td>
+                    <td>{poi_type}</td>
+                    <td>{distance:.2f}</td>
                 </tr>
 """
         if len(pois) > 20:
-            html += f"""
+            html_str += f"""
                 <tr>
                     <td colspan="3" style="text-align: center; font-style: italic;">
                         ... and {len(pois) - 20} more POIs
                     </td>
                 </tr>
 """
-        html += """            </tbody>
+        html_str += """            </tbody>
         </table>
     </div>
 """
 
     # Footer
-    html += """
+    html_str += """
     <div class="footer">
         <p>Generated by SocialMapper API</p>
     </div>
@@ -300,7 +316,7 @@ def generate_html_report(
 </html>
 """
 
-    return html
+    return html_str
 
 
 def calculate_statistics(census_data: Dict[str, Dict]) -> Dict[str, Any]:

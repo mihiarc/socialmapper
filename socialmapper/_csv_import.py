@@ -2,6 +2,7 @@
 
 import csv
 import logging
+import os
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -27,9 +28,31 @@ def parse_csv_pois(
     Returns:
         List of POI dicts in standard format
     """
+    # Security: Validate and sanitize file path
     csv_file = Path(csv_path)
+
+    # Resolve to absolute path and check for path traversal
+    try:
+        csv_file = csv_file.resolve(strict=False)
+    except (OSError, RuntimeError) as e:
+        raise ValueError(f"Invalid file path: {e}")
+
+    # Ensure file has .csv extension
+    if csv_file.suffix.lower() != '.csv':
+        raise ValueError(f"File must have .csv extension, got: {csv_file.suffix}")
+
+    # Check file exists and is a regular file
     if not csv_file.exists():
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
+    if not csv_file.is_file():
+        raise ValueError(f"Path is not a regular file: {csv_path}")
+
+    # Optional: Check file is within allowed directory
+    # This can be configured based on deployment needs
+    # allowed_dir = Path.cwd() / "data"
+    # if not str(csv_file).startswith(str(allowed_dir)):
+    #     raise ValueError("File access not allowed outside data directory")
 
     pois = []
 

@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def validate_poi_coordinates_batch(lat: float, lon: float) -> bool:
+def validate_poi_coordinates(lat: float, lon: float) -> bool:
     """Validate POI coordinates.
 
     Args:

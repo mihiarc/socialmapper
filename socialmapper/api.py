@@ -71,10 +71,16 @@ def create_isochrone(
     
     # Validate inputs
     if not 1 <= travel_time <= 120:
-        raise ValueError(f"Travel time must be between 1 and 120 minutes, got {travel_time}")
+        raise ValueError(
+            f"Travel time must be between 1 and 120 minutes, "
+            f"got {travel_time}"
+        )
     
     if travel_mode not in ["drive", "walk", "bike"]:
-        raise ValueError(f"Travel mode must be 'drive', 'walk', or 'bike', got {travel_mode}")
+        raise ValueError(
+            f"Travel mode must be 'drive', 'walk', or 'bike', "
+            f"got {travel_mode}"
+        )
     
     # Get coordinates
     if isinstance(location, str):
@@ -97,7 +103,9 @@ def create_isochrone(
     import pyproj
     
     # Project to equal area projection for accurate area calculation
-    project = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True).transform
+    project = pyproj.Transformer.from_crs(
+        'EPSG:4326', 'EPSG:3857', always_xy=True
+    ).transform
     projected_polygon = transform(project, polygon)
     area_sq_m = projected_polygon.area
     area_sq_km = area_sq_m / 1_000_000
@@ -199,8 +207,12 @@ def get_census_blocks(
         point = Point(lon, lat)
         
         # Project to Web Mercator for accurate buffering
-        project_to_mercator = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True).transform
-        project_to_wgs84 = pyproj.Transformer.from_crs('EPSG:3857', 'EPSG:4326', always_xy=True).transform
+        project_to_mercator = pyproj.Transformer.from_crs(
+            'EPSG:4326', 'EPSG:3857', always_xy=True
+        ).transform
+        project_to_wgs84 = pyproj.Transformer.from_crs(
+            'EPSG:3857', 'EPSG:4326', always_xy=True
+        ).transform
         
         point_mercator = transform(project_to_mercator, point)
         buffer_mercator = point_mercator.buffer(radius_km * 1000)
@@ -292,10 +304,16 @@ def get_census_data(
         from ._geocoding import get_census_geography
         geo_info = get_census_geography(location[0], location[1])
         if not geo_info:
-            raise ValueError(f"Could not identify census geography for point: {location}")
+            raise ValueError(
+                f"Could not identify census geography for "
+                f"point: {location}"
+            )
         geoids = [geo_info["geoid"]]
     else:
-        raise ValueError("Location must be GeoJSON dict, list of GEOIDs, or (lat, lon) tuple")
+        raise ValueError(
+            "Location must be GeoJSON dict, list of GEOIDs, "
+            "or (lat, lon) tuple"
+        )
     
     # Fetch census data
     data = fetch_census_data(geoids, var_codes, year)
@@ -386,14 +404,19 @@ def create_map(
             if "geometry" not in item:
                 raise ValueError("Each item must have a 'geometry' field")
             
-            geom = shape(item["geometry"]) if isinstance(item["geometry"], dict) else item["geometry"]
+            if isinstance(item["geometry"], dict):
+                geom = shape(item["geometry"])
+            else:
+                geom = item["geometry"]
             geometries.append(geom)
             
             # Copy attributes except geometry
             attrs = {k: v for k, v in item.items() if k != "geometry"}
             attributes.append(attrs)
         
-        gdf = gpd.GeoDataFrame(attributes, geometry=geometries, crs="EPSG:4326")
+        gdf = gpd.GeoDataFrame(
+            attributes, geometry=geometries, crs="EPSG:4326"
+        )
         
     elif isinstance(data, pd.DataFrame):
         # Convert DataFrame to GeoDataFrame
@@ -405,7 +428,9 @@ def create_map(
         gdf = data
         
     else:
-        raise ValueError("Data must be a list of dicts, DataFrame, or GeoDataFrame")
+        raise ValueError(
+            "Data must be a list of dicts, DataFrame, or GeoDataFrame"
+        )
     
     # Check column exists
     if column not in gdf.columns:
@@ -414,12 +439,17 @@ def create_map(
     # Validate export format
     valid_formats = ["png", "pdf", "svg", "geojson", "shapefile"]
     if export_format not in valid_formats:
-        raise ValueError(f"Export format must be one of {valid_formats}, got '{export_format}'")
+        raise ValueError(
+            f"Export format must be one of {valid_formats}, "
+            f"got '{export_format}'"
+        )
 
     # Handle different export formats
     if export_format in ["png", "pdf", "svg"]:
         # Image-based map visualization
-        return generate_choropleth_map(gdf, column, title, save_path, format=export_format)
+        return generate_choropleth_map(
+            gdf, column, title, save_path, format=export_format
+        )
 
     elif export_format == "geojson":
         # Export as GeoJSON
@@ -531,7 +561,9 @@ def get_poi(
     # Determine search area
     if travel_time:
         # Create isochrone boundary
-        iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode="drive")
+        iso = create_isochrone(
+            (lat, lon), travel_time=travel_time, travel_mode="drive"
+        )
         search_area = shape(iso["geometry"])
     else:
         # Use 5km radius
@@ -542,8 +574,12 @@ def get_poi(
         point = Point(lon, lat)
         
         # Project to Web Mercator for accurate buffering
-        project_to_mercator = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True).transform
-        project_to_wgs84 = pyproj.Transformer.from_crs('EPSG:3857', 'EPSG:4326', always_xy=True).transform
+        project_to_mercator = pyproj.Transformer.from_crs(
+            'EPSG:4326', 'EPSG:3857', always_xy=True
+        ).transform
+        project_to_wgs84 = pyproj.Transformer.from_crs(
+            'EPSG:3857', 'EPSG:4326', always_xy=True
+        ).transform
         
         point_mercator = transform(project_to_mercator, point)
         buffer_mercator = point_mercator.buffer(5000)  # 5km
@@ -554,20 +590,27 @@ def get_poi(
 
     # Validate coordinates if requested
     if validate_coords and pois:
-        from ._validation import validate_poi_coordinates_batch
+        from ._validation import validate_poi_coordinates
 
         valid_pois = []
         invalid_count = 0
 
         for poi in pois:
-            if validate_poi_coordinates_batch(poi["lat"], poi["lon"]):
+            if validate_poi_coordinates(poi["lat"], poi["lon"]):
                 valid_pois.append(poi)
             else:
                 invalid_count += 1
-                logger.warning(f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': ({poi['lat']}, {poi['lon']})")
+                logger.warning(
+                    f"Invalid coordinates for POI "
+                    f"'{poi.get('name', 'Unknown')}': "
+                    f"({poi['lat']}, {poi['lon']})"
+                )
 
         if invalid_count > 0:
-            logger.info(f"Filtered out {invalid_count} POIs with invalid coordinates")
+            logger.info(
+                f"Filtered out {invalid_count} POIs with "
+                f"invalid coordinates"
+            )
 
         pois = valid_pois
 
@@ -578,15 +621,24 @@ def get_poi(
         try:
             poi["distance_km"] = geodesic(origin, poi_coords).kilometers
         except (ValueError, Exception) as e:
-            # If distance calculation fails (e.g., invalid coords), use a large value
+            # If distance calculation fails (e.g., invalid coords)
             logger.debug(f"Could not calculate distance for POI: {e}")
-            poi["distance_km"] = float('inf')
+            if validate_coords:
+                # If validation is on, mark with inf to filter later
+                poi["distance_km"] = float('inf')
+            else:
+                # If validation is off, keep POI with None distance
+                poi["distance_km"] = None
 
-    # Sort by distance and limit (inf values will be at the end)
-    pois.sort(key=lambda x: x["distance_km"])
+    # Sort by distance (None values will be at the end)
+    pois.sort(
+        key=lambda x: x["distance_km"]
+        if x["distance_km"] is not None else float('inf')
+    )
 
-    # Filter out POIs with infinite distance
-    pois = [p for p in pois if p["distance_km"] != float('inf')]
+    # Only filter out invalid POIs if validation was requested
+    if validate_coords:
+        pois = [p for p in pois if p["distance_km"] != float('inf')]
 
     return pois[:limit]
 
@@ -626,6 +678,16 @@ def analyze_multiple_pois(
         - 'locations': List of individual location analyses
         - 'comparison': Comparative metrics (if compare=True)
         - 'metadata': Analysis parameters
+
+    Raises
+    ------
+    ValueError
+        If travel_time or travel_mode are invalid.
+
+    Notes
+    -----
+    Errors for individual locations are captured in the results
+    rather than raising exceptions, allowing partial success.
 
     Examples
     --------
@@ -670,7 +732,10 @@ def analyze_multiple_pois(
             # Aggregate statistics
             aggregated = {}
             for var in variables:
-                values = [data.get(var, 0) for data in census_data.values() if data.get(var) is not None]
+                values = [
+                    data.get(var, 0) for data in census_data.values()
+                    if data.get(var) is not None
+                ]
                 if values:
                     aggregated[var] = {
                         "total": sum(values),
@@ -681,7 +746,8 @@ def analyze_multiple_pois(
                     }
 
             location_result = {
-                "location": loc if isinstance(loc, str) else f"{loc[0]:.4f}, {loc[1]:.4f}",
+                "location": (loc if isinstance(loc, str)
+                             else f"{loc[0]:.4f}, {loc[1]:.4f}"),
                 "isochrone": iso,
                 "census_data": census_data,
                 "aggregated": aggregated,
@@ -693,7 +759,8 @@ def analyze_multiple_pois(
         except Exception as e:
             logger.error(f"Failed to analyze location {loc}: {e}")
             results["locations"].append({
-                "location": loc if isinstance(loc, str) else f"{loc[0]:.4f}, {loc[1]:.4f}",
+                "location": (loc if isinstance(loc, str)
+                             else f"{loc[0]:.4f}, {loc[1]:.4f}"),
                 "error": str(e)
             })
 
@@ -704,7 +771,8 @@ def analyze_multiple_pois(
         for var in variables:
             var_comparison = []
             for loc_result in results["locations"]:
-                if "aggregated" in loc_result and var in loc_result["aggregated"]:
+                if ("aggregated" in loc_result and
+                        var in loc_result["aggregated"]):
                     var_comparison.append({
                         "location": loc_result["location"],
                         **loc_result["aggregated"][var]
@@ -712,11 +780,15 @@ def analyze_multiple_pois(
 
             if var_comparison:
                 # Sort by total
-                var_comparison.sort(key=lambda x: x.get("total", 0), reverse=True)
+                var_comparison.sort(
+                    key=lambda x: x.get("total", 0), reverse=True
+                )
                 comparison[var] = {
                     "ranked": var_comparison,
-                    "highest": var_comparison[0]["location"] if var_comparison else None,
-                    "lowest": var_comparison[-1]["location"] if var_comparison else None
+                    "highest": (var_comparison[0]["location"]
+                                if var_comparison else None),
+                    "lowest": (var_comparison[-1]["location"]
+                               if var_comparison else None)
                 }
 
         results["comparison"] = comparison
@@ -786,7 +858,9 @@ def import_poi_csv(
     """
     from ._csv_import import parse_csv_pois
 
-    return parse_csv_pois(csv_path, name_field, lat_field, lon_field, type_field)
+    return parse_csv_pois(
+        csv_path, name_field, lat_field, lon_field, type_field
+    )
 
 
 def generate_report(
@@ -847,7 +921,9 @@ def generate_report(
     """
     from ._reporting import create_analysis_report
 
-    return create_analysis_report(analysis_data, format, template, include_maps)
+    return create_analysis_report(
+        analysis_data, format, template, include_maps
+    )
 
 
 def run_pipeline(
@@ -888,6 +964,13 @@ def run_pipeline(
         - 'maps': Generated map files
         - 'csv_data': Exported CSV path
         - 'reports': Generated reports
+
+    Raises
+    ------
+    ValueError
+        If configuration is invalid or required fields are missing.
+    ImportError
+        If pipeline dependencies are not available.
 
     See Also
     --------
