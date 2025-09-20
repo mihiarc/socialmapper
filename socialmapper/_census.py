@@ -43,8 +43,9 @@ def normalize_variable_names(variables: List[str]) -> List[str]:
     Convert human-readable variable names to census codes.
 
     Maps common demographic variable names to their corresponding
-    Census Bureau API variable codes (e.g., 'population' to 'B01003_001E').
-    If a variable is already a census code, it is returned unchanged.
+    Census Bureau API variable codes (e.g., 'population' to
+    'B01003_001E'). If a variable is already a census code,
+    it is returned unchanged.
 
     Parameters
     ----------
@@ -118,6 +119,11 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
         - 'geometry': GeoJSON geometry object
         - 'area_sq_km': Area in square kilometers
 
+    Raises
+    ------
+    ValueError
+        If census geography cannot be identified for the area.
+
     Examples
     --------
     >>> from shapely.geometry import Point
@@ -129,8 +135,10 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
 
     Notes
     -----
-    Areas are calculated in EPSG:3857 (Web Mercator) projection
-    for consistency across different latitudes.
+    Areas are calculated in EPSG:3857 (Web Mercator) projection.
+    Note that Web Mercator distorts areas, especially at higher
+    latitudes. Consider using equal-area projections for precise
+    area calculations.
     """
     # Get bounds
     bounds = geometry.bounds  # (minx, miny, maxx, maxy)

@@ -28,6 +28,11 @@ def geocode_location(address: str) -> Optional[Tuple[float, float]]:
         Tuple containing (latitude, longitude) in decimal degrees,
         or None if geocoding fails for all providers.
 
+    Raises
+    ------
+    requests.RequestException
+        If network request fails with timeout or connection error.
+
     Examples
     --------
     >>> coords = geocode_location("Seattle, WA")

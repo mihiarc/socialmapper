@@ -11,21 +11,57 @@ logger = logging.getLogger(__name__)
 
 
 def generate_isochrone(
-    lat: float, 
-    lon: float, 
-    travel_time: int, 
+    lat: float,
+    lon: float,
+    travel_time: int,
     travel_mode: str
 ) -> Polygon:
-    """Generate an isochrone polygon using OSRM or similar service.
-    
-    Args:
-        lat: Latitude of origin
-        lon: Longitude of origin
-        travel_time: Travel time in minutes
-        travel_mode: "drive", "walk", or "bike"
-    
-    Returns:
-        Shapely Polygon representing the isochrone
+    """
+    Generate an isochrone polygon for accessibility analysis.
+
+    Creates a polygon representing all locations reachable within a
+    specified travel time from an origin point. Uses multiple routing
+    services with automatic fallback to ensure reliability.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the origin point in decimal degrees (WGS84).
+    lon : float
+        Longitude of the origin point in decimal degrees (WGS84).
+    travel_time : int
+        Maximum travel time in minutes (typically 5-60).
+    travel_mode : str
+        Transportation mode: 'drive', 'walk', or 'bike'.
+
+    Returns
+    -------
+    shapely.geometry.Polygon
+        Isochrone polygon in WGS84 coordinates representing the
+        accessible area within the specified travel time.
+        Always returns a valid polygon.
+
+    Examples
+    --------
+    >>> # Generate 15-minute walking isochrone
+    >>> iso = generate_isochrone(47.6062, -122.3321, 15, 'walk')
+    >>> iso.is_valid
+    True
+    >>> iso.area > 0
+    True
+
+    See Also
+    --------
+    generate_with_ors : OpenRouteService implementation.
+    generate_circle_approximation : Fallback circular approximation.
+
+    Notes
+    -----
+    Attempts multiple routing services in order:
+    1. OpenRouteService (with ORS_API_KEY environment variable)
+    2. Circular approximation (fallback)
+
+    All coordinates use WGS84 (EPSG:4326) coordinate system.
     """
     # Try multiple isochrone services
     polygon = None
@@ -46,10 +82,43 @@ def generate_with_ors(
     travel_time: int,
     travel_mode: str
 ) -> Optional[Polygon]:
-    """Generate isochrone using OpenRouteService API.
-    
-    Note: Requires ORS_API_KEY environment variable for production use.
-    Using demo endpoint for testing.
+    """
+    Generate isochrone using OpenRouteService API.
+
+    Connects to OpenRouteService to calculate accurate isochrones
+    based on real road network data. Supports multiple travel modes
+    with mode-specific routing profiles.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the origin point (WGS84).
+    lon : float
+        Longitude of the origin point (WGS84).
+    travel_time : int
+        Travel time limit in minutes.
+    travel_mode : str
+        Mode of transportation: 'drive', 'walk', or 'bike'.
+
+    Returns
+    -------
+    shapely.geometry.Polygon or None
+        Isochrone polygon if successful, None if the service
+        fails or returns invalid geometry.
+
+    Raises
+    ------
+    requests.RequestException
+        If the API request fails or times out.
+
+    Notes
+    -----
+    Requires ORS_API_KEY environment variable for production.
+    Falls back to demo endpoint with rate limits if no key.
+    Travel modes map to ORS profiles:
+    - drive -> driving-car
+    - walk -> foot-walking
+    - bike -> cycling-regular
     """
     import os
     
