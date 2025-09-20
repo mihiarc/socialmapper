@@ -31,7 +31,56 @@ logger = get_logger(__name__)
 
 @dataclass
 class PipelineConfig:
-    """Configuration for the pipeline orchestrator."""
+    """
+    Configuration for the pipeline orchestrator.
+
+    Encapsulates all configuration parameters needed to run the
+    SocialMapper analysis pipeline, including POI discovery,
+    isochrone generation, and census data integration.
+
+    Attributes
+    ----------
+    geocode_area : str, optional
+        Area to geocode for analysis (e.g., "Seattle, WA").
+    state : str, optional
+        State name for POI search.
+    city : str, optional
+        City name for POI search.
+    poi_type : str, optional
+        Type of POI to search for (e.g., "amenity", "shop").
+    poi_name : str, optional
+        Name/category of POI (e.g., "hospital", "grocery").
+    additional_tags : dict, optional
+        Additional OSM tags to filter POIs.
+    custom_coords_path : str, optional
+        Path to custom coordinates CSV file.
+    name_field : str, optional
+        Column name for POI names in custom CSV.
+    type_field : str, optional
+        Column name for POI types in custom CSV.
+    max_poi_count : int, optional
+        Maximum number of POIs to analyze.
+    skip_poi_discovery : bool, default=False
+        Skip POI discovery for demographic-only analysis.
+    travel_time : int, default=15
+        Travel time in minutes for isochrone generation.
+    travel_mode : str or TravelMode, default=TravelMode.DRIVE
+        Mode of transportation (drive, walk, bike).
+    geographic_level : str, default="block-group"
+        Census geographic level ("block-group" or "zcta").
+    census_variables : list of str
+        Census variables to fetch.
+    api_key : str, optional
+        Census API key.
+    output_dir : str, default="output"
+        Directory for output files.
+    export_csv : bool, default=True
+        Whether to export CSV files.
+    export_isochrones : bool, default=False
+        Whether to export isochrone GeoJSON files.
+    create_maps : bool, default=True
+        Whether to create visualization maps.
+    """
 
     # POI configuration
     geocode_area: str | None = None
@@ -64,7 +113,19 @@ class PipelineConfig:
         self.validate()
 
     def validate(self):
-        """Validate the configuration values."""
+        """
+        Validate the configuration values.
+
+        Checks that all required fields are present and that
+        values are within acceptable ranges.
+
+        Raises
+        ------
+        InvalidTravelTimeError
+            If travel time is outside valid range.
+        InvalidConfigurationError
+            If required configuration is missing or invalid.
+        """
         from ..constants import MAX_TRAVEL_TIME, MIN_TRAVEL_TIME
 
         # Validate travel time
@@ -100,7 +161,25 @@ class PipelineConfig:
 
 
 class PipelineStage:
-    """Represents a single stage in the pipeline."""
+    """
+    Represents a single stage in the pipeline.
+
+    Encapsulates a pipeline stage with its execution logic,
+    error handling, and result storage.
+
+    Attributes
+    ----------
+    name : str
+        Unique identifier for the stage.
+    function : callable
+        Function to execute for this stage.
+    description : str
+        Human-readable description of the stage.
+    result : Any
+        Result from stage execution.
+    error : Exception or None
+        Error if stage execution failed.
+    """
 
     def __init__(self, name: str, function: Callable, description: str):
         self.name = name
@@ -110,7 +189,25 @@ class PipelineStage:
         self.error = None
 
     def execute(self, **kwargs) -> Any:
-        """Execute the stage with error handling."""
+        """
+        Execute the stage with error handling.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments to pass to the stage function.
+
+        Returns
+        -------
+        Any
+            Result from the stage function.
+
+        Raises
+        ------
+        Exception
+            Re-raises any exception from stage execution after
+            logging and storing it.
+        """
         try:
             print_info(f"Starting: {self.description}")
             with error_context(f"Pipeline stage: {self.name}", stage=self.name):
@@ -123,17 +220,47 @@ class PipelineStage:
 
 
 class PipelineOrchestrator:
-    """Orchestrates the SocialMapper pipeline execution.
+    """
+    Orchestrates the SocialMapper pipeline execution.
 
-    This class provides a clean interface for running the pipeline with
-    better error handling, stage management, and extensibility.
+    Provides a clean interface for running the complete analysis pipeline
+    with robust error handling, stage management, and extensibility.
+    Coordinates POI extraction, isochrone generation, census data
+    integration, and result export.
+
+    Attributes
+    ----------
+    config : PipelineConfig
+        Configuration object for the pipeline.
+    stages : list of PipelineStage
+        Ordered list of pipeline stages to execute.
+    results : dict
+        Accumulated results from all stages.
+    stage_outputs : dict
+        Individual outputs from each stage.
+    io_manager : IOManager
+        Handles file I/O operations.
+
+    Examples
+    --------
+    >>> config = PipelineConfig(
+    ...     geocode_area="Seattle, WA",
+    ...     poi_type="amenity",
+    ...     poi_name="hospital",
+    ...     travel_time=15
+    ... )
+    >>> orchestrator = PipelineOrchestrator(config)
+    >>> results = orchestrator.run()
     """
 
     def __init__(self, config: PipelineConfig):
-        """Initialize the orchestrator with configuration.
+        """
+        Initialize the orchestrator with configuration.
 
-        Args:
-            config: Pipeline configuration object
+        Parameters
+        ----------
+        config : PipelineConfig
+            Configuration object containing all pipeline parameters.
         """
         self.config = config
         self.stages: list[PipelineStage] = []
@@ -145,7 +272,13 @@ class PipelineOrchestrator:
         self._define_stages()
 
     def _define_stages(self):
-        """Define the pipeline stages."""
+        """
+        Define the pipeline stages.
+
+        Sets up the ordered list of stages to execute based on
+        configuration. Conditionally includes POI discovery,
+        mapping, and other optional stages.
+        """
         stages = [
             PipelineStage("setup", self._setup_environment, "Setting up pipeline environment"),
         ]
@@ -177,7 +310,17 @@ class PipelineOrchestrator:
         self.stages = stages
 
     def _setup_environment(self) -> dict[str, str]:
-        """Setup pipeline environment."""
+        """
+        Setup pipeline environment.
+
+        Creates necessary directories and prepares the execution
+        environment for the pipeline.
+
+        Returns
+        -------
+        dict of str
+            Mapping of directory names to paths.
+        """
         # Use IO manager to set up directories
         directories = self.io_manager.setup_directories(create_all=True)
 
@@ -185,7 +328,21 @@ class PipelineOrchestrator:
         return {k: str(v) for k, v in directories.items()}
 
     def _extract_poi_data(self) -> tuple[dict[str, Any], str, list[str], bool]:
-        """Extract POI data."""
+        """
+        Extract POI data.
+
+        Retrieves POI data from OpenStreetMap or custom coordinates
+        file based on configuration.
+
+        Returns
+        -------
+        tuple
+            Contains:
+            - dict: POI data including coordinates and attributes
+            - str: Search area description
+            - list of str: POI types found
+            - bool: Whether custom coordinates were used
+        """
         return extract_poi_data(
             custom_coords_path=self.config.custom_coords_path,
             geocode_area=self.config.geocode_area,
@@ -368,13 +525,33 @@ class PipelineOrchestrator:
         )
 
     def run_stages(self, stage_names: list[str]) -> dict[str, Any]:
-        """Run specific pipeline stages.
+        """
+        Run specific pipeline stages.
 
-        Args:
-            stage_names: List of stage names to run
+        Executes a subset of pipeline stages, useful for debugging
+        or partial pipeline execution.
 
-        Returns:
-            Dictionary containing results from executed stages
+        Parameters
+        ----------
+        stage_names : list of str
+            Names of stages to execute in order.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping stage names to their outputs.
+
+        Raises
+        ------
+        ValueError
+            If any stage name is invalid.
+        Exception
+            Re-raises exceptions from stage execution.
+
+        Examples
+        --------
+        >>> orchestrator.run_stages(['setup', 'extract'])
+        {'setup': {...}, 'extract': (...)}
         """
         # Validate stage names
         available_stages = {stage.name for stage in self.stages}
@@ -397,13 +574,42 @@ class PipelineOrchestrator:
         return self.stage_outputs
 
     def run(self, skip_on_error: bool = False) -> dict[str, Any]:
-        """Execute the pipeline.
+        """
+        Execute the complete pipeline.
 
-        Args:
-            skip_on_error: Whether to skip failed stages and continue
+        Runs all defined stages in order, with configurable error
+        handling behavior.
 
-        Returns:
-            Dictionary containing all pipeline results
+        Parameters
+        ----------
+        skip_on_error : bool, default=False
+            If True, continues execution after stage failures.
+            If False, stops on first error.
+
+        Returns
+        -------
+        dict
+            Complete results including:
+            - 'success': bool indicating overall success
+            - 'stages_completed': list of completed stage names
+            - 'errors': list of any errors encountered
+            - 'warnings': list of any warnings
+            - Individual stage outputs
+
+        Raises
+        ------
+        AnalysisError
+            If a stage fails with no data found.
+        DataProcessingError
+            If a stage fails with processing error.
+
+        Examples
+        --------
+        >>> config = PipelineConfig(geocode_area="Seattle, WA", ...)
+        >>> orchestrator = PipelineOrchestrator(config)
+        >>> results = orchestrator.run()
+        >>> if results['success']:
+        ...     print("Pipeline completed successfully")
         """
         error_collector = ErrorCollector()
 
