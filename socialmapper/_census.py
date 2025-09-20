@@ -39,13 +39,38 @@ VARIABLE_MAPPING = {
 
 
 def normalize_variable_names(variables: List[str]) -> List[str]:
-    """Convert human-readable variable names to census codes.
-    
-    Args:
-        variables: List of variable names or codes
-    
-    Returns:
-        List of census variable codes
+    """
+    Convert human-readable variable names to census codes.
+
+    Maps common demographic variable names to their corresponding
+    Census Bureau API variable codes (e.g., 'population' to 'B01003_001E').
+    If a variable is already a census code, it is returned unchanged.
+
+    Parameters
+    ----------
+    variables : list of str
+        List of variable names or census codes to normalize.
+        Can include human-readable names like 'population', 'median_income'
+        or census codes like 'B01003_001E'.
+
+    Returns
+    -------
+    list of str
+        List of census variable codes corresponding to the input variables.
+        Unknown variables are kept as-is with a warning logged.
+
+    Examples
+    --------
+    >>> normalize_variable_names(['population', 'median_income'])
+    ['B01003_001E', 'B19013_001E']
+
+    >>> normalize_variable_names(['B01003_001E', 'housing_units'])
+    ['B01003_001E', 'B25001_001E']
+
+    Notes
+    -----
+    Variable names are case-insensitive and spaces are converted to
+    underscores during the mapping process.
     """
     normalized = []
     
@@ -66,13 +91,46 @@ def normalize_variable_names(variables: List[str]) -> List[str]:
 
 
 def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
-    """Fetch census block groups that intersect with a geometry.
-    
-    Args:
-        geometry: Shapely Polygon to find block groups for
-    
-    Returns:
-        List of dicts with block group information
+    """
+    Fetch census block groups that intersect with a geometry.
+
+    Identifies all census block groups that spatially intersect with
+    the provided polygon geometry. This function determines the relevant
+    state and county from the geometry's centroid, fetches block group
+    boundaries, and filters for intersection.
+
+    Parameters
+    ----------
+    geometry : shapely.geometry.Polygon
+        The polygon geometry to find intersecting block groups for.
+        Must be in WGS84 (EPSG:4326) coordinate system.
+
+    Returns
+    -------
+    list of dict
+        List of dictionaries containing block group information.
+        Each dict contains:
+        - 'geoid': Census GEOID identifier
+        - 'state_fips': State FIPS code
+        - 'county_fips': County FIPS code
+        - 'tract': Census tract number
+        - 'block_group': Block group number
+        - 'geometry': GeoJSON geometry object
+        - 'area_sq_km': Area in square kilometers
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> center = Point(-77.0369, 38.9072)  # Washington, DC
+    >>> area = center.buffer(0.01)  # ~1km radius
+    >>> block_groups = fetch_block_groups_for_area(area)
+    >>> len(block_groups) > 0
+    True
+
+    Notes
+    -----
+    Areas are calculated in EPSG:3857 (Web Mercator) projection
+    for consistency across different latitudes.
     """
     # Get bounds
     bounds = geometry.bounds  # (minx, miny, maxx, maxy)
@@ -116,14 +174,49 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
 
 
 def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str, Any]]:
-    """Fetch block group geometries from Census TIGER/Line files.
-    
-    Args:
-        state_fips: State FIPS code (2 digits)
-        county_fips: County FIPS code (3 digits)
-    
-    Returns:
-        List of block group dicts with geometry
+    """
+    Fetch block group geometries from Census TIGER/Line files.
+
+    Retrieves census block group boundaries for a specific county
+    using the Census Bureau's TIGER/Line REST API service.
+    Falls back to alternative method if primary API fails.
+
+    Parameters
+    ----------
+    state_fips : str
+        State FIPS code (2 digits), e.g., '06' for California.
+    county_fips : str
+        County FIPS code (3 digits), e.g., '037' for Los Angeles County.
+
+    Returns
+    -------
+    list of dict
+        List of block group dictionaries, each containing:
+        - 'geoid': Full 12-digit Census GEOID
+        - 'state_fips': State FIPS code
+        - 'county_fips': County FIPS code
+        - 'tract': 6-digit census tract code
+        - 'block_group': Single digit block group number
+        - 'geometry': GeoJSON geometry object
+
+    Examples
+    --------
+    >>> block_groups = fetch_tiger_block_groups('06', '037')
+    >>> len(block_groups) > 0  # Los Angeles County has many block groups
+    True
+
+    >>> bg = block_groups[0]
+    >>> 'geoid' in bg and 'geometry' in bg
+    True
+
+    See Also
+    --------
+    fetch_block_groups_alternative : Fallback method using shapefiles.
+
+    Notes
+    -----
+    Uses the 2023 vintage of TIGER/Line data by default.
+    Requires internet connection to Census Bureau services.
     """
     # Use Census TIGER/Line REST API
     year = 2023
@@ -170,7 +263,35 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
 
 
 def fetch_block_groups_alternative(state_fips: str, county_fips: str) -> List[Dict[str, Any]]:
-    """Alternative method to fetch block groups using direct shapefile access."""
+    """
+    Alternative method to fetch block groups using direct shapefile access.
+
+    Fallback method that downloads and reads TIGER/Line shapefiles
+    directly from the Census FTP server when the REST API is unavailable.
+
+    Parameters
+    ----------
+    state_fips : str
+        State FIPS code (2 digits).
+    county_fips : str
+        County FIPS code (3 digits).
+
+    Returns
+    -------
+    list of dict
+        List of block group dictionaries with the same structure
+        as fetch_tiger_block_groups().
+        Returns empty list if fetch fails.
+
+    See Also
+    --------
+    fetch_tiger_block_groups : Primary method using REST API.
+
+    Notes
+    -----
+    This method requires geopandas and may be slower than the API
+    method as it downloads entire state shapefiles before filtering.
+    """
     try:
         # Try using geopandas to read from Census FTP
         url = f"https://www2.census.gov/geo/tiger/TIGER2023/BG/tl_2023_{state_fips}_bg.zip"
@@ -203,15 +324,52 @@ def fetch_census_data(
     variables: List[str],
     year: int = 2023
 ) -> Dict[str, Dict[str, Any]]:
-    """Fetch census data for specified GEOIDs and variables.
-    
-    Args:
-        geoids: List of census GEOID strings
-        variables: List of census variable codes
-        year: Census year
-    
-    Returns:
-        Dict mapping GEOID to variable data
+    """
+    Fetch census data for specified GEOIDs and variables.
+
+    Retrieves demographic and socioeconomic data from the Census Bureau
+    API for specific geographic units (block groups) and variables.
+    Data is fetched in batches to respect API limits.
+
+    Parameters
+    ----------
+    geoids : list of str
+        List of 12-digit census GEOID strings identifying block groups.
+        Format: SSCCCTTTTTTB (State, County, Tract, Block Group).
+    variables : list of str
+        List of census variable codes (e.g., 'B01003_001E' for population).
+        Should be valid ACS 5-year estimate variable codes.
+    year : int, optional
+        Census data year to fetch, by default 2023.
+        Must be a year with available ACS 5-year estimates.
+
+    Returns
+    -------
+    dict of dict
+        Nested dictionary mapping GEOID to variable data.
+        Structure: {geoid: {variable_code: value, ...}, ...}
+        Values are returned as strings or None if unavailable.
+
+    Raises
+    ------
+    ValueError
+        If API key is not set in CENSUS_API_KEY environment variable.
+
+    Examples
+    --------
+    >>> import os
+    >>> os.environ['CENSUS_API_KEY'] = 'your_api_key'
+    >>> geoids = ['060370001001']  # LA County block group
+    >>> variables = ['B01003_001E', 'B19013_001E']  # Population, Income
+    >>> data = fetch_census_data(geoids, variables)
+    >>> '060370001001' in data
+    True
+
+    Notes
+    -----
+    Requires CENSUS_API_KEY environment variable to be set.
+    API has rate limits; function implements batching with 50 GEOIDs
+    per request to avoid exceeding limits.
     """
     if not geoids or not variables:
         return {}

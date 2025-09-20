@@ -9,13 +9,45 @@ logger = logging.getLogger(__name__)
 
 
 def geocode_location(address: str) -> Optional[Tuple[float, float]]:
-    """Geocode an address string to coordinates.
-    
-    Args:
-        address: Address string like "City, State" or full address
-    
-    Returns:
-        Tuple of (latitude, longitude) or None if failed
+    """
+    Geocode an address string to coordinates.
+
+    Converts human-readable addresses to geographic coordinates using
+    OpenStreetMap's Nominatim service as primary provider, with US Census
+    geocoder as fallback. Focuses on US addresses for optimal accuracy.
+
+    Parameters
+    ----------
+    address : str
+        Address string to geocode. Can be partial ("City, State")
+        or full street address ("123 Main St, City, State ZIP").
+
+    Returns
+    -------
+    tuple of float or None
+        Tuple containing (latitude, longitude) in decimal degrees,
+        or None if geocoding fails for all providers.
+
+    Examples
+    --------
+    >>> coords = geocode_location("Seattle, WA")
+    >>> coords is not None
+    True
+    >>> lat, lon = coords
+    >>> 47.5 < lat < 47.7 and -122.4 < lon < -122.2
+    True
+
+    >>> geocode_location("1600 Pennsylvania Ave, Washington, DC")
+    (38.8976, -77.0365)  # Approximate coordinates
+
+    See Also
+    --------
+    geocode_with_census : Direct Census geocoder implementation.
+
+    Notes
+    -----
+    Includes rate limiting and proper User-Agent headers to respect
+    service providers' usage policies. Results are logged at debug level.
     """
     # Try Nominatim first (no API key needed)
     url = "https://nominatim.openstreetmap.org/search"
@@ -49,13 +81,39 @@ def geocode_location(address: str) -> Optional[Tuple[float, float]]:
 
 
 def geocode_with_census(address: str) -> Optional[Tuple[float, float]]:
-    """Geocode using US Census geocoder as fallback.
-    
-    Args:
-        address: Address string
-    
-    Returns:
-        Tuple of (latitude, longitude) or None if failed
+    """
+    Geocode using US Census geocoder as fallback.
+
+    Uses the US Census Bureau's geocoding service for address resolution.
+    This service is specifically designed for US addresses and provides
+    high accuracy for street-level addresses within the United States.
+
+    Parameters
+    ----------
+    address : str
+        US address string to geocode. Should be a complete US address
+        for best results.
+
+    Returns
+    -------
+    tuple of float or None
+        Tuple containing (latitude, longitude) in decimal degrees,
+        or None if geocoding fails or address is not found.
+
+    Examples
+    --------
+    >>> coords = geocode_with_census("350 Fifth Avenue, New York, NY 10118")
+    >>> coords is not None
+    True
+
+    >>> geocode_with_census("Invalid Address XYZ")
+    None
+
+    Notes
+    -----
+    Only works for addresses within the United States and territories.
+    Does not require an API key but has rate limiting.
+    Returns the most accurate match from the Census geocoding database.
     """
     url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
     params = {
@@ -84,14 +142,45 @@ def geocode_with_census(address: str) -> Optional[Tuple[float, float]]:
 
 
 def get_census_geography(lat: float, lon: float) -> Optional[Dict[str, str]]:
-    """Get census geographic identifiers for a point.
-    
-    Args:
-        lat: Latitude
-        lon: Longitude
-    
-    Returns:
-        Dict with state_fips, county_fips, tract, block_group, and geoid
+    """
+    Get census geographic identifiers for a point.
+
+    Performs reverse geocoding to identify the census geographic units
+    (state, county, tract, block group) that contain a given coordinate point.
+    Uses the US Census Bureau's geography API for accurate boundary matching.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees (WGS84).
+    lon : float
+        Longitude in decimal degrees (WGS84).
+
+    Returns
+    -------
+    dict of str or None
+        Dictionary containing census geography identifiers:
+        - 'state_fips': 2-digit state FIPS code
+        - 'county_fips': 3-digit county FIPS code
+        - 'tract': 6-digit census tract code
+        - 'block_group': 1-digit block group number
+        - 'geoid': 12-digit combined GEOID
+        Returns None if the point cannot be matched to census geography.
+
+    Examples
+    --------
+    >>> geo = get_census_geography(38.9072, -77.0369)  # Washington, DC
+    >>> geo is not None
+    True
+    >>> 'state_fips' in geo and 'county_fips' in geo
+    True
+    >>> len(geo['geoid']) == 12
+    True
+
+    Notes
+    -----
+    Uses the 2020 Census block boundaries for geographic matching.
+    Only works for coordinates within the United States and territories.
     """
     url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
     params = {

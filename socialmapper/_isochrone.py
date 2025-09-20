@@ -115,9 +115,43 @@ def generate_circle_approximation(
     travel_time: int,
     travel_mode: str
 ) -> Polygon:
-    """Generate a circular approximation of an isochrone.
-    
-    Uses average travel speeds to estimate distance.
+    """
+    Generate a circular approximation of an isochrone.
+
+    Creates a simplified isochrone using circular buffers based on
+    average travel speeds. Used as fallback when routing services
+    are unavailable.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the origin point.
+    lon : float
+        Longitude of the origin point.
+    travel_time : int
+        Travel time in minutes.
+    travel_mode : str
+        Mode of transportation: 'drive', 'walk', or 'bike'.
+
+    Returns
+    -------
+    shapely.geometry.Polygon
+        Circular polygon approximating the isochrone.
+
+    Examples
+    --------
+    >>> iso = generate_circle_approximation(40.7128, -74.0060, 30, 'walk')
+    >>> iso.is_valid
+    True
+    >>> # Walking 30 min at 5km/h = 2.5km radius
+    >>> iso.area > 0
+    True
+
+    Notes
+    -----
+    Uses fixed average speeds: drive=40km/h (city), bike=15km/h, walk=5km/h.
+    Buffer calculation is performed in Web Mercator (EPSG:3857) for
+    accurate distance measurement, then transformed back to WGS84.
     """
     from shapely.ops import transform
     import pyproj
@@ -159,9 +193,36 @@ def generate_with_osrm(
     travel_time: int,
     travel_mode: str
 ) -> Optional[Polygon]:
-    """Generate isochrone using OSRM (if available).
-    
-    Note: Requires local OSRM server or public instance.
+    """
+    Generate isochrone using OSRM (if available).
+
+    Placeholder for Open Source Routing Machine (OSRM) integration.
+    OSRM doesn't provide native isochrone support, requiring custom
+    implementation using table service.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the origin point.
+    lon : float
+        Longitude of the origin point.
+    travel_time : int
+        Travel time in minutes.
+    travel_mode : str
+        Mode of transportation.
+
+    Returns
+    -------
+    shapely.geometry.Polygon or None
+        Currently returns None as implementation is pending.
+
+    Notes
+    -----
+    Future implementation would require:
+    1. OSRM table service to calculate travel times to grid points
+    2. Interpolation to create contour lines
+    3. Polygon generation from contours
+    Requires local OSRM server or public instance.
     """
     # OSRM doesn't have native isochrone support
     # Would need to implement using table service and polygon generation
@@ -175,9 +236,36 @@ def generate_with_valhalla(
     travel_time: int,
     travel_mode: str
 ) -> Optional[Polygon]:
-    """Generate isochrone using Valhalla (if available).
-    
-    Note: Requires Valhalla server.
+    """
+    Generate isochrone using Valhalla routing engine.
+
+    Uses Valhalla's native isochrone API to generate accurate
+    isochrones based on real road network data. Supports multiple
+    costing models for different travel modes.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the origin point.
+    lon : float
+        Longitude of the origin point.
+    travel_time : int
+        Travel time limit in minutes.
+    travel_mode : str
+        Mode of transportation: 'drive', 'walk', or 'bike'.
+
+    Returns
+    -------
+    shapely.geometry.Polygon or None
+        Isochrone polygon if successful, None if Valhalla
+        server is unavailable or request fails.
+
+    Notes
+    -----
+    Requires VALHALLA_URL environment variable pointing to a
+    Valhalla server (default: http://localhost:8002).
+    Travel modes map to Valhalla costing models:
+    drive -> auto, walk -> pedestrian, bike -> bicycle.
     """
     # Map travel modes
     mode_mapping = {
