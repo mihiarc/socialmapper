@@ -23,10 +23,27 @@ from .core import console
 
 
 class RichProgressColumn(ProgressColumn):
-    """Custom progress column showing items per second."""
+    """
+    Custom progress column displaying processing speed.
+
+    Shows items per second or seconds per item depending
+    on the processing rate.
+    """
 
     def render(self, task: "Task") -> Text:
-        """Render the progress column."""
+        """
+        Render the progress speed indicator.
+
+        Parameters
+        ----------
+        task : Task
+            Rich progress task object containing speed data.
+
+        Returns
+        -------
+        Text
+            Formatted text showing processing speed.
+        """
         if task.speed is None:
             return Text("", style="progress.percentage")
 
@@ -37,9 +54,30 @@ class RichProgressColumn(ProgressColumn):
 
 
 class RichProgressWrapper:
-    """Wrapper to make Rich Progress compatible with existing tqdm usage."""
+    """
+    tqdm-compatible wrapper for Rich progress bars.
+
+    Provides a drop-in replacement for tqdm progress bars using
+    Rich's more advanced display capabilities.
+    """
 
     def __init__(self, iterable=None, desc="", total=None, unit="it", **kwargs):
+        """
+        Initialize Rich progress bar with tqdm-compatible interface.
+
+        Parameters
+        ----------
+        iterable : iterable, optional
+            Items to iterate over with progress tracking.
+        desc : str, optional
+            Progress bar description text. Default is "".
+        total : int, optional
+            Total number of items. Default is None (auto-detected).
+        unit : str, optional
+            Unit name for items. Default is "it".
+        **kwargs
+            Additional arguments for compatibility.
+        """
         self.iterable = iterable
         self.desc = desc
         self.total = total or (len(iterable) if iterable else None)
@@ -77,22 +115,50 @@ class RichProgressWrapper:
             self.task_id = None
 
     def __iter__(self):
-        """Iterate over items while updating progress."""
+        """
+        Iterate with automatic progress updates.
+
+        Yields
+        ------
+        Any
+            Items from the iterable with progress tracking.
+        """
         if self.iterable:
             for item in self.iterable:
                 yield item
                 self.update(1)
 
     def __enter__(self):
-        """Enter context manager."""
+        """
+        Enter progress bar context.
+
+        Returns
+        -------
+        RichProgressWrapper
+            Self for context manager protocol.
+        """
         return self
 
     def __exit__(self, *args):
-        """Exit context manager and close progress bar."""
+        """
+        Exit context and cleanup progress display.
+
+        Parameters
+        ----------
+        *args
+            Exception information (unused).
+        """
         self.close()
 
     def update(self, n=1):
-        """Update progress by n steps."""
+        """
+        Advance progress bar by specified amount.
+
+        Parameters
+        ----------
+        n : int, optional
+            Number of items to advance. Default is 1.
+        """
         if self.progress_instance and self.task_id is not None:
             with suppress(Exception):
                 # If progress update fails, just track position
@@ -105,12 +171,24 @@ class RichProgressWrapper:
             console.print(f"  Progress: {self.position}/{self.total} ({percentage:.1f}%)")
 
     def set_description(self, desc):
-        """Update progress bar description."""
+        """
+        Update the progress bar description text.
+
+        Parameters
+        ----------
+        desc : str
+            New description text to display.
+        """
         if self.progress_instance and self.task_id is not None:
             self.progress_instance.update(self.task_id, description=desc)
 
     def close(self):
-        """Close and cleanup progress bar."""
+        """
+        Stop and remove the progress bar display.
+
+        Performs cleanup of Rich progress instance and
+        resets internal state.
+        """
         if self.progress_instance:
             try:
                 self.progress_instance.stop()
@@ -122,12 +200,45 @@ class RichProgressWrapper:
                 self.task_id = None
 
     def write(self, message):
-        """Write message to console."""
+        """
+        Write message to console above progress bar.
+
+        Parameters
+        ----------
+        message : str
+            Text to display in the console.
+        """
         console.print(message)
 
 
 def rich_tqdm(*args, **kwargs):
-    """Drop-in replacement for tqdm using Rich."""
+    """
+    Create tqdm-compatible progress bar using Rich.
+
+    Drop-in replacement for tqdm that uses Rich's advanced
+    terminal rendering capabilities.
+
+    Parameters
+    ----------
+    *args
+        Positional arguments passed to RichProgressWrapper.
+    **kwargs
+        Keyword arguments passed to RichProgressWrapper.
+
+    Returns
+    -------
+    RichProgressWrapper
+        Progress bar instance with tqdm-compatible API.
+
+    Examples
+    --------
+    >>> for item in rich_tqdm(range(100), desc="Processing"):
+    ...     process(item)
+
+    >>> with rich_tqdm(total=50) as pbar:
+    ...     for i in range(50):
+    ...         pbar.update(1)
+    """
     return RichProgressWrapper(*args, **kwargs)
 
 
@@ -135,16 +246,41 @@ def rich_tqdm(*args, **kwargs):
 def progress_bar(
     description: str, total: int | None = None, transient: bool = False, disable: bool = False
 ):
-    """Context manager for Rich progress bars.
+    """
+    Context manager for Rich progress bar display.
 
-    Args:
-        description: Progress description
-        total: Total number of items (None for indeterminate)
-        transient: Whether to clear progress bar when done
-        disable: Whether to disable progress bar
+    Creates a sophisticated progress bar with time estimates,
+    speed metrics, and automatic cleanup.
 
-    Yields:
-        Progress instance
+    Parameters
+    ----------
+    description : str
+        Text description for the progress bar.
+    total : int, optional
+        Total number of items. None for indeterminate progress.
+        Default is None.
+    transient : bool, optional
+        If True, removes progress bar after completion.
+        Default is False.
+    disable : bool, optional
+        If True, disables progress bar entirely.
+        Default is False.
+
+    Yields
+    ------
+    Progress or DummyProgress
+        Rich Progress instance or dummy object if disabled.
+
+    Examples
+    --------
+    >>> with progress_bar("Loading data", total=100) as progress:
+    ...     task_id = progress.task_id
+    ...     for i in range(100):
+    ...         progress.update(task_id, advance=1)
+
+    >>> with progress_bar("Processing", transient=True) as p:
+    ...     # Progress bar disappears when done
+    ...     process_data()
     """
     if disable:
         # Return a dummy progress instance

@@ -12,7 +12,43 @@ import pyproj
 
 
 def resolve_coordinates(location: Union[str, Tuple[float, float]]) -> Tuple[Tuple[float, float], str]:
-    """Resolve location to coordinates and name."""
+    """
+    Resolve location input to coordinates and name.
+
+    Converts location specifications (strings or coordinates)
+    into standardized coordinate tuples and location names.
+
+    Parameters
+    ----------
+    location : str or tuple of float
+        Either "City, State" string for geocoding or
+        (latitude, longitude) coordinate tuple.
+
+    Returns
+    -------
+    tuple
+        ((latitude, longitude), location_name) where:
+        - First element is coordinate tuple
+        - Second element is location name string
+
+    Raises
+    ------
+    ValueError
+        If location cannot be geocoded or coordinates
+        are invalid.
+
+    Examples
+    --------
+    >>> coords, name = resolve_coordinates("Portland, OR")
+    >>> coords
+    (45.5152, -122.6784)
+    >>> name
+    'Portland, OR'
+
+    >>> coords, name = resolve_coordinates((45.5152, -122.6784))
+    >>> name
+    '45.5152, -122.6784'
+    """
     from ._geocoding import geocode_location
     from .validators import validate_coordinates
 
@@ -32,7 +68,31 @@ def resolve_coordinates(location: Union[str, Tuple[float, float]]) -> Tuple[Tupl
 
 
 def calculate_polygon_area(polygon) -> float:
-    """Calculate area of polygon in square kilometers."""
+    """
+    Calculate the area of a polygon in square kilometers.
+
+    Projects the polygon to Web Mercator (EPSG:3857) for
+    accurate area calculation, then converts to km².
+
+    Parameters
+    ----------
+    polygon : shapely.geometry.Polygon
+        Polygon geometry in WGS84 (EPSG:4326) coordinates.
+
+    Returns
+    -------
+    float
+        Area of the polygon in square kilometers.
+
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> poly = Polygon([(-122.5, 45.5), (-122.4, 45.5),
+    ...                 (-122.4, 45.6), (-122.5, 45.6)])
+    >>> area = calculate_polygon_area(poly)
+    >>> round(area, 2)
+    123.45
+    """
     project = pyproj.Transformer.from_crs(
         'EPSG:4326', 'EPSG:3857', always_xy=True
     ).transform
@@ -42,7 +102,30 @@ def calculate_polygon_area(polygon) -> float:
 
 
 def create_circular_geometry(location: Tuple[float, float], radius_km: float):
-    """Create circular geometry from point and radius."""
+    """
+    Create circular polygon from center point and radius.
+
+    Generates a circular buffer around a point by projecting
+    to Web Mercator for accurate distance calculation.
+
+    Parameters
+    ----------
+    location : tuple of float
+        (latitude, longitude) center point coordinates.
+    radius_km : float
+        Radius of the circle in kilometers.
+
+    Returns
+    -------
+    shapely.geometry.Polygon
+        Circular polygon in WGS84 (EPSG:4326) coordinates.
+
+    Examples
+    --------
+    >>> circle = create_circular_geometry((45.5152, -122.6784), 5.0)
+    >>> round(calculate_polygon_area(circle), 1)
+    78.5
+    """
     lat, lon = location
     point = Point(lon, lat)
 
@@ -59,7 +142,38 @@ def create_circular_geometry(location: Tuple[float, float], radius_km: float):
 
 
 def extract_geometry_from_geojson(polygon: Dict) -> Any:
-    """Extract geometry from GeoJSON feature or geometry."""
+    """
+    Extract Shapely geometry from GeoJSON structure.
+
+    Handles both GeoJSON Feature and bare Geometry objects,
+    converting them to Shapely geometry objects.
+
+    Parameters
+    ----------
+    polygon : dict
+        GeoJSON Feature dict (with 'geometry' key) or
+        bare GeoJSON geometry dict.
+
+    Returns
+    -------
+    shapely.geometry.base.BaseGeometry
+        Shapely geometry object (Polygon, MultiPolygon, etc.).
+
+    Examples
+    --------
+    >>> geojson_feat = {
+    ...     "type": "Feature",
+    ...     "geometry": {
+    ...         "type": "Polygon",
+    ...         "coordinates": [[[-122.5, 45.5], [-122.4, 45.5],
+    ...                          [-122.4, 45.6], [-122.5, 45.6],
+    ...                          [-122.5, 45.5]]]
+    ...     }
+    ... }
+    >>> geom = extract_geometry_from_geojson(geojson_feat)
+    >>> geom.geom_type
+    'Polygon'
+    """
     if "geometry" in polygon:
         return shape(polygon["geometry"])
     else:

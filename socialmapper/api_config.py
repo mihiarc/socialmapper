@@ -133,7 +133,26 @@ class MapConfig:
 
 @dataclass
 class MultipleAnalysisConfig:
-    """Configuration for multiple location analysis."""
+    """
+    Configuration for comparative multi-location analysis.
+
+    Contains parameters for analyzing and comparing demographic
+    characteristics across multiple geographic locations.
+
+    Parameters
+    ----------
+    locations : list of str or tuple of float
+        List of locations to analyze, each can be "City, State"
+        string or (latitude, longitude) tuple.
+    travel_time : int, default 15
+        Travel time in minutes for isochrone generation.
+    travel_mode : {'drive', 'walk', 'bike'}, default 'drive'
+        Transportation mode for travel time calculation.
+    variables : list of str, optional
+        Census variables to analyze. Defaults to ["population"].
+    compare : bool, default True
+        Whether to include comparative analysis between locations.
+    """
 
     locations: List[Union[str, Tuple[float, float]]]
     travel_time: int = 15

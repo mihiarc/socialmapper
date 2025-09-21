@@ -115,7 +115,32 @@ def validate_location_input(
     polygon=None,
     location=None
 ) -> None:
-    """Validate polygon/location input parameters."""
+    """
+    Validate mutually exclusive location parameters.
+
+    Ensures exactly one of polygon or location is provided,
+    preventing ambiguous input specifications.
+
+    Parameters
+    ----------
+    polygon : dict, optional
+        GeoJSON polygon specification. Default is None.
+    location : tuple, optional
+        Coordinate tuple specification. Default is None.
+
+    Raises
+    ------
+    ValueError
+        If neither parameter is provided or both are provided.
+
+    Examples
+    --------
+    >>> validate_location_input(polygon={"type": "Polygon"})
+    >>> # No exception raised
+
+    >>> validate_location_input()  # doctest: +SKIP
+    ValueError: Must provide either polygon or location
+    """
     if polygon is None and location is None:
         raise ValueError("Must provide either polygon or location")
 
