@@ -83,7 +83,23 @@ def create_isochrone(
 
 
 def _create_isochrone_from_config(config: IsochroneConfig) -> Dict[str, Any]:
-    """Internal function to create isochrone from configuration."""
+    """
+    Create isochrone from configuration object.
+
+    Internal helper function that generates an isochrone polygon
+    using the provided configuration parameters.
+
+    Parameters
+    ----------
+    config : IsochroneConfig
+        Configuration object containing location, travel_time,
+        and travel_mode parameters.
+
+    Returns
+    -------
+    dict
+        GeoJSON Feature dict with isochrone polygon and metadata.
+    """
     from ._isochrone import generate_isochrone
 
     coords, location_name = resolve_coordinates(config.location)
@@ -223,7 +239,23 @@ def get_census_data(
 
 
 def _get_census_data_from_config(config: CensusConfig) -> Dict[str, Any]:
-    """Internal function to get census data from configuration."""
+    """
+    Retrieve census data using configuration object.
+
+    Internal helper function that fetches census data based on
+    the provided configuration parameters.
+
+    Parameters
+    ----------
+    config : CensusConfig
+        Configuration object containing location, variables,
+        and year parameters.
+
+    Returns
+    -------
+    dict
+        Census data organized by GEOID.
+    """
     from ._census import fetch_census_data, normalize_variable_names
 
     var_codes = normalize_variable_names(config.variables)
@@ -238,7 +270,29 @@ def _get_census_data_from_config(config: CensusConfig) -> Dict[str, Any]:
 
 
 def _resolve_geoids_from_location(location) -> List[str]:
-    """Resolve location to list of GEOIDs."""
+    """
+    Convert location specification to census GEOIDs.
+
+    Resolves various location formats into a list of census
+    geographic identifiers (GEOIDs).
+
+    Parameters
+    ----------
+    location : dict, list, or tuple
+        Location as GeoJSON dict, list of GEOIDs, or
+        (lat, lon) coordinate tuple.
+
+    Returns
+    -------
+    list of str
+        List of 12-digit census block group GEOIDs.
+
+    Raises
+    ------
+    ValueError
+        If location format is invalid or census geography
+        cannot be determined.
+    """
     if isinstance(location, dict):
         blocks = get_census_blocks(polygon=location)
         return [b["geoid"] for b in blocks]
@@ -325,7 +379,23 @@ def create_map(
 
 
 def _create_map_from_config(config: MapConfig) -> Optional[Union[bytes, Dict]]:
-    """Internal function to create map from configuration."""
+    """
+    Generate map visualization from configuration.
+
+    Internal helper function that creates choropleth maps
+    using the provided configuration parameters.
+
+    Parameters
+    ----------
+    config : MapConfig
+        Configuration object containing data, column,
+        title, save_path, and export_format.
+
+    Returns
+    -------
+    bytes, dict, or None
+        Map output in specified format, or None if saved to file.
+    """
     validate_export_format(config.export_format)
 
     gdf = _convert_data_to_geodataframe(config.data)
@@ -342,7 +412,27 @@ def _create_map_from_config(config: MapConfig) -> Optional[Union[bytes, Dict]]:
 
 
 def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
-    """Convert various data formats to GeoDataFrame."""
+    """
+    Convert input data to GeoPandas GeoDataFrame.
+
+    Standardizes various geographic data formats into a
+    GeoDataFrame for consistent processing.
+
+    Parameters
+    ----------
+    data : list, DataFrame, or GeoDataFrame
+        Geographic data in various formats.
+
+    Returns
+    -------
+    GeoDataFrame
+        Standardized geographic data with EPSG:4326 CRS.
+
+    Raises
+    ------
+    ValueError
+        If data format is invalid or missing required fields.
+    """
     if isinstance(data, list):
         geometries = []
         attributes = []
@@ -377,7 +467,23 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
 
 
 def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
-    """Create image-based map visualization."""
+    """
+    Generate image-format choropleth map.
+
+    Creates a visual map in PNG, PDF, or SVG format.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        Geographic data to visualize.
+    config : MapConfig
+        Map configuration with column, title, and format.
+
+    Returns
+    -------
+    bytes or None
+        Image data if save_path is None, otherwise None.
+    """
     from ._visualization import generate_choropleth_map
 
     return generate_choropleth_map(
@@ -386,7 +492,23 @@ def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
 
 
 def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
-    """Create GeoJSON export."""
+    """
+    Export GeoDataFrame to GeoJSON format.
+
+    Converts geographic data to GeoJSON for web mapping.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        Geographic data to export.
+    save_path : str, optional
+        File path for saving, if None returns dict.
+
+    Returns
+    -------
+    dict or None
+        GeoJSON dict if save_path is None, otherwise None.
+    """
     if save_path:
         from .io.writers import write_geojson
         from pathlib import Path
@@ -397,7 +519,28 @@ def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
 
 
 def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
-    """Create Shapefile export."""
+    """
+    Export GeoDataFrame to ESRI Shapefile.
+
+    Creates shapefile for GIS software compatibility.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        Geographic data to export.
+    save_path : str
+        Required file path for shapefile output.
+
+    Returns
+    -------
+    None
+        Always returns None after saving to file.
+
+    Raises
+    ------
+    ValueError
+        If save_path is not provided.
+    """
     if not save_path:
         raise ValueError("save_path is required for shapefile export")
 
@@ -476,7 +619,23 @@ def get_poi(
 
 
 def _get_poi_from_config(config: PoiConfig) -> List[Dict[str, Any]]:
-    """Internal function to get POI from configuration."""
+    """
+    Retrieve POIs using configuration object.
+
+    Internal helper function that queries and processes
+    points of interest based on configuration.
+
+    Parameters
+    ----------
+    config : PoiConfig
+        Configuration with location, categories, travel_time,
+        limit, and validation settings.
+
+    Returns
+    -------
+    list of dict
+        Filtered and sorted POI data.
+    """
     from ._osm import query_pois
 
     coords, _ = resolve_coordinates(config.location)
@@ -502,7 +661,24 @@ def _get_poi_from_config(config: PoiConfig) -> List[Dict[str, Any]]:
 
 
 def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int]):
-    """Create search area geometry based on travel time or default radius."""
+    """
+    Generate geographic search boundary.
+
+    Creates either an isochrone or circular search area
+    for POI queries.
+
+    Parameters
+    ----------
+    coords : tuple of float
+        (latitude, longitude) center point.
+    travel_time : int, optional
+        Travel time in minutes for isochrone boundary.
+
+    Returns
+    -------
+    Polygon
+        Shapely polygon defining search area.
+    """
     lat, lon = coords
 
     if travel_time:
@@ -514,7 +690,21 @@ def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int])
 
 
 def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Validate POI coordinates and filter invalid ones."""
+    """
+    Validate and filter POI data.
+
+    Removes POIs with invalid or missing coordinates.
+
+    Parameters
+    ----------
+    pois : list of dict
+        Raw POI data from OSM query.
+
+    Returns
+    -------
+    list of dict
+        POIs with valid coordinates only.
+    """
     from ._validation import validate_poi_coordinates
 
     valid_pois = []
@@ -541,7 +731,26 @@ def _calculate_poi_distances(
     origin: Tuple[float, float],
     validate_coords: bool
 ):
-    """Calculate distances from origin to POIs."""
+    """
+    Calculate geodesic distances from origin to POIs.
+
+    Computes the straight-line distance in kilometers from
+    a central point to each POI.
+
+    Parameters
+    ----------
+    pois : list of dict
+        POI data with 'lat' and 'lon' fields.
+    origin : tuple of float
+        (latitude, longitude) of origin point.
+    validate_coords : bool
+        If True, marks invalid distances as infinity.
+
+    Returns
+    -------
+    None
+        Updates pois in-place with 'distance_km' field.
+    """
     for poi in pois:
         poi_coords = (poi["lat"], poi["lon"])
         try:
@@ -606,7 +815,23 @@ def analyze_multiple_pois(
 
 
 def _analyze_multiple_from_config(config: MultipleAnalysisConfig) -> Dict[str, Any]:
-    """Internal function to analyze multiple locations."""
+    """
+    Perform multi-location demographic analysis.
+
+    Internal helper function that analyzes and compares
+    multiple geographic locations.
+
+    Parameters
+    ----------
+    config : MultipleAnalysisConfig
+        Configuration with locations, travel parameters,
+        variables, and comparison settings.
+
+    Returns
+    -------
+    dict
+        Analysis results with individual and comparative data.
+    """
     results = {
         "locations": [],
         "metadata": {
@@ -661,7 +886,24 @@ def _analyze_multiple_from_config(config: MultipleAnalysisConfig) -> Dict[str, A
 
 
 def _create_comparison_analysis(locations: List[Dict], variables: List[str]) -> Dict:
-    """Create comparative analysis across locations."""
+    """
+    Generate comparative metrics across multiple locations.
+
+    Creates rankings and identifies highest/lowest values
+    for each demographic variable across locations.
+
+    Parameters
+    ----------
+    locations : list of dict
+        Location analysis results with aggregated data.
+    variables : list of str
+        Census variables to compare.
+
+    Returns
+    -------
+    dict
+        Comparative analysis with rankings and extremes.
+    """
     comparison = {}
 
     for var in variables:
@@ -763,7 +1005,23 @@ def generate_report(
 
 
 def _generate_report_from_config(config: ReportConfig) -> Union[str, bytes]:
-    """Internal function to generate report from configuration."""
+    """
+    Generate formatted report from configuration.
+
+    Internal helper function that creates analysis reports
+    using the provided configuration parameters.
+
+    Parameters
+    ----------
+    config : ReportConfig
+        Configuration with analysis data, format,
+        template, and map inclusion settings.
+
+    Returns
+    -------
+    str or bytes
+        Formatted report in HTML or PDF format.
+    """
     from ._reporting import create_analysis_report
 
     return create_analysis_report(
