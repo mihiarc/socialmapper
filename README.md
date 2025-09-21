@@ -30,20 +30,22 @@ SocialMapper helps you understand how people connect with important places in th
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-## What's New in v0.7.0 🎉
+## What's New in v0.8.0 🎉
 
-### Major Architecture Update: Simplified Python Package
+### Major Updates: Simple 5-Function API
 
+- **🎯 Simple API** - Just 5 core functions for all spatial analysis needs
 - **📦 Clean Installation** - Simple installation with `pip install socialmapper`
 - **🔧 Focused Toolkit** - Streamlined Python package for spatial analysis
-- **📚 Enhanced Documentation** - Improved guides and examples
+- **📚 Clear Documentation** - Working examples and straightforward API
 
-### Previous v0.6.2 Updates
+### Core Functions
 
-- **🐛 Fixed Travel Time Bug** - Census data exports now correctly show actual travel time
-- **🚶‍♀️ Travel Mode Support** - Generate isochrones for walking, biking, or driving
-- **💾 Lightweight Neighbor System** - Streaming census system reduces storage from 118MB to ~0.1MB
-- **🗺️ Geographic Level Support** - Choose between census block groups or ZCTAs
+- `create_isochrone` - Generate travel-time polygons
+- `get_poi` - Find points of interest near locations
+- `get_census_blocks` - Fetch census block groups for an area
+- `get_census_data` - Get demographic data from US Census
+- `create_map` - Generate choropleth map visualizations
 
 📚 **[Full Documentation](https://mihiarc.github.io/socialmapper)** | 🐛 **[Report Issues](https://github.com/mihiarc/socialmapper/issues)**
 
@@ -61,16 +63,10 @@ SocialMapper helps you understand how people connect with important places in th
 
 SocialMapper is available on PyPI with flexible installation options:
 
-### Backend Only (Recommended for API/CLI usage)
+### Standard Installation
 ```bash
-# Install core functionality without UI dependencies
+# Install SocialMapper
 pip install socialmapper
-```
-
-### Backend + Streamlit UI (For backward compatibility)
-```bash
-# Install with optional UI components
-pip install socialmapper[ui]
 ```
 
 ### Development Installation
@@ -101,215 +97,169 @@ See `env.example` for all available configuration options.
 
 ## Using SocialMapper
 
-SocialMapper offers multiple ways to perform your analysis:
-
-### Web Interface Options
-
-#### Modern React UI (Recommended)
-
-For the best interactive experience, use the new React-based frontend:
-
-1. **Start the API Server**:
-   ```bash
-   cd socialmapper-api
-   uvicorn main:app --reload
-   ```
-
-2. **Start the React Frontend** (in a separate terminal):
-   ```bash
-   cd socialmapper-ui
-   npm install
-   npm run dev
-   ```
-
-3. **Access the UI** at http://localhost:3000
-
-#### Legacy Streamlit Dashboard
-
-The Streamlit interface is still available if you installed with UI support:
-
-```bash
-# Requires: pip install socialmapper[ui]
-streamlit run streamlit_app.py
-```
-
-**Note**: The Streamlit UI is deprecated and will be removed in a future version.
+SocialMapper provides a simple Python API with 5 core functions for spatial analysis.
 
 ### Quick Start with Python API
 
-#### POI Discovery (New!)
-
-Discover what's around any location within realistic travel constraints:
+#### 1. Create Travel-Time Polygons (Isochrones)
 
 ```python
-from socialmapper import SocialMapperClient
+from socialmapper import create_isochrone
 
-# Discover POIs within a 20-minute walk
-with SocialMapperClient() as client:
-    result = client.discover_nearby_pois(
-        location="Chapel Hill, NC",
-        travel_time=20,
-        travel_mode="walk",
-        poi_categories=["food_and_drink", "healthcare", "education"]
-    )
-    
-    if result.is_ok():
-        poi_result = result.unwrap()
-        print(f"Found {poi_result.total_poi_count} POIs")
-        for category, count in poi_result.category_counts.items():
-            print(f"  {category}: {count}")
+# Create a 15-minute drive-time polygon from Portland, OR
+iso = create_isochrone("Portland, OR", travel_time=15, travel_mode="drive")
+
+# Or use coordinates
+iso = create_isochrone((45.5152, -122.6784), travel_time=20, travel_mode="walk")
+
+# The result is a GeoJSON polygon dictionary
+print(f"Polygon type: {iso['geometry']['type']}")
 ```
 
-#### Traditional Census Analysis
+#### 2. Find Points of Interest
 
 ```python
-from socialmapper import SocialMapperClient
+from socialmapper import get_poi
 
-# Simple analysis
-with SocialMapperClient() as client:
-    result = client.analyze(
-        location="San Francisco, CA",
-        poi_type="amenity",
-        poi_name="library",
-        travel_time=15
-    )
-    
-    if result.is_ok():
-        analysis = result.unwrap()
-        print(f"Found {analysis.poi_count} libraries")
-        print(f"Analyzed {analysis.census_units_analyzed} census units")
+# Find libraries near Chapel Hill, NC
+pois = get_poi(
+    location="Chapel Hill, NC",
+    categories=["amenity:library"],  # OpenStreetMap tags
+    limit=10
+)
+
+# Find all POIs within 15-minute travel time
+pois = get_poi(
+    location="San Francisco, CA",
+    travel_time=15,  # Will find POIs within isochrone
+    categories=["amenity:hospital", "amenity:school"]
+)
+
+for poi in pois:
+    print(f"{poi['name']}: {poi['lat']}, {poi['lon']}")
 ```
 
-### Advanced Usage with Builder Pattern
-
-#### POI Discovery with Builder
+#### 3. Get Census Block Groups
 
 ```python
-from socialmapper import SocialMapperBuilder
-from socialmapper.isochrone import TravelMode
+from socialmapper import get_census_blocks
 
-# Advanced POI discovery configuration
-result = (
-    SocialMapperBuilder()
-    .with_nearby_poi_discovery("Boston, MA", 25, TravelMode.BIKE)
-    .with_poi_categories("food_and_drink", "healthcare", "education")
-    .exclude_poi_categories("utilities")
-    .limit_pois_per_category(30)
-    .with_export_options(csv=True, geojson=True, maps=True)
-    .execute()
+# Get census blocks within 5km radius
+blocks = get_census_blocks(
+    location=(35.9132, -79.0558),  # UNC Chapel Hill
+    radius_km=5
+)
+
+# Or get blocks within a polygon (e.g., from create_isochrone)
+iso = create_isochrone("Durham, NC", travel_time=10)
+blocks = get_census_blocks(polygon=iso)
+
+print(f"Found {len(blocks)} census block groups")
+```
+
+#### 4. Retrieve Census Data
+
+```python
+from socialmapper import get_census_data
+
+# Get demographic data for a location
+data = get_census_data(
+    location=(40.7128, -74.0060),  # NYC coordinates
+    variables=["B01003_001E"],  # Total population
+    year=2022
+)
+
+# Or use block group IDs
+block_ids = ["360610001001", "360610001002"]
+data = get_census_data(
+    location=block_ids,
+    variables=["B01003_001E", "B19013_001E"],  # Population and median income
+    year=2022
 )
 ```
 
-#### Traditional Census Analysis with Builder
+#### 5. Create Map Visualizations
 
 ```python
-from socialmapper import SocialMapperClient, SocialMapperBuilder
+from socialmapper import create_map
+import pandas as pd
 
-with SocialMapperClient() as client:
-    # Configure analysis using fluent builder
-    config = (SocialMapperBuilder()
-        .with_location("Chicago", "IL")
-        .with_osm_pois("leisure", "park")
-        .with_travel_time(20)
-        .with_travel_mode("walk")  # Analyze walking access
-        .with_census_variables("total_population", "median_income", "percent_poverty")
-        .with_geographic_level("zcta")  # Use ZIP codes instead of block groups
-        .with_exports(csv=True, isochrones=True)  # Generate maps
-        .build()
-    )
-    
-    result = client.run_analysis(config)
+# Assuming you have data with geometry
+data_df = pd.DataFrame([
+    {"name": "Area 1", "population": 1000, "geometry": {...}},
+    {"name": "Area 2", "population": 2000, "geometry": {...}}
+])
+
+# Create a choropleth map
+map_image = create_map(
+    data=data_df,
+    column="population",
+    title="Population Distribution",
+    save_path="population_map.png"
+)
 ```
 
-### Using Custom POI Coordinates
+### Complete Example: Analyzing Library Access
+
+Here's a complete workflow combining all 5 functions:
 
 ```python
-from socialmapper import SocialMapperClient, SocialMapperBuilder
-
-with SocialMapperClient() as client:
-    config = (SocialMapperBuilder()
-        .with_custom_pois("my_locations.csv")
-        .with_travel_time(15)
-        .with_census_variables("total_population")
-        .build()
-    )
-    
-    result = client.run_analysis(config)
-```
-
-### Python API Interface
-
-SocialMapper provides a clean, Pythonic API:
-
-```python
-from socialmapper import SocialMapper, quick_analysis
-
-# Simple one-liner for quick analyses
-result = quick_analysis(
-    "Chicago, IL", 
-    "library", 
-    travel_time=15,
-    census_variables=["total_population", "median_household_income"]
-)
-print(f"Found {result['poi_count']} libraries")
-
-# Full client for advanced usage
-mapper = SocialMapper()
-
-# Analyze libraries in Chicago
-result = mapper.analyze_location(
-    "Chicago, IL",
-    poi_types=["library"],
-    travel_time=15,
-    census_variables=["total_population", "median_household_income"]
-)
-result.print_summary()
-
-# Use custom coordinates from CSV
-result = mapper.analyze_custom_pois(
-    "my_hospitals.csv",
-    travel_time=30,
-    census_variables=["total_population", "median_age"]
+from socialmapper import (
+    create_isochrone,
+    get_poi,
+    get_census_blocks,
+    get_census_data,
+    create_map
 )
 
-# Discover all nearby POIs
-result = mapper.discover_nearby_pois(
-    "Portland, OR",
-    travel_time=20,
-    travel_mode="walk"
-)
-print(f"Found {result.total_poi_count} POIs in {result.unique_categories} categories")
+# Step 1: Define the area of interest (15-minute walk from downtown)
+location = "Chapel Hill, NC"
+iso = create_isochrone(location, travel_time=15, travel_mode="walk")
 
-# Compare multiple locations
-from socialmapper import compare_locations
-results = compare_locations(
-    ["Portland, OR", "Seattle, WA", "San Francisco, CA"],
-    poi_types=["library"],
+# Step 2: Find all libraries in the area
+libraries = get_poi(
+    location=location,
+    categories=["amenity:library"],
     travel_time=15
 )
-for location, result in results.items():
-    print(f"{location}: {result.poi_count} libraries")
+print(f"Found {len(libraries)} libraries within 15-minute walk")
+
+# Step 3: Get census blocks in the walkable area
+blocks = get_census_blocks(polygon=iso)
+print(f"Found {len(blocks)} census block groups")
+
+# Step 4: Get demographic data for these blocks
+if blocks:
+    block_ids = [b['GEOID'] for b in blocks if 'GEOID' in b]
+    census_data = get_census_data(
+        location=block_ids,
+        variables=["B01003_001E"],  # Total population
+        year=2022
+    )
+
+    # Step 5: Create a visualization (if you have geopandas installed)
+    # Note: This requires additional data processing
+    # map_image = create_map(
+    #     data=blocks_with_census_data,
+    #     column="population",
+    #     title="Population with Library Access"
+    # )
 ```
 
-### Preset Analysis Functions
-
-For common scenarios, use preset functions:
+### Working with Different Location Formats
 
 ```python
-from socialmapper import analyze_libraries, analyze_schools, analyze_hospitals
+from socialmapper import create_isochrone, get_poi
 
-# Library access analysis
-result = analyze_libraries("Boston, MA", travel_time=20, travel_mode="walk")
+# Use city names
+iso1 = create_isochrone("Boston, MA", travel_time=20)
 
-# School access with demographics
-result = analyze_schools("Austin, TX", include_demographics=True)
+# Use coordinates (latitude, longitude)
+iso2 = create_isochrone((42.3601, -71.0589), travel_time=20)
 
-# Healthcare access (30-minute default)
-result = analyze_hospitals("Chicago, IL")
-
-# Each returns detailed results
-result.print_summary()  # Human-readable summary
-data = result.to_dict()  # Export to dictionary
+# POIs support the same formats
+pois1 = get_poi("Seattle, WA", categories=["amenity:cafe"])
+pois2 = get_poi((47.6062, -122.3321), categories=["shop:supermarket"])
 ```
 
 ### Travel Modes
@@ -317,53 +267,51 @@ data = result.to_dict()  # Export to dictionary
 SocialMapper supports three travel modes, each using appropriate road networks and speeds:
 
 - **walk** - Pedestrian paths, sidewalks, crosswalks (default: 5 km/h)
-- **bike** - Bike lanes, shared roads, trails (default: 15 km/h)  
+- **bike** - Bike lanes, shared roads, trails (default: 15 km/h)
 - **drive** - Roads accessible by cars (default: 50 km/h)
 
 ```python
-from socialmapper import SocialMapperBuilder, TravelMode
+from socialmapper import create_isochrone
 
 # Compare walking vs driving access
-walk_config = (SocialMapperBuilder()
-    .with_location("Seattle", "WA")
-    .with_osm_pois("amenity", "grocery_or_supermarket")
-    .with_travel_time(15)
-    .with_travel_mode(TravelMode.WALK)
-    .build()
+walk_iso = create_isochrone(
+    "Seattle, WA",
+    travel_time=15,
+    travel_mode="walk"
 )
 
-drive_config = (SocialMapperBuilder()
-    .with_location("Seattle", "WA")
-    .with_osm_pois("amenity", "grocery_or_supermarket")
-    .with_travel_time(15)
-    .with_travel_mode(TravelMode.DRIVE)
-    .build()
+drive_iso = create_isochrone(
+    "Seattle, WA",
+    travel_time=15,
+    travel_mode="drive"
 )
+
+# The drive isochrone will cover a much larger area
 ```
 
 ### Error Handling
 
-The modern API uses Result types for explicit error handling:
+The API functions use standard Python exceptions:
 
 ```python
-from socialmapper import SocialMapperClient
+from socialmapper import create_isochrone, get_poi
 
-with SocialMapperClient() as client:
-    result = client.analyze(
-        location="Invalid Location",
-        poi_type="amenity",
-        poi_name="library"
+try:
+    # This might fail if location cannot be geocoded
+    iso = create_isochrone("Invalid Location XYZ", travel_time=15)
+except ValueError as e:
+    print(f"Invalid location: {e}")
+except Exception as e:
+    print(f"Error creating isochrone: {e}")
+
+# Functions validate inputs
+try:
+    pois = get_poi(
+        location=(91, -122),  # Invalid latitude
+        categories=["amenity:library"]
     )
-    
-    # Pattern matching (Python 3.10+)
-    match result:
-        case Ok(analysis):
-            print(f"Success: {analysis.poi_count} POIs found")
-        case Err(error):
-            print(f"Error type: {error.type.name}")
-            print(f"Message: {error.message}")
-            if error.context:
-                print(f"Context: {error.context}")
+except ValueError as e:
+    print(f"Validation error: {e}")
 ```
 
 ## Creating Your Own Community Maps: Step-by-Step Guide
@@ -374,17 +322,27 @@ You can specify points of interest with direct command-line parameters.
 
 #### Using the Python API
 
-You can run the analysis using the simple Python API:
+You can run the analysis using the core API functions:
 
 ```python
-from socialmapper import analyze_libraries
+from socialmapper import get_poi, create_isochrone, get_census_blocks
 
-result = analyze_libraries(
-    "Fuquay-Varina, North Carolina",
-    travel_time=15,
-    include_demographics=True
+# Find libraries within 15-minute walk
+location = "Fuquay-Varina, North Carolina"
+libraries = get_poi(
+    location=location,
+    categories=["amenity:library"],
+    travel_time=15
 )
-result.print_summary()
+
+# Get the walkable area
+iso = create_isochrone(location, travel_time=15, travel_mode="walk")
+
+# Get census blocks in that area
+blocks = get_census_blocks(polygon=iso)
+
+print(f"Found {len(libraries)} libraries")
+print(f"Covering {len(blocks)} census block groups")
 ```
 
 ### POI Types and Names Reference
@@ -451,46 +409,70 @@ Here are some examples of community mapping projects you could create:
 
 1. **Food Desert Analysis**: Discover food access options and analyze demographics.
    ```python
-   from socialmapper import discover_food_access
-   
-   result = discover_food_access(
+   from socialmapper import get_poi, create_isochrone
+
+   # Find grocery stores and supermarkets within walking distance
+   food_access = get_poi(
        "Chicago, Illinois",
+       categories=["shop:supermarket", "shop:grocery"],
        travel_time=20
    )
-   result.print_summary()
+   print(f"Found {len(food_access)} food stores within 20-minute walk")
    ```
 
 2. **Healthcare Access**: Map hospitals and analyze accessibility patterns.
    ```python
-   from socialmapper import analyze_hospitals
-   
-   result = analyze_hospitals(
+   from socialmapper import get_poi, get_census_blocks, create_isochrone
+
+   # Find hospitals within 30-minute drive
+   hospitals = get_poi(
+       "Los Angeles, California",
+       categories=["amenity:hospital", "amenity:clinic"],
+       travel_time=30
+   )
+
+   # Get the service area
+   service_area = create_isochrone(
        "Los Angeles, California",
        travel_time=30,
-       include_demographics=True
+       travel_mode="drive"
    )
    ```
 
-3. **Educational Resource Distribution**: Analyze school accessibility with relevant demographics.
+3. **Educational Resource Distribution**: Analyze school accessibility.
    ```python
-   from socialmapper import analyze_schools
-   
-   result = analyze_schools(
+   from socialmapper import get_poi, create_isochrone
+
+   # Find schools within 15-minute walk
+   schools = get_poi(
+       "Boston, Massachusetts",
+       categories=["amenity:school"],
+       travel_time=15
+   )
+
+   # Create walkable area map
+   walkable = create_isochrone(
        "Boston, Massachusetts",
        travel_time=15,
-       include_demographics=True
+       travel_mode="walk"
    )
    ```
 
 4. **Park Access Equity**: Assess equitable access to green spaces.
    ```python
-   from socialmapper import analyze_parks
-   
-   result = analyze_parks(
+   from socialmapper import get_poi, get_census_blocks
+
+   # Find parks within 10-minute walk
+   parks = get_poi(
        "Miami, Florida",
-       travel_time=10,
-       travel_mode="walk",
-       include_demographics=True
+       categories=["leisure:park", "leisure:playground"],
+       travel_time=10
+   )
+
+   # Analyze which neighborhoods have access
+   blocks = get_census_blocks(
+       location=(25.7617, -80.1918),  # Miami coordinates
+       radius_km=5
    )
    ```
 
@@ -535,66 +517,46 @@ uv run pytest
 - [API Reference](https://mihiarc.github.io/socialmapper/) - Full API documentation
 - [Examples](examples/) - Sample scripts and use cases
 
-## Migration Guide
+## API Reference
 
-### Migrating to v0.7.0
+### Core Functions
 
-The v0.7.0 release simplifies the package architecture. Here's how to migrate:
+#### `create_isochrone(location, travel_time=15, travel_mode='drive')`
+Create a travel-time polygon showing reachable area.
+- **location**: City name string or (lat, lon) tuple
+- **travel_time**: Minutes of travel (default: 15)
+- **travel_mode**: 'walk', 'bike', or 'drive' (default: 'drive')
+- **Returns**: GeoJSON polygon dictionary
 
-#### For Python API Users
-The new simplified API provides cleaner, more Pythonic usage:
-```python
-# New simple API (recommended)
-from socialmapper import SocialMapper, quick_analysis
+#### `get_poi(location, categories=None, travel_time=None, limit=100)`
+Find points of interest near a location.
+- **location**: City name string or (lat, lon) tuple
+- **categories**: List of OSM tags like ["amenity:library"] (optional)
+- **travel_time**: Limit to POIs within travel time (optional)
+- **limit**: Maximum POIs to return (default: 100)
+- **Returns**: List of POI dictionaries with name, lat, lon, tags
 
-# Quick one-liner
-result = quick_analysis("NYC, NY", "library")
+#### `get_census_blocks(polygon=None, location=None, radius_km=5)`
+Get census block groups for a geographic area.
+- **polygon**: GeoJSON polygon from create_isochrone (optional)
+- **location**: (lat, lon) tuple for radius search (optional)
+- **radius_km**: Radius in kilometers if using location (default: 5)
+- **Returns**: List of census block dictionaries with GEOID and geometry
 
-# Simple client usage  
-mapper = SocialMapper()
-result = mapper.analyze_location("NYC, NY", poi_types=["library"])
+#### `get_census_data(location, variables, year=2023)`
+Retrieve demographic data from US Census.
+- **location**: Block group IDs list, coordinates, or location dict
+- **variables**: List of census variable codes (e.g., ["B01003_001E"])
+- **year**: Census year (default: 2023)
+- **Returns**: Dictionary with census data by block group
 
-# Preset functions for common use cases
-from socialmapper import analyze_libraries
-result = analyze_libraries("NYC, NY", travel_time=20)
-```
-
-**Migration Benefits:**
-- **90% less boilerplate** - no context managers, builders, or result unwrapping
-- **Standard Python patterns** - uses exceptions instead of Result types
-- **Direct access to data** - no `.unwrap()` or pattern matching needed
-
-#### For Streamlit UI Users
-The Streamlit UI is now optional and will be removed in a future version. You have three options:
-
-1. **Continue using Streamlit** (temporary):
-   ```bash
-   pip install socialmapper[ui]
-   streamlit run streamlit_app.py
-   ```
-
-2. **Use the Python API directly** (recommended):
-   ```python
-   from socialmapper import SocialMapperClient
-   
-   # Initialize client and run analysis
-   client = SocialMapperClient()
-   results = client.analyze_location(
-       latitude=40.7128,
-       longitude=-74.0060,
-       poi_types=["library"]
-   )
-   ```
-
-#### For Package Developers
-If you're importing SocialMapper in your package:
-```python
-# Old (will show deprecation warning)
-from socialmapper.ui import some_function
-
-# New (console utilities moved)
-from socialmapper.console import print_info, get_logger
-```
+#### `create_map(data, column, title=None, save_path=None)`
+Create choropleth map visualization.
+- **data**: DataFrame or list of dicts with geometry
+- **column**: Column name to visualize
+- **title**: Map title (optional)
+- **save_path**: Path to save image (optional)
+- **Returns**: Map image bytes or None if saved
 
 ## Contributing
 
