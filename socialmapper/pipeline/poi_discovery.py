@@ -18,7 +18,7 @@ import pandas as pd
 from geopy.distance import geodesic
 from shapely.geometry import Point
 
-from ..api.result_types import (
+from ..api_result_types import (
     DiscoveredPOI,
     Err,
     Error,
@@ -719,7 +719,7 @@ def execute_poi_discovery_pipeline(
         ```python
         from pathlib import Path
         from socialmapper.pipeline import execute_poi_discovery_pipeline
-        from socialmapper.api.result_types import NearbyPOIDiscoveryConfig
+        from socialmapper.api_result_types import NearbyPOIDiscoveryConfig
         from socialmapper.isochrone import TravelMode
 
         config = NearbyPOIDiscoveryConfig(
