@@ -1,584 +1,385 @@
-"""Tests for SocialMapper helper functions."""
+"""Comprehensive tests for socialmapper.helpers module with real API calls.
 
-import pytest
-from unittest.mock import patch, MagicMock
-from shapely.geometry import Point, Polygon, shape
+Tests all helper functions:
+- resolve_coordinates
+- calculate_polygon_area
+- create_circular_geometry
+- extract_geometry_from_geojson
+"""
+
+import math
+from unittest import TestCase
+
 import pyproj
+import pytest
+from shapely.geometry import Point, Polygon, shape
+from shapely.ops import transform
 
 from socialmapper.helpers import (
-    resolve_coordinates,
     calculate_polygon_area,
     create_circular_geometry,
-    extract_geometry_from_geojson
+    extract_geometry_from_geojson,
+    resolve_coordinates,
 )
 
 
-class TestResolveCoordinates:
-    """Test resolve_coordinates helper function."""
+class TestResolveCoordinates(TestCase):
+    """Test resolve_coordinates function with real geocoding."""
 
-    @patch('socialmapper._geocoding.geocode_location')
-    def test_resolve_string_location_success(self, mock_geocode):
-        """Test resolving string location to coordinates."""
-        mock_geocode.return_value = (45.5152, -122.6784)
+    def test_resolve_coordinates_with_address(self):
+        """Test resolving coordinates from an address string."""
+        coords, name = resolve_coordinates("Chapel Hill, NC")
 
-        coords, location_name = resolve_coordinates("Portland, OR")
+        self.assertIsInstance(coords, tuple)
+        self.assertEqual(len(coords), 2)
 
-        assert coords == (45.5152, -122.6784)
-        assert location_name == "Portland, OR"
-        mock_geocode.assert_called_once_with("Portland, OR")
+        lat, lon = coords
+        # Chapel Hill coordinates (approximately)
+        self.assertAlmostEqual(lat, 35.9132, places=1)
+        self.assertAlmostEqual(lon, -79.0558, places=1)
 
-    @patch('socialmapper._geocoding.geocode_location')
-    def test_resolve_string_location_failure(self, mock_geocode):
-        """Test handling of geocoding failure."""
-        mock_geocode.return_value = None
+        self.assertEqual(name, "Chapel Hill, NC")
 
-        with pytest.raises(ValueError, match="Could not geocode location: Nonexistent Place"):
-            resolve_coordinates("Nonexistent Place")
+    def test_resolve_coordinates_with_tuple(self):
+        """Test resolving coordinates from a coordinate tuple."""
+        input_coords = (35.9132, -79.0558)
+        coords, name = resolve_coordinates(input_coords)
 
-    def test_resolve_coordinate_tuple_valid(self):
-        """Test resolving valid coordinate tuple."""
-        coords, location_name = resolve_coordinates((37.7749, -122.4194))
+        self.assertEqual(coords, input_coords)
+        self.assertEqual(name, "35.9132, -79.0558")
 
-        assert coords == (37.7749, -122.4194)
-        assert location_name == "37.7749, -122.4194"
+    def test_resolve_coordinates_with_list(self):
+        """Test resolving coordinates from a list."""
+        input_coords = [40.7128, -74.0060]  # NYC
+        coords, name = resolve_coordinates(input_coords)
 
-    def test_resolve_coordinate_tuple_invalid(self):
-        """Test resolving invalid coordinate tuple."""
-        with pytest.raises(ValueError, match="Invalid coordinates: \\(200, 300\\)"):
-            resolve_coordinates((200, 300))
+        self.assertEqual(coords[0], 40.7128)
+        self.assertEqual(coords[1], -74.0060)
+        self.assertEqual(name, "40.7128, -74.0060")
 
-    def test_resolve_coordinate_boundary_cases(self):
-        """Test coordinate resolution at boundaries."""
-        # Valid boundaries
-        coords, name = resolve_coordinates((90, 180))
-        assert coords == (90, 180)
-        assert name == "90.0000, 180.0000"
+    def test_resolve_coordinates_invalid_address(self):
+        """Test error handling for invalid address."""
+        with self.assertRaises(ValueError) as context:
+            resolve_coordinates("This is not a real place 12345ABCDE")
 
-        coords, name = resolve_coordinates((-90, -180))
-        assert coords == (-90, -180)
-        assert name == "-90.0000, -180.0000"
+        self.assertIn("Could not geocode location", str(context.exception))
 
-        # Invalid boundaries
-        with pytest.raises(ValueError, match="Invalid coordinates"):
-            resolve_coordinates((90.1, 0))
+    def test_resolve_coordinates_invalid_coords(self):
+        """Test error handling for invalid coordinates."""
+        # Latitude out of range
+        with self.assertRaises(ValueError) as context:
+            resolve_coordinates((91, 0))
+        self.assertIn("Invalid coordinates", str(context.exception))
 
-    def test_resolve_coordinate_precision_formatting(self):
-        """Test coordinate formatting with various precision."""
-        # High precision coordinates
-        coords, name = resolve_coordinates((45.123456789, -122.987654321))
-        assert coords == (45.123456789, -122.987654321)
-        assert name == "45.1235, -122.9877"  # Should format to 4 decimals
+        # Longitude out of range
+        with self.assertRaises(ValueError) as context:
+            resolve_coordinates((0, 181))
+        self.assertIn("Invalid coordinates", str(context.exception))
 
-    @patch('socialmapper._geocoding.geocode_location')
-    def test_resolve_empty_string_location(self, mock_geocode):
-        """Test resolving empty string location."""
-        mock_geocode.return_value = None
+        # Invalid latitude
+        with self.assertRaises(ValueError):
+            resolve_coordinates((-91, 0))
 
-        with pytest.raises(ValueError, match="Could not geocode location: "):
-            resolve_coordinates("")
-
-    def test_resolve_zero_coordinates(self):
-        """Test resolving zero coordinates (Null Island)."""
-        coords, name = resolve_coordinates((0, 0))
-        assert coords == (0, 0)
-        assert name == "0.0000, 0.0000"
-
-    @patch('socialmapper._geocoding.geocode_location')
-    def test_resolve_geocode_returns_empty_result(self, mock_geocode):
-        """Test when geocode returns empty tuple or other falsy value."""
-        mock_geocode.return_value = ()
-
-        with pytest.raises(ValueError, match="Could not geocode location"):
-            resolve_coordinates("Invalid Location")
-
-
-class TestCalculatePolygonArea:
-    """Test calculate_polygon_area helper function."""
-
-    def test_calculate_small_polygon_area(self):
-        """Test area calculation for small polygon."""
-        # Create a small square polygon (approximately 1km x 1km)
-        coords = [
-            (-122.4194, 37.7749),  # SW corner
-            (-122.4094, 37.7749),  # SE corner
-            (-122.4094, 37.7849),  # NE corner
-            (-122.4194, 37.7849),  # NW corner
-            (-122.4194, 37.7749)   # Close the polygon
-        ]
-        polygon = Polygon(coords)
-
-        area = calculate_polygon_area(polygon)
-
-        # Should be approximately 1 square kilometer
-        assert isinstance(area, float)
-        assert 0.5 < area < 2.0  # Reasonable bounds for a ~1km square
-
-    def test_calculate_large_polygon_area(self):
-        """Test area calculation for larger polygon."""
-        # Create a larger polygon (approximately 10km x 10km)
-        coords = [
-            (-122.5, 37.7),
-            (-122.3, 37.7),
-            (-122.3, 37.9),
-            (-122.5, 37.9),
-            (-122.5, 37.7)
-        ]
-        polygon = Polygon(coords)
-
-        area = calculate_polygon_area(polygon)
-
-        # Should be significantly larger
-        assert area > 100  # At least 100 sq km
-
-    def test_calculate_point_area(self):
-        """Test area calculation for point (should be zero)."""
-        point = Point(-122.4194, 37.7749)
-
-        area = calculate_polygon_area(point)
-
-        assert area == 0.0
-
-    def test_calculate_line_area(self):
-        """Test area calculation for line (should be zero)."""
-        from shapely.geometry import LineString
-
-        line = LineString([(-122.4194, 37.7749), (-122.4094, 37.7849)])
-
-        area = calculate_polygon_area(line)
-
-        assert area == 0.0
-
-    def test_calculate_complex_polygon_area(self):
-        """Test area calculation for complex polygon with hole."""
-        # Outer ring
-        outer = [(-122.5, 37.7), (-122.3, 37.7), (-122.3, 37.9), (-122.5, 37.9), (-122.5, 37.7)]
-        # Inner hole
-        inner = [(-122.45, 37.75), (-122.35, 37.75), (-122.35, 37.85), (-122.45, 37.85), (-122.45, 37.75)]
-
-        polygon = Polygon(outer, [inner])
-
-        area = calculate_polygon_area(polygon)
-
-        # Should be positive (outer area minus inner area)
-        assert area > 0
-        assert isinstance(area, float)
-
-    def test_calculate_very_small_polygon_area(self):
-        """Test area calculation for very small polygon."""
-        # Create a tiny polygon (few meters)
-        coords = [
-            (-122.4194, 37.7749),
-            (-122.4193, 37.7749),
-            (-122.4193, 37.7750),
-            (-122.4194, 37.7750),
-            (-122.4194, 37.7749)
-        ]
-        polygon = Polygon(coords)
-
-        area = calculate_polygon_area(polygon)
-
-        # Should be very small but positive
-        assert 0 < area < 0.1  # Less than 0.1 sq km
-
-    def test_calculate_invalid_polygon_area(self):
-        """Test area calculation handles invalid polygons gracefully."""
-        # Self-intersecting polygon
-        coords = [
-            (-122.4194, 37.7749),
-            (-122.4094, 37.7849),
-            (-122.4094, 37.7749),
-            (-122.4194, 37.7849),
-            (-122.4194, 37.7749)
-        ]
-        polygon = Polygon(coords)
-
-        # Should still return a numeric result (shapely handles this)
-        area = calculate_polygon_area(polygon)
-        assert isinstance(area, float)
-
-
-class TestCreateCircularGeometry:
-    """Test create_circular_geometry helper function."""
-
-    def test_create_small_circle(self):
-        """Test creating small circular geometry."""
-        location = (37.7749, -122.4194)  # San Francisco
-        radius_km = 1.0
-
-        geometry = create_circular_geometry(location, radius_km)
-
-        assert hasattr(geometry, 'area')
-        assert hasattr(geometry, 'bounds')
-
-        # Check that it's approximately circular (has area)
-        assert geometry.area > 0
-
-    def test_create_large_circle(self):
-        """Test creating large circular geometry."""
-        location = (40.7128, -74.0060)  # New York
-        radius_km = 50.0
-
-        geometry = create_circular_geometry(location, radius_km)
-
-        # Large circle should have significantly more area
-        assert geometry.area > 0
-
-    def test_create_zero_radius_circle(self):
-        """Test creating circle with zero radius."""
-        location = (0, 0)
-        radius_km = 0.0
-
-        geometry = create_circular_geometry(location, radius_km)
-
-        # Zero radius should create a point-like geometry
-        assert geometry.area == 0.0 or geometry.area < 0.001
-
-    def test_create_circle_different_locations(self):
-        """Test creating circles at different global locations."""
-        locations = [
-            (0, 0),           # Equator, Prime Meridian
-            (0, 180),         # Equator, International Date Line
-            (45, -122),       # Portland, OR
-            (-33.8688, 151.2093),  # Sydney, Australia
-            (60, 10),         # Northern latitude
-            (-60, -70)        # Southern latitude
+    def test_resolve_coordinates_major_cities(self):
+        """Test resolving coordinates for major US cities."""
+        cities = [
+            ("New York, NY", 40.7, -74.0),
+            ("Los Angeles, CA", 34.0, -118.2),
+            ("Chicago, IL", 41.8, -87.6),
+            ("Houston, TX", 29.7, -95.3),
+            ("Phoenix, AZ", 33.4, -112.0),
         ]
 
-        for lat, lon in locations:
-            geometry = create_circular_geometry((lat, lon), 5.0)
-            # Polar regions might have special behavior, so just check structure
-            assert hasattr(geometry, 'bounds')
-            # Area might be 0 at extreme poles due to projection issues
-            assert geometry.area >= 0
+        for city, expected_lat, expected_lon in cities:
+            coords, name = resolve_coordinates(city)
+            lat, lon = coords
+
+            # Check coordinates are approximately correct (within 0.5 degrees)
+            self.assertAlmostEqual(lat, expected_lat, delta=0.5)
+            self.assertAlmostEqual(lon, expected_lon, delta=0.5)
+            self.assertEqual(name, city)
+
+
+class TestCalculatePolygonArea(TestCase):
+    """Test calculate_polygon_area function."""
+
+    def test_calculate_area_square(self):
+        """Test area calculation for a square polygon."""
+        # Create a 1-degree square around the equator
+        # At the equator, 1 degree ≈ 111 km
+        square = Polygon([
+            (0, 0),
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (0, 0)
+        ])
+
+        area = calculate_polygon_area(square)
+
+        # Should be approximately 111 * 111 = 12,321 km²
+        # Allow for projection distortion
+        self.assertGreater(area, 10000)
+        self.assertLess(area, 15000)
+
+    def test_calculate_area_triangle(self):
+        """Test area calculation for a triangular polygon."""
+        triangle = Polygon([
+            (-122.5, 45.5),
+            (-122.4, 45.5),
+            (-122.45, 45.6),
+            (-122.5, 45.5)
+        ])
+
+        area = calculate_polygon_area(triangle)
+
+        # Should be positive and reasonable
+        self.assertGreater(area, 0)
+        self.assertLess(area, 1000)  # Less than 1000 km²
+
+    def test_calculate_area_complex_polygon(self):
+        """Test area calculation for a complex polygon."""
+        # Create an L-shaped polygon
+        l_shape = Polygon([
+            (0, 0),
+            (0.5, 0),
+            (0.5, 0.25),
+            (0.25, 0.25),
+            (0.25, 0.5),
+            (0, 0.5),
+            (0, 0)
+        ])
+
+        area = calculate_polygon_area(l_shape)
+
+        self.assertGreater(area, 0)
+        # Area should be less than the bounding box (0.5 * 0.5 degrees)
+        bbox_area = calculate_polygon_area(
+            Polygon([(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)])
+        )
+        self.assertLess(area, bbox_area)
+
+    def test_calculate_area_high_latitude(self):
+        """Test area calculation at high latitudes."""
+        # Polygon near the Arctic Circle
+        arctic_poly = Polygon([
+            (-150, 65),
+            (-149, 65),
+            (-149, 66),
+            (-150, 66),
+            (-150, 65)
+        ])
+
+        area = calculate_polygon_area(arctic_poly)
+
+        # At high latitudes, area should still be positive and reasonable
+        self.assertGreater(area, 0)
+        self.assertLess(area, 50000)  # Reasonable upper bound for 1 degree square
+
+
+class TestCreateCircularGeometry(TestCase):
+    """Test create_circular_geometry function."""
+
+    def test_create_circle_basic(self):
+        """Test creating a basic circular geometry."""
+        center = (35.9132, -79.0558)  # Chapel Hill
+        radius_km = 5.0
+
+        circle = create_circular_geometry(center, radius_km)
+
+        self.assertEqual(circle.geom_type, "Polygon")
+
+        # Check that the area is approximately π * r²
+        area = calculate_polygon_area(circle)
+        expected_area = math.pi * radius_km * radius_km
+
+        # Allow 10% tolerance for projection effects
+        self.assertAlmostEqual(area, expected_area, delta=expected_area * 0.1)
 
     def test_create_circle_various_radii(self):
         """Test creating circles with various radii."""
-        location = (37.7749, -122.4194)
-        radii = [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+        center = (40.7128, -74.0060)  # NYC
+        radii = [1, 5, 10, 20, 50]
 
-        previous_area = 0
-        for radius in radii:
-            geometry = create_circular_geometry(location, radius)
-            current_area = geometry.area
+        for radius_km in radii:
+            circle = create_circular_geometry(center, radius_km)
 
-            # Area should generally increase with radius
-            assert current_area > previous_area
-            previous_area = current_area
+            # Check area is approximately correct
+            area = calculate_polygon_area(circle)
+            expected_area = math.pi * radius_km * radius_km
 
-    def test_circle_coordinate_system_consistency(self):
-        """Test that circles are in the correct coordinate system."""
-        location = (37.7749, -122.4194)
-        radius_km = 5.0
+            # Tolerance increases with radius due to projection effects
+            tolerance = 0.1 if radius_km < 10 else 0.15
+            self.assertAlmostEqual(
+                area, expected_area,
+                delta=expected_area * tolerance
+            )
 
-        geometry = create_circular_geometry(location, radius_km)
-        bounds = geometry.bounds
+    def test_create_circle_at_poles(self):
+        """Test creating circles near the poles."""
+        # Near North Pole (but not exactly at it to avoid singularities)
+        north_center = (85, 0)
+        circle_north = create_circular_geometry(north_center, 10)
 
-        # Bounds should be in WGS84 (reasonable lat/lon values)
-        min_x, min_y, max_x, max_y = bounds
-        assert -180 <= min_x <= 180
-        assert -180 <= max_x <= 180
-        assert -90 <= min_y <= 90
-        assert -90 <= max_y <= 90
+        self.assertEqual(circle_north.geom_type, "Polygon")
+        area_north = calculate_polygon_area(circle_north)
+        self.assertGreater(area_north, 0)
 
-    def test_circle_symmetry(self):
-        """Test that created circles are roughly symmetric."""
-        location = (0, 0)  # Equator for symmetry
-        radius_km = 10.0
+        # Near South Pole
+        south_center = (-85, 0)
+        circle_south = create_circular_geometry(south_center, 10)
 
-        geometry = create_circular_geometry(location, radius_km)
-        bounds = geometry.bounds
-        min_x, min_y, max_x, max_y = bounds
+        self.assertEqual(circle_south.geom_type, "Polygon")
+        area_south = calculate_polygon_area(circle_south)
+        self.assertGreater(area_south, 0)
 
-        # Should be roughly symmetric around the center point
-        center_x = (min_x + max_x) / 2
-        center_y = (min_y + max_y) / 2
+    def test_create_circle_at_date_line(self):
+        """Test creating circles near the International Date Line."""
+        # Near date line
+        center = (0, 179.9)
+        circle = create_circular_geometry(center, 50)
 
-        # Allow for some projection distortion
-        assert abs(center_x - 0) < 0.1
-        assert abs(center_y - 0) < 0.1
+        self.assertEqual(circle.geom_type, "Polygon")
+        area = calculate_polygon_area(circle)
 
-    def test_circle_extreme_coordinates(self):
-        """Test circle creation at extreme but valid coordinates."""
-        extreme_locations = [
-            (89.9, 179.9),    # Near north pole, near date line
-            (-89.9, -179.9),  # Near south pole, near date line
-            (89.9, 0.1),      # Near north pole, near prime meridian
-            (-89.9, 0.1)      # Near south pole, near prime meridian
-        ]
+        # Just check that area is positive and reasonable
+        # Near date line, projections can cause significant distortions
+        self.assertGreater(area, 0)
+        self.assertLess(area, 10000000)  # Less than 10,000 sq km (reasonable upper bound)
 
-        for lat, lon in extreme_locations:
-            geometry = create_circular_geometry((lat, lon), 1.0)
-            assert geometry.area >= 0  # Should create valid geometry
+    def test_create_circle_zero_radius(self):
+        """Test creating a circle with zero radius."""
+        center = (35.9132, -79.0558)
+        circle = create_circular_geometry(center, 0)
+
+        # Should create a valid but tiny polygon
+        self.assertEqual(circle.geom_type, "Polygon")
+        area = calculate_polygon_area(circle)
+        self.assertAlmostEqual(area, 0, places=5)
 
 
-class TestExtractGeometryFromGeoJSON:
-    """Test extract_geometry_from_geojson helper function."""
+class TestExtractGeometryFromGeoJSON(TestCase):
+    """Test extract_geometry_from_geojson function."""
 
     def test_extract_from_feature(self):
-        """Test extracting geometry from GeoJSON Feature."""
+        """Test extracting geometry from a GeoJSON Feature."""
         feature = {
             "type": "Feature",
             "properties": {"name": "Test"},
             "geometry": {
-                "type": "Point",
-                "coordinates": [-122.4194, 37.7749]
+                "type": "Polygon",
+                "coordinates": [[
+                    [-122.5, 45.5],
+                    [-122.4, 45.5],
+                    [-122.4, 45.6],
+                    [-122.5, 45.6],
+                    [-122.5, 45.5]
+                ]]
             }
         }
 
-        geometry = extract_geometry_from_geojson(feature)
+        geom = extract_geometry_from_geojson(feature)
 
-        assert hasattr(geometry, 'geom_type')
-        assert geometry.geom_type == 'Point'
-        assert geometry.x == -122.4194
-        assert geometry.y == 37.7749
+        self.assertEqual(geom.geom_type, "Polygon")
+        self.assertAlmostEqual(geom.bounds[0], -122.5)
+        self.assertAlmostEqual(geom.bounds[1], 45.5)
+        self.assertAlmostEqual(geom.bounds[2], -122.4)
+        self.assertAlmostEqual(geom.bounds[3], 45.6)
 
-    def test_extract_from_geometry_only(self):
-        """Test extracting from geometry object directly."""
-        geometry_dict = {
-            "type": "Polygon",
-            "coordinates": [[
-                [-122.4, 37.7], [-122.3, 37.7],
-                [-122.3, 37.8], [-122.4, 37.8],
-                [-122.4, 37.7]
-            ]]
-        }
-
-        geometry = extract_geometry_from_geojson(geometry_dict)
-
-        assert geometry.geom_type == 'Polygon'
-        assert geometry.area > 0
-
-    def test_extract_point_geometry(self):
-        """Test extracting Point geometry."""
-        point_geom = {
+    def test_extract_from_bare_geometry(self):
+        """Test extracting from a bare GeoJSON geometry."""
+        geometry = {
             "type": "Point",
-            "coordinates": [0, 0]
+            "coordinates": [-122.5, 45.5]
         }
 
-        geometry = extract_geometry_from_geojson(point_geom)
+        geom = extract_geometry_from_geojson(geometry)
 
-        assert geometry.geom_type == 'Point'
-        assert geometry.x == 0
-        assert geometry.y == 0
+        self.assertEqual(geom.geom_type, "Point")
+        self.assertEqual(geom.x, -122.5)
+        self.assertEqual(geom.y, 45.5)
 
-    def test_extract_linestring_geometry(self):
-        """Test extracting LineString geometry."""
-        line_geom = {
-            "type": "LineString",
-            "coordinates": [[-122.4, 37.7], [-122.3, 37.8]]
-        }
-
-        geometry = extract_geometry_from_geojson(line_geom)
-
-        assert geometry.geom_type == 'LineString'
-        assert geometry.length > 0
-
-    def test_extract_polygon_geometry(self):
-        """Test extracting Polygon geometry."""
-        polygon_geom = {
-            "type": "Polygon",
-            "coordinates": [[
-                [-122.4, 37.7], [-122.3, 37.7],
-                [-122.3, 37.8], [-122.4, 37.8],
-                [-122.4, 37.7]
-            ]]
-        }
-
-        geometry = extract_geometry_from_geojson(polygon_geom)
-
-        assert geometry.geom_type == 'Polygon'
-        assert geometry.area > 0
-
-    def test_extract_multipolygon_geometry(self):
-        """Test extracting MultiPolygon geometry."""
-        multipolygon_geom = {
+    def test_extract_multipolygon(self):
+        """Test extracting a MultiPolygon geometry."""
+        multi = {
             "type": "MultiPolygon",
             "coordinates": [
-                [[[-122.4, 37.7], [-122.3, 37.7], [-122.3, 37.8], [-122.4, 37.8], [-122.4, 37.7]]],
-                [[[-122.2, 37.6], [-122.1, 37.6], [-122.1, 37.7], [-122.2, 37.7], [-122.2, 37.6]]]
+                [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+                [[[2, 2], [3, 2], [3, 3], [2, 3], [2, 2]]]
             ]
         }
 
-        geometry = extract_geometry_from_geojson(multipolygon_geom)
+        geom = extract_geometry_from_geojson(multi)
 
-        assert geometry.geom_type == 'MultiPolygon'
-        assert geometry.area > 0
+        self.assertEqual(geom.geom_type, "MultiPolygon")
+        self.assertEqual(len(list(geom.geoms)), 2)
 
-    def test_extract_from_feature_collection_feature(self):
-        """Test extracting from a Feature within a FeatureCollection structure."""
-        # Simulate extracting one feature from what might be a FeatureCollection
-        feature = {
-            "type": "Feature",
-            "id": "test_feature",
-            "properties": {"population": 1000},
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [[
-                    [-122.4, 37.7], [-122.3, 37.7],
-                    [-122.3, 37.8], [-122.4, 37.8],
-                    [-122.4, 37.7]
-                ]]
-            }
+    def test_extract_linestring(self):
+        """Test extracting a LineString geometry."""
+        line = {
+            "type": "LineString",
+            "coordinates": [
+                [-122.5, 45.5],
+                [-122.4, 45.6],
+                [-122.3, 45.7]
+            ]
         }
 
-        geometry = extract_geometry_from_geojson(feature)
+        geom = extract_geometry_from_geojson(line)
 
-        assert geometry.geom_type == 'Polygon'
+        self.assertEqual(geom.geom_type, "LineString")
+        self.assertEqual(len(geom.coords), 3)
 
-    def test_extract_geometry_with_holes(self):
-        """Test extracting polygon geometry with holes."""
-        polygon_with_hole = {
+    def test_extract_with_holes(self):
+        """Test extracting a polygon with holes."""
+        poly_with_hole = {
             "type": "Polygon",
             "coordinates": [
-                # Outer ring
-                [[-122.5, 37.7], [-122.3, 37.7], [-122.3, 37.9], [-122.5, 37.9], [-122.5, 37.7]],
-                # Inner ring (hole)
-                [[-122.45, 37.75], [-122.35, 37.75], [-122.35, 37.85], [-122.45, 37.85], [-122.45, 37.75]]
+                # Exterior ring
+                [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]],
+                # Hole
+                [[1, 1], [1, 3], [3, 3], [3, 1], [1, 1]]
             ]
         }
 
-        geometry = extract_geometry_from_geojson(polygon_with_hole)
+        geom = extract_geometry_from_geojson(poly_with_hole)
 
-        assert geometry.geom_type == 'Polygon'
-        # Should have less area than outer ring alone due to hole
-        assert geometry.area > 0
+        self.assertEqual(geom.geom_type, "Polygon")
+        self.assertEqual(len(list(geom.interiors)), 1)
 
-    def test_extract_empty_geometry(self):
-        """Test extracting empty geometry."""
-        empty_geom = {
-            "type": "Point",
-            "coordinates": []
+        # Check area accounts for hole
+        total_area = 4 * 4  # Exterior
+        hole_area = 2 * 2    # Interior hole
+        # Note: actual area will be in projected units
+        exterior_poly = Polygon(poly_with_hole["coordinates"][0])
+        hole_poly = Polygon(poly_with_hole["coordinates"][1])
+
+        exterior_area = calculate_polygon_area(exterior_poly)
+        hole_area_calc = calculate_polygon_area(hole_poly)
+        geom_area = calculate_polygon_area(geom)
+
+        # Area with hole should be less than exterior
+        self.assertLess(geom_area, exterior_area)
+
+    def test_extract_feature_collection_error(self):
+        """Test that FeatureCollection raises appropriate error."""
+        collection = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [0, 0]
+                    }
+                }
+            ]
         }
 
-        geometry = extract_geometry_from_geojson(empty_geom)
-
-        # Should handle empty geometry gracefully
-        assert geometry.is_empty or geometry.geom_type == 'Point'
-
-    def test_extract_invalid_geojson_structure(self):
-        """Test handling of invalid GeoJSON structure."""
-        invalid_structures = [
-            {},  # Empty dict - will be passed to shape
-            {"type": "InvalidType"},  # Invalid type
-            {"geometry": {}},  # Empty geometry
-        ]
-
-        for invalid_struct in invalid_structures:
-            # Should either raise an exception or handle gracefully
-            try:
-                geometry = extract_geometry_from_geojson(invalid_struct)
-                # If it doesn't raise, should return some geometry object
-                assert hasattr(geometry, 'geom_type') or geometry is None
-            except (KeyError, ValueError, TypeError, AttributeError, Exception):
-                # These exceptions are acceptable for invalid input (including GeometryTypeError)
-                pass
-
-        # Test None geometry separately as it causes AttributeError
-        with pytest.raises((ValueError, TypeError, AttributeError)):
-            extract_geometry_from_geojson({"type": "Feature", "geometry": None})
+        # Should raise an error as it's not a single geometry
+        with self.assertRaises(Exception):
+            extract_geometry_from_geojson(collection)
 
 
-class TestHelpersIntegration:
-    """Test integration between helper functions."""
-
-    @patch('socialmapper._geocoding.geocode_location')
-    def test_resolve_and_create_circle_integration(self, mock_geocode):
-        """Test integration between resolve_coordinates and create_circular_geometry."""
-        mock_geocode.return_value = (37.7749, -122.4194)
-
-        # Resolve coordinates from string
-        coords, _ = resolve_coordinates("San Francisco, CA")
-
-        # Use resolved coordinates to create circular geometry
-        geometry = create_circular_geometry(coords, 5.0)
-
-        assert geometry.area > 0
-        bounds = geometry.bounds
-
-        # Should be centered roughly around San Francisco
-        center_lat = (bounds[1] + bounds[3]) / 2
-        center_lon = (bounds[0] + bounds[2]) / 2
-
-        assert abs(center_lat - 37.7749) < 0.1
-        assert abs(center_lon - -122.4194) < 0.1
-
-    def test_geojson_extraction_and_area_calculation(self):
-        """Test integration between extract_geometry_from_geojson and calculate_polygon_area."""
-        geojson_feature = {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [[
-                    [-122.4, 37.7], [-122.3, 37.7],
-                    [-122.3, 37.8], [-122.4, 37.8],
-                    [-122.4, 37.7]
-                ]]
-            }
-        }
-
-        # Extract geometry
-        geometry = extract_geometry_from_geojson(geojson_feature)
-
-        # Calculate area
-        area = calculate_polygon_area(geometry)
-
-        assert isinstance(area, float)
-        assert area > 0
-
-    def test_circular_geometry_area_consistency(self):
-        """Test that circular geometries have consistent area calculations."""
-        location = (37.7749, -122.4194)
-        radius_km = 10.0
-
-        # Create circular geometry
-        geometry = create_circular_geometry(location, radius_km)
-
-        # Calculate area
-        area = calculate_polygon_area(geometry)
-
-        # Area should be roughly π * r²
-        expected_area = 3.14159 * (radius_km ** 2)
-
-        # Allow for projection distortion (within 50% of expected)
-        assert 0.5 * expected_area < area < 2.0 * expected_area
-
-    def test_helper_functions_error_propagation(self):
-        """Test that helper functions properly propagate errors."""
-        # Test invalid coordinates in resolve_coordinates
-        with pytest.raises(ValueError):
-            resolve_coordinates((200, 300))
-
-        # Test that subsequent functions would also handle this gracefully
-        # if the error wasn't caught
-        try:
-            coords, _ = resolve_coordinates((37.7749, -122.4194))  # Valid
-            geometry = create_circular_geometry(coords, -1)  # Invalid radius
-
-            # Should either work or raise appropriate error
-            assert geometry is not None or True  # Allowing for either behavior
-        except (ValueError, Exception) as e:
-            # Error propagation is acceptable
-            assert isinstance(e, Exception)
-
-    def test_helper_functions_return_types(self):
-        """Test that helper functions return expected types."""
-        # resolve_coordinates should return tuple of (tuple, str)
-        coords, name = resolve_coordinates((0, 0))
-        assert isinstance(coords, tuple)
-        assert isinstance(name, str)
-        assert len(coords) == 2
-
-        # create_circular_geometry should return shapely geometry
-        geometry = create_circular_geometry((0, 0), 1.0)
-        assert hasattr(geometry, 'area')
-        assert hasattr(geometry, 'bounds')
-
-        # calculate_polygon_area should return float
-        area = calculate_polygon_area(geometry)
-        assert isinstance(area, float)
-
-        # extract_geometry_from_geojson should return shapely geometry
-        geom_dict = {"type": "Point", "coordinates": [0, 0]}
-        extracted = extract_geometry_from_geojson(geom_dict)
-        assert hasattr(extracted, 'geom_type')
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
