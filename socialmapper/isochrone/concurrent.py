@@ -237,7 +237,10 @@ class ConcurrentIsochroneProcessor:
                     )
                     # Retry with larger buffer if this is the first attempt
                     if retry_count < 2:
-                        logger.info(f"Retrying network download with larger buffer (attempt {retry_count + 1})")
+                        # Exponential backoff: 1s, 2s, 4s...
+                        wait_time = 2 ** retry_count
+                        logger.info(f"Retrying network download with larger buffer after {wait_time}s (attempt {retry_count + 1})")
+                        time.sleep(wait_time)
                         return self._download_cluster_network(
                             cluster, travel_time_minutes, travel_mode, retry_count + 1
                         )
@@ -253,7 +256,10 @@ class ConcurrentIsochroneProcessor:
             logger.error(f"Error downloading network for cluster {cluster.cluster_id}: {e}")
             # Retry on error if we haven't exceeded retry limit
             if retry_count < 2:
-                logger.info(f"Retrying after error (attempt {retry_count + 1})")
+                # Exponential backoff on errors
+                wait_time = 2 ** retry_count
+                logger.info(f"Retrying after error with {wait_time}s backoff (attempt {retry_count + 1})")
+                time.sleep(wait_time)
                 return self._download_cluster_network(
                     cluster, travel_time_minutes, travel_mode, retry_count + 1
                 )
@@ -274,13 +280,12 @@ class ConcurrentIsochroneProcessor:
 
         for poi in cluster.pois:
             try:
-                # Create a deep copy of the network to avoid shared state issues
-                # This ensures each POI gets its own independent network graph
-                network_copy = copy.deepcopy(cluster.network)
-
+                # Instead of deep copying entire network, create isochrone directly
+                # The isochrone function only reads from the network, doesn't modify it
+                # This avoids expensive deep copy operations
                 isochrone_gdf = create_isochrone_from_poi_with_network(
                     poi=poi,
-                    network=network_copy,
+                    network=cluster.network,  # Use original network (read-only)
                     network_crs=cluster.network_crs,
                     travel_time_minutes=travel_time_minutes,
                     travel_mode=travel_mode,

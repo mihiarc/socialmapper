@@ -239,11 +239,21 @@ class ModernNetworkCache:
         """
         with self._download_locks_lock:
             if len(self._download_locks) > max_locks:
-                # Keep only the most recent locks (simple cleanup strategy)
-                # In production, you'd want to track last access time
-                keys_to_remove = list(self._download_locks.keys())[:-max_locks//2]
+                # Remove locks that are not currently held
+                # Check if lock is available (not currently held by another thread)
+                keys_to_remove = []
+                for key, lock in list(self._download_locks.items()):
+                    if lock.acquire(blocking=False):  # Try to acquire without blocking
+                        lock.release()  # Release immediately if we got it
+                        keys_to_remove.append(key)
+                        if len(self._download_locks) - len(keys_to_remove) <= max_locks // 2:
+                            break  # Stop when we've removed enough
+
                 for key in keys_to_remove:
                     del self._download_locks[key]
+
+                if keys_to_remove:
+                    logger.debug(f"Cleaned up {len(keys_to_remove)} unused cache locks")
 
     def get_network(
         self,
