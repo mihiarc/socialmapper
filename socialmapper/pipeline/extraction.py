@@ -27,16 +27,62 @@ def parse_custom_coordinates(
     type_field: str | None = None,
     preserve_original: bool = True,
 ) -> dict:
-    """Parse a custom coordinates file (JSON or CSV) into the POI format expected by the isochrone generator.
+    """
+    Parse custom coordinates from JSON or CSV files into POI format.
 
-    Args:
-        file_path: Path to the custom coordinates file
-        name_field: Field name to use for the POI name (if different from 'name')
-        type_field: Field name to use for the POI type (if different from 'type')
-        preserve_original: Whether to preserve original properties in tags
+    Converts various coordinate file formats into the standardized POI
+    structure required by the isochrone generator, with flexible field
+    mapping and property preservation.
 
-    Returns:
-        Dictionary containing POI data in the format expected by the isochrone generator
+    Parameters
+    ----------
+    file_path : str
+        Path to the custom coordinates file (JSON or CSV).
+    name_field : str or None, optional
+        Field name to extract POI names from, by default uses 'name'.
+    type_field : str or None, optional
+        Field name to extract POI types from, by default uses 'type'.
+    preserve_original : bool, optional
+        Whether to preserve all original properties in the tags dict,
+        by default True.
+
+    Returns
+    -------
+    dict
+        Dictionary with structure:
+        - 'pois': List of POI dictionaries with lat, lon, name, type, tags
+        - 'metadata': Source information and POI count
+
+    Raises
+    ------
+    FileSystemError
+        If the file path contains security risks.
+    SocialMapperFileNotFoundError
+        If the specified file doesn't exist.
+    ValueError
+        If the file format is unsupported or no valid coordinates found.
+
+    Notes
+    -----
+    Supports multiple coordinate field names:
+    - Latitude: 'lat', 'latitude', 'y'
+    - Longitude: 'lon', 'lng', 'longitude', 'x'
+
+    Examples
+    --------
+    >>> # Parse JSON file
+    >>> poi_data = parse_custom_coordinates(
+    ...     "locations.json",
+    ...     name_field="business_name"
+    ... )
+    >>> print(f"Loaded {poi_data['metadata']['count']} POIs")
+
+    >>> # Parse CSV with custom fields
+    >>> poi_data = parse_custom_coordinates(
+    ...     "stores.csv",
+    ...     name_field="store_name",
+    ...     type_field="category"
+    ... )
     """
     # Validate inputs
     validate_type(file_path, str, "file_path")
@@ -216,10 +262,66 @@ def extract_poi_data(
     type_field: str | None = None,
     max_poi_count: int | None = None,
 ) -> tuple[dict[str, Any], str, list[str], bool]:
-    """Extract POI data from either custom coordinates or OpenStreetMap.
+    """
+    Extract POI data from custom files or OpenStreetMap.
 
-    Returns:
-        Tuple of (poi_data, base_filename, state_abbreviations, sampled_pois)
+    Provides a unified interface for obtaining POI data either from
+    user-provided coordinate files or by querying OpenStreetMap based
+    on location and POI type criteria.
+
+    Parameters
+    ----------
+    custom_coords_path : str or None, optional
+        Path to custom coordinates file (JSON/CSV). If provided,
+        skips OSM query.
+    geocode_area : str or None, optional
+        Area to geocode for OSM query (e.g., "Portland, OR").
+    state : str or None, optional
+        State for OSM query (name or abbreviation).
+    city : str or None, optional
+        City name for OSM query.
+    poi_type : str or None, optional
+        POI type to search for in OSM (e.g., "hospital", "school").
+    poi_name : str or None, optional
+        Specific POI name to search for in OSM.
+    additional_tags : dict or None, optional
+        Additional OSM tags to filter results.
+    name_field : str or None, optional
+        Field name for POI names in custom file.
+    type_field : str or None, optional
+        Field name for POI types in custom file.
+    max_poi_count : int or None, optional
+        Maximum number of POIs to process (samples randomly if exceeded).
+
+    Returns
+    -------
+    tuple[dict[str, Any], str, list[str], bool]
+        A tuple containing:
+        - poi_data: Dictionary with POIs and metadata
+        - base_filename: Suggested filename for outputs
+        - state_abbreviations: List of state codes involved
+        - sampled_pois: Whether POIs were randomly sampled
+
+    Raises
+    ------
+    NoDataFoundError
+        If no POI data could be extracted from the specified source.
+    URLError
+        If OSM query fails due to network issues.
+
+    Examples
+    --------
+    >>> # Extract from custom file
+    >>> poi_data, filename, states, sampled = extract_poi_data(
+    ...     custom_coords_path="hospitals.csv"
+    ... )
+
+    >>> # Query OpenStreetMap
+    >>> poi_data, filename, states, sampled = extract_poi_data(
+    ...     geocode_area="Seattle, WA",
+    ...     poi_type="library",
+    ...     max_poi_count=50
+    ... )
     """
     from ..census import get_census_system
     from ..census.services.geography_service import StateFormat

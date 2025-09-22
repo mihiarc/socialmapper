@@ -45,27 +45,66 @@ def create_pipeline_maps(
     travel_mode: str | None = None,
     io_manager: IOManager | None = None,
 ) -> dict[str, Path]:
-    """Create comprehensive maps from pipeline outputs.
+    """
+    Create comprehensive visualization maps from pipeline outputs.
 
-    Args:
-        census_data_gdf: GeoDataFrame with census data and geometries
-        poi_data: POI data dictionary from pipeline
-        isochrone_gdf: Optional isochrone boundaries
-        output_dir: Directory to save maps
-        base_filename: Base filename for output maps
-        travel_time: Travel time in minutes (for titles)
-        census_variables: List of census variables to map
-        geographic_level: Geographic unit type ('block-group' or 'zcta')
-        create_demographic_maps: Whether to create demographic maps
-        create_distance_map: Whether to create distance map
-        create_accessibility_map: Whether to create accessibility map
-        map_format: Output format (png, pdf, svg)
-        dpi: DPI for raster formats
-        travel_mode: Travel mode (walk, bike, drive)
-        io_manager: Optional IOManager for centralized file tracking
+    Generates choropleth maps showing demographic data, travel distances,
+    and accessibility analysis with automatic styling and legend generation.
 
-    Returns:
-        Dictionary mapping map type to output file path
+    Parameters
+    ----------
+    census_data_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing census data and geographic geometries.
+    poi_data : dict
+        POI data dictionary containing location information.
+    isochrone_gdf : gpd.GeoDataFrame or None, optional
+        Isochrone boundaries for accessibility visualization.
+    output_dir : str, optional
+        Directory path for saving generated maps, by default
+        "examples/tutorials/output/maps".
+    base_filename : str, optional
+        Base name for output map files, by default "socialmapper".
+    travel_time : int, optional
+        Travel time in minutes for map titles, by default 15.
+    census_variables : list of str or None, optional
+        Census variables to map. If None, auto-detects available variables.
+    geographic_level : str, optional
+        Geographic unit type: 'block-group' or 'zcta', by default
+        'block-group'.
+    create_demographic_maps : bool, optional
+        Whether to create demographic variable maps, by default True.
+    create_distance_map : bool, optional
+        Whether to create travel distance map, by default True.
+    create_accessibility_map : bool, optional
+        Whether to create accessibility overlay map, by default True.
+    map_format : str, optional
+        Output format: 'png', 'pdf', or 'svg', by default 'png'.
+    dpi : int, optional
+        Resolution for raster formats, by default 300.
+    travel_mode : str or None, optional
+        Travel mode for filename labeling (walk, bike, drive).
+    io_manager : IOManager or None, optional
+        IOManager for centralized file tracking.
+
+    Returns
+    -------
+    dict of str to Path
+        Dictionary mapping map types to their output file paths.
+        Keys include 'demographic_{var}', 'distance', 'accessibility'.
+
+    Notes
+    -----
+    Maps are automatically styled based on data distribution and scale,
+    with appropriate color schemes selected for each variable type.
+
+    Examples
+    --------
+    >>> maps = create_pipeline_maps(
+    ...     census_gdf, poi_data, isochrone_gdf,
+    ...     output_dir="output/maps",
+    ...     census_variables=["B01003_001E"]  # Total population
+    ... )
+    >>> print(f"Created {len(maps)} maps")
     """
     print("\n=== Creating Maps from Pipeline Outputs ===")
 

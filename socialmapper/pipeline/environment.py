@@ -11,16 +11,37 @@ from ..util.invalid_data_tracker import reset_global_tracker
 
 
 def setup_directory(output_dir: str = "output") -> str:
-    """Create a single output directory.
+    """
+    Create and validate an output directory.
 
-    Args:
-        output_dir: Path to the output directory
+    Ensures the directory path is safe from security vulnerabilities
+    and creates it if it doesn't exist.
 
-    Returns:
-        The output directory path
+    Parameters
+    ----------
+    output_dir : str, optional
+        Path to the output directory, by default "output".
 
-    Raises:
-        PathSecurityError: If the path is invalid or unsafe
+    Returns
+    -------
+    str
+        The sanitized output directory path.
+
+    Raises
+    ------
+    PathSecurityError
+        If the path contains unsafe components like '..' traversal
+        or other security risks.
+
+    Examples
+    --------
+    >>> output_path = setup_directory("results/analysis")
+    >>> print(output_path)
+    results/analysis
+
+    >>> # Unsafe paths are rejected
+    >>> setup_directory("../../../etc")  # doctest: +SKIP
+    PathSecurityError: Invalid output directory
     """
     try:
         # Sanitize the output directory path
@@ -34,16 +55,49 @@ def setup_directory(output_dir: str = "output") -> str:
 def setup_pipeline_environment(
     output_dir: str, export_csv: bool, export_isochrones: bool, create_maps: bool = True
 ) -> dict[str, str]:
-    """Set up the pipeline environment and create necessary directories.
+    """
+    Set up the pipeline environment with necessary directories.
 
-    Args:
-        output_dir: Base output directory
-        export_csv: Whether CSV export is enabled
-        export_isochrones: Whether isochrone export is enabled
-        create_maps: Whether map export is enabled
+    Creates a structured directory hierarchy based on the export
+    requirements and resets tracking systems for a clean pipeline run.
 
-    Returns:
-        Dictionary of created directory paths
+    Parameters
+    ----------
+    output_dir : str
+        Base output directory for all pipeline outputs.
+    export_csv : bool
+        Whether CSV export is enabled, creates census_data subdirectory.
+    export_isochrones : bool
+        Whether isochrone export is enabled, creates isochrones subdirectory.
+    create_maps : bool, optional
+        Whether map export is enabled, creates maps subdirectory,
+        by default True.
+
+    Returns
+    -------
+    dict of str
+        Dictionary mapping directory types to their paths:
+        - 'base': Base output directory
+        - 'census_data': CSV export directory (if enabled)
+        - 'isochrones': Isochrone export directory (if enabled)
+        - 'maps': Map export directory (if enabled)
+
+    Notes
+    -----
+    This function also resets the global invalid data tracker to ensure
+    clean state for the pipeline run.
+
+    Examples
+    --------
+    >>> dirs = setup_pipeline_environment(
+    ...     "output", export_csv=True, export_isochrones=False
+    ... )
+    >>> print(dirs["base"])
+    output
+    >>> "census_data" in dirs
+    True
+    >>> "isochrones" in dirs
+    False
     """
     # Create base output directory
     setup_directory(output_dir)
