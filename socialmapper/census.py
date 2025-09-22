@@ -22,31 +22,60 @@ class CensusClient:
     BASE_URL = "https://api.census.gov/data"
     
     def __init__(self, api_key: Optional[str] = None):
-        """Initialize census client with optional API key.
-        
-        Args:
-            api_key: Census API key (uses CENSUS_API_KEY env var if not provided)
+        """
+        Initialize census client with optional API key.
+
+        Parameters
+        ----------
+        api_key : str or None, optional
+            Census API key. If None, uses CENSUS_API_KEY environment
+            variable.
+
+        Notes
+        -----
+        API keys can be obtained for free at:
+        https://api.census.gov/data/key_signup.html
         """
         self.api_key = api_key or os.getenv("CENSUS_API_KEY")
         self.session = requests.Session()
         
     def get_data(
-        self, 
-        variables: List[str], 
+        self,
+        variables: List[str],
         geographic_units: List[str],
         year: int = 2023,
         dataset: str = "acs/acs5"
     ) -> pd.DataFrame:
-        """Fetch census data for specified variables and geographic units.
-        
-        Args:
-            variables: List of census variable codes (e.g., ["B01003_001E", "B19013_001E"])
-            geographic_units: List of geographic unit IDs (block groups, tracts, etc.)
-            year: Census year
-            dataset: Census dataset (default: 5-year ACS)
-            
-        Returns:
-            DataFrame with census data
+        """
+        Fetch census data for specified variables and geographic units.
+
+        Parameters
+        ----------
+        variables : list of str
+            List of census variable codes (e.g., ["B01003_001E",
+            "B19013_001E"]).
+        geographic_units : list of str
+            List of geographic unit IDs (block groups, tracts, etc.).
+        year : int, optional
+            Census year, by default 2023.
+        dataset : str, optional
+            Census dataset identifier, by default "acs/acs5" (5-year ACS).
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with census data including requested variables
+            and geographic identifiers. Returns empty DataFrame on error.
+
+        Examples
+        --------
+        >>> client = CensusClient()
+        >>> data = client.get_data(
+        ...     ["B01003_001E"],  # Total population
+        ...     ["120010001001"]   # Block group ID
+        ... )
+        >>> print(data.columns.tolist())
+        ['B01003_001E', 'state', 'county', 'tract', 'block group']
         """
         if not geographic_units:
             return pd.DataFrame()
@@ -113,28 +142,46 @@ def get_census_data_for_polygon(
     api_key: Optional[str] = None,
     year: int = 2023
 ) -> pd.DataFrame:
-    """Get census data for all block groups within any polygon.
-    
-    This is a general-purpose function that works with any polygon geometry,
-    not just isochrones. Users can pass polygons from any GIS tool.
-    
-    Args:
-        polygon: GeoDataFrame containing polygon geometry (any source)
-        variables: List of census variables to fetch
-        api_key: Census API key (optional, uses env var if not provided)
-        year: Census year (default: 2023)
-        
-    Returns:
-        DataFrame with census data for all block groups in the polygon
-        
-    Example:
-        # Works with isochrones
-        iso = create_isochrone(location, travel_time=15)
-        data = get_census_data_for_polygon(iso, ["B01003_001E"])
-        
-        # Also works with any other polygon
-        my_polygon = gpd.read_file("study_area.shp")
-        data = get_census_data_for_polygon(my_polygon, ["B01003_001E"])
+    """
+    Get census data for all block groups within any polygon.
+
+    General-purpose function that works with any polygon geometry,
+    including isochrones, shapefiles, or GeoJSON boundaries.
+
+    Parameters
+    ----------
+    polygon : gpd.GeoDataFrame
+        GeoDataFrame containing polygon geometry from any source
+        (isochrones, shapefiles, GeoJSON, etc.).
+    variables : list of str
+        List of census variables to fetch (e.g., ["B01003_001E"]).
+    api_key : str or None, optional
+        Census API key. If None, uses CENSUS_API_KEY environment variable.
+    year : int, optional
+        Census year for data retrieval, by default 2023.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with census data for all block groups intersecting
+        the polygon, including geometries and requested variables.
+
+    Notes
+    -----
+    This function identifies all census block groups that intersect
+    with the provided polygon and fetches the requested census data
+    for those block groups.
+
+    Examples
+    --------
+    >>> # Works with isochrones
+    >>> iso = create_isochrone(location, travel_time=15)
+    >>> data = get_census_data_for_polygon(iso, ["B01003_001E"])
+    >>> print(f"Found {len(data)} block groups")
+
+    >>> # Also works with any polygon from GIS tools
+    >>> study_area = gpd.read_file("study_area.shp")
+    >>> data = get_census_data_for_polygon(study_area, ["B19013_001E"])
     """
     # Get block groups that intersect the polygon
     block_groups = get_block_groups_for_polygon(polygon)

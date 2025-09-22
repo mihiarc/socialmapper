@@ -24,23 +24,60 @@ def export_pipeline_outputs(
     travel_mode: str | None = None,
     io_manager: IOManager | None = None,
 ) -> dict[str, Any]:
-    """Export pipeline outputs (CSV, maps, etc.).
+    """
+    Export pipeline outputs to various file formats.
 
-    Args:
-        census_data_gdf: Census data GeoDataFrame
-        poi_data: POI data dictionary
-        isochrone_gdf: Isochrone GeoDataFrame
-        base_filename: Base filename for outputs
-        travel_time: Travel time in minutes
-        directories: Dictionary of output directories
-        export_csv: Whether to export CSV
-        census_codes: List of census codes
-        geographic_level: Geographic unit type ('block-group' or 'zcta')
-        travel_mode: Travel mode (walk, bike, drive)
-        io_manager: Optional IOManager for centralized file tracking
+    Handles exporting census data to CSV and isochrones to GeoParquet
+    format, with support for centralized file tracking via IOManager.
 
-    Returns:
-        Dictionary of result files and metadata
+    Parameters
+    ----------
+    census_data_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing census data with geographic units.
+    poi_data : dict
+        Dictionary containing POI information for metadata.
+    isochrone_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing isochrone polygons.
+    base_filename : str
+        Base name for output files (without extension).
+    travel_time : int
+        Travel time in minutes used in analysis.
+    directories : dict of str
+        Dictionary mapping output types to directory paths.
+        Keys may include 'base', 'census_data', 'isochrones'.
+    export_csv : bool
+        Whether to export census data to CSV format.
+    census_codes : list of str
+        List of census variable codes included in the data.
+    geographic_level : str, optional
+        Geographic unit type: 'block-group' or 'zcta', by default
+        'block-group'.
+    travel_mode : str or None, optional
+        Travel mode used (walk, bike, drive), by default None.
+    io_manager : IOManager or None, optional
+        IOManager instance for centralized file tracking, by default None.
+
+    Returns
+    -------
+    dict
+        Dictionary containing paths to exported files with keys:
+        - 'csv_data': Path to exported CSV file (if export_csv=True)
+        - 'isochrone_data': Path to exported GeoParquet file (if applicable)
+
+    Notes
+    -----
+    Files are named with the pattern:
+    {base_filename}_{travel_time}min_{travel_mode}_{type}.{ext}
+
+    Examples
+    --------
+    >>> result_files = export_pipeline_outputs(
+    ...     census_data, poi_data, isochrones,
+    ...     "portland_analysis", 15,
+    ...     {"base": "./output"}, True, ["B01003_001E"]
+    ... )
+    >>> print(result_files["csv_data"])
+    ./output/portland_analysis_15min_census_data.csv
     """
     from ..export import export_census_data_to_csv
 

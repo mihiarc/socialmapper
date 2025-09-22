@@ -31,19 +31,60 @@ def integrate_census_data(
     state_abbreviations: list[str] | None = None,
     travel_time: int = 15,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, list[str]]:
-    """Integrate census data with isochrones.
+    """
+    Integrate census data with isochrones and POI data.
 
-    Args:
-        isochrone_gdf: Isochrone GeoDataFrame
-        census_variables: List of census variables
-        api_key: Census API key
-        poi_data: POI data for distance calculations
-        geographic_level: Geographic unit ('block-group' or 'zcta')
-        state_abbreviations: List of state abbreviations
-        travel_time: Travel time in minutes for the isochrones
+    Fetches census data for geographic units that intersect with the
+    provided isochrones, adds travel distance calculations, and returns
+    both the geographic units and enriched census data.
 
-    Returns:
-        Tuple of (geographic_units_gdf, census_data_gdf, census_codes)
+    Parameters
+    ----------
+    isochrone_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing isochrone polygons with travel time areas.
+    census_variables : list of str
+        List of census variable names or codes to fetch (e.g.,
+        ["population", "B01003_001E"]).
+    api_key : str or None
+        Census API key for data access. If None, uses environment variable.
+    poi_data : dict
+        Dictionary containing POI information with 'pois' key containing
+        list of POIs with lat/lon coordinates.
+    geographic_level : str, optional
+        Geographic unit level: 'block-group' or 'zcta', by default
+        'block-group'.
+    state_abbreviations : list of str or None, optional
+        List of state abbreviations to limit search, by default None.
+    travel_time : int, optional
+        Travel time in minutes used for distance calculations, by default 15.
+
+    Returns
+    -------
+    tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, list[str]]
+        A tuple containing:
+        - geographic_units_gdf: GeoDataFrame with geographic unit geometries
+        - census_data_gdf: GeoDataFrame with census data and travel distances
+        - census_codes: List of normalized census variable codes
+
+    Raises
+    ------
+    ValueError
+        If no geographic units are found intersecting with isochrones,
+        or if census data fetching fails.
+
+    Notes
+    -----
+    The function supports debug mode via SOCIALMAPPER_DEBUG_CENSUS
+    environment variable for detailed logging of the integration process.
+
+    Examples
+    --------
+    >>> isochrone = create_isochrone("Portland, OR", 15)
+    >>> poi_data = {"pois": [{"lat": 45.5, "lon": -122.6}]}
+    >>> units, census, codes = integrate_census_data(
+    ...     isochrone, ["population"], "API_KEY", poi_data
+    ... )
+    >>> print(f"Found {len(units)} geographic units")
     """
     import os
 

@@ -26,32 +26,48 @@ def query_pois_osmnx(
     poi_tags: dict[str, Any],
     state: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Query POIs using OSMnx's features_from_place method.
-    
-    This function replaces the direct Overpass API approach with OSMnx's more
-    reliable geocoding and querying capabilities.
-    
-    Args:
-        location: Location name (e.g., "Fuquay-Varina", "Denver, Colorado")
-        poi_tags: Dictionary of OSM tags to filter POIs (e.g., {"amenity": "school"})
-        state: Optional state name or abbreviation for disambiguation
-        
-    Returns:
-        Dictionary containing POI data in SocialMapper format:
-        {
-            "poi_count": int,
-            "pois": [
-                {
-                    "id": str/int,
-                    "type": str,
-                    "lat": float,
-                    "lon": float,
-                    "tags": dict,
-                    "name": str (optional),
-                    "state": str (optional)
-                }
-            ]
-        }
+    """
+    Query POIs from OpenStreetMap using OSMnx.
+
+    Uses OSMnx's features_from_place method for reliable geocoding and
+    POI extraction with better handling of location name variations.
+
+    Parameters
+    ----------
+    location : str
+        Location name (e.g., "Fuquay-Varina", "Denver", "Seattle").
+    poi_tags : dict
+        OpenStreetMap tags to filter POIs (e.g., {"amenity": "school"}).
+    state : str, optional
+        State name or abbreviation for disambiguation.
+
+    Returns
+    -------
+    dict
+        POI data dictionary containing:
+        - 'poi_count': Number of POIs found
+        - 'pois': List of POI dictionaries with:
+            - 'id': Unique identifier
+            - 'type': POI type from tags
+            - 'lat': Latitude coordinate
+            - 'lon': Longitude coordinate
+            - 'tags': Original OSM tags
+            - 'name': POI name (if available)
+            - 'state': State code (if available)
+
+    Notes
+    -----
+    Uses Nominatim geocoding through OSMnx which handles place name
+    variations and abbreviations better than direct Overpass queries.
+
+    Examples
+    --------
+    >>> pois = query_pois_osmnx(
+    ...     "Seattle, WA",
+    ...     {"amenity": "hospital"}
+    ... )
+    >>> print(f"Found {pois['poi_count']} hospitals")
+    Found 12 hospitals
     """
     # Format location string for OSMnx
     if state and ", " not in location:

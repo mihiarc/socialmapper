@@ -24,17 +24,47 @@ def integrate_census_with_isochrone(
     poi_data: dict = None,
     travel_time: int = 15
 ) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, List[str]]:
-    """Integrate census data with an isochrone - simple and direct.
-    
-    Args:
-        isochrone_gdf: The isochrone polygon(s)
-        census_variables: List of census variables (names or codes)
-        api_key: Census API key (optional)
-        poi_data: POI data for distance calculations
-        travel_time: Travel time in minutes
-        
-    Returns:
-        Tuple of (block_groups_gdf, census_data_gdf, census_codes)
+    """
+    Integrate census demographic data with isochrone polygons.
+
+    Fetches census data for geographic areas within isochrones and
+    optionally calculates travel distances from POIs to census units.
+
+    Parameters
+    ----------
+    isochrone_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing isochrone polygon(s) representing
+        travel-time areas.
+    census_variables : list of str
+        List of census variables to fetch. Can be human-readable names
+        (e.g., 'population') or census codes (e.g., 'B01003_001E').
+    api_key : str, optional
+        Census API key. If None, uses environment variable.
+    poi_data : dict, optional
+        POI data dictionary with 'pois' key for distance calculations.
+    travel_time : int, optional
+        Travel time in minutes for distance calculations, by default 15.
+
+    Returns
+    -------
+    tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, list[str]]
+        A tuple containing:
+        - geographic_units_gdf: Block group geometries with GEOIDs
+        - census_data_gdf: Complete census data with distances (if POIs provided)
+        - census_codes: Normalized census variable codes
+
+    Raises
+    ------
+    ValueError
+        If no census data is found for the isochrone area.
+
+    Examples
+    --------
+    >>> isochrone = create_isochrone("Portland, OR", 15)
+    >>> units, data, codes = integrate_census_with_isochrone(
+    ...     isochrone, ["population", "median_income"]
+    ... )
+    >>> print(f"Retrieved data for {len(data)} block groups")
     """
     print("\n=== Integrating Census Data ===")
     

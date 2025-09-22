@@ -22,16 +22,50 @@ def generate_isochrones(
     state_abbreviations: list[str],
     travel_mode: TravelMode | None = None,
 ) -> gpd.GeoDataFrame:
-    """Generate isochrones for the POI data.
+    """
+    Generate travel-time polygons (isochrones) for POI locations.
 
-    Args:
-        poi_data: POI data dictionary
-        travel_time: Travel time in minutes
-        state_abbreviations: List of state abbreviations
-        travel_mode: Mode of travel (walk, bike, drive)
+    Creates isochrones representing areas reachable within a specified
+    travel time from points of interest using the specified travel mode.
 
-    Returns:
-        GeoDataFrame containing isochrones
+    Parameters
+    ----------
+    poi_data : dict
+        Dictionary containing POI information with 'pois' key containing
+        list of POIs with location data.
+    travel_time : int
+        Travel time limit in minutes for generating isochrones.
+    state_abbreviations : list of str
+        List of state abbreviations for network data download.
+    travel_mode : TravelMode or None, optional
+        Mode of travel (WALK, BIKE, or DRIVE). If None, defaults to DRIVE.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame containing isochrone polygons with geometry and
+        attributes for each POI location.
+
+    Raises
+    ------
+    NetworkAnalysisError
+        If the network data is insufficient for the specified travel mode.
+    IsochroneGenerationError
+        If isochrone generation fails for any reason.
+    DataProcessingError
+        If the result format is unexpected or loading from file fails.
+
+    Examples
+    --------
+    >>> poi_data = {"pois": [{"lat": 45.5, "lon": -122.6, "name": "Portland"}]}
+    >>> isochrones = generate_isochrones(poi_data, 15, ["OR"])
+    >>> print(f"Generated {len(isochrones)} isochrones")
+    Generated 1 isochrones
+
+    >>> # Using walk mode
+    >>> isochrones = generate_isochrones(
+    ...     poi_data, 10, ["OR"], travel_mode=TravelMode.WALK
+    ... )
     """
     from ..isochrone import create_isochrones_from_poi_list
 
