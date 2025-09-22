@@ -203,21 +203,56 @@ class OptimizedPOICluster:
     def get_network_bbox(
         self, travel_time_minutes: int, buffer_km: float = 2.0
     ) -> tuple[float, float, float, float]:
-        """Get optimized bounding box for network download."""
+        """Get optimized bounding box for network download.
+
+        Args:
+            travel_time_minutes: Travel time limit in minutes
+            buffer_km: Base buffer in kilometers
+
+        Returns:
+            Bounding box tuple (min_lat, min_lon, max_lat, max_lon)
+        """
         min_lat, min_lon, max_lat, max_lon = self.bbox
 
-        # Calculate buffer based on travel time and cluster size
-        # Larger clusters and longer travel times need bigger buffers
-        adaptive_buffer = buffer_km + (travel_time_minutes / 15.0) + (len(self.pois) / 10.0)
+        # Calculate buffer based on travel time
+        # For rural areas, we need much larger buffers to ensure complete network
+        # Base calculation: assume 60 km/h average speed for driving
+        speed_km_per_min = 1.0  # 60 km/h = 1 km/min
+        distance_buffer = travel_time_minutes * speed_km_per_min
+
+        # Add extra buffer for sparse networks (rural areas)
+        # Use latitude as a proxy for rural/urban (higher latitudes often more rural in US)
+        # Also consider the span of the cluster
+        lat_span = max_lat - min_lat
+        lon_span = max_lon - min_lon
+        cluster_span_km = max(lat_span * 111, lon_span * 111)  # Rough conversion to km
+
+        # If cluster span is large, it's likely rural - increase buffer
+        rural_multiplier = 1.0
+        if cluster_span_km > 50:  # Large cluster span suggests rural area
+            rural_multiplier = 2.0
+        elif cluster_span_km > 20:
+            rural_multiplier = 1.5
+
+        # Final buffer calculation
+        # Minimum buffer should be substantial for reliability
+        adaptive_buffer = max(
+            buffer_km + distance_buffer * rural_multiplier,
+            travel_time_minutes * 1.5,  # At least 1.5x travel time in km
+            20.0  # Minimum 20km buffer for any scenario
+        )
 
         # Convert buffer to approximate degrees
-        buffer_deg = adaptive_buffer / 111.0
+        # Account for longitude compression at higher latitudes
+        avg_lat = (min_lat + max_lat) / 2
+        lat_buffer_deg = adaptive_buffer / 111.0
+        lon_buffer_deg = adaptive_buffer / (111.0 * abs(np.cos(np.radians(avg_lat))))
 
         return (
-            min_lat - buffer_deg,
-            min_lon - buffer_deg,
-            max_lat + buffer_deg,
-            max_lon + buffer_deg,
+            min_lat - lat_buffer_deg,
+            min_lon - lon_buffer_deg,
+            max_lat + lat_buffer_deg,
+            max_lon + lon_buffer_deg,
         )
 
     def __len__(self):
@@ -289,15 +324,21 @@ def download_network_for_cluster(
         highway_speeds = get_highway_speeds(travel_mode)
 
         if len(cluster.pois) == 1:
-            # Single POI - use point-based download
+            # Single POI - use point-based download with larger buffer for rural areas
             poi = cluster.pois[0]
+            # Increase buffer for single POIs to avoid truncation
+            distance_m = max(
+                travel_time_minutes * 2000,  # Assume 2km/min max speed
+                30000  # Minimum 30km buffer
+            ) + network_buffer_km * 1000
+
             graph = ox.graph_from_point(
                 (poi["lat"], poi["lon"]),
                 network_type=network_type,
-                dist=travel_time_minutes * 1000 + network_buffer_km * 1000,
+                dist=distance_m,
             )
         else:
-            # Multiple POIs - use optimized bounding box
+            # Multiple POIs - use optimized bounding box with improved rural handling
             min_lat, min_lon, max_lat, max_lon = cluster.get_network_bbox(
                 travel_time_minutes, network_buffer_km
             )
