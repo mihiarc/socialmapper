@@ -16,17 +16,46 @@ def generate_final_report(
     base_filename: str,
     travel_time: int,
 ) -> dict[str, Any]:
-    """Generate final pipeline report and summary.
+    """
+    Generate final pipeline report and summary statistics.
 
-    Args:
-        poi_data: POI data dictionary
-        sampled_pois: Whether POIs were sampled
-        result_files: Dictionary of result files
-        base_filename: Base filename
-        travel_time: Travel time in minutes
+    Creates a comprehensive report of the pipeline execution results,
+    including processing summaries, invalid data reports, and file paths
+    for all generated outputs.
 
-    Returns:
-        Final result dictionary
+    Parameters
+    ----------
+    poi_data : dict
+        Dictionary containing POI information and metadata.
+    sampled_pois : bool
+        Whether POIs were randomly sampled due to max_poi_count limit.
+    result_files : dict
+        Dictionary of generated output file paths from various stages.
+    base_filename : str
+        Base name used for output file naming.
+    travel_time : int
+        Travel time in minutes used for analysis.
+
+    Returns
+    -------
+    dict
+        Comprehensive result dictionary containing:
+        - 'poi_data': Original POI data
+        - 'csv_data': Path to exported CSV (if generated)
+        - 'isochrone_data': Path to isochrone file (if exported)
+        - 'maps': List of generated map paths
+        - 'sampled_pois': Boolean if sampling occurred
+        - 'invalid_data_reports': Paths to error reports (if any)
+        - 'invalid_data_summary': Summary of validation issues
+
+    Examples
+    --------
+    >>> report = generate_final_report(
+    ...     poi_data, False, {"csv_data": "output.csv"},
+    ...     "analysis", 15
+    ... )
+    >>> if "invalid_data_summary" in report:
+    ...     print(f"Found {report['invalid_data_summary']['total_invalid_points']} issues")
     """
     # Print processing summary
     tracker = get_progress_tracker()

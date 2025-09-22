@@ -32,14 +32,29 @@ from .models import (
 
 # High-level convenience functions
 def geocode_address(address: str | AddressInput, config: GeocodingConfig = None) -> GeocodingResult:
-    """Convenience function to geocode a single address.
+    """
+    Geocode a single address to geographic coordinates.
 
-    Args:
-        address: Address string or AddressInput object
-        config: Optional geocoding configuration
+    Converts street addresses to latitude/longitude coordinates using
+    intelligent provider selection and fallback mechanisms.
 
-    Returns:
-        GeocodingResult
+    Parameters
+    ----------
+    address : str or AddressInput
+        Street address string or structured AddressInput object.
+    config : GeocodingConfig, optional
+        Configuration for geocoding behavior (providers, timeouts, etc.).
+
+    Returns
+    -------
+    GeocodingResult
+        Result object containing coordinates, confidence, and metadata.
+
+    Examples
+    --------
+    >>> result = geocode_address("1600 Pennsylvania Ave, Washington DC")
+    >>> print(f"Lat: {result.latitude}, Lon: {result.longitude}")
+    Lat: 38.8976, Lon: -77.0365
     """
     engine = AddressGeocodingEngine(config)
     return engine.geocode_address(address)
@@ -48,15 +63,32 @@ def geocode_address(address: str | AddressInput, config: GeocodingConfig = None)
 def geocode_addresses(
     addresses: list[str | AddressInput], config: GeocodingConfig = None, progress: bool = True
 ) -> list[GeocodingResult]:
-    """Convenience function to geocode multiple addresses.
+    """
+    Geocode multiple addresses in batch with progress tracking.
 
-    Args:
-        addresses: List of address strings or AddressInput objects
-        config: Optional geocoding configuration
-        progress: Whether to show progress bar
+    Efficiently processes multiple addresses with rate limiting,
+    caching, and automatic retries on failure.
 
-    Returns:
-        List of GeocodingResult objects
+    Parameters
+    ----------
+    addresses : list of str or AddressInput
+        List of address strings or structured AddressInput objects.
+    config : GeocodingConfig, optional
+        Configuration for geocoding behavior.
+    progress : bool, optional
+        Whether to display progress bar, by default True.
+
+    Returns
+    -------
+    list of GeocodingResult
+        List of geocoding results in same order as input addresses.
+
+    Examples
+    --------
+    >>> addresses = ["Seattle, WA", "Portland, OR", "San Francisco, CA"]
+    >>> results = geocode_addresses(addresses)
+    >>> successful = sum(1 for r in results if r.success)
+    >>> print(f"Geocoded {successful}/{len(addresses)} addresses")
     """
     engine = AddressGeocodingEngine(config)
     return engine.geocode_addresses_batch(addresses, progress)
@@ -65,14 +97,33 @@ def geocode_addresses(
 def addresses_to_poi_format(
     addresses: list[str | AddressInput], config: GeocodingConfig = None
 ) -> dict[str, Any]:
-    """Convenience function to geocode addresses and convert to POI format.
+    """
+    Geocode addresses and convert to SocialMapper POI format.
 
-    Args:
-        addresses: List of address strings or AddressInput objects
-        config: Optional geocoding configuration
+    Combines geocoding with format conversion to create POI data
+    ready for analysis in the SocialMapper pipeline.
 
-    Returns:
-        Dictionary in POI format compatible with SocialMapper
+    Parameters
+    ----------
+    addresses : list of str or AddressInput
+        List of addresses to geocode and convert.
+    config : GeocodingConfig, optional
+        Configuration for geocoding behavior.
+
+    Returns
+    -------
+    dict
+        POI format dictionary containing:
+        - 'pois': List of POI dictionaries with lat/lon
+        - 'poi_count': Number of successfully geocoded POIs
+        - 'metadata': Statistics about geocoding process
+
+    Examples
+    --------
+    >>> addresses = ["Space Needle, Seattle", "Pike Place Market, Seattle"]
+    >>> poi_data = addresses_to_poi_format(addresses)
+    >>> print(f"Created {poi_data['poi_count']} POIs")
+    Created 2 POIs
     """
     engine = AddressGeocodingEngine(config)
     results = engine.geocode_addresses_batch(addresses)
