@@ -74,11 +74,15 @@ class ModernNetworkCache:
         self.db_path = self.cache_dir / "cache_index.db"
         self._lock = threading.Lock()
         self._stats = CacheStats(0, 0, 0, 0.0, 0.0, 0.0)
+        # Per-cache-key locks to prevent concurrent downloads of the same area
+        self._download_locks = {}
+        self._download_locks_lock = threading.Lock()
         self._init_database()
 
     def _init_database(self):
         """Initialize SQLite database for cache indexing."""
-        with sqlite3.connect(self.db_path) as conn:
+        # Use IMMEDIATE isolation level to prevent concurrent write issues
+        with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS networks (
@@ -213,6 +217,34 @@ class ModernNetworkCache:
 
             return overlapping
 
+    def _get_or_create_lock(self, cache_key: str) -> threading.Lock:
+        """Get or create a lock for a specific cache key.
+
+        Args:
+            cache_key: The cache key to get a lock for
+
+        Returns:
+            A threading.Lock object for the cache key
+        """
+        with self._download_locks_lock:
+            if cache_key not in self._download_locks:
+                self._download_locks[cache_key] = threading.Lock()
+            return self._download_locks[cache_key]
+
+    def _cleanup_download_locks(self, max_locks: int = 1000):
+        """Clean up old download locks to prevent memory leak.
+
+        Args:
+            max_locks: Maximum number of locks to keep in memory
+        """
+        with self._download_locks_lock:
+            if len(self._download_locks) > max_locks:
+                # Keep only the most recent locks (simple cleanup strategy)
+                # In production, you'd want to track last access time
+                keys_to_remove = list(self._download_locks.keys())[:-max_locks//2]
+                for key in keys_to_remove:
+                    del self._download_locks[key]
+
     def get_network(
         self,
         bbox: tuple[float, float, float, float],
@@ -238,7 +270,7 @@ class ModernNetworkCache:
         cache_key = self._generate_cache_key(bbox, network_type, travel_time_minutes)
 
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
                 cursor = conn.execute(
                     """
                     SELECT file_path, node_count, edge_count FROM networks
@@ -338,30 +370,40 @@ class ModernNetworkCache:
             cache_key = self._generate_cache_key(bbox, network_type, travel_time_minutes)
             file_path = self._get_file_path(cache_key)
 
-            # Compress and save network
-            compressed_data = self._compress_network(network)
+            # Get lock for this cache key to prevent concurrent writes
+            cache_lock = self._get_or_create_lock(cache_key)
 
-            with file_path.open("wb") as f:
-                f.write(compressed_data)
+            with cache_lock:
 
-            # Calculate compression ratio
-            original_size = len(pickle.dumps(network, protocol=pickle.HIGHEST_PROTOCOL))
-            compression_ratio = len(compressed_data) / original_size
+                # Check if already cached (another thread may have stored it)
+                if file_path.exists():
+                    logger.debug(f"Network already cached by another thread: {cache_key}")
+                    return True
 
-            # Store metadata in database
-            metadata = NetworkMetadata(
-                bbox=bbox,
-                network_type=network_type,
-                created_at=time.time(),
-                file_size=len(compressed_data),
-                node_count=len(network.nodes),
-                edge_count=len(network.edges),
-                cache_key=cache_key,
-                travel_time_minutes=travel_time_minutes,
-                cluster_size=cluster_size,
-            )
+                # Compress and save network
+                compressed_data = self._compress_network(network)
 
-            with sqlite3.connect(self.db_path) as conn:
+                with file_path.open("wb") as f:
+                    f.write(compressed_data)
+
+                # Calculate compression ratio
+                original_size = len(pickle.dumps(network, protocol=pickle.HIGHEST_PROTOCOL))
+                compression_ratio = len(compressed_data) / original_size
+
+                # Store metadata in database
+                metadata = NetworkMetadata(
+                    bbox=bbox,
+                    network_type=network_type,
+                    created_at=time.time(),
+                    file_size=len(compressed_data),
+                    node_count=len(network.nodes),
+                    edge_count=len(network.edges),
+                    cache_key=cache_key,
+                    travel_time_minutes=travel_time_minutes,
+                    cluster_size=cluster_size,
+                )
+
+            with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
                 conn.execute(
                     """
                     INSERT OR REPLACE INTO networks
@@ -403,6 +445,9 @@ class ModernNetworkCache:
             # Check if cache cleanup is needed
             self._cleanup_if_needed()
 
+            # Periodically clean up download locks
+            self._cleanup_download_locks()
+
             return True
 
         except Exception as e:
@@ -420,7 +465,7 @@ class ModernNetworkCache:
                 )
 
                 # Get files sorted by last access time and size
-                with sqlite3.connect(self.db_path) as conn:
+                with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
                     cursor = conn.execute(
                         """
                         SELECT cache_key, file_path, file_size, last_accessed, access_count
@@ -480,7 +525,7 @@ class ModernNetworkCache:
                 file_path.unlink()
 
             # Clear database
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
                 conn.execute("DELETE FROM networks")
                 conn.commit()
 
@@ -550,126 +595,129 @@ def download_and_cache_network(
         default_speed = 50.0
         highway_speeds = get_highway_speeds(TravelMode.DRIVE)
 
-    # Try to get from cache first (need to update cache methods to handle country)
-    # For now, we'll generate cache key manually
+    # Generate cache key
     cache_key = cache._generate_cache_key(bbox, network_type, travel_time_minutes, restrict_to_country)
-    
-    # Try to retrieve from cache with country-aware key
-    try:
-        with cache._lock:
-            cache._stats.total_requests += 1
-        
-        file_path = cache._get_file_path(cache_key)
-        if file_path.exists():
-            with file_path.open("rb") as f:
-                compressed_data = f.read()
-            network = cache._decompress_network(compressed_data)
-            
+
+    # Get lock for this specific cache key to prevent concurrent downloads
+    cache_lock = cache._get_or_create_lock(cache_key)
+
+    with cache_lock:
+        # Double-check cache after acquiring lock (another thread may have downloaded it)
+        try:
             with cache._lock:
-                cache._stats.cache_hits += 1
-            
-            logger.debug(f"Cache hit for network (country={restrict_to_country})")
-            return network
-    except Exception:
-        pass  # Cache miss, continue to download
+                cache._stats.total_requests += 1
 
-    # Download new network
-    try:
-        country_info = f" (country={restrict_to_country})" if restrict_to_country else ""
-        logger.info(f"Downloading network for bbox {bbox} with network_type={network_type}{country_info}")
+            file_path = cache._get_file_path(cache_key)
+            if file_path.exists():
+                with file_path.open("rb") as f:
+                    compressed_data = f.read()
+                network = cache._decompress_network(compressed_data)
 
-        min_lat, min_lon, max_lat, max_lon = bbox
-        # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
-        osm_bbox = (min_lon, min_lat, max_lon, max_lat)
-        
-        if restrict_to_country:
-            # Use custom filter to restrict to specific country
-            # OSM uses ISO 3166-1 alpha-2 codes stored in 'country_code' tag
-            custom_filter = f'["highway"]["country_code"="{restrict_to_country}"]' if restrict_to_country == "US" else None
+                with cache._lock:
+                    cache._stats.cache_hits += 1
+
+                logger.debug(f"Cache hit for network (country={restrict_to_country})")
+                return network
+        except Exception:
+            pass  # Cache miss, continue to download
+
+        # Download new network (still within the cache lock)
+        try:
+            country_info = f" (country={restrict_to_country})" if restrict_to_country else ""
+            logger.info(f"Downloading network for bbox {bbox} with network_type={network_type}{country_info})")
+
+            min_lat, min_lon, max_lat, max_lon = bbox
+            # OSMnx expects bbox as (left, bottom, right, top) = (min_lon, min_lat, max_lon, max_lat)
+            osm_bbox = (min_lon, min_lat, max_lon, max_lat)
+
+            if restrict_to_country:
+                # Use custom filter to restrict to specific country
+                # OSM uses ISO 3166-1 alpha-2 codes stored in 'country_code' tag
+                custom_filter = f'["highway"]["country_code"="{restrict_to_country}"]' if restrict_to_country == "US" else None
             
-            # For US restriction, we can use a more sophisticated approach
-            # Download the full network first, then filter
-            graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
-            
-            if restrict_to_country == "US":
-                # Remove edges that cross into Canada or Mexico
-                # We'll check if nodes are within US boundaries
-                import geopandas as gpd
-                from shapely.geometry import Point
-                
-                # Get US boundary (simplified approach using latitude check)
-                # For Libby, MT area, Canada is north of ~49°N
-                edges_to_remove = []
-                for u, v, key, data in graph.edges(keys=True, data=True):
-                    # Get node coordinates
-                    u_data = graph.nodes[u]
-                    v_data = graph.nodes[v]
+                # For US restriction, we can use a more sophisticated approach
+                # Download the full network first, then filter
+                graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+
+                if restrict_to_country == "US":
+                    # Remove edges that cross into Canada or Mexico
+                    # We'll check if nodes are within US boundaries
+                    import geopandas as gpd
+                    from shapely.geometry import Point
                     
-                    # Simple latitude-based filter for US-Canada border (49th parallel)
-                    # This is approximate but effective for the Libby, MT region
-                    if restrict_to_country == "US":
-                        # Check if either node is north of 49°N (in Canada)
-                        if u_data.get('y', 0) > 49.0 or v_data.get('y', 0) > 49.0:
-                            edges_to_remove.append((u, v, key))
+                    # Get US boundary (simplified approach using latitude check)
+                    # For Libby, MT area, Canada is north of ~49°N
+                    edges_to_remove = []
+                    for u, v, key, data in graph.edges(keys=True, data=True):
+                        # Get node coordinates
+                        u_data = graph.nodes[u]
+                        v_data = graph.nodes[v]
+                        
+                        # Simple latitude-based filter for US-Canada border (49th parallel)
+                        # This is approximate but effective for the Libby, MT region
+                        if restrict_to_country == "US":
+                            # Check if either node is north of 49°N (in Canada)
+                            if u_data.get('y', 0) > 49.0 or v_data.get('y', 0) > 49.0:
+                                edges_to_remove.append((u, v, key))
                 
-                # Remove edges that cross the border
-                for u, v, key in edges_to_remove:
-                    if graph.has_edge(u, v, key):
-                        graph.remove_edge(u, v, key)
+                    # Remove edges that cross the border
+                    for u, v, key in edges_to_remove:
+                        if graph.has_edge(u, v, key):
+                            graph.remove_edge(u, v, key)
                 
-                # Remove isolated nodes (nodes with no edges)
-                nodes_to_remove = [node for node in graph.nodes() if graph.degree(node) == 0]
-                graph.remove_nodes_from(nodes_to_remove)
-                
-                logger.info(f"Filtered network to US only: removed {len(edges_to_remove)} cross-border edges and {len(nodes_to_remove)} isolated nodes")
-        else:
-            # No country restriction, download normally
-            graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
+                    # Remove isolated nodes (nodes with no edges)
+                    nodes_to_remove = [node for node in graph.nodes() if graph.degree(node) == 0]
+                    graph.remove_nodes_from(nodes_to_remove)
 
-        # Add speeds and travel times with mode-specific defaults
-        # OSMnx will use:
-        # 1. Existing maxspeed tags from OSM data
-        # 2. Highway-type-specific speeds we provide
-        # 3. Mean of observed speeds for unmapped highway types
-        # 4. Fallback speed as last resort
-        graph = ox.add_edge_speeds(graph, hwy_speeds=highway_speeds, fallback=default_speed)
-        graph = ox.add_edge_travel_times(graph)
+                    logger.info(f"Filtered network to US only: removed {len(edges_to_remove)} cross-border edges and {len(nodes_to_remove)} isolated nodes")
+            else:
+                # No country restriction, download normally
+                graph = ox.graph_from_bbox(bbox=osm_bbox, network_type=network_type)
 
-        # Apply mode-specific speed adjustments for more realistic isochrones
-        if travel_mode == TravelMode.WALK:
-            # For walking, ensure speeds don't exceed reasonable walking speeds
-            for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 7.0:
-                    data["speed_kph"] = 5.0  # Set to normal walking speed
-                    data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
-        elif travel_mode == TravelMode.BIKE:
-            # For biking, cap speeds to reasonable cycling speeds
-            for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 30.0:
-                    data["speed_kph"] = 15.0  # Set to normal cycling speed
-                    data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
+            # Add speeds and travel times with mode-specific defaults
+            # OSMnx will use:
+            # 1. Existing maxspeed tags from OSM data
+            # 2. Highway-type-specific speeds we provide
+            # 3. Mean of observed speeds for unmapped highway types
+            # 4. Fallback speed as last resort
+            graph = ox.add_edge_speeds(graph, hwy_speeds=highway_speeds, fallback=default_speed)
+            graph = ox.add_edge_travel_times(graph)
 
-        graph = ox.project_graph(graph)
+            # Apply mode-specific speed adjustments for more realistic isochrones
+            if travel_mode == TravelMode.WALK:
+                # For walking, ensure speeds don't exceed reasonable walking speeds
+                for _u, _v, data in graph.edges(data=True):
+                    if "speed_kph" in data and data["speed_kph"] > 7.0:
+                        data["speed_kph"] = 5.0  # Set to normal walking speed
+                        data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
+            elif travel_mode == TravelMode.BIKE:
+                # For biking, cap speeds to reasonable cycling speeds
+                for _u, _v, data in graph.edges(data=True):
+                    if "speed_kph" in data and data["speed_kph"] > 30.0:
+                        data["speed_kph"] = 15.0  # Set to normal cycling speed
+                        data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
 
-        # Log speed statistics for debugging
-        speeds = [data.get("speed_kph", 0) for u, v, data in graph.edges(data=True)]
-        if speeds:
-            avg_speed = sum(speeds) / len(speeds)
-            min_speed = min(speeds)
-            max_speed = max(speeds)
+            graph = ox.project_graph(graph)
+
+            # Log speed statistics for debugging
+            speeds = [data.get("speed_kph", 0) for u, v, data in graph.edges(data=True)]
+            if speeds:
+                avg_speed = sum(speeds) / len(speeds)
+                min_speed = min(speeds)
+                max_speed = max(speeds)
+                logger.info(
+                    f"Network speeds for {travel_mode.value} mode - "
+                    f"avg: {avg_speed:.1f} km/h, min: {min_speed:.1f} km/h, max: {max_speed:.1f} km/h"
+                )
+
+            # Store in cache
+            cache.store_network(graph, bbox, network_type, travel_time_minutes, cluster_size)
+
             logger.info(
-                f"Network speeds for {travel_mode.value} mode - "
-                f"avg: {avg_speed:.1f} km/h, min: {min_speed:.1f} km/h, max: {max_speed:.1f} km/h"
+                f"Downloaded and cached network: {len(graph.nodes)} nodes, {len(graph.edges)} edges"
             )
+            return graph
 
-        # Store in cache
-        cache.store_network(graph, bbox, network_type, travel_time_minutes, cluster_size)
-
-        logger.info(
-            f"Downloaded and cached network: {len(graph.nodes)} nodes, {len(graph.edges)} edges"
-        )
-        return graph
-
-    except Exception as e:
-        logger.error(f"Failed to download network for bbox {bbox}: {e}")
-        return None
+        except Exception as e:
+            logger.error(f"Failed to download network for bbox {bbox}: {e}")
+            return None

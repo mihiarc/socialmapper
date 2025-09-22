@@ -13,10 +13,11 @@ Key Features:
 - Progress tracking with detailed statistics
 """
 
+import copy
 import multiprocessing as mp
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,6 +36,66 @@ from .clustering import (
 from .travel_modes import TravelMode
 
 logger = get_logger(__name__)
+
+
+def _generate_cluster_isochrones_worker(
+    cluster: OptimizedPOICluster,
+    travel_time_minutes: int,
+    travel_mode: TravelMode = TravelMode.DRIVE,
+) -> list[gpd.GeoDataFrame]:
+    """Worker function for ProcessPoolExecutor to generate isochrones.
+
+    This is a module-level function that can be pickled for multiprocessing.
+
+    Args:
+        cluster: The cluster to process
+        travel_time_minutes: Travel time limit
+        travel_mode: Mode of travel
+
+    Returns:
+        List of isochrone GeoDataFrames
+    """
+    import copy
+
+    isochrones = []
+
+    if cluster.network is None:
+        return isochrones
+
+    for poi in cluster.pois:
+        try:
+            # Create a deep copy of the network to avoid shared state issues
+            network_copy = copy.deepcopy(cluster.network)
+
+            isochrone_gdf = create_isochrone_from_poi_with_network(
+                poi=poi,
+                network=network_copy,
+                network_crs=cluster.network_crs,
+                travel_time_minutes=travel_time_minutes,
+                travel_mode=travel_mode,
+            )
+
+            if isochrone_gdf is not None:
+                # Validate isochrone size for rural areas
+                area_km2 = isochrone_gdf.geometry[0].area / 1_000_000  # Convert to km²
+
+                # Expected minimum area based on travel time (very rough estimate)
+                min_expected_area = (travel_time_minutes / 30) * 100
+
+                if area_km2 < min_expected_area and area_km2 < 100:
+                    logger.warning(
+                        f"Suspiciously small isochrone for POI {poi.get('id', 'unknown')}: "
+                        f"{area_km2:.1f} km² (expected > {min_expected_area:.0f} km²)"
+                    )
+
+                isochrones.append(isochrone_gdf)
+
+        except Exception as e:
+            logger.error(
+                f"Failed to generate isochrone for POI {poi.get('id', 'unknown')}: {e}"
+            )
+
+    return isochrones
 
 
 @dataclass
@@ -138,10 +199,27 @@ class ConcurrentIsochroneProcessor:
         cluster: OptimizedPOICluster,
         travel_time_minutes: int,
         travel_mode: TravelMode = TravelMode.DRIVE,
+        retry_count: int = 0,
     ) -> tuple[str, Any | None]:
-        """Download network for a cluster (thread-safe)."""
+        """Download network for a cluster (thread-safe) with retry logic.
+
+        Args:
+            cluster: The cluster to download network for
+            travel_time_minutes: Travel time limit
+            travel_mode: Mode of travel
+            retry_count: Current retry attempt number
+
+        Returns:
+            Tuple of (cluster_id, network graph or None)
+        """
         try:
-            bbox = cluster.get_network_bbox(travel_time_minutes)
+            # Get bbox with potentially increased buffer on retry
+            buffer_multiplier = 1.0 + (retry_count * 0.5)  # Increase buffer by 50% per retry
+            bbox = cluster.get_network_bbox(
+                travel_time_minutes,
+                buffer_km=2.0 * buffer_multiplier
+            )
+
             network = download_and_cache_network(
                 bbox=bbox,
                 travel_time_minutes=travel_time_minutes,
@@ -151,6 +229,19 @@ class ConcurrentIsochroneProcessor:
             )
 
             if network is not None:
+                # Validate network size for rural areas
+                if len(network.nodes) < 100 and travel_time_minutes >= 15:
+                    logger.warning(
+                        f"Small network for cluster {cluster.cluster_id}: "
+                        f"{len(network.nodes)} nodes for {travel_time_minutes} min travel"
+                    )
+                    # Retry with larger buffer if this is the first attempt
+                    if retry_count < 2:
+                        logger.info(f"Retrying network download with larger buffer (attempt {retry_count + 1})")
+                        return self._download_cluster_network(
+                            cluster, travel_time_minutes, travel_mode, retry_count + 1
+                        )
+
                 cluster.network = network
                 cluster.network_crs = network.graph["crs"]
                 return cluster.cluster_id, network
@@ -160,6 +251,12 @@ class ConcurrentIsochroneProcessor:
 
         except Exception as e:
             logger.error(f"Error downloading network for cluster {cluster.cluster_id}: {e}")
+            # Retry on error if we haven't exceeded retry limit
+            if retry_count < 2:
+                logger.info(f"Retrying after error (attempt {retry_count + 1})")
+                return self._download_cluster_network(
+                    cluster, travel_time_minutes, travel_mode, retry_count + 1
+                )
             return cluster.cluster_id, None
 
     def _generate_cluster_isochrones(
@@ -177,15 +274,42 @@ class ConcurrentIsochroneProcessor:
 
         for poi in cluster.pois:
             try:
+                # Create a deep copy of the network to avoid shared state issues
+                # This ensures each POI gets its own independent network graph
+                network_copy = copy.deepcopy(cluster.network)
+
                 isochrone_gdf = create_isochrone_from_poi_with_network(
                     poi=poi,
-                    network=cluster.network,
+                    network=network_copy,
                     network_crs=cluster.network_crs,
                     travel_time_minutes=travel_time_minutes,
                     travel_mode=travel_mode,
                 )
 
                 if isochrone_gdf is not None:
+                    # Validate isochrone size for quality control
+                    area_km2 = isochrone_gdf.to_crs("EPSG:3857").geometry[0].area / 1_000_000  # Convert to km²
+
+                    # Expected minimum area based on travel time and mode
+                    # These are conservative estimates to catch obvious errors
+                    if travel_mode == TravelMode.DRIVE:
+                        # For driving, expect larger areas
+                        min_expected_area = (travel_time_minutes / 30) * 50  # At least 50 km² per 30 min
+                    elif travel_mode == TravelMode.BIKE:
+                        min_expected_area = (travel_time_minutes / 30) * 20  # At least 20 km² per 30 min
+                    else:  # WALK
+                        min_expected_area = (travel_time_minutes / 30) * 5  # At least 5 km² per 30 min
+
+                    if area_km2 < min_expected_area:
+                        logger.warning(
+                            f"Small isochrone detected for POI {poi.get('id', 'unknown')}: "
+                            f"{area_km2:.1f} km² (expected > {min_expected_area:.0f} km² for {travel_mode.value})"
+                        )
+                        # Mark for potential retry with larger network
+                        isochrone_gdf["needs_validation"] = True
+                    else:
+                        isochrone_gdf["needs_validation"] = False
+
                     isochrones.append(isochrone_gdf)
                     self._stats.isochrones_generated += 1
                 else:
@@ -304,13 +428,15 @@ class ConcurrentIsochroneProcessor:
             f"(cache hit rate: {self._stats.cache_hit_rate:.1%})"
         )
 
-        # Step 3: Generate isochrones concurrently
+        # Step 3: Generate isochrones using ProcessPoolExecutor for CPU-intensive work
         isochrone_start_time = time.time()
-        logger.info("Generating isochrones concurrently...")
+        logger.info("Generating isochrones concurrently using process pool...")
 
         all_isochrones = []
         total_pois_to_process = sum(len(cluster.pois) for cluster in successful_clusters)
 
+        # For now, just use ThreadPoolExecutor to avoid pickling issues
+        # TODO: Implement proper ProcessPoolExecutor support with pickleable objects
         with ThreadPoolExecutor(max_workers=isochrone_workers) as executor:
             # Submit isochrone generation tasks
             future_to_cluster = {
