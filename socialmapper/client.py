@@ -53,12 +53,8 @@ class SocialMapper:
         **kwargs
     ):
         """Initialize SocialMapper client with configuration."""
-        # Set API key from parameter or secure storage
-        if api_key:
-            self.api_key = api_key
-        else:
-            from .security.utils import get_api_key
-            self.api_key = get_api_key("census_api", "CENSUS_API_KEY")
+        # Set API key from parameter or environment
+        self.api_key = api_key or os.getenv("CENSUS_API_KEY")
 
         # Store configuration
         self.config = {

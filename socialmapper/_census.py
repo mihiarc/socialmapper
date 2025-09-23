@@ -456,9 +456,8 @@ def fetch_census_data(
     # Census API base URL
     base_url = f"https://api.census.gov/data/{year}/acs/acs5"
     
-    # Get API key using secure storage
-    from .security.utils import get_api_key
-    api_key = get_api_key("census_api", "CENSUS_API_KEY")
+    # Get API key from environment
+    api_key = os.getenv("CENSUS_API_KEY")
     
     # Group GEOIDs by state (first 2 digits)
     from collections import defaultdict
