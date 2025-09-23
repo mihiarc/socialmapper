@@ -367,14 +367,18 @@ def fetch_block_groups_alternative(state_fips: str, county_fips: str) -> List[Di
     This method requires geopandas and may be slower than the API
     method as it downloads entire state shapefiles before filtering.
     """
+    # Validate FIPS codes to prevent injection attacks
+    validated_state = validate_fips_code(state_fips, 2, "State")
+    validated_county = validate_fips_code(county_fips, 3, "County")
+
     try:
         # Try using geopandas to read from Census FTP
-        url = f"https://www2.census.gov/geo/tiger/TIGER2023/BG/tl_2023_{state_fips}_bg.zip"
-        
+        url = f"https://www2.census.gov/geo/tiger/TIGER2023/BG/tl_2023_{validated_state}_bg.zip"
+
         gdf = gpd.read_file(url)
-        
+
         # Filter to county
-        gdf = gdf[gdf['COUNTYFP'] == county_fips]
+        gdf = gdf[gdf['COUNTYFP'] == validated_county]
         
         result = []
         for _, row in gdf.iterrows():
