@@ -1,6 +1,7 @@
 """Internal census data utilities for SocialMapper."""
 
 import os
+import re
 import requests
 from typing import List, Dict, Any, Optional
 from shapely.geometry import shape, Polygon
@@ -9,6 +10,68 @@ import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def validate_fips_code(fips_code: str, expected_length: int, code_type: str = "FIPS") -> str:
+    """
+    Validate and sanitize FIPS codes for safe use in queries.
+
+    Ensures FIPS codes contain only digits and match expected length
+    to prevent SQL injection attacks.
+
+    Parameters
+    ----------
+    fips_code : str
+        The FIPS code to validate.
+    expected_length : int
+        Expected number of digits (2 for state, 3 for county).
+    code_type : str, optional
+        Type of code for error messages, by default "FIPS".
+
+    Returns
+    -------
+    str
+        Validated FIPS code.
+
+    Raises
+    ------
+    ValueError
+        If FIPS code is invalid or malformed.
+
+    Examples
+    --------
+    >>> validate_fips_code('06', 2, 'State')
+    '06'
+
+    >>> validate_fips_code('037', 3, 'County')
+    '037'
+
+    >>> validate_fips_code("'; DROP TABLE--", 2, 'State')
+    Traceback (most recent call last):
+        ...
+    ValueError: Invalid State code: contains non-digit characters
+    """
+    if not fips_code:
+        raise ValueError(f"Invalid {code_type} code: empty value")
+
+    # Remove any whitespace
+    fips_code = fips_code.strip()
+
+    # Check if empty after stripping
+    if not fips_code:
+        raise ValueError(f"Invalid {code_type} code: empty value")
+
+    # Check if it contains only digits
+    if not re.match(r'^[0-9]+$', fips_code):
+        raise ValueError(f"Invalid {code_type} code: contains non-digit characters")
+
+    # Check length
+    if len(fips_code) != expected_length:
+        raise ValueError(
+            f"Invalid {code_type} code: expected {expected_length} digits, got {len(fips_code)}"
+        )
+
+    return fips_code
 
 
 # Variable name mappings
@@ -226,13 +289,17 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
     Uses the 2023 vintage of TIGER/Line data by default.
     Requires internet connection to Census Bureau services.
     """
+    # Validate FIPS codes to prevent injection attacks
+    validated_state = validate_fips_code(state_fips, 2, "State")
+    validated_county = validate_fips_code(county_fips, 3, "County")
+
     # Use Census TIGER/Line REST API
     year = 2023
     url = f"https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS{year}/MapServer/8/query"
-    
-    # Build query parameters
+
+    # Build query parameters with validated inputs
     params = {
-        "where": f"STATE='{state_fips}' AND COUNTY='{county_fips}'",
+        "where": f"STATE='{validated_state}' AND COUNTY='{validated_county}'",
         "outFields": "GEOID,STATE,COUNTY,TRACT,BLKGRP",
         "outSR": "4326",
         "f": "geojson"
@@ -392,9 +459,12 @@ def fetch_census_data(
     from collections import defaultdict
     geoids_by_state = defaultdict(list)
     for geoid in geoids:
-        if len(geoid) >= 2:
+        # Validate GEOID format before processing
+        if len(geoid) >= 2 and re.match(r'^[0-9]+$', geoid):
             state = geoid[:2]
             geoids_by_state[state].append(geoid)
+        else:
+            logger.warning(f"Skipping invalid GEOID format: {geoid}")
     
     result = {}
     
@@ -407,11 +477,16 @@ def fetch_census_data(
             # Parse GEOIDs to get tract and block group
             for geoid in batch:
                 if len(geoid) == 12:  # State + County + Tract + Block Group
+                    # Validate GEOID is all digits to prevent injection
+                    if not re.match(r'^[0-9]{12}$', geoid):
+                        logger.warning(f"Skipping invalid GEOID: {geoid}")
+                        continue
+
                     county = geoid[2:5]
                     tract = geoid[5:11]
                     block_group = geoid[11:12]
-                    
-                    # Build query parameters
+
+                    # Build query parameters with validated components
                     params = {
                         "get": ",".join(["NAME"] + variables),
                         "for": f"block group:{block_group}",
