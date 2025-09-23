@@ -174,7 +174,8 @@ class BaseCache(ABC, Generic[T]):
 
         # Convert args to a stable string representation
         key_data = json.dumps(args, sort_keys=True, default=str)
-        return hashlib.md5(key_data.encode()).hexdigest()
+        # Use SHA-256 for better security
+        return hashlib.sha256(key_data.encode()).hexdigest()
 
     def is_expired(self, timestamp: datetime) -> bool:
         """Check if a cached item has expired.

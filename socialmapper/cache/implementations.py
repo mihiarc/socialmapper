@@ -46,32 +46,53 @@ class SQLiteCache(BaseCache[Any]):
     ):
         """Initialize SQLite cache."""
         super().__init__(cache_dir, **kwargs)
+        # Validate table name to prevent SQL injection
+        if not table_name.replace('_', '').isalnum():
+            raise ValueError("Table name must contain only alphanumeric characters and underscores")
+        if len(table_name) > 64:
+            raise ValueError("Table name too long (max 64 characters)")
+
         self.table_name = table_name
         self.db_path = self.cache_dir / f"{table_name}.db"
         self._lock = threading.Lock()
         self._init_database()
 
     def _init_database(self):
-        """Initialize the SQLite database."""
-        with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
-            conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {self.table_name} (
-                    cache_key TEXT PRIMARY KEY,
-                    value BLOB,
-                    created_at REAL,
-                    accessed_at REAL,
-                    access_count INTEGER DEFAULT 0,
-                    size_bytes INTEGER
-                )
-            """)
-            conn.execute(f"""
-                CREATE INDEX IF NOT EXISTS idx_{self.table_name}_created
-                ON {self.table_name}(created_at)
-            """)
-            conn.execute(f"""
-                CREATE INDEX IF NOT EXISTS idx_{self.table_name}_accessed
-                ON {self.table_name}(accessed_at)
-            """)
+        """Initialize the SQLite database with optimizations."""
+        try:
+            with sqlite3.connect(self.db_path, isolation_level='IMMEDIATE') as conn:
+                # Performance optimizations
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute("PRAGMA synchronous=NORMAL")
+                conn.execute("PRAGMA cache_size=10000")
+                conn.execute("PRAGMA temp_store=memory")
+
+                conn.execute(f"""
+                    CREATE TABLE IF NOT EXISTS {self.table_name} (
+                        cache_key TEXT PRIMARY KEY,
+                        value BLOB,
+                        created_at REAL,
+                        accessed_at REAL,
+                        access_count INTEGER DEFAULT 0,
+                        size_bytes INTEGER
+                    )
+                """)
+                conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS idx_{self.table_name}_created
+                    ON {self.table_name}(created_at)
+                """)
+                conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS idx_{self.table_name}_accessed
+                    ON {self.table_name}(accessed_at)
+                """)
+                conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS idx_{self.table_name}_size
+                    ON {self.table_name}(size_bytes)
+                """)
+                conn.commit()
+        except sqlite3.Error as e:
+            logger.error(f"Database initialization failed: {e}")
+            raise RuntimeError(f"Cannot initialize cache database: {e}") from e
 
     def get(self, key: str) -> Any | None:
         """Retrieve an item from the cache."""
@@ -266,12 +287,23 @@ class ParquetCache(BaseCache[pd.DataFrame]):
                 self._index = {}
 
     def _save_index(self):
-        """Save cache index to disk."""
+        """Save cache index to disk atomically."""
         index_file = self.cache_dir / "cache_index.json"
+        temp_file = index_file.with_suffix('.json.tmp')
+
         try:
-            with open(index_file, "w") as f:
+            # Write to temporary file first
+            with open(temp_file, "w") as f:
                 json.dump(self._index, f)
+            # Atomic rename
+            temp_file.replace(index_file)
         except Exception as e:
+            # Clean up temp file if it exists
+            if temp_file.exists():
+                try:
+                    temp_file.unlink()
+                except Exception:
+                    pass
             logger.warning(f"Failed to save cache index: {e}")
 
     def get(self, key: str) -> pd.DataFrame | None:
@@ -448,12 +480,23 @@ class PickleCache(BaseCache[Any]):
                 self._index = {}
 
     def _save_index(self):
-        """Save cache index to disk."""
+        """Save cache index to disk atomically."""
         index_file = self.cache_dir / "cache_index.json"
+        temp_file = index_file.with_suffix('.json.tmp')
+
         try:
-            with open(index_file, "w") as f:
+            # Write to temporary file first
+            with open(temp_file, "w") as f:
                 json.dump(self._index, f, default=str)
+            # Atomic rename
+            temp_file.replace(index_file)
         except Exception as e:
+            # Clean up temp file if it exists
+            if temp_file.exists():
+                try:
+                    temp_file.unlink()
+                except Exception:
+                    pass
             logger.warning(f"Failed to save cache index: {e}")
 
     def get(self, key: str) -> Any | None:
