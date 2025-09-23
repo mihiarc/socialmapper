@@ -6,6 +6,10 @@ from .constants import (
     MIN_TRAVEL_TIME, MAX_TRAVEL_TIME, VALID_TRAVEL_MODES,
     VALID_EXPORT_FORMATS, VALID_REPORT_FORMATS
 )
+from .util.input_validation import (
+    validate_coordinates as _validate_coordinates,
+    InputValidationError
+)
 
 
 def validate_coordinates(lat: float, lon: float) -> bool:
@@ -24,7 +28,11 @@ def validate_coordinates(lat: float, lon: float) -> bool:
     bool
         True if coordinates are valid, False otherwise.
     """
-    return MIN_LATITUDE <= lat <= MAX_LATITUDE and MIN_LONGITUDE <= lon <= MAX_LONGITUDE
+    try:
+        _validate_coordinates(lat, lon)
+        return True
+    except InputValidationError:
+        return False
 
 
 def validate_travel_time(travel_time: int) -> None:
