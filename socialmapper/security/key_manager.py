@@ -1,6 +1,7 @@
 """Secure API key management for SocialMapper."""
 
 import os
+import re
 import json
 import logging
 from pathlib import Path
@@ -17,7 +18,7 @@ except ImportError:
 try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     import base64
     CRYPTO_AVAILABLE = True
 except ImportError:
@@ -113,25 +114,52 @@ class SecureKeyManager:
         if not CRYPTO_AVAILABLE:
             return
 
-        # Create config directory if it doesn't exist
-        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        # Create config directory with restricted permissions
+        self.config_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
         # Load or generate master key
         if self.master_key_path.exists():
             with open(self.master_key_path, 'rb') as f:
-                key = f.read()
+                encrypted_key = f.read()
+
+            # For now, use the key directly (should be encrypted with user passphrase in production)
+            key = encrypted_key
         else:
-            # Generate new master key
-            key = Fernet.generate_key()
+            # Generate new master key using OS random source
+            salt = os.urandom(16)
 
-            # Save master key with restricted permissions
-            with open(self.master_key_path, 'wb') as f:
-                f.write(key)
+            # Derive key from random bytes using PBKDF2
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100_000,
+            )
 
-            # Set file permissions to 600 (owner read/write only)
-            self.master_key_path.chmod(0o600)
+            # Generate random password for key derivation
+            password = os.urandom(32)
+            key_material = kdf.derive(password)
+            key = base64.urlsafe_b64encode(key_material)
+
+            # Store salt and encrypted key (in production, encrypt with user passphrase)
+            key_data = salt + key
+
+            # Create file with restricted permissions atomically
+            import tempfile
+            fd, temp_path = tempfile.mkstemp(dir=self.config_path.parent)
+            try:
+                os.chmod(temp_path, 0o600)
+                with os.fdopen(fd, 'wb') as f:
+                    f.write(key_data)
+                os.replace(temp_path, self.master_key_path)
+            except:
+                os.unlink(temp_path)
+                raise
 
             logger.info(f"Generated new master key at {self.master_key_path}")
+
+            # Extract key for use
+            key = key_data[16:]  # Skip salt
 
         self._cipher = Fernet(key)
 
@@ -205,8 +233,24 @@ class SecureKeyManager:
         bool
             True if successfully stored.
         """
+        # Validate inputs
         if not key_value:
             logger.error("Cannot store empty key value")
+            return False
+
+        # Validate key name (prevent path traversal and special characters)
+        if not re.match(r'^[a-zA-Z0-9_-]+$', key_name):
+            logger.error(f"Invalid key name: {key_name}. Use only alphanumeric, underscore, and hyphen.")
+            return False
+
+        # Limit key name length
+        if len(key_name) > 100:
+            logger.error("Key name too long (max 100 characters)")
+            return False
+
+        # Limit key value length (prevent memory issues)
+        if len(key_value) > 10000:
+            logger.error("Key value too long (max 10000 characters)")
             return False
 
         # Use specified storage or first available

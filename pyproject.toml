@@ -52,6 +52,8 @@ dependencies = [
     # "typer>=0.16.0" - removed with CLI interface
     "pytest>=8.4.1",
     "folium>=0.20.0",
+    "cryptography>=45.0.7",
+    "keyring>=25.6.0",
 ]
 
 [project.optional-dependencies]
