@@ -11,10 +11,12 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from socialmapper import SocialMapper
-from socialmapper.api.client import SocialMapper as SocialMapperClass
-from socialmapper.api.exceptions import ValidationError, AnalysisError, APIError
-from socialmapper.api.results import AnalysisResult, POIResult
+from socialmapper import (
+    SocialMapper,
+    ValidationError,
+    AnalysisError,
+    ExternalAPIError as APIError
+)
 
 
 class TestSocialMapperInitialization:
@@ -24,7 +26,7 @@ class TestSocialMapperInitialization:
         """Test creating SocialMapper with default configuration."""
         mapper = SocialMapper()
         
-        assert isinstance(mapper, SocialMapperClass)
+        assert isinstance(mapper, SocialMapper)
         assert mapper.config['cache_enabled'] is True
         assert mapper.config['default_travel_time'] == 15
         assert mapper.config['default_travel_mode'] == 'drive'
