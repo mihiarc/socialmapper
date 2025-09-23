@@ -24,14 +24,41 @@ from .api import (
     get_poi,
 )
 
+# Import the client class
+from .client import SocialMapper
+
+# Import exceptions for testing
+from .exceptions import (
+    SocialMapperError,
+    ConfigurationError,
+    ValidationError,
+    DataProcessingError,
+    ExternalAPIError,
+    FileSystemError,
+    AnalysisError,
+    VisualizationError,
+)
+
 # Version
 __version__ = "0.8.0"
 
-# Public API - just the 5 functions
+# Public API - functions and client class
 __all__ = [
+    # Core functions
     "create_isochrone",
     "get_census_blocks",
     "get_census_data",
     "create_map",
     "get_poi",
+    # Client class
+    "SocialMapper",
+    # Exceptions
+    "SocialMapperError",
+    "ConfigurationError",
+    "ValidationError",
+    "DataProcessingError",
+    "ExternalAPIError",
+    "FileSystemError",
+    "AnalysisError",
+    "VisualizationError",
 ]
