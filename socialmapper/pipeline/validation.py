@@ -45,34 +45,32 @@ def validate_poi_coordinates(poi_data: dict[str, Any]) -> None:
     >>> validate_poi_coordinates(bad_data)  # doctest: +SKIP
     ValueError: No valid POI coordinates found.
     """
-    from ..util.coordinate_validation import validate_poi_coordinates as validate_coords
+    from .._validation import validate_poi_data
 
     print("\n=== Validating POI Coordinates ===")
 
     # Extract POIs from poi_data for validation
     pois_to_validate = poi_data["pois"] if isinstance(poi_data, dict) else poi_data
 
-    # Validate coordinates - now returns ValidationResult directly
-    validation_result = validate_coords(pois_to_validate)
+    # Validate coordinates
+    try:
+        valid_pois = validate_poi_data(pois_to_validate)
 
-    if validation_result.total_valid == 0:
-        raise ValueError(
-            f"No valid POI coordinates found. All {validation_result.total_input} POIs failed validation."
-        )
+        # Update poi_data with validated POIs
+        if isinstance(poi_data, dict):
+            poi_data["pois"] = valid_pois
 
-    if validation_result.total_invalid > 0:
-        print(
-            f"⚠️  Coordinate Validation Warning: {validation_result.total_invalid} out of {validation_result.total_input} POIs have invalid coordinates"
-        )
-        print(
-            f"   Valid POIs: {validation_result.total_valid} ({validation_result.success_rate:.1f}%)"
-        )
+        invalid_count = len(pois_to_validate) - len(valid_pois)
+        if invalid_count > 0:
+            # Log invalid POIs for user review
+            invalid_tracker = get_global_tracker()
+            for poi in pois_to_validate:
+                if poi not in valid_pois:
+                    invalid_tracker.add_invalid_point(
+                        poi,
+                        "Coordinate validation failed",
+                        "coordinate_validation",
+                    )
 
-        # Log invalid POIs for user review
-        invalid_tracker = get_global_tracker()
-        for invalid_poi in validation_result.invalid_coordinates:
-            invalid_tracker.add_invalid_point(
-                invalid_poi["data"],
-                f"Coordinate validation failed: {invalid_poi['error']}",
-                "coordinate_validation",
-            )
+    except ValueError as e:
+        raise ValueError(f"No valid POI coordinates found: {e}")
