@@ -705,19 +705,28 @@ def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]
     list of dict
         POIs with valid coordinates only.
     """
-    from ._validation import validate_poi_coordinates
+    from ._validation import validate_coordinates
 
     valid_pois = []
     invalid_count = 0
 
     for poi in pois:
-        if validate_poi_coordinates(poi["lat"], poi["lon"]):
+        try:
+            lat, lon = validate_coordinates(poi["lat"], poi["lon"])
+            # Skip null island (0, 0) which is often an error
+            if lat == 0 and lon == 0:
+                invalid_count += 1
+                logger.warning(
+                    f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': "
+                    f"at null island (0, 0)"
+                )
+                continue
             valid_pois.append(poi)
-        else:
+        except (ValueError, TypeError, KeyError) as e:
             invalid_count += 1
             logger.warning(
                 f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': "
-                f"({poi['lat']}, {poi['lon']})"
+                f"({poi.get('lat')}, {poi.get('lon')}) - {e}"
             )
 
     if invalid_count > 0:

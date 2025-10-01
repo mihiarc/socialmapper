@@ -41,31 +41,6 @@ def validate_coordinates(lat: float, lon: float) -> tuple[float, float]:
     return float(lat), float(lon)
 
 
-def validate_poi_coordinates(lat: float, lon: float) -> bool:
-    """Validate POI coordinates (boolean return for backward compatibility).
-
-    Parameters
-    ----------
-    lat : float
-        Latitude value
-    lon : float
-        Longitude value
-
-    Returns
-    -------
-    bool
-        True if coordinates are valid, False otherwise
-    """
-    try:
-        validate_coordinates(lat, lon)
-        # Check for null island (0, 0) which is often an error
-        if lat == 0 and lon == 0:
-            return False
-        return True
-    except (TypeError, ValueError):
-        return False
-
-
 def validate_poi_data(pois: list[dict]) -> list[dict]:
     """Validate and standardize POI coordinate data.
 
@@ -128,43 +103,6 @@ def validate_poi_data(pois: list[dict]) -> list[dict]:
         )
 
     return valid_pois
-
-
-# Simple class to mimic the old Coordinate return type for backward compatibility
-class ValidatedCoordinate:
-    """Simple coordinate container for backward compatibility."""
-
-    def __init__(self, lat: float, lon: float):
-        self.lat = lat
-        self.lon = lon
-
-    def to_point(self) -> Point:
-        """Convert to Shapely Point."""
-        return Point(self.lon, self.lat)
-
-
-def validate_coordinate_point(lat: float, lon: float, context: str = "unknown") -> ValidatedCoordinate | None:
-    """Validate a single coordinate point.
-
-    Parameters
-    ----------
-    lat : float
-        Latitude in decimal degrees
-    lon : float
-        Longitude in decimal degrees
-    context : str, optional
-        Context for error reporting (unused, for backward compatibility)
-
-    Returns
-    -------
-    ValidatedCoordinate or None
-        ValidatedCoordinate if valid, None if invalid
-    """
-    try:
-        lat, lon = validate_coordinates(lat, lon)
-        return ValidatedCoordinate(lat, lon)
-    except ValueError:
-        return None
 
 
 def prevalidate_for_pyproj(data: list[dict] | list[Point]) -> tuple[bool, list[str]]:

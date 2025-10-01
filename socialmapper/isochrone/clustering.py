@@ -420,7 +420,7 @@ def create_isochrone_from_poi_with_network(
     """
     try:
         # Import validation utilities
-        from .._validation import validate_coordinate_point
+        from .._validation import validate_coordinates
 
         # Validate POI coordinates
         lat = poi.get("lat")
@@ -430,15 +430,16 @@ def create_isochrone_from_poi_with_network(
             logger.error(f"POI {poi.get('id', 'unknown')} missing lat/lon coordinates")
             return None
 
-        validated_coord = validate_coordinate_point(lat, lon, f"poi_{poi.get('id', 'unknown')}")
-        if not validated_coord:
+        try:
+            lat, lon = validate_coordinates(lat, lon)
+        except ValueError as e:
             logger.error(
-                f"POI {poi.get('id', 'unknown')} has invalid coordinates: lat={lat}, lon={lon}"
+                f"POI {poi.get('id', 'unknown')} has invalid coordinates: lat={lat}, lon={lon} - {e}"
             )
             return None
 
         # Create point from validated coordinates
-        poi_point = validated_coord.to_point()
+        poi_point = Point(lon, lat)
 
         # Use PyProj transformer directly to avoid single-point GeoSeries transformation
         # This bypasses the problematic GeoPandas to_crs() call that triggers the NumPy warning
