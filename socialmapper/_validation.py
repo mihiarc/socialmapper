@@ -3,9 +3,12 @@
 Replaces over-engineered coordinate_validation module with minimal validation.
 """
 
+import logging
 from typing import Any
 
 from shapely.geometry import Point
+
+logger = logging.getLogger(__name__)
 
 
 def validate_coordinates(lat: float, lon: float) -> tuple[float, float]:
@@ -98,8 +101,8 @@ def validate_poi_data(pois: list[dict]) -> list[dict]:
         raise ValueError(f"No valid POI coordinates found among {len(pois)} POIs")
 
     if invalid_count > 0:
-        print(
-            f"⚠️  Warning: {invalid_count} out of {len(pois)} POIs have invalid coordinates"
+        logger.warning(
+            f"{invalid_count} out of {len(pois)} POIs have invalid coordinates"
         )
 
     return valid_pois
@@ -126,6 +129,10 @@ def prevalidate_for_pyproj(data: list[dict] | list[Point]) -> tuple[bool, list[s
             return False, errors
 
         if isinstance(data, list):
+            if not isinstance(data[0], (dict, Point)):
+                errors.append(f"Unsupported data type in list: {type(data[0])}")
+                return False, errors
+
             if isinstance(data[0], dict):
                 # Validate POI data
                 try:
