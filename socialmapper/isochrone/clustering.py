@@ -420,11 +420,9 @@ def create_isochrone_from_poi_with_network(
     """
     try:
         # Import validation utilities
-        from ..util.coordinate_validation import (
-            validate_coordinate_point,
-        )
+        from .._validation import validate_coordinate_point
 
-        # Validate POI coordinates using Pydantic
+        # Validate POI coordinates
         lat = poi.get("lat")
         lon = poi.get("lon")
 
