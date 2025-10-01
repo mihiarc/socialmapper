@@ -60,11 +60,15 @@ def resolve_coordinates(location: Union[str, Tuple[float, float]]) -> Tuple[Tupl
             raise ValueError(f"Could not geocode location: {location}")
         lat, lon = coords
         location_name = location
-    else:
+    elif isinstance(location, (tuple, list)) and len(location) == 2:
         lat, lon = location
         if not validate_coordinates(lat, lon):
             raise ValidationError(f"Invalid coordinates: {location}")
         location_name = f"{lat:.4f}, {lon:.4f}"
+    else:
+        raise ValidationError(
+            f"Location must be a string address or a tuple/list of (lat, lon), got {type(location).__name__}"
+        )
 
     return (lat, lon), location_name
 
