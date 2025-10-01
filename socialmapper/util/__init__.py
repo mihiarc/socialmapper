@@ -183,13 +183,7 @@ from .path_security import (
     sanitize_path,
     validate_filename,
 )
-from .rate_limiter import (
-    AsyncRateLimitedClient,
-    RateLimitedClient,
-    rate_limited,
-    rate_limiter,
-    with_retry,
-)
+from .rate_limiter import with_retry
 
 # Import new utility modules
 from .system_detection import (
@@ -208,12 +202,10 @@ __all__ = [
     # Census variable utilities
     "CENSUS_VARIABLE_MAPPING",
     "VARIABLE_COLORMAPS",
-    "AsyncRateLimitedClient",
     # Configuration preset utilities
     "ConfigPresets",
     "InputValidationError",
     "PathSecurityError",
-    "RateLimitedClient",
     # Map utilities
     "add_north_arrow",
     "apply_preset",
@@ -247,9 +239,6 @@ __all__ = [
     "load_environment_variables",
     "normalize_census_variable",
     "optimize_for_current_system",
-    "rate_limited",
-    # Rate limiter utilities
-    "rate_limiter",
     "reset_config",
     "reset_global_config",
     "safe_join_path",
@@ -271,12 +260,9 @@ __all__ = [
     "validate_state_name",
     "validate_system_requirements",
     "validate_url",
+    # Retry utilities
     "with_retry",
 ]
-
-
-# Create default rate limiter instance for backward compatibility
-rate_limiter = RateLimitedClient()
 
 # State name mapping utilities
 STATE_NAMES_TO_ABBR = {
