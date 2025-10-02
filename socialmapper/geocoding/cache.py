@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Caching system for geocoding results.
+"""Simple disk-based caching for geocoding results.
 
-This module provides high-performance caching for geocoded addresses.
+Uses diskcache for simple, reliable caching of geocoded addresses.
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pandas as pd
+import diskcache as dc
 
 from .models import AddressInput, GeocodingConfig, GeocodingResult
 
@@ -17,102 +16,119 @@ logger = logging.getLogger(__name__)
 
 
 class AddressCache:
-    """High-performance caching system for geocoded addresses."""
+    """Simple caching system for geocoded addresses using diskcache.
+
+    Parameters
+    ----------
+    config : GeocodingConfig
+        Configuration including TTL and cache settings.
+
+    Examples
+    --------
+    >>> config = GeocodingConfig(enable_cache=True, cache_ttl_hours=24)
+    >>> cache = AddressCache(config)
+    >>> result = cache.get(address)
+    """
 
     def __init__(self, config: GeocodingConfig):
+        """Initialize the address cache.
+
+        Parameters
+        ----------
+        config : GeocodingConfig
+            Configuration for caching behavior.
+        """
         self.config = config
-        self.cache_dir = Path("cache/geocoding")
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.cache_file = self.cache_dir / "address_cache.parquet"
-        self._cache = {}
-        self._load_cache()
+        cache_dir = Path("cache/geocoding")
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def _load_cache(self):
-        """Load cache from disk."""
-        if not self.config.enable_cache or not self.cache_file.exists():
-            return
-
-        try:
-            df = pd.read_parquet(self.cache_file)
-
-            # Filter expired entries
-            now = datetime.now()
-            ttl_cutoff = now - timedelta(hours=self.config.cache_ttl_hours)
-            df = df[pd.to_datetime(df["timestamp"]) > ttl_cutoff]
-
-            # Convert to dict for fast lookup
-            for _, row in df.iterrows():
-                self._cache[row["cache_key"]] = {
-                    "result": json.loads(row["result_json"]),
-                    "timestamp": pd.to_datetime(row["timestamp"]),
-                }
-
-            logger.info(f"Loaded {len(self._cache)} cached geocoding results")
-
-        except Exception as e:
-            logger.warning(f"Failed to load geocoding cache: {e}")
+        # diskcache handles thread safety, compression, and eviction
+        self._cache = dc.Cache(
+            str(cache_dir),
+            size_limit=config.cache_max_size * 1024,  # Convert to bytes
+        )
 
     def get(self, address: AddressInput) -> GeocodingResult | None:
-        """Get cached result for address."""
+        """Get cached result for address.
+
+        Parameters
+        ----------
+        address : AddressInput
+            The address to look up.
+
+        Returns
+        -------
+        GeocodingResult | None
+            Cached result if found and not expired, None otherwise.
+
+        Examples
+        --------
+        >>> result = cache.get(address)
+        >>> if result:
+        ...     print(f"Cached: {result.latitude}, {result.longitude}")
+        """
         if not self.config.enable_cache:
             return None
 
         cache_key = address.get_cache_key()
+        cached_data = self._cache.get(cache_key)
 
-        if cache_key in self._cache:
-            cached_data = self._cache[cache_key]
+        if cached_data is None:
+            return None
 
-            # Check if still valid
-            age = datetime.now() - cached_data["timestamp"]
-            if age.total_seconds() / 3600 < self.config.cache_ttl_hours:
-                try:
-                    # Reconstruct GeocodingResult from cached JSON
-                    result_data = cached_data["result"]
-                    result_data["input_address"] = address
-                    return GeocodingResult(**result_data)
-                except Exception as e:
-                    logger.warning(f"Failed to deserialize cached result: {e}")
+        # Check if expired
+        timestamp = cached_data.get("timestamp")
+        if timestamp:
+            age = datetime.now() - timestamp
+            if age > timedelta(hours=self.config.cache_ttl_hours):
+                # Expired, remove from cache
+                self._cache.delete(cache_key)
+                return None
 
-        return None
+        try:
+            # Reconstruct GeocodingResult from cached data
+            result_data = cached_data["result"]
+            result_data["input_address"] = address
+            return GeocodingResult(**result_data)
+        except Exception as e:
+            logger.warning(f"Failed to deserialize cached result: {e}")
+            self._cache.delete(cache_key)
+            return None
 
     def put(self, result: GeocodingResult):
-        """Cache a geocoding result."""
+        """Cache a geocoding result.
+
+        Parameters
+        ----------
+        result : GeocodingResult
+            The geocoding result to cache.
+
+        Examples
+        --------
+        >>> cache.put(geocoding_result)
+        """
         if not self.config.enable_cache:
             return
 
         cache_key = result.input_address.get_cache_key()
 
-        # Add to in-memory cache
-        self._cache[cache_key] = {"result": result.model_dump_json(), "timestamp": datetime.now()}
+        # Store result with timestamp
+        cache_data = {
+            "result": result.model_dump(),
+            "timestamp": datetime.now(),
+        }
 
-        # Enforce size limit
-        if len(self._cache) > self.config.cache_max_size:
-            # Remove oldest entries
-            sorted_items = sorted(self._cache.items(), key=lambda x: x[1]["timestamp"])
-            for old_key, _ in sorted_items[: len(self._cache) - self.config.cache_max_size]:
-                del self._cache[old_key]
+        self._cache.set(cache_key, cache_data)
 
     def save_cache(self):
-        """Save cache to disk."""
-        if not self.config.enable_cache or not self._cache:
-            return
+        """Save cache to disk.
 
-        try:
-            # Convert cache to DataFrame
-            cache_data = []
-            for cache_key, data in self._cache.items():
-                cache_data.append(
-                    {
-                        "cache_key": cache_key,
-                        "result_json": data["result"],
-                        "timestamp": data["timestamp"],
-                    }
-                )
+        Note: diskcache automatically persists to disk, so this is a no-op
+        for compatibility with the old API.
 
-            df = pd.DataFrame(cache_data)
-            df.to_parquet(self.cache_file, index=False)
-
-            logger.info(f"Saved {len(cache_data)} geocoding results to cache")
-
-        except Exception as e:
-            logger.warning(f"Failed to save geocoding cache: {e}")
+        Examples
+        --------
+        >>> cache.save_cache()  # No-op, kept for compatibility
+        """
+        # diskcache automatically persists, so this is a no-op
+        pass

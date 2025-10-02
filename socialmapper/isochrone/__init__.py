@@ -30,7 +30,7 @@ from shapely.geometry import Point
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
 
-from .cache import ModernNetworkCache, download_and_cache_network, get_global_cache
+from .cache import download_and_cache_network, get_cache, get_cache_stats, clear_cache, get_global_cache
 
 # Import modernized components
 from .clustering import (
@@ -446,27 +446,12 @@ def create_isochrones_from_json_file(
 # Performance monitoring functions
 def get_cache_statistics() -> dict[str, Any]:
     """Get current cache performance statistics."""
-    cache = get_global_cache()
-    stats = cache.get_cache_stats()
-
-    return {
-        "total_requests": stats.total_requests,
-        "cache_hits": stats.cache_hits,
-        "cache_misses": stats.cache_misses,
-        "hit_rate_percent": (
-            (stats.cache_hits / stats.total_requests * 100) if stats.total_requests > 0 else 0
-        ),
-        "total_size_mb": stats.total_size_mb,
-        "avg_retrieval_time_ms": stats.avg_retrieval_time_ms,
-        "compression_ratio": stats.compression_ratio,
-    }
+    return get_cache_stats()
 
 
 def clear_network_cache():
     """Clear the network cache to free up disk space."""
-    cache = get_global_cache()
-    cache.clear_cache()
-    logger.info("Network cache cleared successfully")
+    clear_cache()
 
 
 # Backward compatibility aliases

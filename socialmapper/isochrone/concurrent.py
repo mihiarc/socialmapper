@@ -27,7 +27,9 @@ import psutil
 
 from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
 from ..progress import get_progress_bar
-from .cache import ModernNetworkCache, download_and_cache_network
+import diskcache as dc
+
+from .cache import download_and_cache_network, get_cache, get_cache_stats
 from .clustering import (
     OptimizedPOICluster,
     create_isochrone_from_poi_with_network,
@@ -124,7 +126,7 @@ class ConcurrentIsochroneProcessor:
         self,
         max_network_workers: int = 8,
         max_isochrone_workers: int | None = None,
-        cache: ModernNetworkCache | None = None,
+        cache: dc.Cache | None = None,
     ):
         """Initialize the concurrent processor.
 
@@ -135,7 +137,7 @@ class ConcurrentIsochroneProcessor:
         """
         self.max_network_workers = max_network_workers
         self.max_isochrone_workers = max_isochrone_workers or mp.cpu_count()
-        self.cache = cache or ModernNetworkCache()
+        self.cache = cache or get_cache()
 
         # Performance monitoring
         self._stats = ProcessingStats(
@@ -423,10 +425,9 @@ class ConcurrentIsochroneProcessor:
         self._stats.network_download_time_seconds = time.time() - network_start_time
 
         # Get cache statistics
-        cache_stats = self.cache.get_cache_stats()
-        if cache_stats.total_requests > 0:
-            self._stats.cache_hit_rate = cache_stats.cache_hits / cache_stats.total_requests
-            self._stats.networks_cached = cache_stats.cache_hits
+        cache_stats = get_cache_stats()
+        # Note: diskcache doesn't track hits/misses, so we just log cache size
+        logger.debug(f"Cache contains {cache_stats['count']} networks, {cache_stats['size_mb']:.2f} MB")
 
         logger.info(
             f"Downloaded {len(successful_clusters)} networks "
@@ -527,7 +528,7 @@ def process_isochrones_concurrent(
     min_cluster_size: int = 2,
     max_network_workers: int = 8,
     max_isochrone_workers: int | None = None,
-    cache: ModernNetworkCache | None = None,
+    cache: dc.Cache | None = None,
     progress_callback: Callable | None = None,
     travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> list[gpd.GeoDataFrame]:

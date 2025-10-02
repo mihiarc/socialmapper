@@ -7,13 +7,11 @@ used by SocialMapper including geocoding cache, network cache, and census cache.
 
 import logging
 import shutil
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from socialmapper.isochrone import clear_network_cache
-from socialmapper.isochrone import get_global_cache as get_network_cache
+from socialmapper.isochrone import clear_network_cache, get_cache_stats as get_network_stats
 
 logger = logging.getLogger(__name__)
 
@@ -57,60 +55,14 @@ class CacheManager:
     def _get_network_cache_stats(self) -> dict[str, Any]:
         """Get network cache statistics."""
         try:
-            # Get stats from the network cache
-            network_cache = get_network_cache()
-            cache_stats = network_cache.get_cache_stats()
-
-            # Count files in network cache directory
-            network_files = (
-                list(self.network_cache_dir.glob("*.pkl.gz"))
-                if self.network_cache_dir.exists()
-                else []
-            )
-
-            # Get database info
-            db_stats = {}
-            db_path = self.network_cache_dir / "cache_index.db"
-            if db_path.exists():
-                try:
-                    with sqlite3.connect(db_path) as conn:
-                        cursor = conn.execute("SELECT COUNT(*) FROM networks")
-                        db_count = cursor.fetchone()[0]
-
-                        cursor = conn.execute("""
-                            SELECT MIN(created_at), MAX(created_at),
-                                   SUM(node_count), SUM(edge_count)
-                            FROM networks
-                        """)
-                        min_created, max_created, total_nodes, total_edges = cursor.fetchone()
-
-                        db_stats = {
-                            "indexed_networks": db_count,
-                            "oldest_entry": datetime.fromtimestamp(min_created).isoformat()
-                            if min_created
-                            else None,
-                            "newest_entry": datetime.fromtimestamp(max_created).isoformat()
-                            if max_created
-                            else None,
-                            "total_nodes": total_nodes or 0,
-                            "total_edges": total_edges or 0,
-                        }
-                except Exception as e:
-                    logger.warning(f"Failed to read network cache database: {e}")
+            # Get stats from the simplified cache
+            cache_stats = get_network_stats()
 
             return {
-                "size_mb": cache_stats.total_size_mb,
-                "item_count": len(network_files),
-                "cache_hits": cache_stats.cache_hits,
-                "cache_misses": cache_stats.cache_misses,
-                "hit_rate_percent": (cache_stats.cache_hits / cache_stats.total_requests * 100)
-                if cache_stats.total_requests > 0
-                else 0,
-                "avg_retrieval_time_ms": cache_stats.avg_retrieval_time_ms,
-                "compression_ratio": cache_stats.compression_ratio,
-                "status": "active" if network_files else "empty",
+                "size_mb": cache_stats.get("size_mb", 0),
+                "item_count": cache_stats.get("count", 0),
+                "status": "active" if cache_stats.get("count", 0) > 0 else "empty",
                 "location": str(self.network_cache_dir),
-                **db_stats,
             }
         except Exception as e:
             logger.error(f"Failed to get network cache stats: {e}")
@@ -119,39 +71,20 @@ class CacheManager:
     def _get_geocoding_cache_stats(self) -> dict[str, Any]:
         """Get geocoding cache statistics."""
         try:
-            # Check if geocoding cache file exists
-            cache_file = self.geocoding_cache_dir / "address_cache.parquet"
-
-            if cache_file.exists():
-                file_size_mb = cache_file.stat().st_size / (1024 * 1024)
-
-                # Try to load and count entries
-                try:
-                    import pandas as pd
-
-                    df = pd.read_parquet(cache_file)
-                    item_count = len(df)
-
-                    # Get age statistics
-                    if "timestamp" in df.columns:
-                        timestamps = pd.to_datetime(df["timestamp"])
-                        oldest = timestamps.min()
-                        newest = timestamps.max()
-                    else:
-                        oldest = newest = None
-
-                except Exception as e:
-                    logger.warning(f"Failed to read geocoding cache file: {e}")
-                    item_count = 0
-                    oldest = newest = None
+            # Get size of geocoding cache directory (diskcache format)
+            if self.geocoding_cache_dir.exists():
+                total_size = sum(
+                    f.stat().st_size
+                    for f in self.geocoding_cache_dir.rglob("*")
+                    if f.is_file()
+                )
+                file_count = len(list(self.geocoding_cache_dir.rglob("*")))
 
                 return {
-                    "size_mb": file_size_mb,
-                    "item_count": item_count,
-                    "status": "active",
+                    "size_mb": total_size / (1024 * 1024),
+                    "item_count": file_count,
+                    "status": "active" if file_count > 0 else "empty",
                     "location": str(self.geocoding_cache_dir),
-                    "oldest_entry": oldest.isoformat() if oldest else None,
-                    "newest_entry": newest.isoformat() if newest else None,
                 }
             else:
                 return {
