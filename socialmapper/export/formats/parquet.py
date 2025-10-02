@@ -4,16 +4,16 @@
 This module provides Parquet export functionality for census data.
 """
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from socialmapper.constants import CATEGORICAL_CONVERSION_THRESHOLD
 
-from ...console import get_logger
 from ..base import BaseExporter, ExportError
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ParquetExporter(BaseExporter):

@@ -28,7 +28,7 @@ from ..api_result_types import (
     Ok,
     Result,
 )
-from ..console import get_logger, print_info, print_success
+import logging
 from ..exceptions import (
     InvalidConfigurationError,
 )
@@ -39,7 +39,7 @@ from ..poi_categorization import POI_CATEGORY_MAPPING, categorize_poi
 from ..query.polygon_queries import query_pois_in_polygon
 from ..util.error_handling import error_context
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class NearbyPOIDiscoveryStage:
@@ -67,7 +67,7 @@ class NearbyPOIDiscoveryStage:
         """
         try:
             # Step 1: Geocode the origin location
-            print_info("\n=== Step 1: Geocoding Origin Location ===")
+            logger.info("Step 1: Geocoding Origin Location")
             geocoding_result = self._geocode_origin()
             if geocoding_result.is_err():
                 return geocoding_result
@@ -77,10 +77,10 @@ class NearbyPOIDiscoveryStage:
                 "lat": origin_coords[0],
                 "lon": origin_coords[1],
             }
-            print_success(f"Origin geocoded: {origin_coords[0]:.6f}, {origin_coords[1]:.6f}")
+            logger.info(f"Origin geocoded: {origin_coords[0]:.6f}, {origin_coords[1]:.6f}")
 
             # Step 2: Generate isochrone for the origin
-            print_info("\n=== Step 2: Generating Isochrone ===")
+            logger.info("Step 2: Generating Isochrone")
             isochrone_result = self._generate_isochrone(origin_coords)
             if isochrone_result.is_err():
                 return isochrone_result
@@ -94,26 +94,26 @@ class NearbyPOIDiscoveryStage:
                 projected_gdf = isochrone_gdf.to_crs("EPSG:3857")
                 area_m2 = projected_gdf.geometry.area.sum()
                 self.results.isochrone_area_km2 = area_m2 / 1_000_000
-                print_success(f"Isochrone area: {self.results.isochrone_area_km2:.2f} km²")
+                logger.info(f"Isochrone area: {self.results.isochrone_area_km2:.2f} km²")
 
             # Step 3: Query POIs within the isochrone
-            print_info("\n=== Step 3: Querying POIs Within Isochrone ===")
+            logger.info("Step 3: Querying POIs Within Isochrone")
             poi_query_result = self._query_pois_in_isochrone(isochrone_gdf)
             if poi_query_result.is_err():
                 return poi_query_result
 
             raw_pois = poi_query_result.unwrap()
-            print_info(f"Found {len(raw_pois)} POIs within the isochrone")
+            logger.info(f"Found {len(raw_pois)} POIs within the isochrone")
 
             # Step 4: Process and organize POIs
-            print_info("\n=== Step 4: Processing and Organizing POIs ===")
+            logger.info("Step 4: Processing and Organizing POIs")
             processing_result = self._process_pois(raw_pois, origin_coords)
             if processing_result.is_err():
                 return processing_result
 
             # Step 5: Export results
             if any([self.config.export_csv, self.config.export_geojson, self.config.create_map]):
-                print_info("\n=== Step 5: Exporting Results ===")
+                logger.info("Step 5: Exporting Results")
                 export_result = self._export_results()
                 if export_result.is_err():
                     self.results.warnings.append(
@@ -131,8 +131,8 @@ class NearbyPOIDiscoveryStage:
                 }
             )
 
-            print_success(
-                f"\n✓ POI Discovery Complete: {self.results.total_poi_count} POIs found "
+            logger.info(
+                f"POI Discovery Complete: {self.results.total_poi_count} POIs found "
                 f"across {len(self.results.pois_by_category)} categories"
             )
 
@@ -485,7 +485,7 @@ class NearbyPOIDiscoveryStage:
                 csv_path = self.config.output_dir / f"{base_name}.csv"
                 self._export_csv(csv_path)
                 self.results.files_generated["csv"] = csv_path
-                print_success(f"Exported CSV: {csv_path}")
+                logger.info(f"Exported CSV: {csv_path}")
 
             # Export GeoJSON if requested
             if self.config.export_geojson:
@@ -493,7 +493,7 @@ class NearbyPOIDiscoveryStage:
                     geojson_path = self.config.output_dir / f"{base_name}_pois.geojson"
                     self.results.poi_points.to_file(geojson_path, driver="GeoJSON")
                     self.results.files_generated["poi_geojson"] = geojson_path
-                    print_success(f"Exported POI GeoJSON: {geojson_path}")
+                    logger.info(f"Exported POI GeoJSON: {geojson_path}")
 
                 if (
                     self.results.isochrone_geometry is not None
@@ -502,7 +502,7 @@ class NearbyPOIDiscoveryStage:
                     isochrone_path = self.config.output_dir / f"{base_name}_isochrone.geojson"
                     self.results.isochrone_geometry.to_file(isochrone_path, driver="GeoJSON")
                     self.results.files_generated["isochrone_geojson"] = isochrone_path
-                    print_success(f"Exported Isochrone GeoJSON: {isochrone_path}")
+                    logger.info(f"Exported Isochrone GeoJSON: {isochrone_path}")
 
             # Create map if requested
             if self.config.create_map and self.results.total_poi_count > 0:
@@ -510,7 +510,7 @@ class NearbyPOIDiscoveryStage:
                 if map_result.is_ok():
                     map_path = map_result.unwrap()
                     self.results.files_generated["map"] = map_path
-                    print_success(f"Created map: {map_path}")
+                    logger.info(f"Created map: {map_path}")
                 else:
                     self.results.warnings.append(
                         f"Map creation failed: {map_result.unwrap_err().message}"

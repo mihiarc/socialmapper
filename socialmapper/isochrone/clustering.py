@@ -24,10 +24,11 @@ from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
 # Setup logging
-from ..console import get_logger
+import logging
+
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclass

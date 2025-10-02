@@ -6,6 +6,7 @@ improvement over legacy systems through JIT compilation and modern algorithms.
 """
 
 import json
+import logging
 import time
 from typing import Optional, Union
 
@@ -16,12 +17,10 @@ from shapely.geometry import Point
 
 from socialmapper.progress import get_progress_bar
 
-from ..console import get_logger
-
 # Import the high-performance engine
 from .engine import ParallelDistanceProcessor, VectorizedDistanceEngine, benchmark_distance_engines
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def preprocess_poi_data(pois):

@@ -7,6 +7,7 @@ This module provides export functionality for census data in various formats:
 - GeoParquet (geospatial data)
 """
 
+import logging
 from pathlib import Path
 from typing import Optional, Union
 
@@ -15,7 +16,6 @@ import pandas as pd
 
 from ..census.infrastructure import ModernDataExporter, get_streaming_pipeline
 from ..config.optimization import OptimizationConfig
-from ..console import get_logger
 from ..constants import LARGE_DATASET_MB
 from .base import DataPrepConfig, ExportError
 from .formats import CSVExporter, GeoParquetExporter, ParquetExporter
@@ -27,7 +27,7 @@ from .utils import (
     validate_export_data,
 )
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def export_census_data_to_csv(

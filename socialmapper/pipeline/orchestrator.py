@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..console import get_logger, print_error, print_info
+import logging
 from ..exceptions import (
     AnalysisError,
     DataProcessingError,
@@ -26,7 +26,7 @@ from .isochrone import generate_isochrones
 from .reporting import generate_final_report
 from .validation import validate_poi_coordinates
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -209,7 +209,7 @@ class PipelineStage:
             logging and storing it.
         """
         try:
-            print_info(f"Starting: {self.description}")
+            logger.info(f"Starting: {self.description}")
             with error_context(f"Pipeline stage: {self.name}", stage=self.name):
                 self.result = self.function(**kwargs)
             return self.result
@@ -621,8 +621,8 @@ class PipelineOrchestrator:
             except NoDataFoundError as e:
                 # Handle no data found - might be acceptable
                 if skip_on_error:
-                    print_error(f"Stage '{stage.name}' found no data: {e!s}")
-                    print_info("Continuing with next stage...")
+                    logger.error(f"Stage '{stage.name}' found no data: {e!s}")
+                    logger.info("Continuing with next stage...")
                     error_collector.warnings.append((stage.name, e))
                     continue
                 else:
@@ -636,8 +636,8 @@ class PipelineOrchestrator:
 
             except Exception as e:
                 if skip_on_error:
-                    print_error(f"Stage '{stage.name}' failed: {e!s}")
-                    print_info("Continuing with next stage...")
+                    logger.error(f"Stage '{stage.name}' failed: {e!s}")
+                    logger.info("Continuing with next stage...")
                     error_collector.errors.append((stage.name, e))
                     continue
                 else:

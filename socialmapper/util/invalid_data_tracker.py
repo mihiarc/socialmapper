@@ -8,13 +8,12 @@ coordinates, or other data quality issues.
 
 import csv
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from ..console import get_logger
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class InvalidDataTracker:

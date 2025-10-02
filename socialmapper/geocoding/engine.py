@@ -5,16 +5,16 @@ This module provides the high-level geocoding engine that manages multiple provi
 with intelligent fallback, caching, and quality validation.
 """
 
+import logging
 import time
 from typing import Any
 
-from ..console import get_logger
 from ..progress import get_progress_bar
 from .cache import AddressCache
 from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
 from .providers import CensusProvider, GeocodingProvider, NominatimProvider
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AddressGeocodingEngine:

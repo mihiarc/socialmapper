@@ -1,6 +1,7 @@
 """File writers for various output formats."""
 
 import json
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -9,9 +10,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from ..console import get_logger
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def write_csv(

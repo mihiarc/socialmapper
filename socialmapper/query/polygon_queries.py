@@ -11,7 +11,8 @@ from typing import Any
 import overpy
 from shapely.geometry import MultiPolygon, Polygon
 
-from ..console import get_logger
+import logging
+
 from ..poi_categorization import (
     POI_CATEGORY_MAPPING,
     get_category_values,
@@ -19,7 +20,7 @@ from ..poi_categorization import (
 )
 from ..util import with_retry
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 # Default timeout for Overpass API queries (in seconds)
 DEFAULT_OVERPASS_TIMEOUT = 180

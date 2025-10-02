@@ -4,14 +4,15 @@
 This module contains common data preparation functions used across different export formats.
 """
 
+import logging
+
 import geopandas as gpd
 import pandas as pd
 
-from ..console import get_logger
 from ..constants import FULL_BLOCK_GROUP_GEOID_LENGTH
 from .base import DataPrepConfig
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def extract_geoid_components(df: pd.DataFrame) -> pd.DataFrame:

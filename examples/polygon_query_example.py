@@ -10,14 +10,15 @@ import json
 import geopandas as gpd
 from shapely.geometry import Polygon
 
-from socialmapper.console import get_logger
+import logging
+
 from socialmapper.query import (
     build_poi_discovery_query,
     query_pois_from_isochrone,
     query_pois_in_polygon,
 )
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def example_simple_polygon_query():

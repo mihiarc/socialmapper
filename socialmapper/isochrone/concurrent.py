@@ -14,6 +14,7 @@ Key Features:
 """
 
 import copy
+import logging
 import multiprocessing as mp
 import time
 from collections.abc import Callable
@@ -24,7 +25,6 @@ from typing import Any
 import geopandas as gpd
 import psutil
 
-from ..console import get_logger
 from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
 from ..progress import get_progress_bar
 from .cache import ModernNetworkCache, download_and_cache_network
@@ -35,7 +35,7 @@ from .clustering import (
 )
 from .travel_modes import TravelMode
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _generate_cluster_isochrones_worker(

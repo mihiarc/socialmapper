@@ -20,31 +20,195 @@ Optimized Pipeline Stages (from OPTIMIZATION_PLAN.md):
 5. Export & Visualization (Modern Formats)
 """
 
+import logging
 import threading
 import time
 from collections.abc import Callable
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional, Union
 
-# Import Rich progress bar libraries
-from ..console import (
-    RichProgressWrapper,
-    console,
-    get_logger,
-    print_error,
-    print_info,
-    print_success,
-    print_warning,
-    rich_tqdm,
+# Import Rich progress bar libraries directly
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    ProgressColumn,
+    SpinnerColumn,
+    Task,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
 )
-from ..console import (
-    progress_bar as rich_progress_context,
-)
+from rich.text import Text
 
-# Always use Rich progress for consistent CLI experience
-logger = get_logger(__name__)
+# Create console instance
+console = Console()
+
+# Setup logging
+logger = logging.getLogger(__name__)
+
+
+# Rich Progress Components (moved from console module)
+class RichProgressColumn(ProgressColumn):
+    """Custom progress column displaying processing speed."""
+
+    def render(self, task: "Task") -> Text:
+        """Render the progress speed indicator."""
+        if task.speed is None:
+            return Text("", style="progress.percentage")
+
+        if task.speed >= 1:
+            return Text(f"{task.speed:.1f} items/sec", style="progress.percentage")
+        else:
+            return Text(f"{1 / task.speed:.1f} sec/item", style="progress.percentage")
+
+
+class RichProgressWrapper:
+    """tqdm-compatible wrapper for Rich progress bars."""
+
+    def __init__(self, iterable=None, desc="", total=None, unit="it", **kwargs):
+        """Initialize Rich progress bar with tqdm-compatible interface."""
+        self.iterable = iterable
+        self.desc = desc
+        self.total = total or (len(iterable) if iterable else None)
+        self.unit = unit
+        self.position = 0
+        self.n = 0  # Add n attribute for tqdm compatibility
+        self.task_id = None
+        self.progress_instance = None
+
+        # Create progress instance
+        self.progress_instance = Progress(
+            SpinnerColumn(),
+            TextColumn(f"[progress.description]{desc}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            TextColumn("•"),
+            TimeRemainingColumn(),
+            TextColumn("•"),
+            RichProgressColumn(),
+            console=console,
+            refresh_per_second=10,
+        )
+
+        # Use try-except to handle Rich live display conflicts
+        try:
+            self.progress_instance.start()
+            self.task_id = self.progress_instance.add_task(desc, total=self.total)
+        except Exception:
+            total_msg = f" ({self.total} items)" if self.total else ""
+            console.print(f"🔄 {desc}{total_msg}")
+            self.progress_instance = None
+            self.task_id = None
+
+    def __iter__(self):
+        """Iterate with automatic progress updates."""
+        if self.iterable:
+            for item in self.iterable:
+                yield item
+                self.update(1)
+
+    def __enter__(self):
+        """Enter progress bar context."""
+        return self
+
+    def __exit__(self, *args):
+        """Exit context and cleanup progress display."""
+        self.close()
+
+    def update(self, n=1):
+        """Advance progress bar by specified amount."""
+        if self.progress_instance and self.task_id is not None:
+            with suppress(Exception):
+                self.progress_instance.update(self.task_id, advance=n)
+        self.position += n
+        self.n += n
+
+        # If no progress display, show individual updates for detailed tracking
+        if self.progress_instance is None and self.total:
+            percentage = (self.position / self.total) * 100
+            console.print(f"  Progress: {self.position}/{self.total} ({percentage:.1f}%)")
+
+    def set_description(self, desc):
+        """Update the progress bar description text."""
+        if self.progress_instance and self.task_id is not None:
+            self.progress_instance.update(self.task_id, description=desc)
+
+    def set_postfix(self, postfix_dict):
+        """Update the progress bar postfix (tqdm compatibility)."""
+        # Rich progress bars don't have postfix, but we'll store it for compatibility
+        pass
+
+    def refresh(self):
+        """Refresh the progress bar display (tqdm compatibility)."""
+        if self.progress_instance and self.task_id is not None:
+            self.progress_instance.refresh()
+
+    def close(self):
+        """Stop and remove the progress bar display."""
+        if self.progress_instance:
+            try:
+                self.progress_instance.stop()
+            except Exception:
+                pass
+            finally:
+                self.progress_instance = None
+                self.task_id = None
+
+    def write(self, message):
+        """Write message to console above progress bar."""
+        console.print(message)
+
+
+def rich_tqdm(*args, **kwargs):
+    """Create tqdm-compatible progress bar using Rich."""
+    return RichProgressWrapper(*args, **kwargs)
+
+
+@contextmanager
+def progress_bar(
+    description: str, total: int | None = None, transient: bool = False, disable: bool = False
+):
+    """Context manager for Rich progress bar display."""
+    if disable:
+        class DummyProgress:
+            def add_task(self, *args, **kwargs):
+                return 0
+
+            def update(self, *args, **kwargs):
+                pass
+
+            def advance(self, *args, **kwargs):
+                pass
+
+        yield DummyProgress()
+        return
+
+    custom_progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TextColumn("•"),
+        TimeElapsedColumn(),
+        TextColumn("•"),
+        TimeRemainingColumn(),
+        TextColumn("•"),
+        RichProgressColumn(),
+        console=console,
+        transient=transient,
+        refresh_per_second=10,
+    )
+
+    with custom_progress:
+        task_id = custom_progress.add_task(description, total=total)
+        custom_progress.task_id = task_id
+        yield custom_progress
 
 
 class ProcessingStage(Enum):
