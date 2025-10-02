@@ -4,14 +4,14 @@
 This module provides CSV export functionality for census data.
 """
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 
-from ...console import get_logger
 from ..base import BaseExporter, ExportError
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CSVExporter(BaseExporter):

@@ -4,6 +4,7 @@
 This module provides GeoParquet export functionality for geospatial census data.
 """
 
+import logging
 from pathlib import Path
 
 import geopandas as gpd
@@ -11,10 +12,9 @@ import pandas as pd
 
 from socialmapper.constants import CATEGORICAL_CONVERSION_THRESHOLD
 
-from ...console import get_logger
 from ..base import BaseExporter, ExportError
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class GeoParquetExporter(BaseExporter):
