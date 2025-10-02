@@ -17,17 +17,6 @@ import pytest
 import requests
 
 
-# Mock the necessary modules to avoid import issues
-@pytest.fixture(autouse=True)
-def mock_socialmapper_imports():
-    """Mock problematic imports."""
-    import sys
-    
-    # Mock the pipeline module to avoid POI discovery syntax errors
-    mock_pipeline = MagicMock()
-    sys.modules['socialmapper.pipeline'] = mock_pipeline
-    sys.modules['socialmapper.pipeline.poi_discovery'] = MagicMock()
-
 
 @pytest.fixture
 def mock_config():

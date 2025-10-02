@@ -13,8 +13,7 @@ from socialmapper.api import (
     get_poi,
     analyze_multiple_pois,
     import_poi_csv,
-    generate_report,
-    run_pipeline
+    generate_report
 )
 
 
@@ -281,51 +280,5 @@ class TestGenerateReport:
 
     def test_invalid_format(self):
         """Test invalid report format."""
-        with pytest.raises(ValueError, match="Format must be 'html' or 'pdf'"):
+        with pytest.raises(ValueError, match="Report format must be one of"):
             generate_report({}, format="invalid")
-
-
-class TestRunPipeline:
-    """Test run_pipeline function."""
-
-    @patch('socialmapper.pipeline.orchestrator.PipelineOrchestrator')
-    def test_run_full_pipeline(self, mock_orchestrator_class):
-        """Test running full pipeline."""
-        mock_orchestrator = Mock()
-        mock_orchestrator.run.return_value = {"result": "data"}
-        mock_orchestrator_class.return_value = mock_orchestrator
-
-        config = {
-            "geocode_area": "Test City",
-            "poi_type": "restaurant",
-            "poi_name": "pizza",
-            "travel_time": 20
-        }
-
-        result = run_pipeline(config)
-
-        assert result == {"result": "data"}
-        mock_orchestrator.run.assert_called_once()
-
-    @patch('socialmapper.pipeline.orchestrator.PipelineOrchestrator')
-    def test_run_specific_stages(self, mock_orchestrator_class):
-        """Test running specific pipeline stages."""
-        mock_orchestrator = Mock()
-        mock_orchestrator.run_stages.return_value = {"stage_result": "data"}
-        mock_orchestrator_class.return_value = mock_orchestrator
-
-        config = {"geocode_area": "Test City"}
-        stages = ["setup", "extract", "validate"]
-
-        result = run_pipeline(config, stages=stages)
-
-        assert result == {"stage_result": "data"}
-        mock_orchestrator.run_stages.assert_called_once_with(stages)
-
-    @patch('socialmapper.pipeline.orchestrator.PipelineConfig')
-    def test_invalid_config(self, mock_config_class):
-        """Test pipeline with invalid configuration."""
-        mock_config_class.side_effect = ValueError("Invalid config")
-
-        with pytest.raises(ValueError, match="Invalid config"):
-            run_pipeline({"invalid": "config"})
