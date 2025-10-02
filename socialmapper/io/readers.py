@@ -2,15 +2,14 @@
 
 import csv
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
 import pandas as pd
 
-from ..console import get_logger
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def read_poi_data(filepath: Path | str) -> dict[str, Any]:

@@ -22,13 +22,14 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import logging
+
 import networkx as nx
 import osmnx as ox
 
-from ..console import get_logger
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @dataclass

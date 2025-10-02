@@ -38,8 +38,10 @@ import pandas as pd
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from rich.console import Console
+from rich.panel import Panel
+
 from socialmapper import SocialMapperBuilder, SocialMapperClient
-from socialmapper.console import console, print_banner, print_panel, print_success
 from socialmapper.geocoding import (
     AddressInput,
     AddressProvider,
@@ -49,10 +51,13 @@ from socialmapper.geocoding import (
     geocode_addresses,
 )
 
+# Create console instance
+console = Console()
+
 
 def explain_geocoding():
     """Explain what geocoding is and why it's useful."""
-    print_panel(
+    console.print(Panel(
         """Address geocoding converts human-readable addresses into geographic coordinates (latitude/longitude).
 
 🎯 Why Use Geocoding?
@@ -66,8 +71,8 @@ def explain_geocoding():
   • Census Bureau: US-only, very accurate for US addresses
   • Automatic fallback between providers for best results""",
         title="📍 Understanding Address Geocoding",
-        style="cyan",
-    )
+        border_border_style="cyan",
+    ))
 
 
 def demo_single_address():
@@ -345,7 +350,7 @@ def demo_advanced_tips():
     console.print("[bold cyan]Advanced Tips & Configuration[/bold cyan]")
     console.print("Optimize geocoding for your specific needs:\n")
 
-    print_panel(
+    console.print(Panel(
         """🔧 Custom Configuration Examples:
 
 # High-accuracy US addresses (government/medical)
@@ -373,8 +378,8 @@ config = GeocodingConfig(
     max_retries=3
 )""",
         title="⚙️ Configuration Patterns",
-        style="blue",
-    )
+        border_style="blue",
+    ))
 
     console.print("\n🎯 Use Case Recommendations:")
     console.print("   • Business analysis: Census provider + exact quality")
@@ -385,10 +390,11 @@ config = GeocodingConfig(
 
 def main():
     """Run the address geocoding tutorial."""
-    print_banner(
-        "Address Geocoding Tutorial",
-        "Learn to convert addresses into coordinates for spatial analysis",
-    )
+    console.print(Panel(
+        "[bold cyan]Address Geocoding Tutorial[/bold cyan]\nLearn to convert addresses into coordinates for spatial analysis",
+        title="🏘️ SocialMapper",
+        border_border_style="cyan"
+    ))
 
     try:
         # Educational overview
@@ -403,10 +409,11 @@ def main():
         demo_advanced_tips()
 
         # Success summary
-        print_success(
-            "You've learned to geocode addresses and integrate them with SocialMapper analysis!",
-            "Tutorial Complete!",
-        )
+        console.print(Panel(
+            "[bold green]✅ You've learned to geocode addresses and integrate them with SocialMapper analysis![/bold green]",
+            title="🎉 Tutorial Complete!",
+            border_style="green"
+        ))
 
         console.print("\n[bold]🎉 What You've Learned:[/bold]")
         console.print("  • Single and batch address geocoding")

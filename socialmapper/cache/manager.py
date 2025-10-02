@@ -5,14 +5,14 @@ This module provides a centralized cache management system that
 coordinates all caching operations across the application.
 """
 
+import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from ..console import get_logger
 from .base import BaseCache, CacheStats
 from .implementations import ParquetCache, PickleCache, SQLiteCache
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class UnifiedCacheManager:

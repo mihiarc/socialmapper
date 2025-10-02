@@ -5,17 +5,17 @@ This module provides functions to manage, monitor, and clear various caches
 used by SocialMapper including geocoding cache, network cache, and census cache.
 """
 
+import logging
 import shutil
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from socialmapper.console import get_logger
 from socialmapper.isochrone import clear_network_cache
 from socialmapper.isochrone import get_global_cache as get_network_cache
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CacheManager:

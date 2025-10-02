@@ -4,14 +4,13 @@
 This module contains utility functions used across export operations.
 """
 
+import logging
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 
-from ..console import get_logger
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def estimate_data_size(data: pd.DataFrame | gpd.GeoDataFrame) -> float:

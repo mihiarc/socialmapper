@@ -7,6 +7,7 @@ that all conform to the BaseCache interface.
 
 import gzip
 import json
+import logging
 import pickle
 import sqlite3
 import threading
@@ -16,10 +17,9 @@ from typing import Any
 
 import pandas as pd
 
-from ..console import get_logger
 from .base import BaseCache, CacheStats
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class SQLiteCache(BaseCache[Any]):

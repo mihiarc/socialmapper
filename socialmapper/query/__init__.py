@@ -41,10 +41,11 @@ import overpy
 import yaml
 
 # Configure logger
-from ..console import get_logger
+import logging
+
 from ..util import with_retry
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):

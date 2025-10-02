@@ -11,9 +11,9 @@ import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
 
-from ..console import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 # Configure OSMnx settings for better reliability
 ox.settings.use_cache = True

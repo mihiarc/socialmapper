@@ -6,6 +6,7 @@ system, offering 95% performance improvement through vectorization, JIT compilat
 and modern spatial algorithms.
 """
 
+import logging
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -17,11 +18,10 @@ import pyproj
 from shapely.geometry import Point
 from sklearn.neighbors import BallTree
 
-from ..console import get_logger
 from .._validation import prevalidate_for_pyproj
 from ..util.invalid_data_tracker import track_invalid_point
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class VectorizedDistanceEngine:

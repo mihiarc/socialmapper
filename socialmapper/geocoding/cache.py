@@ -5,15 +5,15 @@ This module provides high-performance caching for geocoded addresses.
 """
 
 import json
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 
-from ..console import get_logger
 from .models import AddressInput, GeocodingConfig, GeocodingResult
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AddressCache:
