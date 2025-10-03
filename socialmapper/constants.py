@@ -48,3 +48,13 @@ MIN_CLUSTER_POINTS = 2  # Minimum points required for clustering
 
 # GeoJSON validation
 MIN_GEOJSON_COORDINATES = 2  # Minimum coordinates for valid GeoJSON
+
+# Dataset size thresholds (in MB)
+SMALL_DATASET_MB = 10  # Small datasets - use in-memory processing
+LARGE_DATASET_MB = 100  # Large datasets - use streaming/chunked processing
+
+# Data type optimization
+CATEGORICAL_CONVERSION_THRESHOLD = 0.5  # Convert to categorical if unique ratio < 50%
+
+# Census geography
+FULL_BLOCK_GROUP_GEOID_LENGTH = 12  # 2 state + 3 county + 6 tract + 1 block group
