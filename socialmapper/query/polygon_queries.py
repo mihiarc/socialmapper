@@ -18,7 +18,6 @@ from ..poi_categorization import (
     get_category_values,
     is_valid_category,
 )
-from ..util import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -277,9 +276,8 @@ def build_poi_discovery_query(
     return "\n".join(query_parts)
 
 
-@with_retry(max_retries=3, base_delay=2.0, service="openstreetmap")
 def _query_overpass_with_polygon(query: str) -> overpy.Result:
-    """Execute an Overpass API query with retry logic.
+    """Execute an Overpass API query with simple retry logic.
 
     Args:
         query: The Overpass API query string
@@ -290,15 +288,25 @@ def _query_overpass_with_polygon(query: str) -> overpy.Result:
     Raises:
         Exception: If query fails after retries
     """
-    api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
+    import time
 
-    try:
-        logger.debug(f"Sending polygon query to Overpass API (length: {len(query)} chars)")
-        return api.query(query)
-    except Exception as e:
-        logger.error(f"Error querying Overpass API: {e}")
-        logger.debug(f"Query excerpt: {query[:500]}...")  # Log first 500 chars
-        raise
+    api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
+    max_retries = 3
+    base_delay = 2.0
+
+    for attempt in range(max_retries):
+        try:
+            logger.debug(f"Sending polygon query to Overpass API (length: {len(query)} chars)")
+            return api.query(query)
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Error querying Overpass API after {max_retries} attempts: {e}")
+                logger.debug(f"Query excerpt: {query[:500]}...")  # Log first 500 chars
+                raise
+            else:
+                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+                time.sleep(delay)
 
 
 def query_pois_in_polygon(

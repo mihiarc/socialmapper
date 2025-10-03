@@ -43,7 +43,6 @@ import yaml
 # Configure logger
 import logging
 
-from ..util import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -204,21 +203,30 @@ def build_overpass_query(poi_config):
     return query
 
 
-@with_retry(max_retries=3, base_delay=2.0, service="openstreetmap")
 def query_overpass(query):
     """Query the Overpass API with the given query.
 
-    Uses rate limiting and retry logic to handle transient errors
-    and respect API usage limits.
+    Uses retry logic to handle transient errors.
     """
+    import time
+
     api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
-    try:
-        logger.info("Sending query to Overpass API...")
-        return api.query(query)
-    except Exception as e:
-        logger.error(f"Error querying Overpass API: {e}")
-        logger.debug(f"Query used: {query}")
-        raise
+    max_retries = 3
+    base_delay = 2.0
+
+    for attempt in range(max_retries):
+        try:
+            logger.info("Sending query to Overpass API...")
+            return api.query(query)
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Error querying Overpass API after {max_retries} attempts: {e}")
+                logger.debug(f"Query used: {query}")
+                raise
+            else:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+                time.sleep(delay)
 
 
 def format_results(result, config=None):
