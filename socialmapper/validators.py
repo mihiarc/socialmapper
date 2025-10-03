@@ -6,10 +6,39 @@ from .constants import (
     MIN_TRAVEL_TIME, MAX_TRAVEL_TIME, VALID_TRAVEL_MODES,
     VALID_EXPORT_FORMATS, VALID_REPORT_FORMATS
 )
-from .util.input_validation import (
-    validate_coordinates as _validate_coordinates,
-    InputValidationError
-)
+
+
+class InputValidationError(Exception):
+    """Exception raised when input validation fails."""
+
+
+def _validate_coordinates_strict(lat: Union[str, int, float], lon: Union[str, int, float]) -> Tuple[float, float]:
+    """Validate coordinate values (raises exception on invalid).
+
+    Args:
+        lat: Latitude value
+        lon: Longitude value
+
+    Returns:
+        Tuple of validated (latitude, longitude) as floats
+
+    Raises:
+        InputValidationError: If coordinates are invalid
+    """
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except (ValueError, TypeError) as e:
+        raise InputValidationError(f"Coordinates must be numeric: {e}") from None
+
+    # Validate ranges
+    if not MIN_LATITUDE <= lat <= MAX_LATITUDE:
+        raise InputValidationError(f"Invalid latitude: {lat}. Must be between -90 and 90")
+
+    if not MIN_LONGITUDE <= lon <= MAX_LONGITUDE:
+        raise InputValidationError(f"Invalid longitude: {lon}. Must be between -180 and 180")
+
+    return lat, lon
 
 
 def validate_coordinates(lat: float, lon: float) -> bool:
@@ -29,7 +58,7 @@ def validate_coordinates(lat: float, lon: float) -> bool:
         True if coordinates are valid, False otherwise.
     """
     try:
-        _validate_coordinates(lat, lon)
+        _validate_coordinates_strict(lat, lon)
         return True
     except InputValidationError:
         return False
