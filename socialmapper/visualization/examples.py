@@ -8,7 +8,6 @@ from shapely.geometry import Point
 
 from .chloropleth import ChoroplethMap, MapType
 from .config import ClassificationScheme, ColorScheme, MapConfig
-from .pipeline_integration import VisualizationPipeline
 
 
 def create_sample_data():
@@ -99,37 +98,6 @@ def example_custom_configuration():
     mapper.save("income_map.png", dpi=300)
     mapper.save("income_map.pdf", format="pdf")
     print("Created income_map.png and income_map.pdf")
-
-
-def example_pipeline_integration():
-    """Example of using the visualization pipeline."""
-    # Create sample data
-    gdf, poi_gdf = create_sample_data()
-
-    # Save sample data
-    output_dir = Path("sample_output")
-    output_dir.mkdir(exist_ok=True)
-
-    gdf.to_parquet(output_dir / "census_data.parquet")
-    poi_gdf.to_parquet(output_dir / "poi_data.parquet")
-
-    # Create visualization pipeline
-    viz_pipeline = VisualizationPipeline(output_dir / "maps")
-
-    # Create multiple maps
-    output_paths = viz_pipeline.create_maps_from_census_data(
-        gdf,
-        poi_gdf=poi_gdf,
-        demographic_columns=["B01003_001E", "B19013_001E"],
-        create_distance_map=True,
-        create_demographic_maps=True,
-        map_format="png",
-        dpi=300,
-    )
-
-    print("Created maps:")
-    for map_type, path in output_paths.items():
-        print(f"  {map_type}: {path}")
 
 
 def example_accessibility_map():
