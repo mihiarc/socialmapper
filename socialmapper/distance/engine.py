@@ -19,7 +19,6 @@ from shapely.geometry import Point
 from sklearn.neighbors import BallTree
 
 from .._validation import prevalidate_for_pyproj
-from ..util.invalid_data_tracker import track_invalid_point
 
 logger = logging.getLogger(__name__)
 
@@ -126,21 +125,6 @@ class VectorizedDistanceEngine:
         if not is_valid:
             error_msg = f"Coordinate validation failed: {'; '.join(errors)}"
             logger.error(error_msg)
-
-            # Track invalid data for user review
-            for _i, point in enumerate(points):
-                point_data = {
-                    "lat": point.y,
-                    "lon": point.x,
-                    "geometry_type": "Point",
-                    "source": "distance_calculation",
-                }
-                track_invalid_point(
-                    point_data,
-                    f"Validation failed: {errors[0] if errors else 'Unknown error'}",
-                    "coordinate_transformation",
-                )
-
             raise ValueError(error_msg)
 
         # Extract coordinates for bulk processing (validated data only)
