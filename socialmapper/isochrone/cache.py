@@ -7,6 +7,7 @@ graphs used in isochrone generation.
 
 import hashlib
 import logging
+import os
 from pathlib import Path
 
 import diskcache as dc
@@ -21,8 +22,41 @@ logger = logging.getLogger(__name__)
 _cache: dc.Cache | None = None
 
 
+def _validate_cached_network(network: nx.MultiDiGraph) -> bool:
+    """Validate that cached network is not corrupted.
+
+    Parameters
+    ----------
+    network : nx.MultiDiGraph
+        Network graph to validate.
+
+    Returns
+    -------
+    bool
+        True if network is valid, False otherwise.
+    """
+    try:
+        if not isinstance(network, nx.MultiDiGraph):
+            logger.warning("Cached network is not a MultiDiGraph")
+            return False
+        if len(network.nodes) == 0:
+            logger.warning("Cached network has no nodes")
+            return False
+        if 'crs' not in network.graph:
+            logger.warning("Cached network missing CRS information")
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"Network validation failed: {e}")
+        return False
+
+
 def get_cache() -> dc.Cache:
     """Get or create global cache instance.
+
+    Uses environment variables for configuration:
+    - SOCIALMAPPER_CACHE_DIR: Base cache directory (default: 'cache')
+    - SOCIALMAPPER_CACHE_SIZE_GB: Cache size limit in GB (default: 5)
 
     Returns
     -------
@@ -31,10 +65,19 @@ def get_cache() -> dc.Cache:
     """
     global _cache
     if _cache is None:
-        cache_dir = Path("cache/networks")
+        # Use environment variables for configuration
+        base_cache_dir = os.environ.get('SOCIALMAPPER_CACHE_DIR', 'cache')
+        cache_dir = Path(base_cache_dir) / 'networks'
         cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Configure cache size from environment
+        size_gb = int(os.environ.get('SOCIALMAPPER_CACHE_SIZE_GB', '5'))
+        size_limit = size_gb * 1024**3  # Convert GB to bytes
+
+        logger.info(f"Initializing network cache: dir={cache_dir}, size_limit={size_gb}GB")
+
         # diskcache handles thread safety, size limits, eviction automatically
-        _cache = dc.Cache(str(cache_dir), size_limit=5 * 1024**3)  # 5GB limit
+        _cache = dc.Cache(str(cache_dir), size_limit=size_limit)
     return _cache
 
 
@@ -128,8 +171,14 @@ def download_and_cache_network(
     # Check cache first
     cached_network = cache.get(cache_key)
     if cached_network is not None:
-        logger.debug(f"Cache hit for network {cache_key}")
-        return cached_network
+        # Validate cached network before returning
+        if _validate_cached_network(cached_network):
+            logger.debug(f"Cache hit for network {cache_key}")
+            return cached_network
+        else:
+            # Invalid cached data - remove and re-download
+            logger.warning(f"Removing invalid cached network {cache_key}")
+            cache.delete(cache_key)
 
     # Download new network
     try:

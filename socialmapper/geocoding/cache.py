@@ -5,6 +5,7 @@ Uses diskcache for simple, reliable caching of geocoded addresses.
 """
 
 import logging
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -17,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 class AddressCache:
     """Simple caching system for geocoded addresses using diskcache.
+
+    Uses environment variables for configuration:
+    - SOCIALMAPPER_CACHE_DIR: Base cache directory (default: 'cache')
 
     Parameters
     ----------
@@ -39,8 +43,13 @@ class AddressCache:
             Configuration for caching behavior.
         """
         self.config = config
-        cache_dir = Path("cache/geocoding")
+
+        # Use environment variable for cache directory
+        base_cache_dir = os.environ.get('SOCIALMAPPER_CACHE_DIR', 'cache')
+        cache_dir = Path(base_cache_dir) / 'geocoding'
         cache_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f"Initializing geocoding cache: dir={cache_dir}, ttl={config.cache_ttl_hours}h")
 
         # diskcache handles thread safety, compression, and eviction
         self._cache = dc.Cache(
@@ -71,19 +80,14 @@ class AddressCache:
             return None
 
         cache_key = address.get_cache_key()
-        cached_data = self._cache.get(cache_key)
+
+        # Use diskcache's built-in expiration support to avoid race conditions
+        # The 'expire_time' parameter ensures atomic TTL checking
+        ttl_seconds = self.config.cache_ttl_hours * 3600
+        cached_data = self._cache.get(cache_key, default=None, expire_time=True)
 
         if cached_data is None:
             return None
-
-        # Check if expired
-        timestamp = cached_data.get("timestamp")
-        if timestamp:
-            age = datetime.now() - timestamp
-            if age > timedelta(hours=self.config.cache_ttl_hours):
-                # Expired, remove from cache
-                self._cache.delete(cache_key)
-                return None
 
         try:
             # Reconstruct GeocodingResult from cached data
@@ -92,6 +96,7 @@ class AddressCache:
             return GeocodingResult(**result_data)
         except Exception as e:
             logger.warning(f"Failed to deserialize cached result: {e}")
+            # Invalid data - remove from cache
             self._cache.delete(cache_key)
             return None
 
@@ -112,13 +117,14 @@ class AddressCache:
 
         cache_key = result.input_address.get_cache_key()
 
-        # Store result with timestamp
+        # Store result with TTL using diskcache's built-in expiration
         cache_data = {
             "result": result.model_dump(),
-            "timestamp": datetime.now(),
         }
 
-        self._cache.set(cache_key, cache_data)
+        # Set with expiration time to avoid race conditions
+        ttl_seconds = self.config.cache_ttl_hours * 3600
+        self._cache.set(cache_key, cache_data, expire=ttl_seconds)
 
     def save_cache(self):
         """Save cache to disk.
