@@ -24,9 +24,6 @@ from .api import (
     get_poi,
 )
 
-# Import the client class
-from .client import SocialMapper
-
 # Import exceptions
 from .exceptions import (
     SocialMapperError,
@@ -45,7 +42,7 @@ from .exceptions import (
 # Version
 __version__ = "0.8.0"
 
-# Public API - functions and client class
+# Public API - core functions and exceptions
 __all__ = [
     # Core functions
     "create_isochrone",
@@ -53,8 +50,6 @@ __all__ = [
     "get_census_data",
     "create_map",
     "get_poi",
-    # Client class
-    "SocialMapper",
     # Core exceptions
     "SocialMapperError",
     "ValidationError",
