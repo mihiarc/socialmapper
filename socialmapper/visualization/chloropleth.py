@@ -1,4 +1,4 @@
-"""Chloropleth map creation for socialmapper outputs."""
+"""Choropleth map creation for socialmapper outputs."""
 
 import contextlib
 from datetime import datetime
@@ -17,7 +17,20 @@ try:
 except ImportError:
     CONTEXTILY_AVAILABLE = False
 
-from .config import ClassificationScheme, ColorScheme, LegendConfig, MapConfig
+from .config import (
+    DEFAULT_FIGSIZE,
+    DEFAULT_DPI,
+    DEFAULT_CMAP,
+    DEFAULT_CLASSIFICATION,
+    DEFAULT_N_CLASSES,
+    DEFAULT_EDGE_COLOR,
+    DEFAULT_EDGE_WIDTH,
+    DEFAULT_ALPHA,
+    DEFAULT_MISSING_COLOR,
+    DEFAULT_LEGEND_LOC,
+    DEFAULT_LEGEND_FONTSIZE,
+    DEFAULT_LEGEND_FMT,
+)
 from .utils import add_north_arrow, add_scale_bar
 
 
@@ -31,15 +44,44 @@ class MapType(str, Enum):
 
 
 class ChoroplethMap:
-    """Create professional static choropleth maps from socialmapper data."""
+    """Create professional static choropleth maps from socialmapper data.
 
-    def __init__(self, config: MapConfig | None = None):
-        """Initialize choropleth map creator.
+    Simplified interface using direct parameters instead of config objects.
+    """
 
-        Args:
-            config: Map configuration object. If None, uses defaults.
+    def __init__(
+        self,
+        figsize: tuple[float, float] = DEFAULT_FIGSIZE,
+        dpi: int = DEFAULT_DPI,
+        cmap: str = DEFAULT_CMAP,
+        classification: str = DEFAULT_CLASSIFICATION,
+        n_classes: int = DEFAULT_N_CLASSES,
+        **kwargs
+    ):
+        """Initialize choropleth map creator with direct parameters.
+
+        Parameters
+        ----------
+        figsize : tuple, optional
+            Figure size (width, height)
+        dpi : int, optional
+            Resolution for saved images
+        cmap : str, optional
+            Matplotlib colormap name (e.g., 'viridis', 'YlOrRd', 'Blues')
+        classification : str, optional
+            Mapclassify scheme (e.g., 'quantiles', 'fisher_jenks')
+        n_classes : int, optional
+            Number of classification bins
+        **kwargs
+            Additional parameters passed to plotting functions
         """
-        self.config = config or MapConfig()
+        self.figsize = figsize
+        self.dpi = dpi
+        self.cmap = cmap
+        self.classification = classification
+        self.n_classes = n_classes
+        self.kwargs = kwargs
+
         self._fig = None
         self._ax = None
         self._gdf = None
@@ -52,54 +94,71 @@ class ChoroplethMap:
         map_type: MapType = MapType.DEMOGRAPHIC,
         poi_gdf: gpd.GeoDataFrame | None = None,
         isochrone_gdf: gpd.GeoDataFrame | None = None,
-        config_overrides: dict[str, Any] | None = None,
+        title: str | None = None,
+        legend: bool = True,
+        add_basemap: bool = True,
+        **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Create a choropleth map from a GeoDataFrame.
 
-        Args:
-            gdf: GeoDataFrame with data to map
-            column: Column name to visualize
-            map_type: Type of map to create
-            poi_gdf: Optional POI locations to overlay
-            isochrone_gdf: Optional isochrone boundaries to overlay
-            config_overrides: Optional config overrides for this map
+        Parameters
+        ----------
+        gdf : GeoDataFrame
+            GeoDataFrame with data to map
+        column : str
+            Column name to visualize
+        map_type : MapType, optional
+            Type of map to create
+        poi_gdf : GeoDataFrame, optional
+            POI locations to overlay
+        isochrone_gdf : GeoDataFrame, optional
+            Isochrone boundaries to overlay
+        title : str, optional
+            Map title
+        legend : bool, optional
+            Whether to show legend
+        add_basemap : bool, optional
+            Whether to add contextily basemap
+        **kwargs
+            Additional parameters override instance defaults
 
-        Returns:
-            Tuple of (Figure, Axes) objects
+        Returns
+        -------
+        fig : Figure
+            Matplotlib figure object
+        ax : Axes
+            Matplotlib axes object
         """
-        # Apply config overrides if provided
-        if config_overrides:
-            config_dict = self.config.model_dump()
-            config_dict.update(config_overrides)
-            self.config = MapConfig(**config_dict)
+        # Merge kwargs with instance defaults
+        params = {**self.kwargs, **kwargs}
 
         # Store data
         self._gdf = gdf.copy()
 
         # Simplify geometries if requested
-        if self.config.simplify_tolerance:
+        if params.get('simplify_tolerance'):
             self._gdf["geometry"] = self._gdf.geometry.simplify(
-                tolerance=self.config.simplify_tolerance
+                tolerance=params['simplify_tolerance']
             )
 
         # Create figure and axes
+        figsize = params.get('figsize', self.figsize)
+        facecolor = params.get('facecolor', 'white')
+        edgecolor = params.get('edgecolor', 'none')
+
         self._fig, self._ax = plt.subplots(
-            1,
-            1,
-            figsize=self.config.figsize,
-            facecolor=self.config.facecolor,
-            edgecolor=self.config.edgecolor,
+            1, 1, figsize=figsize, facecolor=facecolor, edgecolor=edgecolor
         )
 
         # Remove axes for cleaner look
         self._ax.set_axis_off()
 
-        # Create the base choropleth first to establish the view
-        self._create_choropleth(column)
+        # Create the base choropleth
+        self._create_choropleth(column, legend=legend, **params)
 
-        # Add basemap after choropleth (if enabled) - it will go to background with zorder=0
-        if self.config.add_basemap and CONTEXTILY_AVAILABLE:
-            self._add_basemap()
+        # Add basemap after choropleth
+        if add_basemap and CONTEXTILY_AVAILABLE:
+            self._add_basemap(**params)
 
         # Add overlays based on map type
         if map_type == MapType.ACCESSIBILITY and isochrone_gdf is not None:
@@ -109,154 +168,95 @@ class ChoroplethMap:
             self._add_poi_overlay(poi_gdf)
 
         # Add map elements
-        self._add_title()
-        self._add_north_arrow()
-        self._add_scale_bar()
-        self._add_attribution()
+        if title:
+            self._add_title(title, **params)
+        self._add_north_arrow(**params)
+        self._add_scale_bar(**params)
+        self._add_attribution(**params)
 
         # Tight layout
         plt.tight_layout()
 
         return self._fig, self._ax
 
-    def _create_choropleth(self, column: str) -> None:
+    def _create_choropleth(self, column: str, legend: bool = True, **kwargs) -> None:
         """Create the base choropleth layer."""
-        # Check if column exists
         if column not in self._gdf.columns:
             raise ValueError(f"Column '{column}' not found in GeoDataFrame")
 
         # Handle missing data and Census API error codes
         self._gdf = self._gdf.copy()
-
-        # Census API error codes (negative values like -666666666)
         census_error_codes = [-666666666, -999999999, -888888888, -555555555]
         error_mask = self._gdf[column].isin(census_error_codes)
-
-        # Standard missing data
         missing_mask = self._gdf[column].isna() | error_mask
-
-        # Replace error codes with NaN for proper handling
         self._gdf.loc[error_mask, column] = None
 
         # Create classifier for non-missing data
         valid_data = self._gdf[~missing_mask][column]
 
         if len(valid_data) > 0:
-            # Create classification
-            if self.config.classification_scheme == ClassificationScheme.DEFINED_INTERVAL:
-                # For defined interval, we need to specify intervals
-                # Using quantiles as fallback
-                scheme = "quantiles"
-            else:
-                scheme = self.config.classification_scheme.value
+            classification = kwargs.get('classification', self.classification)
+            n_classes = kwargs.get('n_classes', self.n_classes)
+
+            # Handle defined_interval scheme
+            if classification == "defined_interval":
+                classification = "quantiles"  # Fallback
 
             try:
                 self._classifier = mapclassify.classify(
-                    valid_data, scheme=scheme, k=self.config.n_classes
+                    valid_data, scheme=classification, k=n_classes
                 )
             except Exception:
-                # Fallback to quantiles if classification fails
+                # Fallback to quantiles
                 self._classifier = mapclassify.classify(
-                    valid_data, scheme="quantiles", k=self.config.n_classes
+                    valid_data, scheme="quantiles", k=n_classes
                 )
 
+        # Get styling parameters
+        cmap = kwargs.get('cmap', self.cmap)
+        edge_color = kwargs.get('edge_color', DEFAULT_EDGE_COLOR)
+        edge_width = kwargs.get('edge_width', DEFAULT_EDGE_WIDTH)
+        alpha = kwargs.get('alpha', DEFAULT_ALPHA)
+        missing_color = kwargs.get('missing_color', DEFAULT_MISSING_COLOR)
+
         # Plot choropleth
-        if self.config.legend and self._classifier:
-            # Create custom legend
-            legend_kwds = self._create_legend_kwds(column)
-
-            self._gdf.plot(
-                column=column,
-                ax=self._ax,
-                scheme=self.config.classification_scheme.value,
-                k=self.config.n_classes,
-                cmap=self.config.color_scheme.value,
-                edgecolor=self.config.edge_color,
-                linewidth=self.config.edge_width,
-                alpha=self.config.alpha,
-                missing_kwds={"color": self.config.missing_color, "label": "No data"},
-                legend=True,
-                legend_kwds=legend_kwds,
-                zorder=3,  # Put choropleth above basemap and other layers
-            )
-        else:
-            # Plot without legend
-            self._gdf.plot(
-                column=column,
-                ax=self._ax,
-                scheme=self.config.classification_scheme.value,
-                k=self.config.n_classes,
-                cmap=self.config.color_scheme.value,
-                edgecolor=self.config.edge_color,
-                linewidth=self.config.edge_width,
-                alpha=self.config.alpha,
-                missing_kwds={"color": self.config.missing_color},
-                zorder=3,  # Put choropleth above basemap and other layers
-            )
-
-    def _create_legend_kwds(self, column: str) -> dict[str, Any]:
-        """Create legend keyword arguments."""
-        legend_config = self.config.legend_config
-
-        legend_kwds = {
-            "loc": legend_config.loc,
-            "title": legend_config.title or self._format_column_name(column),
-            "fontsize": legend_config.fontsize,
-            "title_fontsize": legend_config.title_fontsize,
-            "frameon": legend_config.frameon,
-            "fancybox": legend_config.fancybox,
-            "shadow": legend_config.shadow,
-            "borderpad": legend_config.borderpad,
-            "columnspacing": legend_config.columnspacing,
-            "fmt": legend_config.fmt,
+        plot_kwargs = {
+            'column': column,
+            'ax': self._ax,
+            'scheme': kwargs.get('classification', self.classification),
+            'k': kwargs.get('n_classes', self.n_classes),
+            'cmap': cmap,
+            'edgecolor': edge_color,
+            'linewidth': edge_width,
+            'alpha': alpha,
+            'missing_kwds': {'color': missing_color, 'label': 'No data'},
+            'zorder': 3,
         }
 
-        if legend_config.bbox_to_anchor:
-            legend_kwds["bbox_to_anchor"] = legend_config.bbox_to_anchor
+        if legend and self._classifier:
+            legend_kwds = {
+                'loc': kwargs.get('legend_loc', DEFAULT_LEGEND_LOC),
+                'title': kwargs.get('legend_title') or self._format_column_name(column),
+                'fontsize': kwargs.get('legend_fontsize', DEFAULT_LEGEND_FONTSIZE),
+                'fmt': kwargs.get('legend_fmt', DEFAULT_LEGEND_FMT),
+            }
+            plot_kwargs['legend'] = True
+            plot_kwargs['legend_kwds'] = legend_kwds
+        else:
+            plot_kwargs['legend'] = False
 
-        # Don't pass custom labels - let geopandas handle it
-        if legend_config.labels:
-            legend_kwds["labels"] = legend_config.labels
-
-        return legend_kwds
-
-    def _format_legend_labels(self, classifier) -> list[str]:
-        """Format legend labels based on classifier bins."""
-        labels = []
-        fmt = self.config.legend_config.fmt
-
-        # Get the bins from the classifier
-        bins = list(classifier.bins)
-        n_classes = len(bins) - 1
-
-        for i in range(n_classes):
-            lower = bins[i]
-            upper = bins[i + 1]
-
-            if i == 0:
-                # First class
-                label = f"≤ {fmt.format(upper)}"
-            elif i == n_classes - 1:
-                # Last class
-                label = f"> {fmt.format(lower)}"
-            else:
-                # Middle classes
-                label = f"{fmt.format(lower)} - {fmt.format(upper)}"
-            labels.append(label)
-
-        return labels
+        self._gdf.plot(**plot_kwargs)
 
     def _format_column_name(self, column: str) -> str:
         """Format column name for display."""
-        # Handle common census variable patterns
         if column.startswith("B") and "_" in column:
             return "Census Variable"
 
-        # Handle snake_case
         formatted = column.replace("_", " ").title()
-
-        # Handle specific cases
-        replacements = {"Km": "km", "Miles": "miles", "Poi": "POI", "Id": "ID", "Fips": "FIPS"}
+        replacements = {
+            "Km": "km", "Miles": "miles", "Poi": "POI",
+            "Id": "ID", "Fips": "FIPS"
+        }
 
         for old, new in replacements.items():
             formatted = formatted.replace(old, new)
@@ -271,36 +271,22 @@ class ChoroplethMap:
             linewidth=2,
             alpha=0.7,
             label="Travel time boundary",
-            zorder=4,  # Put isochrones above choropleth
+            zorder=4,
         )
 
     def _add_poi_overlay(self, poi_gdf: gpd.GeoDataFrame) -> None:
         """Add POI locations as overlay."""
-        # Determine POI type from data if available
-        if "tags" in poi_gdf.columns:
-            # Group by amenity type if available
-            if "amenity" in poi_gdf.columns:
-                for amenity_type, group in poi_gdf.groupby("amenity"):
-                    group.plot(
-                        ax=self._ax,
-                        color="teal",
-                        markersize=80,
-                        marker="o",
-                        edgecolor="gold",
-                        linewidth=2,
-                        label=amenity_type.title(),
-                        zorder=5,  # Put POIs on top
-                    )
-            else:
-                poi_gdf.plot(
+        if "tags" in poi_gdf.columns and "amenity" in poi_gdf.columns:
+            for amenity_type, group in poi_gdf.groupby("amenity"):
+                group.plot(
                     ax=self._ax,
                     color="teal",
                     markersize=80,
                     marker="o",
                     edgecolor="gold",
                     linewidth=2,
-                    label="Points of Interest",
-                    zorder=5,  # Put POIs on top
+                    label=amenity_type.title(),
+                    zorder=5,
                 )
         else:
             poi_gdf.plot(
@@ -311,149 +297,123 @@ class ChoroplethMap:
                 edgecolor="gold",
                 linewidth=2,
                 label="Points of Interest",
-                zorder=5,  # Put POIs on top
+                zorder=5,
             )
 
         # Add legend for overlays if any exist
         if len(self._ax.get_legend_handles_labels()[0]) > 0:
-            self._ax.legend(loc="upper left", frameon=True, fancybox=True, shadow=True, fontsize=10)
-
-    def _add_title(self) -> None:
-        """Add title to the map."""
-        if self.config.title:
-            self._ax.set_title(
-                self.config.title,
-                fontsize=self.config.title_fontsize,
-                fontweight=self.config.title_fontweight,
-                pad=self.config.title_pad,
+            self._ax.legend(
+                loc="upper left", frameon=True, fancybox=True,
+                shadow=True, fontsize=10
             )
 
-    def _add_north_arrow(self) -> None:
+    def _add_title(self, title: str, **kwargs) -> None:
+        """Add title to the map."""
+        self._ax.set_title(
+            title,
+            fontsize=kwargs.get('title_fontsize', 16),
+            fontweight=kwargs.get('title_fontweight', 'bold'),
+            pad=kwargs.get('title_pad', 20),
+        )
+
+    def _add_north_arrow(self, **kwargs) -> None:
         """Add north arrow to the map."""
-        if self.config.north_arrow:
+        if kwargs.get('north_arrow', True):
             with contextlib.suppress(Exception):
-                # If north arrow fails, continue without it
                 add_north_arrow(
                     self._ax,
-                    location=self.config.north_arrow_location,
-                    scale=self.config.north_arrow_scale,
+                    location=kwargs.get('north_arrow_location', 'upper right'),
+                    scale=kwargs.get('north_arrow_scale', 0.5),
                 )
 
-    def _add_scale_bar(self) -> None:
+    def _add_scale_bar(self, **kwargs) -> None:
         """Add scale bar to the map."""
-        if self.config.scale_bar:
+        if kwargs.get('scale_bar', True):
             with contextlib.suppress(Exception):
-                # If scale bar fails, continue without it
                 add_scale_bar(
                     self._ax,
-                    location=self.config.scale_bar_location,
-                    length_fraction=self.config.scale_bar_length_fraction,
-                    box_alpha=self.config.scale_bar_box_alpha,
-                    font_size=self.config.scale_bar_font_size,
+                    location=kwargs.get('scale_bar_location', 'lower right'),
+                    length_fraction=kwargs.get('scale_bar_length_fraction', 0.25),
+                    box_alpha=kwargs.get('scale_bar_box_alpha', 0.8),
+                    font_size=kwargs.get('scale_bar_font_size', 10),
                 )
 
-    def _add_basemap(self) -> None:
+    def _add_basemap(self, **kwargs) -> None:
         """Add contextily basemap to the map."""
         if not CONTEXTILY_AVAILABLE:
             return
 
         try:
-            # Store current axis limits before adding basemap
-            xlim = self._ax.get_xlim()
-            ylim = self._ax.get_ylim()
-
-            print(f"   - Current axis limits: x={xlim}, y={ylim}")
-            print(f"   - Current CRS: {self._gdf.crs}")
-
             # Ensure data is in Web Mercator for contextily
             if self._gdf.crs != "EPSG:3857":
                 gdf_mercator = self._gdf.to_crs("EPSG:3857")
-                print("   - Transformed to Web Mercator")
             else:
                 gdf_mercator = self._gdf
-                print("   - Already in Web Mercator")
 
             # Prepare zoom parameter
             zoom_param = {}
-            if self.config.basemap_zoom != "auto":
-                if isinstance(self.config.basemap_zoom, int):
-                    # Cap zoom level to valid range (0-19 for most providers)
-                    zoom_param["zoom"] = min(max(self.config.basemap_zoom, 0), 19)
-                    print(f"   - Using zoom level: {zoom_param['zoom']}")
-                elif self.config.basemap_zoom is not None:
-                    try:
-                        zoom_level = int(self.config.basemap_zoom)
-                        # Cap zoom level to valid range
-                        zoom_param["zoom"] = min(max(zoom_level, 0), 19)
-                        print(f"   - Using zoom level: {zoom_param['zoom']}")
-                    except ValueError:
-                        # Invalid zoom value, let contextily auto-determine
-                        print("   - Using auto zoom")
-            else:
-                print("   - Using auto zoom")
+            basemap_zoom = kwargs.get('basemap_zoom', 'auto')
+            if basemap_zoom != "auto":
+                if isinstance(basemap_zoom, int):
+                    zoom_param["zoom"] = min(max(basemap_zoom, 0), 19)
 
-            # Add basemap with proper z-order (behind everything)
+            # Add basemap
             ctx.add_basemap(
                 self._ax,
                 crs=gdf_mercator.crs,
-                source=self.config.basemap_source,
-                alpha=self.config.basemap_alpha,
-                attribution=self.config.basemap_attribution,
-                zorder=0,  # Put basemap at the bottom layer
-                **zoom_param,  # Only include zoom if not "auto"
+                source=kwargs.get('basemap_source', 'OpenStreetMap.Mapnik'),
+                alpha=kwargs.get('basemap_alpha', 0.6),
+                attribution=kwargs.get('basemap_attribution'),
+                zorder=0,
+                **zoom_param,
             )
 
-            print(f"✅ Added {self.config.basemap_source} basemap")
-
         except Exception as e:
-            error_msg = f"⚠️ Failed to add basemap: {type(e).__name__}: {e}"
+            print(f"⚠️ Failed to add basemap: {e}")
 
-            # Provide helpful debugging info
-            if "HTTP" in str(e) or "URLError" in str(e):
-                error_msg += "\n   This might be a network connectivity issue. Check your internet connection."
-            elif "zoom" in str(e).lower():
-                error_msg += (
-                    "\n   Try setting a specific zoom level in MapConfig (e.g., basemap_zoom=12)"
-                )
-            elif "CRS" in str(e):
-                error_msg += f"\n   CRS issue detected. Current CRS: {self._gdf.crs}"
-
-            print(error_msg)
-            # Continue without basemap
-
-    def _add_attribution(self) -> None:
+    def _add_attribution(self, **kwargs) -> None:
         """Add attribution text to the map."""
-        if self.config.attribution:
+        attribution = kwargs.get(
+            'attribution',
+            "Data: US Census Bureau, OpenStreetMap | Analysis: SocialMapper"
+        )
+
+        if attribution:
+            fontsize = kwargs.get('attribution_fontsize', 9)
+            color = kwargs.get('attribution_color', 'gray')
+
             # Left side attribution
             plt.figtext(
-                0.02,
-                0.02,
-                self.config.attribution,
-                fontsize=self.config.attribution_fontsize,
-                style="italic",
-                color=self.config.attribution_color,
-                ha="left",
+                0.02, 0.02, attribution,
+                fontsize=fontsize, style="italic", color=color, ha="left"
             )
 
             # Right side date
             date_text = f"Created: {datetime.now().strftime('%Y-%m-%d')}"
             plt.figtext(
-                0.98,
-                0.02,
-                date_text,
-                fontsize=self.config.attribution_fontsize,
-                style="italic",
-                color=self.config.attribution_color,
-                ha="right",
+                0.98, 0.02, date_text,
+                fontsize=fontsize, style="italic", color=color, ha="right"
             )
 
-    def save(self, filepath: str | Path, format: str | None = None, dpi: int | None = None) -> None:
+    def save(
+        self,
+        filepath: str | Path,
+        format: str | None = None,
+        dpi: int | None = None,
+        **kwargs
+    ) -> None:
         """Save the map to file.
 
-        Args:
-            filepath: Path to save the map
-            format: Output format (png, pdf, svg). If None, inferred from filepath
-            dpi: DPI for raster formats. If None, uses config default
+        Parameters
+        ----------
+        filepath : str or Path
+            Path to save the map
+        format : str, optional
+            Output format (png, pdf, svg). If None, inferred from filepath
+        dpi : int, optional
+            DPI for raster formats. If None, uses instance default
+        **kwargs
+            Additional savefig parameters
         """
         if self._fig is None:
             raise ValueError("No map has been created yet. Call create_map first.")
@@ -464,45 +424,57 @@ class ChoroplethMap:
         if format is None:
             format = filepath.suffix.lstrip(".") or "png"
 
-        # Use config DPI if not provided
+        # Use instance DPI if not provided
         if dpi is None:
-            dpi = self.config.dpi
+            dpi = self.dpi
 
         # Save figure
-        self._fig.savefig(
-            filepath,
-            format=format,
-            dpi=dpi,
-            bbox_inches=self.config.bbox_inches,
-            pad_inches=self.config.pad_inches,
-            facecolor=self.config.facecolor,
-            edgecolor=self.config.edgecolor,
-        )
+        save_params = {
+            'format': format,
+            'dpi': dpi,
+            'bbox_inches': kwargs.get('bbox_inches', 'tight'),
+            'pad_inches': kwargs.get('pad_inches', 0.1),
+            'facecolor': kwargs.get('facecolor', 'white'),
+            'edgecolor': kwargs.get('edgecolor', 'none'),
+        }
+
+        self._fig.savefig(filepath, **save_params)
 
     @classmethod
     def create_demographic_map(
-        cls, gdf: gpd.GeoDataFrame, demographic_column: str, title: str | None = None, **kwargs
+        cls,
+        gdf: gpd.GeoDataFrame,
+        demographic_column: str,
+        title: str | None = None,
+        **kwargs
     ) -> tuple[plt.Figure, plt.Axes]:
         """Convenience method to create a demographic choropleth map.
 
-        Args:
-            gdf: GeoDataFrame with census data
-            demographic_column: Column to visualize
-            title: Map title
-            **kwargs: Additional config overrides
+        Parameters
+        ----------
+        gdf : GeoDataFrame
+            GeoDataFrame with census data
+        demographic_column : str
+            Column to visualize
+        title : str, optional
+            Map title
+        **kwargs
+            Additional parameters
 
-        Returns:
-            Tuple of (Figure, Axes) objects
+        Returns
+        -------
+        fig : Figure
+            Matplotlib figure object
+        ax : Axes
+            Matplotlib axes object
         """
-        config_overrides = {
-            "title": title or f"Distribution of {demographic_column}",
-            "color_scheme": ColorScheme.BLUES,
-            **kwargs,
-        }
-
-        mapper = cls()
+        mapper = cls(cmap=kwargs.pop('cmap', 'Blues'), **kwargs)
+        title = title or f"Distribution of {demographic_column}"
         return mapper.create_map(
-            gdf, demographic_column, map_type=MapType.DEMOGRAPHIC, config_overrides=config_overrides
+            gdf, demographic_column,
+            map_type=MapType.DEMOGRAPHIC,
+            title=title,
+            **kwargs
         )
 
     @classmethod
@@ -516,34 +488,46 @@ class ChoroplethMap:
     ) -> tuple[plt.Figure, plt.Axes]:
         """Convenience method to create a distance-based choropleth map.
 
-        Args:
-            gdf: GeoDataFrame with distance data
-            distance_column: Distance column to visualize
-            poi_gdf: Optional POI locations
-            title: Map title
-            **kwargs: Additional config overrides
+        Parameters
+        ----------
+        gdf : GeoDataFrame
+            GeoDataFrame with distance data
+        distance_column : str, optional
+            Distance column to visualize
+        poi_gdf : GeoDataFrame, optional
+            POI locations
+        title : str, optional
+            Map title
+        **kwargs
+            Additional parameters
 
-        Returns:
-            Tuple of (Figure, Axes) objects
+        Returns
+        -------
+        fig : Figure
+            Matplotlib figure object
+        ax : Axes
+            Matplotlib axes object
         """
-        config_overrides = {
-            "title": title or "Travel Distance Analysis",
-            "color_scheme": ColorScheme.YLORD,
-            "classification_scheme": ClassificationScheme.FISHER_JENKS,
-            **kwargs,
-        }
+        mapper = cls(
+            cmap=kwargs.pop('cmap', 'YlOrRd'),
+            classification=kwargs.pop('classification', 'fisher_jenks'),
+            **kwargs
+        )
 
-        # Update legend format for distances
-        if "legend_config" not in config_overrides:
-            config_overrides["legend_config"] = LegendConfig(title="Distance (km)", fmt="{:.1f}")
+        title = title or "Travel Distance Analysis"
+        legend_kwds = kwargs.pop('legend_kwds', {})
+        legend_kwds.setdefault('title', 'Distance (km)')
+        legend_kwds.setdefault('fmt', '{:.1f}')
 
-        mapper = cls()
         return mapper.create_map(
             gdf,
             distance_column,
             map_type=MapType.DISTANCE,
             poi_gdf=poi_gdf,
-            config_overrides=config_overrides,
+            title=title,
+            legend_title=legend_kwds.get('title'),
+            legend_fmt=legend_kwds.get('fmt'),
+            **kwargs,
         )
 
     @classmethod
@@ -558,30 +542,41 @@ class ChoroplethMap:
     ) -> tuple[plt.Figure, plt.Axes]:
         """Convenience method to create an accessibility-focused map.
 
-        Args:
-            gdf: GeoDataFrame with data
-            column: Column to visualize
-            poi_gdf: Optional POI locations
-            isochrone_gdf: Optional isochrone boundaries
-            title: Map title
-            **kwargs: Additional config overrides
+        Parameters
+        ----------
+        gdf : GeoDataFrame
+            GeoDataFrame with data
+        column : str
+            Column to visualize
+        poi_gdf : GeoDataFrame, optional
+            POI locations
+        isochrone_gdf : GeoDataFrame, optional
+            Isochrone boundaries
+        title : str, optional
+            Map title
+        **kwargs
+            Additional parameters
 
-        Returns:
-            Tuple of (Figure, Axes) objects
+        Returns
+        -------
+        fig : Figure
+            Matplotlib figure object
+        ax : Axes
+            Matplotlib axes object
         """
-        config_overrides = {
-            "title": title or "Accessibility Analysis",
-            "color_scheme": ColorScheme.VIRIDIS,
-            "alpha": 0.8,
-            **kwargs,
-        }
+        mapper = cls(
+            cmap=kwargs.pop('cmap', 'viridis'),
+            **kwargs
+        )
 
-        mapper = cls()
+        title = title or "Accessibility Analysis"
         return mapper.create_map(
             gdf,
             column,
             map_type=MapType.ACCESSIBILITY,
             poi_gdf=poi_gdf,
             isochrone_gdf=isochrone_gdf,
-            config_overrides=config_overrides,
+            title=title,
+            alpha=kwargs.get('alpha', 0.8),
+            **kwargs,
         )
