@@ -27,15 +27,18 @@ from .api import (
 # Import the client class
 from .client import SocialMapper
 
-# Import exceptions for testing
+# Import exceptions
 from .exceptions import (
     SocialMapperError,
-    ConfigurationError,
     ValidationError,
-    DataProcessingError,
-    ExternalAPIError,
-    FileSystemError,
+    APIError,
+    DataError,
     AnalysisError,
+    # Legacy aliases
+    ConfigurationError,
+    ExternalAPIError,
+    DataProcessingError,
+    FileSystemError,
     VisualizationError,
 )
 
@@ -52,13 +55,16 @@ __all__ = [
     "get_poi",
     # Client class
     "SocialMapper",
-    # Exceptions
+    # Core exceptions
     "SocialMapperError",
-    "ConfigurationError",
     "ValidationError",
-    "DataProcessingError",
-    "ExternalAPIError",
-    "FileSystemError",
+    "APIError",
+    "DataError",
     "AnalysisError",
+    # Legacy aliases
+    "ConfigurationError",
+    "ExternalAPIError",
+    "DataProcessingError",
+    "FileSystemError",
     "VisualizationError",
 ]
