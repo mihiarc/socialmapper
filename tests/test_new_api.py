@@ -56,10 +56,12 @@ class TestCreateIsochrone:
     
     def test_invalid_coordinates(self):
         """Test validation of coordinate bounds."""
-        with pytest.raises(ValueError, match="Invalid coordinates"):
+        from socialmapper.exceptions import ValidationError
+
+        with pytest.raises(ValidationError, match="Invalid coordinates"):
             create_isochrone((100, 200), travel_time=15)
-        
-        with pytest.raises(ValueError, match="Invalid coordinates"):
+
+        with pytest.raises(ValidationError, match="Invalid coordinates"):
             create_isochrone((-91, 0), travel_time=15)
 
 
