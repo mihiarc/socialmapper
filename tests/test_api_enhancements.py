@@ -280,5 +280,5 @@ class TestGenerateReport:
 
     def test_invalid_format(self):
         """Test invalid report format."""
-        with pytest.raises(ValueError, match="Format must be 'html' or 'pdf'"):
+        with pytest.raises(ValueError, match="Report format must be one of"):
             generate_report({}, format="invalid")
