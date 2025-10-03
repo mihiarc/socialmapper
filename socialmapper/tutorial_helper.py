@@ -8,16 +8,27 @@ from contextlib import contextmanager
 from typing import Any
 
 from .exceptions import (
-    CensusAPIError,
-    ConfigurationError,
-    GeocodingError,
-    InvalidLocationError,
-    MissingAPIKeyError,
-    NoDataFoundError,
-    OSMAPIError,
+    APIError,
+    ValidationError,
+    DataError,
     SocialMapperError,
-    format_error_for_user,
 )
+
+# Map old exception names to new simple ones
+CensusAPIError = APIError
+GeocodingError = APIError
+OSMAPIError = APIError
+ConfigurationError = ValidationError
+InvalidLocationError = ValidationError
+MissingAPIKeyError = ValidationError
+NoDataFoundError = DataError
+
+
+def format_error_for_user(error: Exception) -> str:
+    """Format any error for user display."""
+    if isinstance(error, SocialMapperError):
+        return str(error)
+    return f"An unexpected error occurred: {type(error).__name__}: {error}"
 
 
 @contextmanager
