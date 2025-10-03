@@ -12,14 +12,6 @@ import geopandas as gpd
 from shapely.geometry import shape
 from geopy.distance import geodesic
 
-from .api_config import (
-    IsochroneConfig,
-    CensusConfig,
-    PoiConfig,
-    MapConfig,
-    MultipleAnalysisConfig,
-    ReportConfig
-)
 from .validators import validate_location_input, validate_export_format
 from .helpers import (
     resolve_coordinates,
@@ -78,34 +70,19 @@ def create_isochrone(
     >>> iso['properties']['travel_mode']
     'drive'
     """
-    config = IsochroneConfig(location, travel_time, travel_mode)
-    return _create_isochrone_from_config(config)
-
-
-def _create_isochrone_from_config(config: IsochroneConfig) -> Dict[str, Any]:
-    """
-    Create isochrone from configuration object.
-
-    Internal helper function that generates an isochrone polygon
-    using the provided configuration parameters.
-
-    Parameters
-    ----------
-    config : IsochroneConfig
-        Configuration object containing location, travel_time,
-        and travel_mode parameters.
-
-    Returns
-    -------
-    dict
-        GeoJSON Feature dict with isochrone polygon and metadata.
-    """
+    from .validators import validate_travel_time, validate_travel_mode
     from ._isochrone import generate_isochrone
 
-    coords, location_name = resolve_coordinates(config.location)
+    # Validate parameters
+    validate_travel_time(travel_time)
+    validate_travel_mode(travel_mode)
+
+    # Resolve coordinates
+    coords, location_name = resolve_coordinates(location)
     lat, lon = coords
 
-    polygon = generate_isochrone(lat, lon, config.travel_time, config.travel_mode)
+    # Generate isochrone
+    polygon = generate_isochrone(lat, lon, travel_time, travel_mode)
     area_sq_km = calculate_polygon_area(polygon)
 
     return {
@@ -113,8 +90,8 @@ def _create_isochrone_from_config(config: IsochroneConfig) -> Dict[str, Any]:
         "geometry": polygon.__geo_interface__,
         "properties": {
             "location": location_name,
-            "travel_time": config.travel_time,
-            "travel_mode": config.travel_mode,
+            "travel_time": travel_time,
+            "travel_mode": travel_mode,
             "area_sq_km": area_sq_km
         }
     }
@@ -234,36 +211,19 @@ def get_census_data(
     >>> data["060750201001"]["B01003_001E"]
     2543
     """
-    config = CensusConfig(location, variables, year)
-    return _get_census_data_from_config(config)
-
-
-def _get_census_data_from_config(config: CensusConfig) -> Dict[str, Any]:
-    """
-    Retrieve census data using configuration object.
-
-    Internal helper function that fetches census data based on
-    the provided configuration parameters.
-
-    Parameters
-    ----------
-    config : CensusConfig
-        Configuration object containing location, variables,
-        and year parameters.
-
-    Returns
-    -------
-    dict
-        Census data organized by GEOID.
-    """
     from ._census import fetch_census_data, normalize_variable_names
 
-    var_codes = normalize_variable_names(config.variables)
-    geoids = _resolve_geoids_from_location(config.location)
+    # Normalize variable names
+    var_codes = normalize_variable_names(variables)
 
-    data = fetch_census_data(geoids, var_codes, config.year)
+    # Resolve location to GEOIDs
+    geoids = _resolve_geoids_from_location(location)
 
-    if isinstance(config.location, tuple):
+    # Fetch census data
+    data = fetch_census_data(geoids, var_codes, year)
+
+    # Return single value for coordinate tuples, full dict otherwise
+    if isinstance(location, tuple):
         return data.get(geoids[0], {}) if geoids else {}
     else:
         return data
@@ -374,41 +334,23 @@ def create_map(
     ...           save_path="output.shp",
     ...           export_format="shapefile")
     """
-    config = MapConfig(data, column, title, save_path, export_format)
-    return _create_map_from_config(config)
+    # Validate export format
+    validate_export_format(export_format)
 
+    # Convert data to GeoDataFrame
+    gdf = _convert_data_to_geodataframe(data)
 
-def _create_map_from_config(config: MapConfig) -> Optional[Union[bytes, Dict]]:
-    """
-    Generate map visualization from configuration.
+    # Check column exists
+    if column not in gdf.columns:
+        raise ValueError(f"Column '{column}' not found in data")
 
-    Internal helper function that creates choropleth maps
-    using the provided configuration parameters.
-
-    Parameters
-    ----------
-    config : MapConfig
-        Configuration object containing data, column,
-        title, save_path, and export_format.
-
-    Returns
-    -------
-    bytes, dict, or None
-        Map output in specified format, or None if saved to file.
-    """
-    validate_export_format(config.export_format)
-
-    gdf = _convert_data_to_geodataframe(config.data)
-
-    if config.column not in gdf.columns:
-        raise ValueError(f"Column '{config.column}' not found in data")
-
-    if config.export_format in ["png", "pdf", "svg"]:
-        return _create_image_map(gdf, config)
-    elif config.export_format == "geojson":
-        return _create_geojson_export(gdf, config.save_path)
-    elif config.export_format == "shapefile":
-        return _create_shapefile_export(gdf, config.save_path)
+    # Generate map based on format
+    if export_format in ["png", "pdf", "svg"]:
+        return _create_image_map(gdf, column, title, save_path, export_format)
+    elif export_format == "geojson":
+        return _create_geojson_export(gdf, save_path)
+    elif export_format == "shapefile":
+        return _create_shapefile_export(gdf, save_path)
 
 
 def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
@@ -466,7 +408,13 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
         )
 
 
-def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
+def _create_image_map(
+    gdf: gpd.GeoDataFrame,
+    column: str,
+    title: Optional[str],
+    save_path: Optional[str],
+    export_format: str
+):
     """
     Generate image-format choropleth map.
 
@@ -476,8 +424,14 @@ def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
     ----------
     gdf : GeoDataFrame
         Geographic data to visualize.
-    config : MapConfig
-        Map configuration with column, title, and format.
+    column : str
+        Column name to visualize.
+    title : str, optional
+        Map title.
+    save_path : str, optional
+        File path for saving.
+    export_format : str
+        Image format (png, pdf, svg).
 
     Returns
     -------
@@ -487,7 +441,7 @@ def _create_image_map(gdf: gpd.GeoDataFrame, config: MapConfig):
     from ._visualization import generate_choropleth_map
 
     return generate_choropleth_map(
-        gdf, config.column, config.title, config.save_path, format=config.export_format
+        gdf, column, title, save_path, format=export_format
     )
 
 
@@ -614,50 +568,42 @@ def get_poi(
     >>> pois[0]['distance_km']
     0.542
     """
-    config = PoiConfig(location, categories, travel_time, limit, validate_coords)
-    return _get_poi_from_config(config)
-
-
-def _get_poi_from_config(config: PoiConfig) -> List[Dict[str, Any]]:
-    """
-    Retrieve POIs using configuration object.
-
-    Internal helper function that queries and processes
-    points of interest based on configuration.
-
-    Parameters
-    ----------
-    config : PoiConfig
-        Configuration with location, categories, travel_time,
-        limit, and validation settings.
-
-    Returns
-    -------
-    list of dict
-        Filtered and sorted POI data.
-    """
+    from .validators import validate_travel_time
     from ._osm import query_pois
 
-    coords, _ = resolve_coordinates(config.location)
+    # Validate travel time if provided
+    if travel_time is not None:
+        validate_travel_time(travel_time)
+
+    # Resolve coordinates
+    coords, _ = resolve_coordinates(location)
     lat, lon = coords
 
-    search_area = _create_search_area(coords, config.travel_time)
-    pois = query_pois(search_area, config.categories)
+    # Create search area
+    search_area = _create_search_area(coords, travel_time)
 
-    if config.validate_coords:
+    # Query POIs
+    pois = query_pois(search_area, categories)
+
+    # Validate and filter POIs if requested
+    if validate_coords:
         pois = _validate_and_filter_pois(pois)
 
-    _calculate_poi_distances(pois, coords, config.validate_coords)
+    # Calculate distances
+    _calculate_poi_distances(pois, coords, validate_coords)
 
+    # Sort by distance
     pois.sort(
         key=lambda x: x["distance_km"]
         if x["distance_km"] is not None else float('inf')
     )
 
-    if config.validate_coords:
+    # Filter out invalid distances if validating
+    if validate_coords:
         pois = [p for p in pois if p["distance_km"] != float('inf')]
 
-    return pois[:config.limit]
+    # Return limited results
+    return pois[:limit]
 
 
 def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int]):
@@ -819,44 +765,28 @@ def analyze_multiple_pois(
     >>> results['comparison']['population']['highest']
     'San Francisco, CA'
     """
-    config = MultipleAnalysisConfig(locations, travel_time, travel_mode, variables, compare)
-    return _analyze_multiple_from_config(config)
+    # Default variables if not provided
+    if variables is None:
+        variables = ["population"]
 
-
-def _analyze_multiple_from_config(config: MultipleAnalysisConfig) -> Dict[str, Any]:
-    """
-    Perform multi-location demographic analysis.
-
-    Internal helper function that analyzes and compares
-    multiple geographic locations.
-
-    Parameters
-    ----------
-    config : MultipleAnalysisConfig
-        Configuration with locations, travel parameters,
-        variables, and comparison settings.
-
-    Returns
-    -------
-    dict
-        Analysis results with individual and comparative data.
-    """
+    # Build results structure
     results = {
         "locations": [],
         "metadata": {
-            "travel_time": config.travel_time,
-            "travel_mode": config.travel_mode,
-            "variables": config.variables
+            "travel_time": travel_time,
+            "travel_mode": travel_mode,
+            "variables": variables
         }
     }
 
-    for loc in config.locations:
+    # Analyze each location
+    for loc in locations:
         try:
-            iso = create_isochrone(loc, config.travel_time, config.travel_mode)
-            census_data = get_census_data(iso, config.variables)
+            iso = create_isochrone(loc, travel_time, travel_mode)
+            census_data = get_census_data(iso, variables)
 
             aggregated = {}
-            for var in config.variables:
+            for var in variables:
                 values = [
                     data.get(var, 0) for data in census_data.values()
                     if data.get(var) is not None
@@ -888,8 +818,9 @@ def _analyze_multiple_from_config(config: MultipleAnalysisConfig) -> Dict[str, A
                 "error": str(e)
             })
 
-    if config.compare and len(results["locations"]) > 1:
-        results["comparison"] = _create_comparison_analysis(results["locations"], config.variables)
+    # Add comparison if requested and multiple locations
+    if compare and len(results["locations"]) > 1:
+        results["comparison"] = _create_comparison_analysis(results["locations"], variables)
 
     return results
 
@@ -1009,35 +940,18 @@ def generate_report(
     ...     "census_data": census
     ... })
     """
-    config = ReportConfig(analysis_data, format, template, include_maps)
-    return _generate_report_from_config(config)
-
-
-def _generate_report_from_config(config: ReportConfig) -> Union[str, bytes]:
-    """
-    Generate formatted report from configuration.
-
-    Internal helper function that creates analysis reports
-    using the provided configuration parameters.
-
-    Parameters
-    ----------
-    config : ReportConfig
-        Configuration with analysis data, format,
-        template, and map inclusion settings.
-
-    Returns
-    -------
-    str or bytes
-        Formatted report in HTML or PDF format.
-    """
+    from .validators import validate_report_format
     from ._reporting import create_analysis_report
 
+    # Validate format
+    validate_report_format(format)
+
+    # Generate report
     return create_analysis_report(
-        config.analysis_data,
-        config.format,
-        config.template,
-        config.include_maps
+        analysis_data,
+        format,
+        template,
+        include_maps
     )
 
 
