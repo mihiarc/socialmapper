@@ -14,7 +14,6 @@ from typing import Optional, Union
 import geopandas as gpd
 import pandas as pd
 
-from ..census.infrastructure import ModernDataExporter, get_streaming_pipeline
 from ..config.optimization import OptimizationConfig
 from ..constants import LARGE_DATASET_MB
 from .base import DataPrepConfig, ExportError
@@ -107,17 +106,11 @@ def export_census_data(
             f"(~{data_size_mb:.1f} MB)"
         )
 
-        # For very large datasets, use streaming
-        if data_size_mb > LARGE_DATASET_MB and selected_format in ["parquet", "geoparquet"]:
-            logger.info("Using streaming export for large dataset")
-            return _export_with_streaming(
-                census_data,
-                poi_data,
-                output_path,
-                base_filename,
-                output_dir,
-                selected_format,
-                include_geometry,
+        # Note: Streaming export for large datasets not yet implemented
+        if data_size_mb > LARGE_DATASET_MB:
+            logger.warning(
+                f"Large dataset ({data_size_mb:.1f} MB) detected. "
+                "Streaming export not yet implemented - using standard export."
             )
 
         # Prepare data
@@ -194,27 +187,6 @@ def export_to_geoparquet(data: gpd.GeoDataFrame, output_path: str | Path, **kwar
     """
     exporter = GeoParquetExporter()
     return exporter.export(data, output_path, **kwargs)
-
-
-def _export_with_streaming(
-    census_data: gpd.GeoDataFrame,
-    poi_data: dict | list[dict],
-    output_path: str | None,
-    base_filename: str | None,
-    output_dir: str,
-    format: str,
-    include_geometry: bool,
-) -> str:
-    """Use streaming pipeline for large datasets."""
-    # Generate output path
-    if output_path is None:
-        output_path = generate_output_path(base_filename, output_dir, format, include_geometry)
-
-    # Use Phase 3 streaming exporter
-    with ModernDataExporter() as exporter:
-        return exporter.export_census_data_modern(
-            census_data, poi_data, output_path, format=format, include_geometry=include_geometry
-        )
 
 
 # Public API
