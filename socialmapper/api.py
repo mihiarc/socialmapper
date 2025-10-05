@@ -71,7 +71,8 @@ def create_isochrone(
     'drive'
     """
     from .validators import validate_travel_time, validate_travel_mode
-    from ._isochrone import generate_isochrone
+    from .isochrone import create_isochrone_from_poi
+    from .isochrone.travel_modes import TravelMode
 
     # Validate parameters
     validate_travel_time(travel_time)
@@ -81,8 +82,32 @@ def create_isochrone(
     coords, location_name = resolve_coordinates(location)
     lat, lon = coords
 
-    # Generate isochrone
-    polygon = generate_isochrone(lat, lon, travel_time, travel_mode)
+    # Map travel mode string to TravelMode enum
+    mode_map = {
+        "drive": TravelMode.DRIVE,
+        "walk": TravelMode.WALK,
+        "bike": TravelMode.BIKE
+    }
+    travel_mode_enum = mode_map.get(travel_mode, TravelMode.DRIVE)
+
+    # Create POI dict for isochrone generation
+    poi = {
+        "lat": lat,
+        "lon": lon,
+        "tags": {"name": location_name},
+        "id": "api_location"
+    }
+
+    # Generate isochrone using OSMnx-based system
+    isochrone_gdf = create_isochrone_from_poi(
+        poi=poi,
+        travel_time_limit=travel_time,
+        save_file=False,
+        travel_mode=travel_mode_enum
+    )
+
+    # Extract polygon from GeoDataFrame
+    polygon = isochrone_gdf.geometry.iloc[0]
     area_sq_km = calculate_polygon_area(polygon)
 
     return {
