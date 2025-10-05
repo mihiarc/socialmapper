@@ -138,3 +138,49 @@ class AddressCache:
         """
         # diskcache automatically persists, so this is a no-op
         pass
+
+    def close(self):
+        """Close the cache and release resources.
+
+        Examples
+        --------
+        >>> cache = AddressCache(config)
+        >>> cache.close()
+        """
+        if self._cache is not None:
+            self._cache.close()
+
+    def __enter__(self):
+        """Context manager entry.
+
+        Returns
+        -------
+        AddressCache
+            Self for use in with statements.
+
+        Examples
+        --------
+        >>> with AddressCache(config) as cache:
+        ...     result = cache.get(address)
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit.
+
+        Parameters
+        ----------
+        exc_type : type
+            Exception type if an exception occurred.
+        exc_val : Exception
+            Exception value if an exception occurred.
+        exc_tb : traceback
+            Exception traceback if an exception occurred.
+
+        Returns
+        -------
+        bool
+            False to propagate any exception.
+        """
+        self.close()
+        return False
