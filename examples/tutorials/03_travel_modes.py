@@ -1,144 +1,192 @@
 #!/usr/bin/env python3
 """
-Tutorial: Using Different Travel Modes
+SocialMapper Tutorial 03: Using Different Travel Modes
 
 This tutorial demonstrates how to generate isochrones using different travel modes
-(walk, bike, drive) with SocialMapper.
+(walk, bike, drive) and compare their coverage areas.
+
+Prerequisites:
+- Complete Tutorials 01 and 02 first
+
+Note: This tutorial uses coordinates instead of addresses due to geocoding limitations.
 """
 
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+import sys
 from pathlib import Path
 
-from socialmapper.api import SocialMapperBuilder, SocialMapperClient
-from socialmapper.isochrone import TravelMode
+# Add parent directory to path if running from examples folder
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from socialmapper import create_isochrone
 
 
 def main():
     """Run travel mode comparison example."""
-    print("=== SocialMapper Travel Mode Example ===\n")
+    print("🗺️  SocialMapper Tutorial 03: Travel Modes\n")
+    print("This tutorial compares walking, biking, and driving isochrones")
+    print("from the same location to understand different accessibility patterns.\n")
 
-    # Example 1: Walking isochrone for parks
-    print("1. Generating 15-minute walking isochrone for parks in Chapel Hill, NC")
+    # Use Chapel Hill, NC coordinates
+    location = (35.9132, -79.0558)  # Chapel Hill, NC
+    location_name = "Chapel Hill, NC"
+    travel_time = 15  # minutes
 
-    config = (
-        SocialMapperBuilder()
-        .with_location("Chapel Hill", "NC")
-        .with_osm_pois("leisure", "park")
-        .with_travel_time(15)
-        .with_travel_mode("walk")  # Can use string or TravelMode.WALK
-        .with_census_variables("total_population", "median_age")
-        .limit_pois(3)  # Limit to 3 parks for quick demo
-        .with_output_directory("output/walk_example")
-        .build()
-    )
+    print(f"📍 Location: {location_name} {location}")
+    print(f"⏱️  Travel Time: {travel_time} minutes\n")
 
-    with SocialMapperClient() as client:
-        result = client.run_analysis(config)
+    results = {}
 
-        if result.is_ok():
-            data = result.unwrap()
-            print(f"✅ Found {data.poi_count} parks")
-            print(f"✅ Generated {data.isochrone_count} walking isochrones")
-            print(f"✅ Analyzed {data.census_units_analyzed} census units")
-        else:
-            error = result.unwrap_err()
-            print(f"❌ Error: {error.message}")
+    # Example 1: Walking isochrone
+    print("=" * 60)
+    print("1. Walking Mode (pedestrian paths and sidewalks)")
+    print("=" * 60)
 
-    # Example 2: Biking isochrone for libraries
-    print("\n2. Generating 10-minute biking isochrone for libraries in Chapel Hill, NC")
+    try:
+        walk_iso = create_isochrone(
+            location=location,
+            travel_time=travel_time,
+            travel_mode="walk"
+        )
 
-    config = (
-        SocialMapperBuilder()
-        .with_location("Chapel Hill", "NC")
-        .with_osm_pois("amenity", "library")
-        .with_travel_time(10)
-        .with_travel_mode(TravelMode.BIKE)  # Using enum directly
-        .with_census_variables("total_population", "median_household_income")
-        .limit_pois(3)
-        .with_output_directory("output/bike_example")
-        .build()
-    )
+        walk_area = walk_iso['properties']['area_sq_km']
+        results['walk'] = walk_area
 
-    with SocialMapperClient() as client:
-        result = client.run_analysis(config)
+        print(f"✅ Created walking isochrone")
+        print(f"   Area coverage: {walk_area:.2f} km²")
+        print(f"   Typical use: Access to parks, libraries, local shops\n")
 
-        if result.is_ok():
-            data = result.unwrap()
-            print(f"✅ Found {data.poi_count} libraries")
-            print(f"✅ Generated {data.isochrone_count} biking isochrones")
-            print(f"✅ Analyzed {data.census_units_analyzed} census units")
-        else:
-            error = result.unwrap_err()
-            print(f"❌ Error: {error.message}")
+    except Exception as e:
+        print(f"❌ Error: {e}\n")
 
-    # Example 3: Driving isochrone for hospitals
-    print("\n3. Generating 20-minute driving isochrone for hospitals in Chapel Hill, NC")
+    # Example 2: Biking isochrone
+    print("=" * 60)
+    print("2. Biking Mode (bike lanes, shared roads, trails)")
+    print("=" * 60)
 
-    config = (
-        SocialMapperBuilder()
-        .with_location("Chapel Hill", "NC")
-        .with_osm_pois("amenity", "hospital")
-        .with_travel_time(20)
-        .with_travel_mode("drive")  # Default mode
-        .with_census_variables("total_population", "median_age")
-        .limit_pois(2)
-        .with_output_directory("output/drive_example")
-        .build()
-    )
+    try:
+        bike_iso = create_isochrone(
+            location=location,
+            travel_time=travel_time,
+            travel_mode="bike"
+        )
 
-    with SocialMapperClient() as client:
-        result = client.run_analysis(config)
+        bike_area = bike_iso['properties']['area_sq_km']
+        results['bike'] = bike_area
 
-        if result.is_ok():
-            data = result.unwrap()
-            print(f"✅ Found {data.poi_count} hospitals")
-            print(f"✅ Generated {data.isochrone_count} driving isochrones")
-            print(f"✅ Analyzed {data.census_units_analyzed} census units")
-        else:
-            error = result.unwrap_err()
-            print(f"❌ Error: {error.message}")
+        print(f"✅ Created biking isochrone")
+        print(f"   Area coverage: {bike_area:.2f} km²")
+        print(f"   Typical use: Commuting, recreation, medium-distance access\n")
 
-    # Example 4: Using custom POIs with different travel modes
-    print("\n4. Using custom POI file with bike mode")
+    except Exception as e:
+        print(f"❌ Error: {e}\n")
 
-    # Create a simple custom POI file
-    custom_poi_file = Path("output/custom_pois.csv")
-    custom_poi_file.parent.mkdir(exist_ok=True)
-    custom_poi_file.write_text(
-        "name,lat,lon\n"
-        "UNC Campus,35.9049,-79.0482\n"
-        "Franklin Street,35.9132,-79.0558\n"
-        "Carrboro Plaza,35.9101,-79.0753\n"
-    )
+    # Example 3: Driving isochrone
+    print("=" * 60)
+    print("3. Driving Mode (roads accessible by car)")
+    print("=" * 60)
 
-    config = (
-        SocialMapperBuilder()
-        .with_custom_pois(custom_poi_file)
-        .with_travel_time(15)
-        .with_travel_mode("bike")
-        .with_census_variables("total_population", "median_age")
-        .with_output_directory("output/custom_bike_example")
-        .build()
-    )
+    try:
+        drive_iso = create_isochrone(
+            location=location,
+            travel_time=travel_time,
+            travel_mode="drive"
+        )
 
-    with SocialMapperClient() as client:
-        result = client.run_analysis(config)
+        drive_area = drive_iso['properties']['area_sq_km']
+        results['drive'] = drive_area
 
-        if result.is_ok():
-            data = result.unwrap()
-            print(f"✅ Loaded {data.poi_count} custom POIs")
-            print(f"✅ Generated {data.isochrone_count} biking isochrones")
-            print(f"✅ Analyzed {data.census_units_analyzed} census units")
-        else:
-            error = result.unwrap_err()
-            print(f"❌ Error: {error.message}")
+        print(f"✅ Created driving isochrone")
+        print(f"   Area coverage: {drive_area:.2f} km²")
+        print(f"   Typical use: Hospitals, shopping centers, workplaces\n")
 
-    print("\n=== Travel Mode Comparison Complete ===")
-    print("\nNote: Different travel modes use different road networks:")
-    print("- Walk: Pedestrian paths, sidewalks, crosswalks")
-    print("- Bike: Bike lanes, shared roads, trails")
-    print("- Drive: Roads accessible by cars")
-    print("\nCheck the output folders to compare the different isochrone shapes!")
+    except Exception as e:
+        print(f"❌ Error: {e}\n")
+
+    # Comparison
+    if len(results) >= 2:
+        print("=" * 60)
+        print("Travel Mode Comparison")
+        print("=" * 60)
+
+        print(f"\n{'Mode':<12} {'Area (km²)':<12} {'Relative Size'}")
+        print("-" * 60)
+
+        # Sort by area
+        sorted_results = sorted(results.items(), key=lambda x: x[1])
+
+        for mode, area in sorted_results:
+            # Calculate relative size vs smallest
+            relative = (area / sorted_results[0][1]) * 100
+            print(f"{mode:<12} {area:<12.2f} {relative:.0f}%")
+
+        print()
+
+        # Show the multiplier effect
+        if 'walk' in results and 'drive' in results:
+            multiplier = results['drive'] / results['walk']
+            print(f"💡 Key insight: Driving reaches {multiplier:.1f}x more area than walking")
+            print(f"   in the same {travel_time} minutes!\n")
+
+    # Example 4: Comparing different times for one mode
+    print("=" * 60)
+    print("4. Bonus: Comparing Different Travel Times (Drive Mode)")
+    print("=" * 60)
+
+    times = [5, 10, 15]
+    time_results = {}
+
+    print(f"\nGenerating {len(times)} isochrones with different times...\n")
+
+    for time in times:
+        try:
+            iso = create_isochrone(
+                location=location,
+                travel_time=time,
+                travel_mode="drive"
+            )
+            area = iso['properties']['area_sq_km']
+            time_results[time] = area
+            print(f"   {time} min: {area:.2f} km²")
+        except Exception as e:
+            print(f"   {time} min: Error - {e}")
+
+    if len(time_results) > 1:
+        print("\n📈 Area growth:")
+        times_sorted = sorted(time_results.keys())
+        for i in range(1, len(times_sorted)):
+            prev_time = times_sorted[i-1]
+            curr_time = times_sorted[i]
+            growth = ((time_results[curr_time] - time_results[prev_time]) / time_results[prev_time]) * 100
+            print(f"   {prev_time}→{curr_time} min: +{growth:.1f}%")
+
+    # Summary
+    print("\n" + "=" * 60)
+    print("🎉 Tutorial complete!\n")
+    print("What we learned:")
+    print("1. Different travel modes use different transportation networks")
+    print("2. Driving typically covers much more area than walking/biking")
+    print("3. Each mode is appropriate for different types of accessibility analysis")
+    print("4. Travel time has a non-linear effect on coverage area")
+    print("\n💡 Travel mode selection guide:")
+    print("- Walk: Local amenities (parks, shops, cafes)")
+    print("- Bike: Medium-distance services (libraries, community centers)")
+    print("- Drive: Regional services (hospitals, malls, workplaces)")
+    print("\n📚 Next steps:")
+    print("- Try different locations (urban vs rural)")
+    print("- Compare modes for specific POI types")
+    print("- Analyze demographic differences between modes")
+    print("- Create maps overlaying different travel modes")
+    print("=" * 60)
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
