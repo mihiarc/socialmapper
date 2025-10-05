@@ -8,7 +8,8 @@ No client class needed - just simple function calls.
 What you'll learn:
 - Creating isochrones from coordinates
 - Different travel modes (drive, walk, bike)
-- Getting results as GeoDataFrame or dictionary
+- Working with GeoJSON Feature results
+- JSON serialization for web/API integration
 - Comparing travel times and areas
 
 NOTE: Due to geocoding service limitations, this tutorial uses coordinates
@@ -39,10 +40,10 @@ def example_1_coordinate_isochrone():
     """Create an isochrone from coordinates."""
     print("\n📍 Example 1: Isochrone from Coordinates")
     print("-" * 40)
-    
+
     # Portland, OR coordinates
     lat, lon = CITY_COORDINATES["Portland, OR"]
-    
+
     try:
         # Create a 15-minute driving isochrone
         isochrone = create_isochrone(
@@ -50,15 +51,16 @@ def example_1_coordinate_isochrone():
             travel_time=15,
             travel_mode="drive"
         )
-        
+
         print(f"✅ Created isochrone for Portland, OR ({lat}, {lon})")
-        print(f"   Shape type: {type(isochrone)}")
-        print(f"   Geometry type: {isochrone.geometry.iloc[0].geom_type}")
-        print(f"   Travel time: {isochrone['travel_time'].iloc[0]} minutes")
-        print(f"   Travel mode: {isochrone['travel_mode'].iloc[0]}")
-        
+        print(f"   Result type: {isochrone['type']}")
+        print(f"   Geometry type: {isochrone['geometry']['type']}")
+        print(f"   Travel time: {isochrone['properties']['travel_time']} minutes")
+        print(f"   Travel mode: {isochrone['properties']['travel_mode']}")
+        print(f"   Area: {isochrone['properties']['area_sq_km']:.2f} km²")
+
         return isochrone
-        
+
     except Exception as e:
         print(f"⚠️ Failed to create isochrone: {e}")
         print("   This may be due to network issues or service availability")
@@ -67,23 +69,25 @@ def example_1_coordinate_isochrone():
 
 def example_2_coordinate_isochrone():
     """Create an isochrone from latitude/longitude coordinates."""
-    print("\n📍 Example 2: Isochrone from Coordinates")
+    print("\n📍 Example 2: Walking Isochrone")
     print("-" * 40)
-    
+
     # San Francisco coordinates (City Hall)
     lat, lon = 37.7793, -122.4193
-    
+
     # Create a 10-minute walking isochrone
     isochrone = create_isochrone(
         location=(lat, lon),
         travel_time=10,
         travel_mode="walk"
     )
-    
+
     print(f"✅ Created isochrone for coordinates ({lat}, {lon})")
-    print(f"   Shape type: {type(isochrone)}")
-    print(f"   Location: {isochrone['location'].iloc[0]}")
-    
+    print(f"   Result type: {isochrone['type']}")
+    print(f"   Location: {isochrone['properties']['location']}")
+    print(f"   Travel mode: {isochrone['properties']['travel_mode']}")
+    print(f"   Area: {isochrone['properties']['area_sq_km']:.2f} km²")
+
     return isochrone
 
 
@@ -91,71 +95,72 @@ def example_3_bike_isochrone():
     """Create a biking isochrone."""
     print("\n🚴 Example 3: Bike Isochrone")
     print("-" * 40)
-    
+
     # Create a 20-minute biking isochrone
     isochrone = create_isochrone(
         location=(40.7128, -74.0060),  # NYC coordinates
         travel_time=20,
         travel_mode="bike"
     )
-    
+
     print(f"✅ Created bike isochrone for NYC")
-    print(f"   Travel mode: {isochrone['travel_mode'].iloc[0]}")
-    print(f"   Travel time: {isochrone['travel_time'].iloc[0]} minutes")
-    
+    print(f"   Travel mode: {isochrone['properties']['travel_mode']}")
+    print(f"   Travel time: {isochrone['properties']['travel_time']} minutes")
+    print(f"   Area: {isochrone['properties']['area_sq_km']:.2f} km²")
+
     return isochrone
 
 
 def example_4_json_output():
-    """Get isochrone as JSON-compatible dictionary."""
-    print("\n📊 Example 4: JSON Output Format")
+    """Demonstrate JSON serialization of isochrone results."""
+    print("\n📊 Example 4: JSON Serialization")
     print("-" * 40)
-    
+
     # Seattle, WA coordinates
     lat, lon = 47.6062, -122.3321
-    
-    # Create isochrone and get as dictionary
-    iso_dict = create_isochrone(
+
+    # Create isochrone - returns GeoJSON Feature dict by default
+    isochrone = create_isochrone(
         location=(lat, lon),
         travel_time=15,
-        travel_mode="drive",
-        return_type="dict"  # Return as dictionary instead of GeoDataFrame
+        travel_mode="drive"
     )
-    
-    print(f"✅ Created isochrone as dictionary")
-    print(f"   Type: {iso_dict['type']}")
-    print(f"   Location: {iso_dict['properties']['location']}")
-    print(f"   Area: {iso_dict['properties']['area_sq_km']:.2f} km²")
-    print(f"   Travel time: {iso_dict['properties']['travel_time']} minutes")
-    
-    # This format is ready for JSON serialization
-    # json_str = json.dumps(iso_dict)
-    
-    return iso_dict
+
+    print(f"✅ Created isochrone")
+    print(f"   Type: {isochrone['type']}")
+    print(f"   Location: {isochrone['properties']['location']}")
+    print(f"   Area: {isochrone['properties']['area_sq_km']:.2f} km²")
+    print(f"   Travel time: {isochrone['properties']['travel_time']} minutes")
+
+    # The result is already a dict, ready for JSON serialization
+    json_str = json.dumps(isochrone, indent=2)
+    print(f"\n   JSON output preview (first 200 chars):")
+    print(f"   {json_str[:200]}...")
+
+    return isochrone
 
 
 def example_5_comparison():
     """Compare different travel times."""
     print("\n⏱️ Example 5: Comparing Travel Times")
     print("-" * 40)
-    
+
     location = (35.7796, -78.6382)  # Raleigh, NC
-    
+
     # Create isochrones for different times
     times = [5, 10, 15]
     areas = []
-    
+
     for time in times:
-        iso_dict = create_isochrone(
+        isochrone = create_isochrone(
             location=location,
             travel_time=time,
-            travel_mode="drive",
-            return_type="dict"
+            travel_mode="drive"
         )
-        area = iso_dict['properties']['area_sq_km']
+        area = isochrone['properties']['area_sq_km']
         areas.append(area)
         print(f"   {time} minutes: {area:.2f} km²")
-    
+
     # Show how area grows with time
     print(f"\n📈 Area growth:")
     for i in range(1, len(times)):
@@ -185,7 +190,7 @@ def main():
         print("1. Use create_isochrone() directly - no client needed")
         print("2. Works with addresses or coordinates")
         print("3. Supports drive, walk, and bike modes")
-        print("4. Returns GeoDataFrame or dictionary")
+        print("4. Returns GeoJSON Feature dict (ready for JSON)")
         print("5. Simple, direct, and efficient!")
         
     except Exception as e:
