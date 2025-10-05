@@ -5,6 +5,7 @@ Uses diskcache for simple, reliable, and thread-safe caching of OSM network
 graphs used in isochrone generation.
 """
 
+import atexit
 import hashlib
 import logging
 import os
@@ -20,6 +21,21 @@ logger = logging.getLogger(__name__)
 
 # Global cache instance (thread-safe, managed by diskcache)
 _cache: dc.Cache | None = None
+
+
+def _cleanup_cache():
+    """Cleanup function to close global cache on exit."""
+    global _cache
+    if _cache is not None:
+        try:
+            _cache.close()
+            logger.debug("Closed global network cache")
+        except Exception as e:
+            logger.warning(f"Error closing cache on exit: {e}")
+
+
+# Register cleanup handler
+atexit.register(_cleanup_cache)
 
 
 def _validate_cached_network(network: nx.MultiDiGraph) -> bool:
