@@ -3,438 +3,230 @@
 SocialMapper Tutorial 05: Address Geocoding
 
 This tutorial demonstrates how to convert addresses into coordinates for analysis:
-- Understanding geocoding providers and quality levels
-- Single address vs batch processing
-- Integration with SocialMapper workflows
-- Error handling and performance optimization
-- Creating POI datasets from address lists
+- Understanding geocoding and coordinate systems
+- Single address geocoding
+- Batch processing multiple addresses
+- Creating custom POI datasets from addresses
+- Integration with SocialMapper analysis workflow
 
-Perfect for:
+Use cases:
 - Researchers with address lists who need coordinates
 - Urban planners analyzing accessibility by address
 - Business analysts studying location-based demographics
-- Anyone wanting to create custom POI datasets from addresses
+- Creating custom POI datasets from address databases
 
 Prerequisites:
-- SocialMapper installed: uv add socialmapper
+- Complete Tutorials 01-04 first
 - Internet connection for geocoding services
-- Optional: Census API key for enhanced accuracy
 """
 
-# Load environment variables from .env file
+# Load environment variables
 try:
     from dotenv import load_dotenv
-
     load_dotenv()
 except ImportError:
-    # dotenv not available - continue without it
     pass
 
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 # Add parent directory to path if running from examples folder
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from rich.console import Console
-from rich.panel import Panel
-
-from socialmapper import SocialMapperBuilder, SocialMapperClient
-from socialmapper.geocoding import (
-    AddressInput,
-    AddressProvider,
-    AddressQuality,
-    GeocodingConfig,
-    geocode_address,
-    geocode_addresses,
-)
-
-# Create console instance
-console = Console()
-
-
-def explain_geocoding():
-    """Explain what geocoding is and why it's useful."""
-    console.print(Panel(
-        """Address geocoding converts human-readable addresses into geographic coordinates (latitude/longitude).
-
-🎯 Why Use Geocoding?
-  • Convert address lists into mappable coordinates
-  • Analyze service accessibility by street address
-  • Integrate business locations with demographic data
-  • Create custom POI datasets from address databases
-
-🏗️ SocialMapper Providers:
-  • Nominatim (OpenStreetMap): Free, global, good for general use
-  • Census Bureau: US-only, very accurate for US addresses
-  • Automatic fallback between providers for best results""",
-        title="📍 Understanding Address Geocoding",
-        border_border_style="cyan",
-    ))
-
-
-def demo_single_address():
-    """Demonstrate single address geocoding."""
-    console.print("\n[bold cyan]Step 1: Single Address Geocoding[/bold cyan]")
-    console.print("Let's start by geocoding a single famous address:\n")
-
-    # Example address
-    address_str = "1600 Pennsylvania Avenue NW, Washington, DC 20500"
-    console.print(f"🏛️  Address: {address_str}")
-
-    # Create address input
-    address = AddressInput(address=address_str, id="white_house", source="tutorial")
-
-    # Configure geocoding
-    config = GeocodingConfig(
-        primary_provider=AddressProvider.NOMINATIM,
-        fallback_providers=[AddressProvider.CENSUS],
-        min_quality_threshold=AddressQuality.APPROXIMATE,
-    )
-
-    try:
-        # Geocode the address
-        console.print("🔍 Geocoding...")
-        result = geocode_address(address, config)
-
-        if result.success:
-            console.print(f"✅ Success! Coordinates: {result.latitude:.6f}, {result.longitude:.6f}")
-            console.print(f"📊 Quality: {result.quality.value}")
-            console.print(f"🎯 Confidence: {result.confidence_score:.2f}")
-            console.print(f"🔧 Provider: {result.provider_used.value}")
-            if result.formatted_address:
-                console.print(f"📍 Formatted: {result.formatted_address[:80]}...")
-        else:
-            console.print(f"❌ Failed: {result.error_message}")
-
-    except Exception as e:
-        console.print(f"💥 Error: {e}")
-
-    console.print()
-
-
-def demo_quality_levels():
-    """Demonstrate different quality levels."""
-    console.print("[bold cyan]Step 2: Understanding Quality Levels[/bold cyan]")
-    console.print("Different addresses return different quality levels:\n")
-
-    # Test addresses with different expected quality levels
-    test_cases = [
-        {
-            "address": "1600 Pennsylvania Avenue NW, Washington, DC 20500",
-            "expected": "High quality - exact street address",
-            "threshold": AddressQuality.EXACT,
-        },
-        {
-            "address": "Washington, DC",
-            "expected": "Medium quality - city level",
-            "threshold": AddressQuality.CENTROID,
-        },
-        {
-            "address": "North Carolina",
-            "expected": "Low quality - state level",
-            "threshold": AddressQuality.APPROXIMATE,
-        },
-    ]
-
-    config = GeocodingConfig(
-        primary_provider=AddressProvider.NOMINATIM,
-        min_quality_threshold=AddressQuality.APPROXIMATE,  # Accept all for demo
-    )
-
-    for i, test in enumerate(test_cases, 1):
-        console.print(f"🧪 Test {i}: {test['address']}")
-        console.print(f"   Expected: {test['expected']}")
-
-        address = AddressInput(address=test["address"])
-
-        try:
-            result = geocode_address(address, config)
-
-            if result.success:
-                console.print(
-                    f"   ✅ Quality: {result.quality.value} | Coordinates: {result.latitude:.4f}, {result.longitude:.4f}"
-                )
-            else:
-                console.print(f"   ❌ Failed: {result.error_message}")
-
-        except Exception as e:
-            console.print(f"   💥 Error: {e}")
-
-        console.print()
-
-
-def demo_batch_processing():
-    """Demonstrate batch address geocoding."""
-    console.print("[bold cyan]Step 3: Batch Address Processing[/bold cyan]")
-    console.print("Process multiple addresses efficiently:\n")
-
-    # Create sample addresses (North Carolina locations)
-    addresses = [
-        "100 N Tryon St, Charlotte, NC",
-        "301 E Hargett St, Raleigh, NC",
-        "120 E Main St, Durham, NC",
-        "100 N Greene St, Greensboro, NC",
-        "100 Coxe Ave, Asheville, NC",
-    ]
-
-    console.print(f"📋 Processing {len(addresses)} addresses:")
-    for addr in addresses:
-        console.print(f"   • {addr}")
-    console.print()
-
-    # Create address inputs
-    address_inputs = [
-        AddressInput(address=addr, id=f"nc_{i}", source="tutorial_batch")
-        for i, addr in enumerate(addresses, 1)
-    ]
-
-    # Configure for batch processing
-    config = GeocodingConfig(
-        primary_provider=AddressProvider.CENSUS,  # Good for US addresses
-        fallback_providers=[AddressProvider.NOMINATIM],
-        min_quality_threshold=AddressQuality.APPROXIMATE,
-        enable_cache=True,
-        batch_size=3,
-        batch_delay_seconds=0.5,  # Be respectful to free APIs
-    )
-
-    try:
-        console.print("🔄 Batch geocoding in progress...")
-        results = geocode_addresses(address_inputs, config, progress=True)
-
-        # Analyze results
-        successful = [r for r in results if r.success]
-        failed = [r for r in results if not r.success]
-
-        console.print("\n📊 Batch Results:")
-        console.print(
-            f"   ✅ Successful: {len(successful)}/{len(results)} ({len(successful) / len(results) * 100:.1f}%)"
-        )
-        console.print(f"   ❌ Failed: {len(failed)}")
-
-        if successful:
-            console.print("\n📍 Successful Geocodes:")
-            for result in successful[:3]:  # Show first 3
-                console.print(
-                    f"   • {result.input_address.address[:40]:<40} → {result.latitude:.4f}, {result.longitude:.4f}"
-                )
-
-        return successful
-
-    except Exception as e:
-        console.print(f"💥 Batch processing error: {e}")
-        return []
-
-
-def demo_socialmapper_integration(geocoded_results):
-    """Demonstrate integration with SocialMapper workflow."""
-    console.print("[bold cyan]Step 4: SocialMapper Integration[/bold cyan]")
-    console.print("Convert geocoded addresses into SocialMapper analysis:\n")
-
-    if not geocoded_results:
-        console.print("❌ No geocoded results available for integration demo")
-        return
-
-    # Save geocoded results to CSV for SocialMapper
-    output_file = Path("output/tutorial_geocoded_addresses.csv")
-    output_file.parent.mkdir(exist_ok=True)
-
-    # Convert to DataFrame
-    data = [
-        {
-            "name": result.input_address.address.split(",")[0],  # Use first part as name
-            "latitude": result.latitude,
-            "longitude": result.longitude,
-            "address": result.input_address.address,
-            "quality": result.quality.value,
-            "provider": result.provider_used.value,
-        }
-        for result in geocoded_results
-    ]
-
-    df = pd.DataFrame(data)
-    df.to_csv(output_file, index=False)
-
-    console.print(f"💾 Saved {len(data)} addresses to: {output_file}")
-    console.print("\n🗺️  Now using with SocialMapper for demographic analysis...")
-
-    try:
-        # Use the geocoded addresses with SocialMapper
-        with SocialMapperClient() as client:
-            config = (
-                SocialMapperBuilder()
-                .with_custom_pois(str(output_file))
-                .with_travel_time(15)
-                .with_census_variables("total_population", "median_household_income")
-                .with_exports(csv=True, isochrones=False)  # Skip maps for tutorial
-                .with_output_directory("output/tutorial_geocoding")
-                .build()
-            )
-
-            result = client.run_analysis(config)
-
-            if result.is_ok():
-                analysis = result.unwrap()
-                console.print("✅ SocialMapper Analysis Complete!")
-                console.print(f"   📍 Analyzed {analysis.poi_count} geocoded locations")
-                console.print(f"   👥 Census data for {analysis.census_units_analyzed} areas")
-
-                if analysis.files_generated:
-                    console.print("   📁 Results saved to output/tutorial_geocoding/")
-            else:
-                error = result.unwrap_err()
-                console.print(f"❌ SocialMapper error: {error.message}")
-
-    except Exception as e:
-        console.print(f"💥 Integration error: {e}")
-
-
-def demo_error_handling():
-    """Demonstrate error handling and troubleshooting."""
-    console.print("[bold cyan]Step 5: Error Handling & Best Practices[/bold cyan]")
-    console.print("Learn how to handle common geocoding issues:\n")
-
-    # Test problematic addresses
-    problem_addresses = [
-        "This is not a real address at all",
-        "123 Nonexistent Street, Nowhere, XX 99999",
-        "",  # Empty address
-        "Paris",  # Ambiguous (Paris, France vs Paris, Texas?)
-    ]
-
-    config = GeocodingConfig(
-        primary_provider=AddressProvider.NOMINATIM,
-        min_quality_threshold=AddressQuality.APPROXIMATE,
-        timeout_seconds=5,
-        max_retries=1,
-    )
-
-    console.print("🧪 Testing problematic addresses:")
-
-    for addr in problem_addresses:
-        console.print(f"\n   Testing: '{addr}'")
-
-        if not addr:
-            console.print("   ❌ Empty address - skipping")
-            continue
-
-        address = AddressInput(address=addr)
-
-        try:
-            result = geocode_address(address, config)
-
-            if result.success:
-                console.print(
-                    f"   ✅ Unexpected success: {result.latitude:.4f}, {result.longitude:.4f}"
-                )
-                console.print(f"      Quality: {result.quality.value} (verify this is correct!)")
-            else:
-                console.print(f"   ❌ Failed as expected: {result.error_message}")
-
-        except Exception as e:
-            console.print(f"   💥 Exception: {e}")
-
-    console.print("\n💡 Best Practices:")
-    console.print("   • Always check result.success before using coordinates")
-    console.print("   • Use quality thresholds appropriate for your use case")
-    console.print("   • Include fallback providers for reliability")
-    console.print("   • Cache results to avoid re-geocoding same addresses")
-    console.print("   • Be respectful of API rate limits")
-
-
-def demo_advanced_tips():
-    """Show advanced geocoding tips and configuration."""
-    console.print("[bold cyan]Advanced Tips & Configuration[/bold cyan]")
-    console.print("Optimize geocoding for your specific needs:\n")
-
-    console.print(Panel(
-        """🔧 Custom Configuration Examples:
-
-# High-accuracy US addresses (government/medical)
-config = GeocodingConfig(
-    primary_provider=AddressProvider.CENSUS,
-    min_quality_threshold=AddressQuality.EXACT,
-    require_country_match=True,
-    default_country='US'
-)
-
-# Fast processing for large datasets
-config = GeocodingConfig(
-    primary_provider=AddressProvider.NOMINATIM,
-    fallback_providers=[],  # No fallbacks for speed
-    min_quality_threshold=AddressQuality.APPROXIMATE,
-    batch_size=10,
-    batch_delay_seconds=0.1
-)
-
-# International addresses
-config = GeocodingConfig(
-    primary_provider=AddressProvider.NOMINATIM,
-    require_country_match=False,
-    timeout_seconds=15,
-    max_retries=3
-)""",
-        title="⚙️ Configuration Patterns",
-        border_style="blue",
-    ))
-
-    console.print("\n🎯 Use Case Recommendations:")
-    console.print("   • Business analysis: Census provider + exact quality")
-    console.print("   • Academic research: Nominatim + approximate quality")
-    console.print("   • International data: Nominatim only")
-    console.print("   • Real-time apps: Enable caching + batch processing")
+from socialmapper import create_isochrone, get_census_data, get_census_blocks
+from socialmapper.geocoding import geocode_address, geocode_addresses
+from socialmapper.helpers import resolve_coordinates
 
 
 def main():
-    """Run the address geocoding tutorial."""
-    console.print(Panel(
-        "[bold cyan]Address Geocoding Tutorial[/bold cyan]\nLearn to convert addresses into coordinates for spatial analysis",
-        title="🏘️ SocialMapper",
-        border_border_style="cyan"
-    ))
+    """Run address geocoding tutorial."""
 
+    print("🗺️  SocialMapper Tutorial 05: Address Geocoding\n")
+    print("Learn how to convert addresses to coordinates for spatial analysis.\n")
+
+    # Step 1: Explain geocoding
+    print("=" * 70)
+    print("What is Geocoding?")
+    print("=" * 70)
+    print("\nGeocoding converts human-readable addresses into geographic")
+    print("coordinates (latitude/longitude) that can be used for mapping")
+    print("and spatial analysis.\n")
+    print("🎯 Why geocode addresses?")
+    print("  • Convert address lists into mappable locations")
+    print("  • Analyze service accessibility by street address")
+    print("  • Create custom POI datasets from business directories")
+    print("  • Integrate demographic data with physical locations\n")
+
+    # Step 2: Resolve coordinates (geocoding wrapper)
+    print("=" * 70)
+    print("Step 1: Basic Coordinate Resolution")
+    print("=" * 70)
+    print("\nSocialMapper's resolve_coordinates() accepts either:")
+    print("  • Coordinates: (latitude, longitude) tuple")
+    print("  • Addresses: 'City, State' or full street addresses\n")
+
+    # Example with coordinates (no geocoding needed)
+    coords1 = (35.7796, -78.6382)
+    result_coords, location_name = resolve_coordinates(coords1)
+    print(f"Input: {coords1}")
+    print(f"   → Coordinates: {result_coords}")
+    print(f"   → Location: {location_name}\n")
+
+    # Example with city name (requires geocoding)
+    city = "Raleigh, NC"
     try:
-        # Educational overview
-        explain_geocoding()
-
-        # Step-by-step demos
-        demo_single_address()
-        demo_quality_levels()
-        geocoded_results = demo_batch_processing()
-        demo_socialmapper_integration(geocoded_results)
-        demo_error_handling()
-        demo_advanced_tips()
-
-        # Success summary
-        console.print(Panel(
-            "[bold green]✅ You've learned to geocode addresses and integrate them with SocialMapper analysis![/bold green]",
-            title="🎉 Tutorial Complete!",
-            border_style="green"
-        ))
-
-        console.print("\n[bold]🎉 What You've Learned:[/bold]")
-        console.print("  • Single and batch address geocoding")
-        console.print("  • Quality levels and provider selection")
-        console.print("  • Error handling and best practices")
-        console.print("  • Integration with SocialMapper workflows")
-        console.print("  • Advanced configuration options")
-
-        console.print("\n[bold]🚀 Next Steps:[/bold]")
-        console.print("  • Try geocoding your own address datasets")
-        console.print("  • Experiment with different quality thresholds")
-        console.print("  • Compare provider performance for your region")
-        console.print("  • Build complete address-to-demographics workflows")
-        console.print("  • Explore the address_geocoding.py demo for more examples")
-
-        return 0
-
+        result_coords, location_name = resolve_coordinates(city)
+        print(f"Input: '{city}'")
+        print(f"   → Coordinates: {result_coords}")
+        print(f"   → Location: {location_name}\n")
     except Exception as e:
-        console.print(f"\n[bold red]❌ Tutorial failed: {e}[/bold red]")
-        console.print("\n[dim]Check your internet connection and try again.[/dim]")
-        return 1
+        print(f"Input: '{city}'")
+        print(f"   ⚠️  Geocoding unavailable: {e}\n")
+        print("   💡 When geocoding services are limited, use coordinates instead\n")
+
+    # Step 3: Working with addresses
+    print("=" * 70)
+    print("Step 2: Creating POIs from Addresses")
+    print("=" * 70)
+    print("\nFor real-world analysis, you often have a list of addresses")
+    print("that need to be converted to coordinates.\n")
+
+    # Example: Create a simple address list for analysis
+    addresses_example = [
+        "State Capitol, Raleigh, NC",
+        "NC State University, Raleigh, NC",
+        "RDU Airport, Morrisville, NC",
+    ]
+
+    print("Example address list:")
+    for i, addr in enumerate(addresses_example, 1):
+        print(f"  {i}. {addr}")
+
+    print("\n💡 Converting addresses to coordinates:")
+    print("   Option 1: Use geocoding service (requires API access)")
+    print("   Option 2: Manually find coordinates and create CSV")
+    print("   Option 3: Use approximate coordinates for known landmarks\n")
+
+    # Step 4: Using manual coordinates (recommended approach)
+    print("=" * 70)
+    print("Step 3: Manual Coordinates Approach (Recommended)")
+    print("=" * 70)
+    print("\nFor reliable analysis, we recommend looking up coordinates manually")
+    print("and creating a CSV file.\n")
+
+    # Create example CSV content
+    csv_example = """name,latitude,longitude,type
+State Capitol,35.7806,-78.6389,government
+NC State University,35.7847,-78.6821,education
+RDU Airport,35.8776,-78.7875,transportation
+North Hills,35.8321,-78.6414,shopping
+Crabtree Valley,35.8198,-78.7074,shopping"""
+
+    print("Example CSV format:")
+    print(csv_example)
+    print()
+
+    # Save example CSV
+    csv_path = Path("example_addresses.csv")
+    csv_path.write_text(csv_example)
+    print(f"✅ Created example file: {csv_path}\n")
+
+    # Step 5: Import and use the POIs
+    print("=" * 70)
+    print("Step 4: Using Custom POIs in Analysis")
+    print("=" * 70)
+
+    from socialmapper.api import import_poi_csv
+
+    pois = import_poi_csv(str(csv_path))
+    print(f"\n✅ Loaded {len(pois)} POIs from CSV\n")
+
+    # Analyze first POI
+    if pois:
+        poi = pois[0]
+        print(f"Analyzing: {poi['name']}")
+        print(f"Coordinates: ({poi['lat']}, {poi['lon']})\n")
+
+        try:
+            # Create isochrone around this location
+            isochrone = create_isochrone(
+                location=(poi['lat'], poi['lon']),
+                travel_time=10,
+                travel_mode="drive"
+            )
+
+            area = isochrone['properties']['area_sq_km']
+            print(f"   10-minute drive area: {area:.2f} km²")
+
+            # Get census data
+            blocks = get_census_blocks(polygon=isochrone)
+            print(f"   Census blocks: {len(blocks)}")
+
+            if blocks:
+                geoids = [block['geoid'] for block in blocks]
+                census_data = get_census_data(
+                    location=geoids,
+                    variables=["population"],
+                    year=2022
+                )
+
+                if census_data:
+                    total_pop = sum(d.get('population', 0) for d in census_data.values())
+                    print(f"   Population within 10 min: {total_pop:,}")
+
+        except Exception as e:
+            print(f"   ⚠️  Analysis error: {e}")
+
+    # Step 6: Batch processing workflow
+    print("\n\n" + "=" * 70)
+    print("Step 5: Complete Workflow Example")
+    print("=" * 70)
+    print("\nRecommended workflow for address-based analysis:\n")
+
+    print("1️⃣  Collect addresses")
+    print("   • Business locations, service centers, facilities, etc.")
+    print()
+    print("2️⃣  Look up coordinates")
+    print("   • Use Google Maps, OpenStreetMap, or other services")
+    print("   • Copy latitude/longitude for each address")
+    print()
+    print("3️⃣  Create CSV file")
+    print("   • Format: name,latitude,longitude,type")
+    print("   • One row per location")
+    print()
+    print("4️⃣  Import with import_poi_csv()")
+    print("   • pois = import_poi_csv('locations.csv')")
+    print()
+    print("5️⃣  Analyze each location")
+    print("   • Loop through POIs")
+    print("   • Create isochrones")
+    print("   • Get census data")
+    print("   • Compare accessibility")
+    print()
+
+    # Summary
+    print("=" * 70)
+    print("🎉 Tutorial complete!\n")
+    print("What we learned:")
+    print("1. How geocoding converts addresses to coordinates")
+    print("2. Using resolve_coordinates() for flexible location input")
+    print("3. Creating POI datasets from address lists")
+    print("4. Manual coordinate lookup is most reliable approach")
+    print("5. Complete workflow from addresses to analysis")
+    print("\n💡 Key takeaways:")
+    print("- Coordinates are more reliable than geocoding services")
+    print("- CSV format makes it easy to manage location data")
+    print("- import_poi_csv() integrates seamlessly with SocialMapper")
+    print("- Same analysis workflow works for any POI source")
+    print("\n📚 Next steps:")
+    print("- Create your own CSV file with locations of interest")
+    print("- Try analyzing different location types (stores, schools, etc.)")
+    print("- Compare accessibility across multiple address lists")
+    print("- Combine with travel mode analysis from Tutorial 03")
+    print("- Export results for presentations or reports")
+    print("=" * 70)
+
+    return 0
 
 
 if __name__ == "__main__":
