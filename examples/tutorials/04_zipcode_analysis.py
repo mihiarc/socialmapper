@@ -51,7 +51,6 @@ def main():
     locations = {
         "Downtown Raleigh (27601)": (35.7796, -78.6382),
         "North Raleigh (27609)": (35.8699, -78.6204),
-        "West Raleigh (27606)": (35.7866, -78.6862),
     }
 
     print("=" * 70)
@@ -62,13 +61,11 @@ def main():
     print()
 
     # Analysis parameters
-    travel_time = 10  # minutes
+    travel_time = 5  # minutes (reduced for faster demo)
     travel_mode = "drive"
-    poi_category = "library"
 
     print(f"⏱️  Travel Time: {travel_time} minutes")
-    print(f"🚗 Travel Mode: {travel_mode}")
-    print(f"📚 POI Category: {poi_category}\n")
+    print(f"🚗 Travel Mode: {travel_mode}\n")
 
     # Step 1: Analyze each location
     print("=" * 70)
@@ -92,26 +89,21 @@ def main():
             area = isochrone['properties']['area_sq_km']
             print(f"   Isochrone area: {area:.2f} km²")
 
-            # Find POIs
-            pois = get_poi(
-                location=coords,
-                categories=[poi_category],
-                travel_time=travel_time,
-                limit=5
-            )
-            print(f"   Libraries found: {len(pois)}")
-
             # Get census blocks
             blocks = get_census_blocks(polygon=isochrone)
             print(f"   Census blocks: {len(blocks)}")
 
-            # Get census data
+            # Get census data (sample for speed)
             population = 0
             median_income = 0
             median_age = 0
 
             if blocks:
-                geoids = [block['geoid'] for block in blocks]
+                # Limit to 30 blocks for faster API calls
+                sample_blocks = blocks[:30]
+                geoids = [block['geoid'] for block in sample_blocks]
+
+                print(f"   Fetching census data for {len(geoids)} blocks (sampled)...")
                 census_data = get_census_data(
                     location=geoids,
                     variables=["population", "median_income", "median_age"],
@@ -124,11 +116,18 @@ def main():
                     income_values = [d.get('median_income', 0) for d in census_data.values() if d.get('median_income', 0) > 0]
                     age_values = [d.get('median_age', 0) for d in census_data.values() if d.get('median_age', 0) > 0]
 
-                    population = sum(pop_values)
+                    sample_pop = sum(pop_values)
                     median_income = sum(income_values) / len(income_values) if income_values else 0
                     median_age = sum(age_values) / len(age_values) if age_values else 0
 
-                    print(f"   Population: {population:,}")
+                    # Estimate total from sample if we sampled
+                    if len(blocks) > 30:
+                        population = int(sample_pop * (len(blocks) / len(sample_blocks)))
+                        print(f"   Population (estimated): ~{population:,}")
+                    else:
+                        population = sample_pop
+                        print(f"   Population: {population:,}")
+
                     print(f"   Median income: ${median_income:,.0f}")
                     print(f"   Median age: {median_age:.1f} years")
 
@@ -137,7 +136,6 @@ def main():
                 'name': name,
                 'coords': coords,
                 'area_km2': area,
-                'poi_count': len(pois),
                 'census_blocks': len(blocks),
                 'population': population,
                 'median_income': median_income,
@@ -150,7 +148,6 @@ def main():
                 'name': name,
                 'coords': coords,
                 'area_km2': 0,
-                'poi_count': 0,
                 'census_blocks': 0,
                 'population': 0,
                 'median_income': 0,
@@ -163,36 +160,29 @@ def main():
     print("=" * 70)
 
     # Create comparison table
-    print(f"\n{'Location':<30} {'POIs':<8} {'Pop':<10} {'Income':<12} {'Age':<8}")
+    print(f"\n{'Location':<30} {'Pop':<12} {'Income':<14} {'Age':<8}")
     print("-" * 70)
 
     for result in results:
         name = result['name'].split('(')[0].strip()  # Shorten name
-        poi_count = result['poi_count']
         pop = result['population']
         income = result['median_income']
         age = result['median_age']
 
-        print(f"{name:<30} {poi_count:<8} {pop:<10,} ${income:<11,.0f} {age:<8.1f}")
+        print(f"{name:<30} {pop:<12,} ${income:<13,.0f} {age:<8.1f}")
 
     # Calculate totals and averages
     total_pop = sum(r['population'] for r in results)
     avg_income = sum(r['median_income'] for r in results) / len(results)
     avg_age = sum(r['median_age'] for r in results) / len(results)
-    total_pois = sum(r['poi_count'] for r in results)
 
     print("-" * 70)
-    print(f"{'TOTALS/AVERAGES':<30} {total_pois:<8} {total_pop:<10,} ${avg_income:<11,.0f} {avg_age:<8.1f}")
+    print(f"{'TOTALS/AVERAGES':<30} {total_pop:<12,} ${avg_income:<13,.0f} {avg_age:<8.1f}")
 
     # Step 3: Insights
     print("\n\n" + "=" * 70)
     print("Step 3: Key Insights")
     print("=" * 70)
-
-    # Find location with most POIs
-    max_pois = max(results, key=lambda x: x['poi_count'])
-    print(f"\n🏆 Most libraries: {max_pois['name']}")
-    print(f"   {max_pois['poi_count']} libraries within {travel_time} minutes")
 
     # Find most populous area
     max_pop = max(results, key=lambda x: x['population'])
@@ -205,32 +195,31 @@ def main():
         print(f"\n💰 Highest median income: {max_income['name']}")
         print(f"   ${max_income['median_income']:,.0f}")
 
-    # Calculate accessibility metric (POIs per 10k people)
-    print("\n📊 Library Accessibility (libraries per 10,000 people):")
-    for result in results:
-        if result['population'] > 0:
-            per_10k = (result['poi_count'] / result['population']) * 10000
-            print(f"   {result['name'].split('(')[0].strip()}: {per_10k:.2f}")
+    # Find youngest area
+    min_age = min(results, key=lambda x: x['median_age'] if x['median_age'] > 0 else 100)
+    if min_age['median_age'] > 0:
+        print(f"\n🎂 Youngest median age: {min_age['name']}")
+        print(f"   {min_age['median_age']:.1f} years")
 
     # Summary
     print("\n" + "=" * 70)
     print("🎉 Tutorial complete!\n")
     print("What we learned:")
     print("1. Batch analysis of multiple locations using functional API")
-    print("2. Creating comparison tables for decision-making")
-    print("3. Calculating accessibility metrics (POIs per capita)")
-    print("4. Identifying best and worst performing areas")
+    print("2. Creating comparison tables for demographics")
+    print("3. Comparing population, income, and age across areas")
+    print("4. Using sampled census data for faster analysis")
     print("\n💡 Multi-location analysis use cases:")
     print("- Comparing neighborhoods for real estate decisions")
-    print("- Identifying underserved areas for service planning")
-    print("- Benchmarking accessibility across regions")
-    print("- Site selection for new facilities")
+    print("- Identifying demographic differences across regions")
+    print("- Understanding population characteristics by area")
+    print("- Site selection based on target demographics")
     print("\n📚 Next steps:")
-    print("- Add more locations to the comparison")
-    print("- Analyze different POI types (hospitals, parks, schools)")
+    print("- Add more locations (3rd location, more ZIP codes)")
+    print("- Increase travel time to 10-15 minutes for larger areas")
+    print("- Add more census variables (education, housing, etc.)")
     print("- Create visualizations of the comparison data")
     print("- Export results to CSV for further analysis")
-    print("- Use different travel times for different service types")
     print("=" * 70)
 
     return 0
