@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper.api import create_isochrone
+from socialmapper import create_isochrone
 
 print("🗺️ QUICK ISOCHRONE TEST")
 print("=" * 40)
@@ -24,9 +24,11 @@ try:
         travel_mode="drive"
     )
     print(f"✅ Success! Isochrone created")
-    print(f"   Columns: {list(iso.columns)[:5]}...")  # Show first 5 columns
-    print(f"   Travel time: {iso['travel_time'].iloc[0]} minutes")
-    
+    print(f"   Type: {iso['type']}")  # GeoJSON Feature
+    print(f"   Travel time: {iso['properties']['travel_time']} minutes")
+    print(f"   Travel mode: {iso['properties']['travel_mode']}")
+    print(f"   Area: {iso['properties']['area_sq_km']:.2f} km²")
+
 except Exception as e:
     print(f"❌ Failed: {e}")
 
