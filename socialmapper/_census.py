@@ -456,7 +456,7 @@ def fetch_census_data(
                         params["key"] = api_key
                     
                     try:
-                        response = requests.get(base_url, params=params, timeout=10)
+                        response = requests.get(base_url, params=params, timeout=30)
                         response.raise_for_status()
                         
                         data = response.json()
@@ -480,7 +480,18 @@ def fetch_census_data(
                                     geoid_data[reverse_mapping[var_code]] = value
                             
                             result[geoid] = geoid_data
-                            
+
+                    except requests.Timeout:
+                        logger.warning(
+                            f"Census API request timed out for GEOID {geoid}. "
+                            f"Your internet connection may be slow or the Census API is experiencing high load. "
+                            f"Try again later or check your network connection."
+                        )
+                    except requests.RequestException as e:
+                        logger.warning(
+                            f"Network error fetching census data for GEOID {geoid}: {e}. "
+                            f"Check your internet connection or Census API status."
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to fetch census data for {geoid}: {e}")
     
