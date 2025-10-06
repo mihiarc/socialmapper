@@ -198,24 +198,24 @@ def get_census_geography(lat: float, lon: float) -> Optional[Dict[str, str]]:
     }
     
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
         if data.get("result") and data["result"].get("geographies"):
             blocks = data["result"]["geographies"].get("2020 Census Blocks", [])
             if blocks:
                 block = blocks[0]
-                
+
                 # Extract components
                 state_fips = block.get("STATE", "")
                 county_fips = block.get("COUNTY", "")
                 tract = block.get("TRACT", "")
                 block_group = block.get("BLKGRP", "")
-                
+
                 # Create GEOID (state + county + tract + block group)
                 geoid = f"{state_fips}{county_fips}{tract}{block_group}"
-                
+
                 return {
                     "state_fips": state_fips,
                     "county_fips": county_fips,
@@ -223,8 +223,25 @@ def get_census_geography(lat: float, lon: float) -> Optional[Dict[str, str]]:
                     "block_group": block_group,
                     "geoid": geoid
                 }
-                
+
+        # No geography data returned
+        logger.warning(
+            f"Census Geocoding API returned no geography data for ({lat}, {lon}). "
+            f"The location may be outside the US or in a territory without census block data."
+        )
+
+    except requests.Timeout:
+        logger.warning(
+            f"Census Geocoding API request timed out for ({lat}, {lon}). "
+            f"Your internet connection may be slow or the service is experiencing high load. "
+            f"Try again or check your network connection."
+        )
+    except requests.RequestException as e:
+        logger.warning(
+            f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}. "
+            f"Check your internet connection or try again later."
+        )
     except Exception as e:
-        logger.error(f"Failed to get census geography for ({lat}, {lon}): {e}")
-    
+        logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
+
     return None

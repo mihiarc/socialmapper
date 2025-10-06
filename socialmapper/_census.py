@@ -205,20 +205,29 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
     """
     # Get bounds
     bounds = geometry.bounds  # (minx, miny, maxx, maxy)
-    
+
     # Identify states that might be in this area
     from ._geocoding import get_census_geography
-    
+
     # Sample the centroid to get state/county
     centroid = geometry.centroid
     geo_info = get_census_geography(centroid.y, centroid.x)
-    
+
     if not geo_info:
-        logger.error("Could not identify census geography for area")
+        logger.warning(
+            f"Could not identify census geography for area at ({centroid.y:.4f}, {centroid.x:.4f}). "
+            f"Possible reasons: "
+            f"1) Location is outside the United States, "
+            f"2) Census Geocoding API is unavailable (network issue), "
+            f"3) Coordinates are in a territory without census data. "
+            f"Try checking your internet connection or using US mainland coordinates."
+        )
         return []
-    
+
     state_fips = geo_info["state_fips"]
     county_fips = geo_info["county_fips"]
+
+    logger.debug(f"Identified census geography: State={state_fips}, County={county_fips}")
     
     # Fetch block groups for the county
     block_groups = fetch_tiger_block_groups(state_fips, county_fips)
@@ -246,11 +255,10 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
 
 def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str, Any]]:
     """
-    Fetch block group geometries from Census TIGER/Line files.
+    Fetch block group geometries from Census TIGER/Line shapefiles.
 
-    Retrieves census block group boundaries for a specific county
-    using the Census Bureau's TIGER/Line REST API service.
-    Falls back to alternative method if primary API fails.
+    Retrieves census block group boundaries for a specific county by
+    downloading TIGER/Line shapefiles directly from the Census Bureau FTP server.
 
     Parameters
     ----------
@@ -269,6 +277,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
         - 'tract': 6-digit census tract code
         - 'block_group': Single digit block group number
         - 'geometry': GeoJSON geometry object
+        Returns empty list if fetch fails.
 
     Examples
     --------
@@ -280,43 +289,39 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
     >>> 'geoid' in bg and 'geometry' in bg
     True
 
-    See Also
-    --------
-    fetch_block_groups_alternative : Fallback method using shapefiles.
-
     Notes
     -----
     Uses the 2023 vintage of TIGER/Line data by default.
-    Requires internet connection to Census Bureau services.
+    Requires internet connection to Census Bureau FTP server.
+    Downloads entire state shapefile and filters to county.
     """
     # Validate FIPS codes to prevent injection attacks
     validated_state = validate_fips_code(state_fips, 2, "State")
     validated_county = validate_fips_code(county_fips, 3, "County")
 
-    # Use Census TIGER/Line REST API
-    year = 2023
-    url = f"https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS{year}/MapServer/8/query"
-
-    # Build query parameters with validated inputs
-    params = {
-        "where": f"STATE='{validated_state}' AND COUNTY='{validated_county}'",
-        "outFields": "GEOID,STATE,COUNTY,TRACT,BLKGRP",
-        "outSR": "4326",
-        "f": "geojson"
-    }
-    
     try:
+        # Use TIGERweb Tracts_Blocks query service (efficient, no large downloads)
+        url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
+
+        params = {
+            "where": f"STATE='{validated_state}' AND COUNTY='{validated_county}'",
+            "outFields": "GEOID,STATE,COUNTY,TRACT,BLKGRP",
+            "outSR": "4326",
+            "f": "geojson"
+        }
+
+        logger.debug(f"Querying block groups for state {state_fips}, county {county_fips}")
         response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
         features = data.get("features", [])
-        
+
         result = []
         for feature in features:
             props = feature.get("properties", {})
             geom = feature.get("geometry")
-            
+
             if geom and props.get("GEOID"):
                 result.append({
                     "geoid": props["GEOID"],
@@ -326,75 +331,24 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
                     "block_group": props.get("BLKGRP", ""),
                     "geometry": geom
                 })
-        
+
         logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
         return result
-        
+
+    except requests.Timeout:
+        logger.warning(
+            f"Request timeout accessing TIGERweb service for state {state_fips}, county {county_fips}. "
+            f"Your internet connection may be slow or the service is experiencing high load."
+        )
+        return []
+    except requests.RequestException as e:
+        logger.warning(
+            f"Network error accessing TIGERweb service for state {state_fips}, county {county_fips}: {e}. "
+            f"Check your internet connection."
+        )
+        return []
     except Exception as e:
-        logger.error(f"Failed to fetch block groups: {e}")
-        
-    # Fallback: try alternative method
-    return fetch_block_groups_alternative(state_fips, county_fips)
-
-
-def fetch_block_groups_alternative(state_fips: str, county_fips: str) -> List[Dict[str, Any]]:
-    """
-    Alternative method to fetch block groups using direct shapefile access.
-
-    Fallback method that downloads and reads TIGER/Line shapefiles
-    directly from the Census FTP server when the REST API is unavailable.
-
-    Parameters
-    ----------
-    state_fips : str
-        State FIPS code (2 digits).
-    county_fips : str
-        County FIPS code (3 digits).
-
-    Returns
-    -------
-    list of dict
-        List of block group dictionaries with the same structure
-        as fetch_tiger_block_groups().
-        Returns empty list if fetch fails.
-
-    See Also
-    --------
-    fetch_tiger_block_groups : Primary method using REST API.
-
-    Notes
-    -----
-    This method requires geopandas and may be slower than the API
-    method as it downloads entire state shapefiles before filtering.
-    """
-    # Validate FIPS codes to prevent injection attacks
-    validated_state = validate_fips_code(state_fips, 2, "State")
-    validated_county = validate_fips_code(county_fips, 3, "County")
-
-    try:
-        # Try using geopandas to read from Census FTP
-        url = f"https://www2.census.gov/geo/tiger/TIGER2023/BG/tl_2023_{validated_state}_bg.zip"
-
-        gdf = gpd.read_file(url)
-
-        # Filter to county
-        gdf = gdf[gdf['COUNTYFP'] == validated_county]
-        
-        result = []
-        for _, row in gdf.iterrows():
-            result.append({
-                "geoid": row['GEOID'],
-                "state_fips": row['STATEFP'],
-                "county_fips": row['COUNTYFP'],
-                "tract": row['TRACTCE'],
-                "block_group": row['BLKGRPCE'],
-                "geometry": row['geometry'].__geo_interface__
-            })
-        
-        return result
-        
-    except Exception as e:
-        logger.error(f"Alternative block group fetch failed: {e}")
+        logger.error(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
         return []
 
 
