@@ -56,8 +56,6 @@ def main():
     if not csv_path.exists():
         csv_content = """name,latitude,longitude,type
 Downtown Library,35.7796,-78.6382,library
-North Community Center,35.8050,-78.6200,community_center
-South Recreation Park,35.7500,-78.6400,park
 """
         csv_path.write_text(csv_content)
         print(f"✅ Created example file: {csv_path}\n")
@@ -76,7 +74,7 @@ South Recreation Park,35.7500,-78.6400,park
 
         # Step 4: Analyze each POI
         print("Step 4: Analyzing accessibility for each POI...")
-        travel_time = 10  # minutes
+        travel_time = 5  # minutes (reduced for faster demo)
         travel_mode = "drive"
 
         results = []
@@ -98,10 +96,14 @@ South Recreation Park,35.7500,-78.6400,park
             blocks = get_census_blocks(polygon=isochrone)
             print(f"   Census blocks: {len(blocks)}")
 
-            # Get census data if blocks found
+            # Get census data if blocks found (limit to first 30 for speed)
             population = 0
             if blocks:
-                geoids = [block['geoid'] for block in blocks]
+                # Limit to 30 blocks for faster API calls
+                sample_blocks = blocks[:30]
+                geoids = [block['geoid'] for block in sample_blocks]
+
+                print(f"   Fetching census data for {len(geoids)} blocks (sampled for speed)...")
                 census_data = get_census_data(
                     location=geoids,
                     variables=["population"],
@@ -109,8 +111,14 @@ South Recreation Park,35.7500,-78.6400,park
                 )
 
                 if census_data:
-                    population = sum(d.get('population', 0) for d in census_data.values())
-                    print(f"   Population served: {population:,}")
+                    # Estimate total population based on sample
+                    sample_pop = sum(d.get('population', 0) for d in census_data.values())
+                    if len(blocks) > 30:
+                        population = int(sample_pop * (len(blocks) / len(sample_blocks)))
+                        print(f"   Population served (estimated): ~{population:,}")
+                    else:
+                        population = sample_pop
+                        print(f"   Population served: {population:,}")
 
             # Store results for comparison
             results.append({
@@ -121,39 +129,34 @@ South Recreation Park,35.7500,-78.6400,park
                 'population': population
             })
 
-        # Step 5: Compare results
+        # Step 5: Summary
         print("\n" + "=" * 60)
-        print("Step 5: Comparing POI Accessibility\n")
+        print("Step 5: Results Summary\n")
 
         print(f"{'POI Name':<30} {'Area (km²)':<12} {'Population':<12}")
         print("-" * 60)
         for result in results:
             print(f"{result['name']:<30} {result['area_km2']:<12.2f} {result['population']:<12,}")
-
-        total_pop = sum(r['population'] for r in results)
-        avg_area = sum(r['area_km2'] for r in results) / len(results)
-
-        print("-" * 60)
-        print(f"{'TOTAL/AVERAGE':<30} {avg_area:<12.2f} {total_pop:<12,}")
         print()
 
         print("=" * 60)
         print("🎉 Tutorial complete!\n")
         print("What we did:")
-        print("1. Created a CSV file with custom POI locations")
-        print("2. Imported POIs using import_poi_csv()")
-        print("3. Generated isochrones for each POI")
-        print("4. Analyzed census demographics for each service area")
-        print("5. Compared accessibility across all POIs")
+        print("1. Created a CSV file with custom POI location")
+        print("2. Imported POI using import_poi_csv()")
+        print("3. Generated 5-minute drive isochrone")
+        print("4. Fetched census blocks for the area")
+        print("5. Sampled census data for population estimate")
         print("\n💡 Key insights:")
-        print("- Each POI serves different population sizes")
-        print("- Isochrone areas vary based on road network density")
-        print("- Custom POIs let you analyze any location type")
+        print("- CSV format makes it easy to manage POI locations")
+        print("- Shorter travel times = faster analysis")
+        print("- Sampling census blocks speeds up API calls")
+        print("- Population can be estimated from sample data")
         print("\n📚 Next steps:")
-        print("- Add more POIs to your CSV file")
-        print("- Try different travel times for different POI types")
-        print("- Create choropleth maps for each POI")
-        print("- Analyze overlap between POI service areas")
+        print("- Add more POIs to compare multiple locations")
+        print("- Try different travel times (5, 10, 15 minutes)")
+        print("- Request more census variables (income, age, etc.)")
+        print("- See Tutorial 04 for multi-location analysis")
         print("=" * 60)
 
         return 0
