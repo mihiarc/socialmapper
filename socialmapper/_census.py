@@ -475,7 +475,7 @@ def fetch_census_data(
                             
                             # Map back to human-readable names too
                             reverse_mapping = {v: k for k, v in VARIABLE_MAPPING.items()}
-                            for var_code, value in geoid_data.items():
+                            for var_code, value in list(geoid_data.items()):
                                 if var_code in reverse_mapping:
                                     geoid_data[reverse_mapping[var_code]] = value
                             
