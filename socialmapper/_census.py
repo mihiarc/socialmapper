@@ -473,11 +473,18 @@ def fetch_census_data(
                                     except (ValueError, TypeError):
                                         geoid_data[header] = values[j]
                             
-                            # Map back to human-readable names too
-                            reverse_mapping = {v: k for k, v in VARIABLE_MAPPING.items()}
+                            # Map back to human-readable names
+                            # Build reverse mapping that includes ALL aliases for each code
+                            from collections import defaultdict
+                            reverse_mapping = defaultdict(list)
+                            for name, code in VARIABLE_MAPPING.items():
+                                reverse_mapping[code].append(name)
+
                             for var_code, value in list(geoid_data.items()):
                                 if var_code in reverse_mapping:
-                                    geoid_data[reverse_mapping[var_code]] = value
+                                    # Add value for all human-readable aliases
+                                    for alias in reverse_mapping[var_code]:
+                                        geoid_data[alias] = value
                             
                             result[geoid] = geoid_data
 
