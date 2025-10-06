@@ -1,60 +1,84 @@
 #!/usr/bin/env python3
 """
-Simple Tutorial 02: Direct Census Data Access
+Simple Tutorial 02: Census Data Access
 
-Learn how to work with census data using direct functions.
+Learn how to work with census data using the simplified API.
 No complex abstractions - just simple, direct data access.
 
 What you'll learn:
-- Getting census data for isochrones
-- Using different census variables
-- Geocoding points to get location info
-- Working with demographic data
+- Creating isochrones and getting census blocks
+- Fetching census data for demographic variables
+- Working with population, income, and age data
+- Aggregating statistics across block groups
 """
 
 import sys
-import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from socialmapper import (
-    get_census_data_for_polygon,
-    get_demographics_for_polygon,
-    geocode_point,
-    normalize_variables
+    create_isochrone,
+    get_census_blocks,
+    get_census_data,
 )
-from socialmapper.api import create_isochrone
 
 
 def example_1_basic_census():
     """Get census data for an isochrone area."""
     print("\n📊 Example 1: Basic Census Data")
     print("-" * 40)
-    
-    # First, create an isochrone
-    print("Creating isochrone for downtown Raleigh...")
+
+    # Create isochrone
+    print("Creating 5-minute isochrone for Raleigh...")
     isochrone = create_isochrone(
         location=(35.7796, -78.6382),  # Raleigh, NC
-        travel_time=10,
+        travel_time=5,
         travel_mode="drive"
     )
-    
-    # Get census data for this area
-    print("Fetching census data...")
-    census_data = get_census_data_for_polygon(
-        polygon=isochrone,
-        variables=["B01003_001E"],  # Total population
+
+    print(f"   Isochrone area: {isochrone['properties']['area_sq_km']:.2f} km²")
+
+    # Get census blocks in the area
+    print("Fetching census blocks...")
+    blocks = get_census_blocks(polygon=isochrone)
+    print(f"   Found {len(blocks)} census blocks")
+
+    if not blocks:
+        print("⚠️ No census blocks found")
+        return None
+
+    # Sample blocks for speed (limit to 30)
+    sample_blocks = blocks[:30]
+    geoids = [block['geoid'] for block in sample_blocks]
+
+    # Get census data
+    print(f"Fetching census data for {len(geoids)} blocks...")
+    census_data = get_census_data(
+        location=geoids,
+        variables=["population"],
         year=2022
     )
-    
-    if census_data is not None and not census_data.empty:
-        print(f"✅ Retrieved census data")
-        print(f"   Block groups found: {len(census_data)}")
-        print(f"   Total population: {census_data['B01003_001E'].sum():,}")
-        print(f"   Average per block group: {census_data['B01003_001E'].mean():.0f}")
+
+    if census_data:
+        # Calculate statistics
+        pop_values = [d.get('population', 0) for d in census_data.values()]
+        total_pop = sum(pop_values)
+        avg_pop = total_pop / len(pop_values) if pop_values else 0
+
+        # Estimate total if we sampled
+        if len(blocks) > 30:
+            estimated_total = int(total_pop * (len(blocks) / len(sample_blocks)))
+            print(f"✅ Retrieved census data")
+            print(f"   Sample population: {total_pop:,}")
+            print(f"   Estimated total: ~{estimated_total:,}")
+            print(f"   Average per block: {avg_pop:.0f}")
+        else:
+            print(f"✅ Retrieved census data")
+            print(f"   Total population: {total_pop:,}")
+            print(f"   Average per block: {avg_pop:.0f}")
     else:
-        print("⚠️ No census data retrieved (API key may be needed)")
-    
+        print("⚠️ No census data retrieved")
+
     return census_data
 
 
@@ -62,168 +86,149 @@ def example_2_demographics():
     """Get comprehensive demographic data."""
     print("\n👥 Example 2: Demographic Analysis")
     print("-" * 40)
-    
-    # Create isochrone for a specific area
-    print("Creating isochrone for analysis...")
+
+    # Create isochrone
+    print("Creating 5-minute isochrone...")
     isochrone = create_isochrone(
-        location="Chapel Hill, NC",
-        travel_time=15,
+        location=(35.7796, -78.6382),  # Raleigh, NC
+        travel_time=5,
         travel_mode="drive"
     )
-    
-    # Get standard demographic variables
-    print("Fetching demographic data...")
-    demographics = get_demographics_for_polygon(
-        polygon=isochrone
+
+    # Get census blocks
+    blocks = get_census_blocks(polygon=isochrone)
+    print(f"   Found {len(blocks)} census blocks")
+
+    if not blocks:
+        print("⚠️ No census blocks found")
+        return None
+
+    # Sample for speed
+    sample_blocks = blocks[:30]
+    geoids = [block['geoid'] for block in sample_blocks]
+
+    # Get multiple demographic variables
+    print(f"Fetching demographic data...")
+    demographics = get_census_data(
+        location=geoids,
+        variables=["population", "median_income", "median_age"],
+        year=2022
     )
-    
-    if demographics is not None and not demographics.empty:
+
+    if demographics:
+        # Calculate aggregated statistics
+        pop_values = [d.get('population', 0) for d in demographics.values()]
+        income_values = [d.get('median_income', 0) for d in demographics.values()
+                        if d.get('median_income', 0) > 0]
+        age_values = [d.get('median_age', 0) for d in demographics.values()
+                     if d.get('median_age', 0) > 0]
+
+        total_pop = sum(pop_values)
+        avg_income = sum(income_values) / len(income_values) if income_values else 0
+        avg_age = sum(age_values) / len(age_values) if age_values else 0
+
         print(f"✅ Retrieved demographic data")
-        print(f"   Data points: {len(demographics)}")
-        
-        # Show some key demographics if available
-        if 'B01003_001E' in demographics.columns:
-            print(f"   Population range: {demographics['B01003_001E'].min():.0f} - {demographics['B01003_001E'].max():.0f}")
-        if 'B19013_001E' in demographics.columns:
-            median_income = demographics['B19013_001E'].median()
-            if median_income > 0:
-                print(f"   Median income: ${median_income:,.0f}")
+        print(f"   Population: {total_pop:,}")
+        print(f"   Median income: ${avg_income:,.0f}")
+        print(f"   Median age: {avg_age:.1f} years")
     else:
         print("⚠️ No demographic data retrieved")
-    
+
     return demographics
 
 
-def example_3_geocoding():
-    """Use geocoding to get location information."""
-    print("\n📍 Example 3: Reverse Geocoding")
+def example_3_variables():
+    """Demonstrate different census variables."""
+    print("\n📈 Example 3: Different Census Variables")
     print("-" * 40)
-    
-    # Geocode a point to get its location info
-    lat, lon = 40.7128, -74.0060  # NYC coordinates
-    
-    print(f"Geocoding point: ({lat}, {lon})")
-    location_info = geocode_point(lat, lon)
-    
-    if location_info:
-        print(f"✅ Location identified:")
-        for key, value in location_info.items():
-            if value:
-                print(f"   {key}: {value}")
-    else:
-        print("⚠️ Could not geocode location")
-    
-    return location_info
 
-
-def example_4_variable_normalization():
-    """Normalize census variable names."""
-    print("\n🔧 Example 4: Variable Normalization")
-    print("-" * 40)
-    
-    # Different ways people might specify variables
-    user_variables = [
-        "total_population",
-        "median_income",
-        "B01003_001E",  # Already normalized
-        "median_household_income",
-        "population"
-    ]
-    
-    print("Normalizing variable names:")
-    normalized = normalize_variables(user_variables)
-    
-    for original, normal in zip(user_variables, normalized):
-        if original != normal:
-            print(f"   '{original}' → '{normal}'")
-        else:
-            print(f"   '{original}' (already normalized)")
-    
-    return normalized
-
-
-def example_5_custom_variables():
-    """Work with specific census variables."""
-    print("\n📈 Example 5: Custom Census Variables")
-    print("-" * 40)
-    
-    # Create a small isochrone for testing
-    print("Creating test isochrone...")
+    # Create isochrone
     isochrone = create_isochrone(
-        location=(35.9132, -79.0558),  # UNC Chapel Hill
+        location=(35.7796, -78.6382),
         travel_time=5,
-        travel_mode="walk"
+        travel_mode="drive"
     )
-    
-    # Specific variables of interest
-    variables = [
-        "B01003_001E",  # Total population
-        "B25001_001E",  # Total housing units
-        "B08301_001E",  # Total commuters
-        "B15003_022E",  # Bachelor's degree holders
-    ]
-    
-    print("Fetching custom variables...")
-    census_data = get_census_data_for_polygon(
-        polygon=isochrone,
-        variables=variables,
+
+    # Get census blocks
+    blocks = get_census_blocks(polygon=isochrone)
+
+    if not blocks:
+        print("⚠️ No census blocks found")
+        return None
+
+    # Sample blocks
+    sample_blocks = blocks[:20]
+    geoids = [block['geoid'] for block in sample_blocks]
+
+    # Request multiple variables
+    print("Available variables include:")
+    print("   - population / total_population")
+    print("   - median_income")
+    print("   - median_age")
+    print("   - housing_units")
+    print("   - median_home_value")
+    print("   - median_rent")
+
+    print(f"\nFetching housing data...")
+    housing_data = get_census_data(
+        location=geoids,
+        variables=["housing_units", "median_home_value", "median_rent"],
         year=2022
     )
-    
-    if census_data is not None and not census_data.empty:
-        print(f"✅ Retrieved {len(variables)} variables")
-        print(f"   Block groups: {len(census_data)}")
-        
-        # Show totals for each variable
-        for var in variables:
-            if var in census_data.columns:
-                total = census_data[var].sum()
-                print(f"   {var}: {total:,.0f}")
+
+    if housing_data:
+        housing_values = [d.get('housing_units', 0) for d in housing_data.values()]
+        home_values = [d.get('median_home_value', 0) for d in housing_data.values()
+                      if d.get('median_home_value', 0) > 0]
+        rent_values = [d.get('median_rent', 0) for d in housing_data.values()
+                      if d.get('median_rent', 0) > 0]
+
+        total_housing = sum(housing_values)
+        avg_home_value = sum(home_values) / len(home_values) if home_values else 0
+        avg_rent = sum(rent_values) / len(rent_values) if rent_values else 0
+
+        print(f"✅ Retrieved housing data")
+        print(f"   Housing units: {total_housing:,}")
+        print(f"   Median home value: ${avg_home_value:,.0f}")
+        print(f"   Median rent: ${avg_rent:,.0f}/month")
     else:
-        print("⚠️ No data retrieved (check Census API key)")
-    
-    return census_data
+        print("⚠️ No housing data retrieved")
+
+    return housing_data
 
 
 def main():
     """Run all examples."""
     print("=" * 50)
-    print("📊 SIMPLE TUTORIAL: CENSUS DATA ACCESS")
+    print("🗺️  SIMPLE TUTORIAL: CENSUS DATA")
     print("=" * 50)
-    print("\nDirect access to census and demographic data")
-    print("Simple functions, no complex abstractions!")
-    
-    # Check for Census API key
-    if not os.getenv('CENSUS_API_KEY'):
-        print("\n⚠️ WARNING: No Census API key found!")
-        print("Set CENSUS_API_KEY environment variable for full functionality")
-        print("Get a free key at: https://api.census.gov/data/key_signup.html")
-    
+    print("\nThis tutorial demonstrates census data access")
+    print("using the simplified API\n")
+
     try:
-        # Run examples
-        example_1_basic_census()
+        # Run single example for speed
         example_2_demographics()
-        example_3_geocoding()
-        example_4_variable_normalization()
-        example_5_custom_variables()
-        
+
         print("\n" + "=" * 50)
-        print("✨ Tutorial completed!")
+        print("✨ Tutorial completed successfully!")
         print("\nKey takeaways:")
-        print("1. Direct functions for census data access")
-        print("2. Works with any isochrone or geographic area")
-        print("3. Support for standard and custom variables")
-        print("4. Built-in geocoding capabilities")
-        print("5. Simple, direct, no abstractions!")
-        
+        print("1. Use get_census_blocks() to find blocks in an area")
+        print("2. Use get_census_data() to fetch demographic variables")
+        print("3. Sample blocks for faster analysis (first 20-30)")
+        print("4. Supports population, income, age, housing, and more")
+        print("5. Returns dict with human-readable variable names")
+        print("\n💡 Try other examples:")
+        print("- example_1_basic_census() for population only")
+        print("- example_3_variables() for housing data")
+
     except Exception as e:
         print(f"\n❌ Error: {e}")
         print("\nTroubleshooting:")
-        print("1. Set CENSUS_API_KEY environment variable")
-        print("2. Check internet connection")
-        print("3. Verify census data availability for the area")
+        print("1. Check internet connection for Census API")
+        print("2. Ensure coordinates are in the United States")
+        print("3. Census API may be slow - try smaller areas")
         return 1
-    
+
     return 0
 
 
