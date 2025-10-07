@@ -19,17 +19,46 @@ def generate_choropleth_map(
     save_path: Optional[str] = None,
     format: str = "png"
 ) -> Optional[bytes]:
-    """Generate a choropleth map from geodata.
+    """
+    Generate a choropleth map from geographic data with auto styling.
 
-    Args:
-        gdf: GeoDataFrame with geometry and data
-        column: Column name to visualize
-        title: Optional map title
-        save_path: Optional path to save the map
-        format: Output format (png, pdf, svg)
+    Creates a choropleth map visualization with automatic color scheme
+    selection based on data type (numeric sequential/diverging or
+    categorical). Includes north arrow and scale bar for reference.
 
-    Returns:
-        Image bytes if save_path is None, otherwise None
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame containing geometry and data to visualize.
+    column : str
+        Name of the column in the GeoDataFrame to visualize.
+    title : str, optional
+        Title to display on the map, by default None.
+    save_path : str, optional
+        File path to save the map. If None, returns bytes, by default
+        None.
+    format : str, optional
+        Output image format ('png', 'pdf', or 'svg'), by default 'png'.
+
+    Returns
+    -------
+    bytes or None
+        Image bytes if save_path is None, otherwise None after saving.
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> gdf = gpd.read_file('census_tracts.geojson')
+    >>> img_bytes = generate_choropleth_map(
+    ...     gdf, 'population', title='Population by Tract'
+    ... )
+
+    >>> # Save to file instead
+    >>> generate_choropleth_map(
+    ...     gdf, 'median_income',
+    ...     title='Income Distribution',
+    ...     save_path='income_map.png'
+    ... )
     """
     # Create figure and axis
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
@@ -124,10 +153,19 @@ def generate_choropleth_map(
 
 
 def add_north_arrow(ax):
-    """Add a north arrow to the map.
-    
-    Args:
-        ax: Matplotlib axis
+    """
+    Add a north arrow indicator to the map in the upper right corner.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axis object to add the north arrow to.
+
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> add_north_arrow(ax)
     """
     # Get axis bounds
     xlim = ax.get_xlim()
@@ -156,11 +194,29 @@ def add_north_arrow(ax):
 
 
 def add_scale_bar(ax, gdf):
-    """Add a scale bar to the map.
-    
-    Args:
-        ax: Matplotlib axis
-        gdf: GeoDataFrame for determining scale
+    """
+    Add a scale bar to the map in the lower left corner.
+
+    Automatically calculates appropriate scale based on map extent and
+    converts units based on coordinate reference system. Displays
+    distance in kilometers or meters as appropriate.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axis object to add the scale bar to.
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame used to determine map extent and CRS for scale
+        calculation.
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> import matplotlib.pyplot as plt
+    >>> gdf = gpd.read_file('boundaries.geojson')
+    >>> fig, ax = plt.subplots()
+    >>> gdf.plot(ax=ax)
+    >>> add_scale_bar(ax, gdf)
     """
     try:
         from shapely.geometry import LineString
@@ -226,14 +282,32 @@ def add_scale_bar(ax, gdf):
 
 
 def create_simple_map(data: list, title: str = None) -> bytes:
-    """Create a simple point map from a list of locations.
-    
-    Args:
-        data: List of dicts with 'lat', 'lon', and optional 'name'
-        title: Optional map title
-    
-    Returns:
-        PNG bytes
+    """
+    Create a simple scatter plot map from a list of point locations.
+
+    Generates a basic map visualization showing points with optional
+    labels. Returns image as PNG bytes for embedding or serving via API.
+
+    Parameters
+    ----------
+    data : list of dict
+        List of location dictionaries. Each dict must contain 'lat' and
+        'lon' keys. Optional 'name' key adds point labels.
+    title : str, optional
+        Title to display on the map, by default None.
+
+    Returns
+    -------
+    bytes
+        PNG image data as bytes.
+
+    Examples
+    --------
+    >>> locations = [
+    ...     {'lat': 42.3601, 'lon': -71.0589, 'name': 'Boston'},
+    ...     {'lat': 40.7128, 'lon': -74.0060, 'name': 'New York'}
+    ... ]
+    >>> img_bytes = create_simple_map(locations, 'Major Cities')
     """
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     

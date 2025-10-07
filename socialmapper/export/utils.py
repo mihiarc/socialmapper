@@ -14,13 +14,29 @@ logger = logging.getLogger(__name__)
 
 
 def estimate_data_size(data: pd.DataFrame | gpd.GeoDataFrame) -> float:
-    """Estimate the size of data in memory (MB).
+    """
+    Estimate the memory footprint of DataFrame or GeoDataFrame.
 
-    Args:
-        data: DataFrame or GeoDataFrame to estimate
+    Calculates deep memory usage including object dtype columns
+    and returns the result in megabytes.
 
-    Returns:
-        Estimated size in megabytes
+    Parameters
+    ----------
+    data : pd.DataFrame or gpd.GeoDataFrame
+        DataFrame or GeoDataFrame to estimate memory usage for.
+
+    Returns
+    -------
+    float
+        Estimated size in megabytes (MB).
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> data = pd.DataFrame({'a': range(1000), 'b': range(1000)})
+    >>> size_mb = estimate_data_size(data)
+    >>> size_mb > 0
+    True
     """
     return data.memory_usage(deep=True).sum() / 1024**2
 
@@ -31,16 +47,40 @@ def generate_output_path(
     format: str = "csv",
     include_geometry: bool = False,
 ) -> Path:
-    """Generate output path with appropriate extension.
+    """
+    Generate output file path with appropriate format extension.
 
-    Args:
-        base_filename: Base filename without extension
-        output_dir: Output directory
-        format: Export format
-        include_geometry: Whether geometry is included
+    Automatically selects file extension based on format and geometry
+    presence. Creates output directory if it doesn't exist.
 
-    Returns:
-        Generated output path
+    Parameters
+    ----------
+    base_filename : str, optional
+        Base filename without extension. Defaults to 'census_data'.
+    output_dir : str, optional
+        Directory for output file, by default 'output'.
+    format : str, optional
+        Export format ('csv', 'parquet', 'geoparquet'), by default
+        'csv'.
+    include_geometry : bool, optional
+        Whether output includes geometry. Upgrades 'parquet' to
+        'geoparquet' if True, by default False.
+
+    Returns
+    -------
+    pathlib.Path
+        Complete output path with directory and extension.
+
+    Examples
+    --------
+    >>> path = generate_output_path('my_data', format='parquet')
+    >>> str(path)
+    'output/my_data_export.parquet'
+
+    >>> path = generate_output_path(format='parquet',
+    ...                            include_geometry=True)
+    >>> str(path)
+    'output/census_data_export.geoparquet'
     """
     if base_filename is None:
         base_filename = "census_data"
@@ -70,15 +110,39 @@ def generate_output_path(
 def select_export_format(
     data_size_mb: float, has_geometry: bool = False, format_preference: str = "auto"
 ) -> str:
-    """Select optimal export format based on data characteristics.
+    """
+    Select optimal export format based on data characteristics.
 
-    Args:
-        data_size_mb: Estimated data size in MB
-        has_geometry: Whether data contains geometry
-        format_preference: User format preference or "auto"
+    Automatically chooses the best format based on data size and
+    geometry presence. Uses GeoParquet for spatial data, Parquet
+    for large datasets, and CSV for small datasets.
 
-    Returns:
-        Selected format name
+    Parameters
+    ----------
+    data_size_mb : float
+        Estimated data size in megabytes.
+    has_geometry : bool, optional
+        Whether data contains spatial geometry columns, by default
+        False.
+    format_preference : str, optional
+        User's preferred format or 'auto' for automatic selection,
+        by default 'auto'.
+
+    Returns
+    -------
+    str
+        Selected format name ('csv', 'parquet', or 'geoparquet').
+
+    Examples
+    --------
+    >>> select_export_format(5.0, has_geometry=False)
+    'csv'
+
+    >>> select_export_format(150.0, has_geometry=False)
+    'parquet'
+
+    >>> select_export_format(10.0, has_geometry=True)
+    'geoparquet'
     """
     if format_preference != "auto":
         return format_preference
@@ -102,13 +166,32 @@ def select_export_format(
 
 
 def validate_export_data(data: pd.DataFrame | gpd.GeoDataFrame) -> None:
-    """Validate data before export.
+    """
+    Validate data before export to ensure it meets requirements.
 
-    Args:
-        data: Data to validate
+    Checks that data is not None, is a valid DataFrame type, and
+    logs a warning if the data is empty.
 
-    Raises:
-        ValueError: If data is invalid
+    Parameters
+    ----------
+    data : pd.DataFrame or gpd.GeoDataFrame
+        Data to validate before export.
+
+    Raises
+    ------
+    ValueError
+        If data is None or not a DataFrame/GeoDataFrame instance.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> data = pd.DataFrame({'col': [1, 2, 3]})
+    >>> validate_export_data(data)  # No exception raised
+
+    >>> validate_export_data(None)  # Raises ValueError
+    Traceback (most recent call last):
+        ...
+    ValueError: Export data cannot be None
     """
     if data is None:
         raise ValueError("Export data cannot be None")
@@ -121,13 +204,34 @@ def validate_export_data(data: pd.DataFrame | gpd.GeoDataFrame) -> None:
 
 
 def get_format_info(format: str) -> dict:
-    """Get information about an export format.
+    """
+    Get detailed metadata about an export format.
 
-    Args:
-        format: Format name
+    Returns a dictionary containing format name, description,
+    capabilities, and recommended use cases.
 
-    Returns:
-        Dictionary with format information
+    Parameters
+    ----------
+    format : str
+        Format name ('csv', 'parquet', or 'geoparquet').
+
+    Returns
+    -------
+    dict
+        Dictionary with keys: 'name', 'description',
+        'supports_geometry', 'compression', 'best_for'.
+
+    Examples
+    --------
+    >>> info = get_format_info('csv')
+    >>> info['name']
+    'CSV'
+    >>> info['supports_geometry']
+    False
+
+    >>> info = get_format_info('geoparquet')
+    >>> info['supports_geometry']
+    True
     """
     format_info = {
         "csv": {
