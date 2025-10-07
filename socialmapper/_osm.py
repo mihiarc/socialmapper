@@ -52,14 +52,36 @@ def query_pois(
     area: Polygon,
     categories: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
-    """Query POIs within a given area using Overpass API.
-    
-    Args:
-        area: Shapely Polygon defining search area
-        categories: List of category names to filter, or None for all
-    
-    Returns:
-        List of POI dicts with name, category, coordinates, etc.
+    """
+    Query Points of Interest within an area using Overpass API.
+
+    Searches for POIs matching specified categories within a geographic
+    area. Uses OpenStreetMap's Overpass API to retrieve POI data with
+    automatic retry across multiple endpoints.
+
+    Parameters
+    ----------
+    area : shapely.geometry.Polygon
+        Geographic area to search for POIs. Defines the bounding box
+        for the query.
+    categories : list of str, optional
+        List of POI category names to filter (e.g., 'restaurant',
+        'school', 'hospital'). If None, retrieves all common POI
+        types, by default None.
+
+    Returns
+    -------
+    list of dict
+        List of POI dictionaries, each containing 'name', 'category',
+        'lat', 'lon', 'tags', and optionally 'address'.
+
+    Examples
+    --------
+    >>> from shapely.geometry import box
+    >>> area = box(-122.4, 47.5, -122.3, 47.6)
+    >>> pois = query_pois(area, categories=['restaurant', 'cafe'])
+    >>> len(pois) > 0
+    True
     """
     # Build Overpass query
     query = build_overpass_query(area, categories)
@@ -72,14 +94,34 @@ def query_pois(
 
 
 def build_overpass_query(area: Polygon, categories: Optional[List[str]]) -> str:
-    """Build an Overpass QL query for POIs in an area.
-    
-    Args:
-        area: Search area polygon
-        categories: Categories to filter for
-    
-    Returns:
-        Overpass QL query string
+    """
+    Build an Overpass QL query string for POI retrieval.
+
+    Constructs a properly formatted Overpass Query Language (QL) string
+    to retrieve POIs within a bounding box. Handles multiple categories
+    by aggregating their associated OSM tags.
+
+    Parameters
+    ----------
+    area : shapely.geometry.Polygon
+        Geographic area polygon used to determine bounding box for
+        the query.
+    categories : list of str, optional
+        POI categories to include in query. Uses predefined category
+        mappings to OSM tags.
+
+    Returns
+    -------
+    str
+        Overpass QL query string ready for API submission.
+
+    Examples
+    --------
+    >>> from shapely.geometry import box
+    >>> area = box(-122.4, 47.5, -122.3, 47.6)
+    >>> query = build_overpass_query(area, ['restaurant'])
+    >>> 'amenity=restaurant' in query
+    True
     """
     # Get bounding box
     bounds = area.bounds  # (minx, miny, maxx, maxy)
@@ -120,13 +162,30 @@ def build_overpass_query(area: Polygon, categories: Optional[List[str]]) -> str:
 
 
 def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
-    """Execute an Overpass API query.
-    
-    Args:
-        query: Overpass QL query string
-    
-    Returns:
-        List of raw POI elements from Overpass
+    """
+    Execute an Overpass API query with automatic endpoint fallback.
+
+    Attempts to execute the query across multiple Overpass API
+    endpoints for reliability. Includes timeout handling and retry
+    logic with delays between attempts.
+
+    Parameters
+    ----------
+    query : str
+        Overpass QL query string to execute.
+
+    Returns
+    -------
+    list of dict
+        List of raw POI element dictionaries from the Overpass API
+        response. Returns empty list if all endpoints fail.
+
+    Examples
+    --------
+    >>> query = '[out:json];node(47.5,-122.4,47.6,-122.3);out;'
+    >>> results = execute_overpass_query(query)
+    >>> isinstance(results, list)
+    True
     """
     # Try multiple Overpass endpoints
     endpoints = [
@@ -164,13 +223,33 @@ def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
 
 
 def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Process raw Overpass elements into clean POI dicts.
-    
-    Args:
-        elements: Raw elements from Overpass API
-    
-    Returns:
-        List of processed POI dicts
+    """
+    Process raw Overpass API elements into standardized POI dicts.
+
+    Extracts and normalizes POI data from Overpass API response,
+    including coordinates, names, categories, and addresses. Handles
+    both node and way geometries with center point extraction.
+
+    Parameters
+    ----------
+    elements : list of dict
+        Raw element dictionaries from Overpass API response.
+
+    Returns
+    -------
+    list of dict
+        List of standardized POI dictionaries with keys: 'name',
+        'category', 'lat', 'lon', 'tags', and optionally 'address'.
+
+    Examples
+    --------
+    >>> elements = [{'type': 'node', 'lat': 47.6, 'lon': -122.3,
+    ...              'tags': {'name': 'Cafe', 'amenity': 'cafe'}}]
+    >>> pois = process_poi_results(elements)
+    >>> len(pois)
+    1
+    >>> pois[0]['category'] == 'cafe'
+    True
     """
     pois = []
     
@@ -228,13 +307,34 @@ def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def determine_category(tags: Dict[str, str]) -> str:
-    """Determine the category of a POI from its OSM tags.
-    
-    Args:
-        tags: OSM tags dict
-    
-    Returns:
-        Category name string
+    """
+    Determine POI category from OpenStreetMap tags.
+
+    Maps OSM tags to standardized POI categories using predefined
+    category mappings. Falls back to primary tag type if no mapping
+    matches.
+
+    Parameters
+    ----------
+    tags : dict
+        Dictionary of OSM tags (key-value pairs) from a POI element.
+
+    Returns
+    -------
+    str
+        Standardized category name (e.g., 'restaurant', 'school',
+        'park') or primary tag type. Returns 'other' if no
+        recognizable tags found.
+
+    Examples
+    --------
+    >>> tags = {'amenity': 'restaurant', 'name': 'Pizza Place'}
+    >>> determine_category(tags)
+    'restaurant'
+
+    >>> tags = {'shop': 'supermarket'}
+    >>> determine_category(tags)
+    'grocery'
     """
     # Check each category's tags
     for category, osm_tags in CATEGORY_MAPPINGS.items():
