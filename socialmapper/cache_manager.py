@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Cache management utilities for SocialMapper.
 
-This module provides functions to manage, monitor, and clear various caches
-used by SocialMapper including geocoding cache, network cache, and census cache.
+This module provides functions to manage, monitor, and clear
+various caches used by SocialMapper including geocoding cache,
+network cache, and census cache.
 """
 
 import logging
@@ -61,17 +62,18 @@ class CacheManager:
         """
         Get comprehensive statistics for all cache subsystems.
 
-        Collects size, item count, and status information from all
-        cache types and aggregates into summary totals.
+        Collects size, item count, and status information from
+        all cache types and aggregates into summary totals.
 
         Returns
         -------
         dict
-            Nested dictionary with keys 'summary', 'network_cache',
-            'geocoding_cache', 'census_cache', 'general_cache'.
-            Summary contains 'total_size_mb', 'total_items',
-            'last_updated'. Each cache type contains 'size_mb',
-            'item_count', 'status', 'location'.
+            Nested dictionary with keys 'summary',
+            'network_cache', 'geocoding_cache', 'census_cache',
+            'general_cache'. Summary contains 'total_size_mb',
+            'total_items', 'last_updated'. Each cache type
+            contains 'size_mb', 'item_count', 'status',
+            'location'.
 
         Examples
         --------
@@ -250,8 +252,8 @@ class CacheManager:
         Returns
         -------
         dict
-            Dictionary with keys 'success' (bool), 'message' (str),
-            'cleared_size_mb' (float).
+            Dictionary with keys 'success' (bool), 'message'
+            (str), 'cleared_size_mb' (float).
 
         Examples
         --------
@@ -282,8 +284,9 @@ class CacheManager:
         Returns
         -------
         dict
-            Dictionary with keys 'success' (bool), 'message' (str),
-            'cleared_size_mb' (float), 'cleared_items' (int).
+            Dictionary with keys 'success' (bool), 'message'
+            (str), 'cleared_size_mb' (float), 'cleared_items'
+            (int).
 
         Examples
         --------
@@ -314,13 +317,15 @@ class CacheManager:
         """
         Clear the census data cache.
 
-        Removes all cached census API responses and demographic data.
+        Removes all cached census API responses and demographic
+        data.
 
         Returns
         -------
         dict
-            Dictionary with keys 'success' (bool), 'message' (str),
-            'cleared_size_mb' (float), 'cleared_items' (int).
+            Dictionary with keys 'success' (bool), 'message'
+            (str), 'cleared_size_mb' (float), 'cleared_items'
+            (int).
 
         Examples
         --------
@@ -356,8 +361,8 @@ class CacheManager:
         """
         Clear all cache subsystems.
 
-        Removes all cached data from network, geocoding, census, and
-        general caches in a single operation.
+        Removes all cached data from network, geocoding, census,
+        and general caches in a single operation.
 
         Returns
         -------
@@ -405,8 +410,9 @@ class CacheManager:
         Returns
         -------
         dict
-            Dictionary with keys 'success' (bool), 'message' (str),
-            'cleared_size_mb' (float), 'cleared_items' (int).
+            Dictionary with keys 'success' (bool), 'message'
+            (str), 'cleared_size_mb' (float), 'cleared_items'
+            (int).
         """
         try:
             stats_before = self._get_general_cache_stats()
@@ -432,19 +438,20 @@ class CacheManager:
         Remove expired entries from all caches.
 
         Performs cleanup of stale data based on cache-specific
-        expiration policies. Some caches use LRU eviction instead.
+        expiration policies. Some caches use LRU eviction.
 
         Returns
         -------
         dict
-            Dictionary with status for each cache type ('census',
-            'network', 'geocoding'). Each entry contains 'success'
-            (bool) and 'message' (str).
+            Dictionary with status for each cache type
+            ('census', 'network', 'geocoding'). Each entry
+            contains 'success' (bool) and 'message' (str).
 
         Notes
         -----
-        Not all caches support explicit expiration. Network cache uses
-        LRU eviction, and geocoding cache handles cleanup on load.
+        Not all caches support explicit expiration. Network cache
+        uses LRU eviction, and geocoding cache handles cleanup
+        on load.
         """
         results = {}
 
@@ -474,21 +481,22 @@ def get_cache_statistics() -> dict[str, Any]:
     """
     Get comprehensive statistics for all caches.
 
-    Convenience function that creates a manager and collects all cache
-    statistics in one call.
+    Convenience function that creates a manager and collects all
+    cache statistics in one call.
 
     Returns
     -------
     dict
-        Nested dictionary with 'summary' and individual cache type
-        statistics. See CacheManager.get_cache_statistics() for
-        details.
+        Nested dictionary with 'summary' and individual cache
+        type statistics. See CacheManager.get_cache_statistics()
+        for details.
 
     Examples
     --------
     >>> stats = get_cache_statistics()
-    >>> print(f"Total: {stats['summary']['total_size_mb']:.1f} MB")
-    Total: 45.3 MB
+    >>> total_mb = stats['summary']['total_size_mb']
+    >>> total_mb >= 0
+    True
     """
     manager = CacheManager()
     return manager.get_cache_statistics()
@@ -498,13 +506,14 @@ def clear_all_caches() -> dict[str, Any]:
     """
     Clear all SocialMapper cache subsystems.
 
-    Convenience function for removing all cached data in one call.
+    Convenience function for removing all cached data in one
+    call.
 
     Returns
     -------
     dict
-        Dictionary with results for each cache type plus summary. See
-        CacheManager.clear_all_caches() for details.
+        Dictionary with results for each cache type plus
+        summary. See CacheManager.clear_all_caches() for details.
 
     Examples
     --------
@@ -525,8 +534,8 @@ def clear_geocoding_cache() -> dict[str, Any]:
     Returns
     -------
     dict
-        Dictionary with 'success', 'message', 'cleared_size_mb',
-        'cleared_items'.
+        Dictionary with 'success', 'message',
+        'cleared_size_mb', 'cleared_items'.
 
     Examples
     --------
@@ -542,13 +551,14 @@ def clear_census_cache() -> dict[str, Any]:
     """
     Clear the census data cache.
 
-    Convenience function for clearing only census API cache data.
+    Convenience function for clearing only census API cache
+    data.
 
     Returns
     -------
     dict
-        Dictionary with 'success', 'message', 'cleared_size_mb',
-        'cleared_items'.
+        Dictionary with 'success', 'message',
+        'cleared_size_mb', 'cleared_items'.
 
     Examples
     --------
