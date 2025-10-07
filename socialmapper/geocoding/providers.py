@@ -20,7 +20,26 @@ logger = logging.getLogger(__name__)
 
 
 class GeocodingProvider(ABC):
-    """Abstract base class for geocoding providers."""
+    """
+    Abstract base class for geocoding providers.
+
+    Provides common functionality for HTTP session management, rate
+    limiting, and retry logic.
+
+    Parameters
+    ----------
+    config : GeocodingConfig
+        Configuration for geocoding behavior.
+
+    Attributes
+    ----------
+    config : GeocodingConfig
+        Active configuration.
+    session : requests.Session
+        HTTP session with retry strategy.
+    last_request_time : float
+        Timestamp of last request for rate limiting.
+    """
 
     def __init__(self, config: GeocodingConfig):
         self.config = config
@@ -28,7 +47,15 @@ class GeocodingProvider(ABC):
         self.last_request_time = 0.0
 
     def _create_session(self) -> requests.Session:
-        """Create HTTP session with retry strategy."""
+        """
+        Create HTTP session with retry strategy.
+
+        Returns
+        -------
+        requests.Session
+            Session configured with automatic retries for transient
+            failures.
+        """
         session = requests.Session()
 
         retry_strategy = Retry(
@@ -45,7 +72,11 @@ class GeocodingProvider(ABC):
         return session
 
     def _enforce_rate_limit(self):
-        """Enforce rate limiting between requests."""
+        """
+        Enforce rate limiting between requests.
+
+        Sleeps if necessary to maintain configured rate limit.
+        """
         min_interval = 1.0 / self.config.rate_limit_requests_per_second
         elapsed = time.time() - self.last_request_time
 
@@ -57,24 +88,73 @@ class GeocodingProvider(ABC):
 
     @abstractmethod
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode a single address."""
+        """
+        Geocode a single address.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode.
+
+        Returns
+        -------
+        GeocodingResult
+            Result with coordinates and quality information.
+        """
 
     @abstractmethod
     def get_provider_name(self) -> AddressProvider:
-        """Get the provider identifier."""
+        """
+        Get the provider identifier.
+
+        Returns
+        -------
+        AddressProvider
+            Enum identifying this provider.
+        """
 
 
 class NominatimProvider(GeocodingProvider):
-    """OpenStreetMap Nominatim geocoding provider (free, rate-limited)."""
+    """
+    OpenStreetMap Nominatim geocoding provider.
+
+    Free geocoding service with rate limiting. Best for international
+    addresses and general geocoding needs.
+
+    Notes
+    -----
+    Requires respectful rate limiting (max 1 request/second).
+    See https://operations.osmfoundation.org/policies/nominatim/ for
+    usage policy.
+    """
 
     BASE_URL = "https://nominatim.openstreetmap.org/search"
 
     def get_provider_name(self) -> AddressProvider:
-        """Return the provider name for this geocoder."""
+        """
+        Return the provider name for this geocoder.
+
+        Returns
+        -------
+        AddressProvider
+            NOMINATIM enum value.
+        """
         return AddressProvider.NOMINATIM
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode address using Nominatim."""
+        """
+        Geocode address using Nominatim API.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode.
+
+        Returns
+        -------
+        GeocodingResult
+            Geocoding result with coordinates and quality assessment.
+        """
         start_time = time.time()
 
         try:
@@ -197,16 +277,45 @@ class NominatimProvider(GeocodingProvider):
 
 
 class CensusProvider(GeocodingProvider):
-    """US Census Bureau geocoding provider (free, US-only)."""
+    """
+    US Census Bureau geocoding provider.
+
+    Free, high-quality geocoding for US addresses. Best for US-only
+    applications requiring accurate census block-level matching.
+
+    Notes
+    -----
+    US addresses only. Automatically enriches results with census
+    geography (FIPS codes, block groups).
+    """
 
     BASE_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 
     def get_provider_name(self) -> AddressProvider:
-        """Return the provider name for this geocoder."""
+        """
+        Return the provider name for this geocoder.
+
+        Returns
+        -------
+        AddressProvider
+            CENSUS enum value.
+        """
         return AddressProvider.CENSUS
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode address using Census Bureau API."""
+        """
+        Geocode address using Census Bureau API.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode (must be US address).
+
+        Returns
+        -------
+        GeocodingResult
+            Geocoding result with census geography enrichment.
+        """
         start_time = time.time()
 
         try:

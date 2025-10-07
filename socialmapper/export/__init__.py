@@ -35,17 +35,33 @@ def export_census_data_to_csv(
     base_filename: str | None = None,
     output_dir: str = "output/csv",
 ) -> str:
-    """Legacy CSV export function (maintained for backward compatibility).
+    """
+    Legacy CSV export function for backward compatibility.
 
-    Args:
-        census_data: GeoDataFrame with census data for block groups
-        poi_data: Dictionary with POI data or list of POIs
-        output_path: Full path to save the CSV file
-        base_filename: Base filename to use if output_path is not provided
-        output_dir: Directory to save the CSV if output_path is not provided
+    Parameters
+    ----------
+    census_data : gpd.GeoDataFrame
+        GeoDataFrame with census data for block groups.
+    poi_data : dict or list of dict
+        Dictionary with POI data or list of POIs.
+    output_path : str, optional
+        Full path to save the CSV file. If None, generated
+        automatically.
+    base_filename : str, optional
+        Base filename to use if output_path is not provided.
+    output_dir : str, optional
+        Directory to save the CSV if output_path is not provided.
+        Default is "output/csv".
 
-    Returns:
-        Path to the saved CSV file
+    Returns
+    -------
+    str
+        Path to the saved CSV file.
+
+    Notes
+    -----
+    Consider using export_to_parquet or export_to_geoparquet for
+    better performance and smaller file sizes.
     """
     logger.info("Using legacy CSV export (consider upgrading to modern formats)")
 
@@ -63,30 +79,44 @@ def export_census_data_to_csv(
 
 
 def export_to_parquet(data: pd.DataFrame, output_path: str | Path, **kwargs) -> str:
-    """Export DataFrame to Parquet format.
+    """
+    Export DataFrame to Parquet format.
 
-    Args:
-        data: DataFrame to export
-        output_path: Output file path
-        **kwargs: Additional options for ParquetExporter
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame to export.
+    output_path : str or Path
+        Output file path.
+    **kwargs
+        Additional options passed to ParquetExporter.
 
-    Returns:
-        Path to saved file
+    Returns
+    -------
+    str
+        Path to saved file.
     """
     exporter = ParquetExporter()
     return exporter.export(data, output_path, **kwargs)
 
 
 def export_to_geoparquet(data: gpd.GeoDataFrame, output_path: str | Path, **kwargs) -> str:
-    """Export GeoDataFrame to GeoParquet format.
+    """
+    Export GeoDataFrame to GeoParquet format.
 
-    Args:
-        data: GeoDataFrame to export
-        output_path: Output file path
-        **kwargs: Additional options for GeoParquetExporter
+    Parameters
+    ----------
+    data : gpd.GeoDataFrame
+        GeoDataFrame to export with geometry column.
+    output_path : str or Path
+        Output file path.
+    **kwargs
+        Additional options passed to GeoParquetExporter.
 
-    Returns:
-        Path to saved file
+    Returns
+    -------
+    str
+        Path to saved file.
     """
     exporter = GeoParquetExporter()
     return exporter.export(data, output_path, **kwargs)

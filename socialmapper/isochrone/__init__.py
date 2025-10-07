@@ -72,21 +72,45 @@ def create_isochrone_from_poi(
     travel_mode: TravelMode = TravelMode.DRIVE,
     restrict_to_country: str | None = None,
 ) -> str | gpd.GeoDataFrame:
-    """Create an isochrone from a POI using modern optimized methods.
+    """
+    Create an isochrone from a POI using modern optimized methods.
 
-    Args:
-        poi (Dict[str, Any]): POI dictionary containing at minimum 'lat', 'lon', and 'tags'
-        travel_time_limit (int): Travel time limit in minutes
-        output_dir (str): Directory to save the isochrone file
-        save_file (bool): Whether to save the isochrone to a file
-        simplify_tolerance (float, optional): Tolerance for geometry simplification
-        use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
-        travel_mode (TravelMode): Mode of travel (walk, bike, drive)
-        restrict_to_country (str, optional): ISO 3166-1 alpha-2 country code (e.g., 'US')
-                                            to restrict roads to that country only
+    Parameters
+    ----------
+    poi : dict
+        POI dictionary containing at minimum 'lat', 'lon', and 'tags'.
+    travel_time_limit : int
+        Travel time limit in minutes.
+    output_dir : str, optional
+        Directory to save the isochrone file. Default is
+        "output/isochrones".
+    save_file : bool, optional
+        Whether to save the isochrone to a file. Default is True.
+    simplify_tolerance : float, optional
+        Tolerance for geometry simplification. If None, no
+        simplification is applied.
+    use_parquet : bool, optional
+        Whether to use GeoParquet instead of GeoJSON format.
+        Default is True.
+    travel_mode : TravelMode, optional
+        Mode of travel (walk, bike, drive). Default is
+        TravelMode.DRIVE.
+    restrict_to_country : str, optional
+        ISO 3166-1 alpha-2 country code (e.g., 'US') to restrict
+        roads to that country only. Default is None.
 
-    Returns:
-        Union[str, gpd.GeoDataFrame]: File path if save_file=True, or GeoDataFrame if save_file=False
+    Returns
+    -------
+    str or gpd.GeoDataFrame
+        File path if save_file=True, or GeoDataFrame if
+        save_file=False.
+
+    Raises
+    ------
+    ValueError
+        If POI does not contain required 'lat' and 'lon' fields.
+    RuntimeError
+        If network download or isochrone creation fails.
     """
     # Extract coordinates
     latitude = poi.get("lat")
@@ -164,14 +188,25 @@ def create_isochrone_from_poi(
 def get_bounding_box(
     pois: list[dict[str, Any]], buffer_km: float = 5.0
 ) -> tuple[float, float, float, float]:
-    """Get a bounding box for a list of POIs with a buffer.
+    """
+    Get a bounding box for a list of POIs with a buffer.
 
-    Args:
-        pois: List of POI dictionaries with 'lat' and 'lon'
-        buffer_km: Buffer in kilometers to add around the POIs
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries with 'lat' and 'lon'.
+    buffer_km : float, optional
+        Buffer in kilometers to add around the POIs. Default is 5.0.
 
-    Returns:
-        Tuple of (min_lat, min_lon, max_lat, max_lon)
+    Returns
+    -------
+    tuple of float
+        Tuple of (min_lat, min_lon, max_lat, max_lon).
+
+    Raises
+    ------
+    ValueError
+        If no valid coordinates are found in POIs.
     """
     lons = [poi.get("lon") for poi in pois if poi.get("lon") is not None]
     lats = [poi.get("lat") for poi in pois if poi.get("lat") is not None]
@@ -207,27 +242,72 @@ def create_isochrones_from_poi_list(
     progress_callback: Callable | None = None,
     travel_mode: TravelMode = TravelMode.DRIVE,
 ) -> str | gpd.GeoDataFrame | list[str]:
-    """Create isochrones from a list of POIs with modern optimization.
+    """
+    Create isochrones from a list of POIs with modern optimization.
 
-    Args:
-        poi_data (Dict[str, List[Dict]]): Dictionary with 'pois' key containing list of POIs
-        travel_time_limit (int): Travel time limit in minutes
-        output_dir (str): Directory to save isochrone files
-        save_individual_files (bool): Whether to save individual isochrone files
-        combine_results (bool): Whether to combine all isochrones into a single file
-        simplify_tolerance (float, optional): Tolerance for geometry simplification
-        use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
-        use_clustering (bool, optional): Whether to use clustering optimization
-        max_cluster_radius_km (float): Maximum radius for clustering in kilometers
-        min_cluster_size (int): Minimum number of POIs to form a cluster
-        use_concurrent (bool, optional): Whether to use concurrent processing
-        max_network_workers (int): Maximum concurrent network downloads
-        max_isochrone_workers (int, optional): Maximum concurrent isochrone calculations
-        progress_callback (Callable, optional): Progress callback function
-        travel_mode (TravelMode): Mode of travel (walk, bike, drive)
+    Provides intelligent clustering and concurrent processing for
+    efficient isochrone generation from multiple POIs.
 
-    Returns:
-        Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
+    Parameters
+    ----------
+    poi_data : dict
+        Dictionary with 'pois' key containing list of POI dicts.
+    travel_time_limit : int
+        Travel time limit in minutes.
+    output_dir : str, optional
+        Directory to save isochrone files. Default is
+        "output/isochrones".
+    save_individual_files : bool, optional
+        Whether to save individual isochrone files. Default is True.
+    combine_results : bool, optional
+        Whether to combine all isochrones into a single file.
+        Default is False.
+    simplify_tolerance : float, optional
+        Tolerance for geometry simplification. If None, no
+        simplification is applied.
+    use_parquet : bool, optional
+        Whether to use GeoParquet instead of GeoJSON format.
+        Default is True.
+    use_clustering : bool, optional
+        Whether to use clustering optimization. If None, will be
+        auto-determined based on POI count (enabled for 5+ POIs).
+    max_cluster_radius_km : float, optional
+        Maximum radius for clustering in kilometers. Default is 15.0.
+    min_cluster_size : int, optional
+        Minimum number of POIs to form a cluster. Default is 2.
+    use_concurrent : bool, optional
+        Whether to use concurrent processing. If None, will be
+        auto-determined based on POI count (enabled for 3+ POIs).
+    max_network_workers : int, optional
+        Maximum concurrent network downloads. Default is 8.
+    max_isochrone_workers : int, optional
+        Maximum concurrent isochrone calculations. If None, defaults
+        to CPU count.
+    progress_callback : callable, optional
+        Progress callback function. Default is None.
+    travel_mode : TravelMode, optional
+        Mode of travel (walk, bike, drive). Default is
+        TravelMode.DRIVE.
+
+    Returns
+    -------
+    str or gpd.GeoDataFrame or list of str
+        Results depend on save/combine options:
+        - If combine_results and save_individual_files: str (path
+          to combined file)
+        - If combine_results only: gpd.GeoDataFrame (combined data)
+        - If save_individual_files only: list of str (file paths)
+        - Otherwise: list of gpd.GeoDataFrame
+
+    Raises
+    ------
+    ValueError
+        If no POIs found in input data.
+
+    Notes
+    -----
+    Auto-optimization strategies are applied when use_clustering or
+    use_concurrent are None, based on dataset size and distribution.
     """
     pois = poi_data.get("pois", [])
     if not pois:
@@ -412,20 +492,36 @@ def create_isochrones_from_json_file(
     use_parquet: bool = True,
     **kwargs,
 ) -> str | gpd.GeoDataFrame | list[str]:
-    """Create isochrones from POIs stored in a JSON file.
+    """
+    Create isochrones from POIs stored in a JSON file.
 
-    Args:
-        json_file_path (str): Path to JSON file containing POI data
-        travel_time_limit (int): Travel time limit in minutes
-        output_dir (str): Directory to save isochrone files
-        save_individual_files (bool): Whether to save individual isochrone files
-        combine_results (bool): Whether to combine all isochrones into a single file
-        simplify_tolerance (float, optional): Tolerance for geometry simplification
-        use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
-        **kwargs: Additional arguments passed to create_isochrones_from_poi_list
+    Parameters
+    ----------
+    json_file_path : str
+        Path to JSON file containing POI data.
+    travel_time_limit : int
+        Travel time limit in minutes.
+    output_dir : str, optional
+        Directory to save isochrone files. Default is "isochrones".
+    save_individual_files : bool, optional
+        Whether to save individual isochrone files. Default is True.
+    combine_results : bool, optional
+        Whether to combine all isochrones into a single file.
+        Default is False.
+    simplify_tolerance : float, optional
+        Tolerance for geometry simplification. If None, no
+        simplification is applied.
+    use_parquet : bool, optional
+        Whether to use GeoParquet instead of GeoJSON format.
+        Default is True.
+    **kwargs
+        Additional arguments passed to create_isochrones_from_poi_list.
 
-    Returns:
-        Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
+    Returns
+    -------
+    str or gpd.GeoDataFrame or list of str
+        Results based on save/combine options. See
+        create_isochrones_from_poi_list for details.
     """
     # Load POI data from JSON file
     with Path(json_file_path).open() as f:
@@ -445,12 +541,26 @@ def create_isochrones_from_json_file(
 
 # Performance monitoring functions
 def get_cache_statistics() -> dict[str, Any]:
-    """Get current cache performance statistics."""
+    """
+    Get current cache performance statistics.
+
+    Returns
+    -------
+    dict
+        Cache statistics including hit rate, size, and entry count.
+    """
     return get_cache_stats()
 
 
 def clear_network_cache():
-    """Clear the network cache to free up disk space."""
+    """
+    Clear the network cache to free up disk space.
+
+    Notes
+    -----
+    This removes all cached network data. Subsequent isochrone
+    generation will require re-downloading network data.
+    """
     clear_cache()
 
 

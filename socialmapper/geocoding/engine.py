@@ -18,9 +18,29 @@ logger = logging.getLogger(__name__)
 
 
 class AddressGeocodingEngine:
-    """High-level geocoding engine orchestrating multiple providers.
+    """
+    High-level geocoding engine orchestrating multiple providers.
 
     Features intelligent fallback, caching, and quality validation.
+    Manages multiple geocoding providers with automatic failover and
+    result caching.
+
+    Parameters
+    ----------
+    config : GeocodingConfig, optional
+        Configuration for geocoding behavior. If None, uses default
+        configuration.
+
+    Attributes
+    ----------
+    config : GeocodingConfig
+        Active configuration.
+    cache : AddressCache
+        Result cache instance.
+    providers : dict
+        Dictionary of available geocoding providers.
+    stats : dict
+        Usage statistics including cache hits and provider usage.
     """
 
     def __init__(self, config: GeocodingConfig = None):
@@ -36,7 +56,14 @@ class AddressGeocodingEngine:
         }
 
     def _initialize_providers(self) -> dict[AddressProvider, GeocodingProvider]:
-        """Initialize available geocoding providers."""
+        """
+        Initialize available geocoding providers.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping AddressProvider enums to provider instances.
+        """
         providers = {}
 
         # Always available providers
@@ -50,13 +77,22 @@ class AddressGeocodingEngine:
         return providers
 
     def geocode_address(self, address: str | AddressInput) -> GeocodingResult:
-        """Geocode a single address with intelligent provider selection and fallback.
+        """
+        Geocode a single address with intelligent provider selection.
 
-        Args:
-            address: Address string or AddressInput object
+        Uses intelligent provider selection and automatic fallback with
+        quality validation and caching.
 
-        Returns:
-            GeocodingResult with geocoding outcome
+        Parameters
+        ----------
+        address : str or AddressInput
+            Address string or AddressInput object to geocode.
+
+        Returns
+        -------
+        GeocodingResult
+            Geocoding result with coordinates, quality score, and
+            metadata.
         """
         # Convert string to AddressInput if needed
         if isinstance(address, str):
@@ -129,14 +165,20 @@ class AddressGeocodingEngine:
     def geocode_addresses_batch(
         self, addresses: list[str | AddressInput], progress: bool = True
     ) -> list[GeocodingResult]:
-        """Geocode multiple addresses in batch with progress tracking.
+        """
+        Geocode multiple addresses in batch with progress tracking.
 
-        Args:
-            addresses: List of address strings or AddressInput objects
-            progress: Whether to show progress bar
+        Parameters
+        ----------
+        addresses : list of str or AddressInput
+            List of address strings or AddressInput objects to geocode.
+        progress : bool, optional
+            Whether to show progress bar. Default is True.
 
-        Returns:
-            List of GeocodingResult objects
+        Returns
+        -------
+        list of GeocodingResult
+            List of geocoding results, one per input address.
         """
         results = []
 
@@ -175,7 +217,19 @@ class AddressGeocodingEngine:
         return results
 
     def _get_provider_order(self, address: AddressInput) -> list[AddressProvider]:
-        """Determine optimal provider order for an address."""
+        """
+        Determine optimal provider order for an address.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address input with optional provider preference.
+
+        Returns
+        -------
+        list of AddressProvider
+            Ordered list of providers to try.
+        """
         providers = [self.config.primary_provider]
 
         # Add user preference if specified
@@ -193,7 +247,21 @@ class AddressGeocodingEngine:
         return providers
 
     def _meets_quality_threshold(self, quality: AddressQuality, address: AddressInput) -> bool:
-        """Check if result quality meets threshold."""
+        """
+        Check if result quality meets configured threshold.
+
+        Parameters
+        ----------
+        quality : AddressQuality
+            Quality of geocoding result.
+        address : AddressInput
+            Address input with optional quality threshold override.
+
+        Returns
+        -------
+        bool
+            True if quality meets or exceeds threshold.
+        """
         threshold = address.quality_threshold or self.config.min_quality_threshold
 
         quality_order = [
@@ -207,7 +275,15 @@ class AddressGeocodingEngine:
         return quality_order.index(quality) <= quality_order.index(threshold)
 
     def get_statistics(self) -> dict[str, Any]:
-        """Get geocoding engine statistics."""
+        """
+        Get geocoding engine statistics.
+
+        Returns
+        -------
+        dict
+            Statistics including total requests, cache hit rate,
+            success rate, and provider usage counts.
+        """
         stats = self.stats.copy()
 
         if stats["total_requests"] > 0:
@@ -220,9 +296,27 @@ class AddressGeocodingEngine:
         return stats
 
     def __enter__(self):
-        """Context manager entry."""
+        """
+        Context manager entry.
+
+        Returns
+        -------
+        AddressGeocodingEngine
+            Self for context manager usage.
+        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit - save cache."""
+        """
+        Context manager exit - saves cache.
+
+        Parameters
+        ----------
+        exc_type : type or None
+            Exception type if raised.
+        exc_val : Exception or None
+            Exception value if raised.
+        exc_tb : traceback or None
+            Exception traceback if raised.
+        """
         self.cache.save_cache()
