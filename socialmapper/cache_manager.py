@@ -17,20 +17,70 @@ logger = logging.getLogger(__name__)
 
 
 class CacheManager:
-    """Centralized cache management for SocialMapper."""
+    """
+    Centralized cache management system for SocialMapper.
+
+    Provides unified interface for managing multiple cache types
+    including geocoding, network routing, and census data caches.
+    Supports statistics gathering, selective clearing, and cleanup
+    operations across all cache systems.
+
+    Attributes
+    ----------
+    cache_base_dir : pathlib.Path
+        Root directory for all cache storage.
+    geocoding_cache_dir : pathlib.Path
+        Directory for geocoding cache storage.
+    network_cache_dir : pathlib.Path
+        Directory for network routing cache storage.
+    census_cache_dir : pathlib.Path
+        Directory for census data cache storage.
+
+    Examples
+    --------
+    >>> manager = CacheManager()
+    >>> stats = manager.get_cache_statistics()
+    >>> print(f"Total: {stats['summary']['total_size_mb']:.1f} MB")
+    Total: 45.3 MB
+    """
 
     def __init__(self):
-        """Initialize cache manager."""
+        """
+        Initialize cache manager with default directory structure.
+
+        Sets up cache directory paths for all subsystems (geocoding,
+        network, census, general). Directories are created as needed
+        during cache operations.
+        """
         self.cache_base_dir = Path("cache")
         self.geocoding_cache_dir = self.cache_base_dir / "geocoding"
         self.network_cache_dir = self.cache_base_dir / "networks"
         self.census_cache_dir = self.cache_base_dir / "census"
 
     def get_cache_statistics(self) -> dict[str, Any]:
-        """Get comprehensive cache statistics for all caches.
+        """
+        Get comprehensive statistics for all cache subsystems.
 
-        Returns:
-            Dict containing cache statistics for each cache type
+        Collects size, item count, and status information from all
+        cache types and aggregates into summary totals.
+
+        Returns
+        -------
+        dict
+            Nested dictionary with keys 'summary', 'network_cache',
+            'geocoding_cache', 'census_cache', 'general_cache'.
+            Summary contains 'total_size_mb', 'total_items',
+            'last_updated'. Each cache type contains 'size_mb',
+            'item_count', 'status', 'location'.
+
+        Examples
+        --------
+        >>> manager = CacheManager()
+        >>> stats = manager.get_cache_statistics()
+        >>> stats['summary']['total_size_mb']
+        45.3
+        >>> stats['network_cache']['item_count']
+        127
         """
         stats = {
             "summary": {
@@ -53,7 +103,15 @@ class CacheManager:
         return stats
 
     def _get_network_cache_stats(self) -> dict[str, Any]:
-        """Get network cache statistics."""
+        """
+        Get statistics for network routing cache.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'size_mb', 'item_count', 'status',
+            'location'. Status is 'active', 'empty', or 'error'.
+        """
         try:
             # Get stats from the simplified cache
             cache_stats = get_network_stats()
@@ -69,7 +127,15 @@ class CacheManager:
             return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_geocoding_cache_stats(self) -> dict[str, Any]:
-        """Get geocoding cache statistics."""
+        """
+        Get statistics for geocoding cache.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'size_mb', 'item_count', 'status',
+            'location'. Status is 'active', 'empty', or 'error'.
+        """
         try:
             # Get size of geocoding cache directory (diskcache format)
             if self.geocoding_cache_dir.exists():
@@ -98,7 +164,15 @@ class CacheManager:
             return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_census_cache_stats(self) -> dict[str, Any]:
-        """Get census cache statistics."""
+        """
+        Get statistics for census data cache.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'size_mb', 'item_count', 'status',
+            'location'. Status is 'active', 'empty', or 'error'.
+        """
         try:
             # Check file-based census cache in multiple possible locations
             census_cache_size = 0
@@ -128,7 +202,18 @@ class CacheManager:
             return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def _get_general_cache_stats(self) -> dict[str, Any]:
-        """Get general cache statistics (JSON files in cache root)."""
+        """
+        Get statistics for general cache files.
+
+        Analyzes JSON cache files stored in root cache directory.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'size_mb', 'item_count', 'status',
+            'location', 'oldest_entry', 'newest_entry'. Status is
+            'active', 'empty', or 'error'.
+        """
         try:
             json_files = (
                 list(self.cache_base_dir.glob("*.json")) if self.cache_base_dir.exists() else []
@@ -157,10 +242,23 @@ class CacheManager:
             return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
     def clear_network_cache(self) -> dict[str, Any]:
-        """Clear the network cache.
+        """
+        Clear the network routing cache.
 
-        Returns:
-            Dict with operation status and details
+        Removes all cached network graphs and routing data.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'success' (bool), 'message' (str),
+            'cleared_size_mb' (float).
+
+        Examples
+        --------
+        >>> manager = CacheManager()
+        >>> result = manager.clear_network_cache()
+        >>> result['success']
+        True
         """
         try:
             # Use the built-in clear function
@@ -176,10 +274,23 @@ class CacheManager:
             return {"success": False, "error": str(e)}
 
     def clear_geocoding_cache(self) -> dict[str, Any]:
-        """Clear the geocoding cache.
+        """
+        Clear the geocoding address cache.
 
-        Returns:
-            Dict with operation status and details
+        Removes all cached geocoding results and address lookups.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'success' (bool), 'message' (str),
+            'cleared_size_mb' (float), 'cleared_items' (int).
+
+        Examples
+        --------
+        >>> manager = CacheManager()
+        >>> result = manager.clear_geocoding_cache()
+        >>> result['success']
+        True
         """
         try:
             stats_before = self._get_geocoding_cache_stats()
@@ -200,10 +311,23 @@ class CacheManager:
             return {"success": False, "error": str(e)}
 
     def clear_census_cache(self) -> dict[str, Any]:
-        """Clear the census cache.
+        """
+        Clear the census data cache.
 
-        Returns:
-            Dict with operation status and details
+        Removes all cached census API responses and demographic data.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'success' (bool), 'message' (str),
+            'cleared_size_mb' (float), 'cleared_items' (int).
+
+        Examples
+        --------
+        >>> manager = CacheManager()
+        >>> result = manager.clear_census_cache()
+        >>> result['success']
+        True
         """
         try:
             stats_before = self._get_census_cache_stats()
@@ -229,10 +353,28 @@ class CacheManager:
             return {"success": False, "error": str(e)}
 
     def clear_all_caches(self) -> dict[str, Any]:
-        """Clear all caches.
+        """
+        Clear all cache subsystems.
 
-        Returns:
-            Dict with operation status and details for each cache
+        Removes all cached data from network, geocoding, census, and
+        general caches in a single operation.
+
+        Returns
+        -------
+        dict
+            Nested dictionary with keys for each cache type
+            ('network', 'geocoding', 'census', 'general') plus
+            'summary'. Summary contains 'success' (bool),
+            'total_cleared_mb' (float), 'timestamp' (str).
+
+        Examples
+        --------
+        >>> manager = CacheManager()
+        >>> result = manager.clear_all_caches()
+        >>> result['summary']['success']
+        True
+        >>> result['summary']['total_cleared_mb']
+        45.3
         """
         results = {
             "network": self.clear_network_cache(),
@@ -255,10 +397,16 @@ class CacheManager:
         return results
 
     def _clear_general_cache(self) -> dict[str, Any]:
-        """Clear general cache files (JSON files in cache root).
+        """
+        Clear general cache files in root directory.
 
-        Returns:
-            Dict with operation status and details
+        Removes JSON cache files stored in main cache directory.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys 'success' (bool), 'message' (str),
+            'cleared_size_mb' (float), 'cleared_items' (int).
         """
         try:
             stats_before = self._get_general_cache_stats()
@@ -280,10 +428,23 @@ class CacheManager:
             return {"success": False, "error": str(e)}
 
     def cleanup_expired_entries(self) -> dict[str, Any]:
-        """Clean up expired entries from all caches.
+        """
+        Remove expired entries from all caches.
 
-        Returns:
-            Dict with cleanup statistics
+        Performs cleanup of stale data based on cache-specific
+        expiration policies. Some caches use LRU eviction instead.
+
+        Returns
+        -------
+        dict
+            Dictionary with status for each cache type ('census',
+            'network', 'geocoding'). Each entry contains 'success'
+            (bool) and 'message' (str).
+
+        Notes
+        -----
+        Not all caches support explicit expiration. Network cache uses
+        LRU eviction, and geocoding cache handles cleanup on load.
         """
         results = {}
 
@@ -310,50 +471,113 @@ class CacheManager:
 
 # Convenience functions for direct use
 def get_cache_statistics() -> dict[str, Any]:
-    """Get comprehensive cache statistics.
+    """
+    Get comprehensive statistics for all caches.
 
-    Returns:
-        Dict containing cache statistics for all cache types
+    Convenience function that creates a manager and collects all cache
+    statistics in one call.
+
+    Returns
+    -------
+    dict
+        Nested dictionary with 'summary' and individual cache type
+        statistics. See CacheManager.get_cache_statistics() for
+        details.
+
+    Examples
+    --------
+    >>> stats = get_cache_statistics()
+    >>> print(f"Total: {stats['summary']['total_size_mb']:.1f} MB")
+    Total: 45.3 MB
     """
     manager = CacheManager()
     return manager.get_cache_statistics()
 
 
 def clear_all_caches() -> dict[str, Any]:
-    """Clear all SocialMapper caches.
+    """
+    Clear all SocialMapper cache subsystems.
 
-    Returns:
-        Dict with operation status and details
+    Convenience function for removing all cached data in one call.
+
+    Returns
+    -------
+    dict
+        Dictionary with results for each cache type plus summary. See
+        CacheManager.clear_all_caches() for details.
+
+    Examples
+    --------
+    >>> result = clear_all_caches()
+    >>> result['summary']['success']
+    True
     """
     manager = CacheManager()
     return manager.clear_all_caches()
 
 
 def clear_geocoding_cache() -> dict[str, Any]:
-    """Clear the geocoding cache.
+    """
+    Clear the geocoding address cache.
 
-    Returns:
-        Dict with operation status and details
+    Convenience function for clearing only geocoding cache data.
+
+    Returns
+    -------
+    dict
+        Dictionary with 'success', 'message', 'cleared_size_mb',
+        'cleared_items'.
+
+    Examples
+    --------
+    >>> result = clear_geocoding_cache()
+    >>> result['success']
+    True
     """
     manager = CacheManager()
     return manager.clear_geocoding_cache()
 
 
 def clear_census_cache() -> dict[str, Any]:
-    """Clear the census cache.
+    """
+    Clear the census data cache.
 
-    Returns:
-        Dict with operation status and details
+    Convenience function for clearing only census API cache data.
+
+    Returns
+    -------
+    dict
+        Dictionary with 'success', 'message', 'cleared_size_mb',
+        'cleared_items'.
+
+    Examples
+    --------
+    >>> result = clear_census_cache()
+    >>> result['success']
+    True
     """
     manager = CacheManager()
     return manager.clear_census_cache()
 
 
 def cleanup_expired_cache_entries() -> dict[str, Any]:
-    """Clean up expired entries from all caches.
+    """
+    Clean up expired entries from all caches.
 
-    Returns:
-        Dict with cleanup statistics
+    Convenience function for removing stale data from all cache
+    subsystems.
+
+    Returns
+    -------
+    dict
+        Dictionary with status for each cache type. See
+        CacheManager.cleanup_expired_entries() for details.
+
+    Examples
+    --------
+    >>> result = cleanup_expired_cache_entries()
+    >>> result['network']['success']
+    True
     """
     manager = CacheManager()
     return manager.cleanup_expired_entries()

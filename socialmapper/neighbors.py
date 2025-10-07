@@ -81,20 +81,30 @@ STATE_NEIGHBORS = {
 
 
 def get_neighboring_states(state_fips: str) -> List[str]:
-    """Get neighboring states for a given state.
+    """
+    Get list of neighboring states for a given state FIPS code.
 
-    Args:
-        state_fips: Two-digit state FIPS code (e.g., '37' for North Carolina)
+    Retrieves all states that share a border with the specified state
+    based on pre-defined geographic adjacency relationships.
 
-    Returns:
-        List of neighboring state FIPS codes
+    Parameters
+    ----------
+    state_fips : str
+        Two-digit state FIPS code (e.g., '37' for North Carolina).
 
-    Examples:
-        >>> get_neighboring_states("37")  # North Carolina
-        ['13', '45', '47', '51']  # GA, SC, TN, VA
+    Returns
+    -------
+    list of str
+        List of neighboring state FIPS codes. Returns empty list if
+        state_fips not found.
 
-        >>> get_neighboring_states("06")  # California
-        ['04', '32', '41']  # AZ, NV, OR
+    Examples
+    --------
+    >>> get_neighboring_states("37")  # North Carolina
+    ['13', '45', '47', '51']  # GA, SC, TN, VA
+
+    >>> get_neighboring_states("06")  # California
+    ['04', '32', '41']  # AZ, NV, OR
     """
     return STATE_NEIGHBORS.get(state_fips, [])
 
@@ -102,22 +112,41 @@ def get_neighboring_states(state_fips: str) -> List[str]:
 def get_neighboring_counties(
     state_fips: str, county_fips: str, include_cross_state: bool = True
 ) -> List[Tuple[str, str]]:
-    """Get neighboring counties for a given county.
+    """
+    Get list of neighboring counties for a given county.
 
-    Args:
-        state_fips: Two-digit state FIPS code
-        county_fips: Three-digit county FIPS code
-        include_cross_state: Whether to include neighbors in other states
+    Retrieves counties that share a border with the specified county.
+    Currently returns empty list as detailed county adjacency data is
+    not yet implemented.
 
-    Returns:
-        List of (state_fips, county_fips) tuples for neighboring counties
+    Parameters
+    ----------
+    state_fips : str
+        Two-digit state FIPS code.
+    county_fips : str
+        Three-digit county FIPS code.
+    include_cross_state : bool, optional
+        Whether to include neighboring counties in other states, by
+        default True.
 
-    Examples:
-        >>> get_neighboring_counties("37", "183")  # Wake County, NC
-        [('37', '037'), ('37', '063'), ('37', '069'), ...]
+    Returns
+    -------
+    list of tuple
+        List of (state_fips, county_fips) tuples for neighboring
+        counties. Currently returns empty list.
 
-        >>> get_neighboring_counties("06", "037")  # Los Angeles County, CA
-        [('06', '059'), ('06', '065'), ('06', '071'), ...]
+    Examples
+    --------
+    >>> get_neighboring_counties("37", "183")  # Wake County, NC
+    [('37', '037'), ('37', '063'), ('37', '069'), ...]
+
+    >>> get_neighboring_counties("06", "037")  # Los Angeles, CA
+    [('06', '059'), ('06', '065'), ('06', '071'), ...]
+
+    Notes
+    -----
+    County adjacency functionality is planned for future implementation
+    and requires comprehensive county boundary data.
     """
     # For now, return empty list as county neighbor data is more complex
     # This would require a large dataset of county adjacency
@@ -125,25 +154,36 @@ def get_neighboring_counties(
 
 
 def get_geography_from_point(lat: float, lon: float) -> Optional[Dict[str, str]]:
-    """Get geographic identifiers for a point (latitude, longitude).
+    """
+    Get geographic identifiers (FIPS codes) for a coordinate point.
 
-    Args:
-        lat: Latitude in decimal degrees
-        lon: Longitude in decimal degrees
+    Performs reverse geocoding to determine the state, county, census
+    tract, and block group containing the specified latitude and
+    longitude coordinates.
 
-    Returns:
-        Dictionary with geographic identifiers:
-        - state_fips: Two-digit state FIPS code
-        - county_fips: Three-digit county FIPS code
-        - tract: Census tract code
-        - block_group: Block group code
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees (-90 to 90).
+    lon : float
+        Longitude in decimal degrees (-180 to 180).
 
-    Examples:
-        >>> get_geography_from_point(35.7796, -78.6382)  # Raleigh, NC
-        {'state_fips': '37', 'county_fips': '183', 'tract': '050100', ...}
+    Returns
+    -------
+    dict or None
+        Dictionary with geographic identifiers containing keys:
+        'state_fips' (str), 'county_fips' (str), 'tract' (str),
+        'block_group' (str). Returns None if geocoding fails.
 
-        >>> get_geography_from_point(34.0522, -118.2437)  # Los Angeles, CA
-        {'state_fips': '06', 'county_fips': '037', 'tract': '207400', ...}
+    Examples
+    --------
+    >>> get_geography_from_point(35.7796, -78.6382)  # Raleigh
+    {'state_fips': '37', 'county_fips': '183', 'tract': '050100',
+     'block_group': '3'}
+
+    >>> get_geography_from_point(34.0522, -118.2437)  # LA
+    {'state_fips': '06', 'county_fips': '037', 'tract': '207400',
+     'block_group': '1'}
     """
     # Use the geocode_point function from census module
     return geocode_point(lat, lon)
@@ -152,27 +192,44 @@ def get_geography_from_point(lat: float, lon: float) -> Optional[Dict[str, str]]
 def get_counties_from_pois(
     pois: list[dict], include_neighbors: bool = True, neighbor_distance: int = 1
 ) -> list[tuple[str, str]]:
-    """Get counties for a list of Points of Interest (POIs).
+    """
+    Get counties containing or near a list of Points of Interest.
 
-    Args:
-        pois: List of POI dictionaries with 'lat' and 'lon' keys
-        include_neighbors: Whether to include neighboring counties
-        neighbor_distance: Distance of neighbors to include (1 = immediate neighbors)
+    Identifies all counties that contain POIs, optionally including
+    neighboring counties within a specified distance. Useful for
+    determining census data coverage areas for POI analysis.
 
-    Returns:
-        List of unique (state_fips, county_fips) tuples
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries containing 'lat' and 'lon' keys with
+        coordinate values.
+    include_neighbors : bool, optional
+        Whether to include counties neighboring those containing POIs,
+        by default True.
+    neighbor_distance : int, optional
+        Distance of neighbor relationships to include (1 = immediate
+        neighbors, 2 = neighbors of neighbors), by default 1.
 
-    Examples:
-        >>> pois = [
-        ...     {"lat": 35.7796, "lon": -78.6382, "name": "Raleigh"},
-        ...     {"lat": 35.2271, "lon": -80.8431, "name": "Charlotte"},
-        ... ]
-        >>> counties = get_counties_from_pois(pois)
-        [('37', '183'), ('37', '119'), ...]  # Wake, Mecklenburg, and neighbors
+    Returns
+    -------
+    list of tuple
+        List of unique (state_fips, county_fips) tuples representing
+        counties.
 
-        >>> # Without neighbors
-        >>> counties = get_counties_from_pois(pois, include_neighbors=False)
-        [('37', '183'), ('37', '119')]  # Just Wake and Mecklenburg
+    Examples
+    --------
+    >>> pois = [
+    ...     {"lat": 35.7796, "lon": -78.6382, "name": "Raleigh"},
+    ...     {"lat": 35.2271, "lon": -80.8431, "name": "Charlotte"},
+    ... ]
+    >>> counties = get_counties_from_pois(pois)
+    [('37', '183'), ('37', '119'), ...]
+
+    >>> # Without neighbors
+    >>> counties = get_counties_from_pois(pois,
+    ...                                   include_neighbors=False)
+    [('37', '183'), ('37', '119')]
     """
     # Use modern census system for geographic operations
     census_system = get_census_system()
@@ -180,18 +237,31 @@ def get_counties_from_pois(
 
 
 def get_neighbor_manager(db_path: str | None = None):
-    """Get the neighbor manager instance for advanced operations.
+    """
+    Get neighbor manager instance for advanced geographic operations.
 
-    Args:
-        db_path: Optional path to neighbor database file
+    Creates a manager object providing access to neighbor relationship
+    data and caching. Useful for batch operations or custom neighbor
+    queries.
 
-    Returns:
-        NeighborManager instance for advanced operations
+    Parameters
+    ----------
+    db_path : str, optional
+        Path to neighbor database file. Uses default internal database
+        if None, by default None.
 
-    Examples:
-        >>> manager = get_neighbor_manager()
-        >>> stats = manager.get_neighbor_statistics()
-        >>> print(f"Database has {stats['county_relationships']} county relationships")
+    Returns
+    -------
+    SimpleNeighborManager
+        Manager instance providing methods for neighbor queries and
+        statistics.
+
+    Examples
+    --------
+    >>> manager = get_neighbor_manager()
+    >>> stats = manager.get_neighbor_statistics()
+    >>> print(f"States: {stats['state_relationships']}")
+    States: 48
     """
     # Simple neighbor manager without census system dependency
     class SimpleNeighborManager:
@@ -227,22 +297,27 @@ def get_neighbor_manager(db_path: str | None = None):
 
 
 def get_statistics() -> dict[str, Any]:
-    """Get statistics about the neighbor database.
+    """
+    Get comprehensive statistics about the neighbor database.
 
-    Returns:
-        Dictionary with database statistics:
-        - state_relationships: Number of state neighbor relationships
-        - county_relationships: Number of county neighbor relationships
-        - cross_state_county_relationships: Number of cross-state county relationships
-        - cached_points: Number of cached point lookups
-        - states_with_county_data: Number of states with county data
+    Provides counts and metadata about stored geographic relationships
+    including state neighbors, county neighbors, and cached lookups.
 
-    Examples:
-        >>> stats = get_statistics()
-        >>> print(
-        ...     f"Database contains {stats['county_relationships']:,} county relationships"
-        ... )
-        Database contains 18,560 county relationships
+    Returns
+    -------
+    dict
+        Dictionary with keys: 'state_relationships' (int),
+        'county_relationships' (int),
+        'cross_state_county_relationships' (int), 'cached_points'
+        (int), 'states_with_county_data' (int).
+
+    Examples
+    --------
+    >>> stats = get_statistics()
+    >>> print(f"States: {stats['state_relationships']}")
+    States: 48
+    >>> print(f"Counties: {stats['county_relationships']:,}")
+    Counties: 0
     """
     manager = get_neighbor_manager()
     return manager.get_neighbor_statistics()
@@ -307,54 +382,90 @@ FIPS_TO_STATE = {v: k for k, v in STATE_FIPS_CODES.items()}
 
 
 def get_state_fips(state_abbr: str) -> str | None:
-    """Convert state abbreviation to FIPS code.
+    """
+    Convert state abbreviation to FIPS code.
 
-    Args:
-        state_abbr: Two-letter state abbreviation (e.g., 'NC', 'CA')
+    Translates two-letter postal abbreviations to Census Bureau FIPS
+    codes for use in geographic queries and data retrieval.
 
-    Returns:
-        Two-digit FIPS code or None if not found
+    Parameters
+    ----------
+    state_abbr : str
+        Two-letter state postal abbreviation (e.g., 'NC', 'CA').
+        Case-insensitive.
 
-    Examples:
-        >>> get_state_fips("NC")
-        '37'
-        >>> get_state_fips("CA")
-        '06'
+    Returns
+    -------
+    str or None
+        Two-digit FIPS code string, or None if abbreviation not
+        recognized.
+
+    Examples
+    --------
+    >>> get_state_fips("NC")
+    '37'
+    >>> get_state_fips("CA")
+    '06'
+    >>> get_state_fips("ca")  # Case insensitive
+    '06'
     """
     return STATE_FIPS_CODES.get(state_abbr.upper())
 
 
 def get_state_abbr(state_fips: str) -> str | None:
-    """Convert FIPS code to state abbreviation.
+    """
+    Convert FIPS code to state postal abbreviation.
 
-    Args:
-        state_fips: Two-digit FIPS code (e.g., '37', '06')
+    Translates Census Bureau FIPS codes to standard two-letter postal
+    abbreviations for display and data export.
 
-    Returns:
-        Two-letter state abbreviation or None if not found
+    Parameters
+    ----------
+    state_fips : str
+        Two-digit FIPS code (e.g., '37', '06').
 
-    Examples:
-        >>> get_state_abbr("37")
-        'NC'
-        >>> get_state_abbr("06")
-        'CA'
+    Returns
+    -------
+    str or None
+        Two-letter state postal abbreviation, or None if FIPS code not
+        recognized.
+
+    Examples
+    --------
+    >>> get_state_abbr("37")
+    'NC'
+    >>> get_state_abbr("06")
+    'CA'
     """
     return FIPS_TO_STATE.get(state_fips)
 
 
 # Convenience functions using state abbreviations
 def get_neighboring_states_by_abbr(state_abbr: str) -> list[str]:
-    """Get neighboring states using state abbreviation.
+    """
+    Get list of neighboring states using postal abbreviations.
 
-    Args:
-        state_abbr: Two-letter state abbreviation
+    Convenience function that accepts and returns state abbreviations
+    instead of FIPS codes, wrapping get_neighboring_states().
 
-    Returns:
-        List of neighboring state abbreviations
+    Parameters
+    ----------
+    state_abbr : str
+        Two-letter state postal abbreviation (e.g., 'NC', 'CA').
+        Case-insensitive.
 
-    Examples:
-        >>> get_neighboring_states_by_abbr("NC")
-        ['GA', 'SC', 'TN', 'VA']
+    Returns
+    -------
+    list of str
+        List of neighboring state postal abbreviations. Returns empty
+        list if state_abbr not recognized.
+
+    Examples
+    --------
+    >>> get_neighboring_states_by_abbr("NC")
+    ['GA', 'SC', 'TN', 'VA']
+    >>> get_neighboring_states_by_abbr("ca")  # Case insensitive
+    ['AZ', 'NV', 'OR']
     """
     state_fips = get_state_fips(state_abbr)
     if not state_fips:
