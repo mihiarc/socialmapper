@@ -18,7 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class GeoParquetExporter(BaseExporter):
-    """Exporter for GeoParquet format."""
+    """
+    GeoParquet format exporter for geospatial census data.
+
+    Exports GeoDataFrames to GeoParquet files with geometry support,
+    automatic dtype optimization, and configurable compression.
+    Falls back to standard Parquet for non-spatial data.
+    """
 
     def export(
         self,
@@ -27,16 +33,44 @@ class GeoParquetExporter(BaseExporter):
         compression: str = "snappy",
         **kwargs,
     ) -> str:
-        """Export data to GeoParquet format.
+        """
+        Export GeoDataFrame to GeoParquet file with spatial support.
 
-        Args:
-            data: GeoDataFrame to export
-            output_path: Path to save the GeoParquet file
-            compression: Compression algorithm ('snappy', 'gzip', 'brotli', None)
-            **kwargs: Additional geopandas to_parquet options
+        Preserves geometry columns using the GeoParquet specification.
+        Automatically converts DataFrames to GeoDataFrames when
+        geometry column is present. Falls back to standard Parquet
+        for non-spatial data.
 
-        Returns:
-            Path to the saved GeoParquet file
+        Parameters
+        ----------
+        data : pd.DataFrame or gpd.GeoDataFrame
+            DataFrame or GeoDataFrame containing data to export.
+        output_path : str or Path
+            File path where the GeoParquet file should be saved.
+        compression : str, optional
+            Compression algorithm to use. Options: 'snappy', 'gzip',
+            'brotli', or None for no compression. By default 'snappy'.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to
+            geopandas.to_parquet().
+
+        Returns
+        -------
+        str
+            Absolute path to the saved GeoParquet file.
+
+        Raises
+        ------
+        ExportError
+            If the file cannot be saved to the specified path.
+
+        Examples
+        --------
+        >>> import geopandas as gpd
+        >>> exporter = GeoParquetExporter(config)
+        >>> gdf = gpd.read_file('census_tracts.geojson')
+        >>> path = exporter.export(gdf, 'census.geoparquet',
+        ...                        compression='gzip')
         """
         output_path = self.validate_output_path(output_path)
 
@@ -73,7 +107,22 @@ class GeoParquetExporter(BaseExporter):
             raise ExportError(f"Could not save GeoParquet: {e}") from e
 
     def _optimize_geodataframe(self, gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-        """Optimize GeoDataFrame for better compression."""
+        """
+        Optimize GeoDataFrame column types for better compression.
+
+        Converts object columns to categorical types for low-cardinality
+        data and downcasts numeric types while preserving geometry.
+
+        Parameters
+        ----------
+        gdf : gpd.GeoDataFrame
+            GeoDataFrame to optimize.
+
+        Returns
+        -------
+        gpd.GeoDataFrame
+            Optimized GeoDataFrame with reduced memory footprint.
+        """
         gdf_optimized = gdf.copy()
 
         # Optimize non-geometry columns
@@ -99,9 +148,23 @@ class GeoParquetExporter(BaseExporter):
         return gdf_optimized
 
     def get_file_extension(self) -> str:
-        """Get the file extension for GeoParquet format."""
+        """
+        Get the standard file extension for GeoParquet format.
+
+        Returns
+        -------
+        str
+            The file extension '.geoparquet'.
+        """
         return ".geoparquet"
 
     def supports_geometry(self) -> bool:
-        """GeoParquet supports geometry columns."""
+        """
+        Check if GeoParquet format supports geometry columns.
+
+        Returns
+        -------
+        bool
+            Always True. GeoParquet natively supports spatial geometry.
+        """
         return True

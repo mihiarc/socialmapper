@@ -17,21 +17,53 @@ logger = logging.getLogger(__name__)
 
 
 class ParquetExporter(BaseExporter):
-    """Exporter for Parquet format."""
+    """
+    Parquet file format exporter with automatic dtype optimization.
+
+    Exports pandas DataFrames to Parquet files with configurable
+    compression and automatic data type optimization for better
+    compression ratios. Removes geometry columns automatically.
+    """
 
     def export(
         self, data: pd.DataFrame, output_path: str | Path, compression: str = "snappy", **kwargs
     ) -> str:
-        """Export data to Parquet format.
+        """
+        Export DataFrame to Parquet file with compression.
 
-        Args:
-            data: DataFrame to export
-            output_path: Path to save the Parquet file
-            compression: Compression algorithm ('snappy', 'gzip', 'brotli', None)
-            **kwargs: Additional pandas to_parquet options
+        Automatically optimizes data types for better compression and
+        removes geometry columns. Supports multiple compression
+        algorithms via PyArrow.
 
-        Returns:
-            Path to the saved Parquet file
+        Parameters
+        ----------
+        data : pd.DataFrame
+            DataFrame containing the data to export.
+        output_path : str or Path
+            File path where the Parquet file should be saved.
+        compression : str, optional
+            Compression algorithm to use. Options: 'snappy', 'gzip',
+            'brotli', or None for no compression. By default 'snappy'.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to pandas.to_parquet().
+
+        Returns
+        -------
+        str
+            Absolute path to the saved Parquet file.
+
+        Raises
+        ------
+        ExportError
+            If the file cannot be saved to the specified path.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> exporter = ParquetExporter(config)
+        >>> data = pd.DataFrame({'pop': [100, 200], 'area': [1, 2]})
+        >>> path = exporter.export(data, 'census.parquet',
+        ...                        compression='gzip')
         """
         output_path = self.validate_output_path(output_path)
 
@@ -68,7 +100,22 @@ class ParquetExporter(BaseExporter):
             raise ExportError(f"Could not save Parquet: {e}") from e
 
     def _optimize_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Optimize DataFrame dtypes for better compression."""
+        """
+        Optimize DataFrame column data types for better compression.
+
+        Converts object columns to categorical or numeric types where
+        appropriate, and downcasts numeric types to smaller sizes.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame to optimize.
+
+        Returns
+        -------
+        pd.DataFrame
+            Optimized DataFrame with smaller memory footprint.
+        """
         df_optimized = df.copy()
 
         for col in df_optimized.columns:
@@ -95,9 +142,23 @@ class ParquetExporter(BaseExporter):
         return df_optimized
 
     def get_file_extension(self) -> str:
-        """Get the file extension for Parquet format."""
+        """
+        Get the standard file extension for Parquet format.
+
+        Returns
+        -------
+        str
+            The file extension '.parquet'.
+        """
         return ".parquet"
 
     def supports_geometry(self) -> bool:
-        """Standard Parquet does not support geometry columns."""
+        """
+        Check if standard Parquet format supports geometry columns.
+
+        Returns
+        -------
+        bool
+            Always False. Use GeoParquet format for spatial data.
+        """
         return False

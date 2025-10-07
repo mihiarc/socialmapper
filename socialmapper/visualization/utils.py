@@ -20,15 +20,35 @@ def add_north_arrow(
     text_color: str = "black",
     fontsize: int = 12,
 ) -> None:
-    """Add a north arrow to the map.
+    """
+    Add a north arrow indicator to a map visualization.
 
-    Args:
-        ax: Matplotlib axes object
-        location: Location of the north arrow
-        scale: Scale factor for arrow size
-        arrow_color: Color of the arrow
-        text_color: Color of the 'N' text
-        fontsize: Font size for 'N' text
+    Creates a decorative north arrow with customizable position,
+    size, and colors. Falls back to simple text arrow if rendering
+    fails.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axes object to add the north arrow to.
+    location : str, optional
+        Position on the map. Options: 'upper right', 'upper left',
+        'lower left', 'lower right', 'center', etc. By default
+        'upper right'.
+    scale : float, optional
+        Size multiplier for the arrow, by default 0.5.
+    arrow_color : str, optional
+        Color of the arrow shape, by default 'black'.
+    text_color : str, optional
+        Color of the 'N' text, by default 'black'.
+    fontsize : int, optional
+        Font size for the 'N' text, by default 12.
+
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> add_north_arrow(ax, location='upper left', scale=0.8)
     """
     try:
         # Create drawing area
@@ -122,20 +142,43 @@ def add_scale_bar(
     color: str = "black",
     box_color: str = "white",
 ) -> None:
-    """Add a scale bar to the map.
+    """
+    Add a simplified scale bar to a map visualization.
 
-    Note: This is a simplified scale bar. For accurate scale bars,
-    use matplotlib-scalebar package or cartopy.
+    Creates an approximate scale bar with distance estimation. For
+    accurate scale bars with proper projection support, use the
+    matplotlib-scalebar package or cartopy instead.
 
-    Args:
-        ax: Matplotlib axes object
-        location: Location of the scale bar
-        length_fraction: Fraction of axes width for scale bar
-        height_fraction: Fraction of axes height for scale bar
-        box_alpha: Alpha value for background box
-        font_size: Font size for scale text
-        color: Color of scale bar and text
-        box_color: Background box color
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axes object to add the scale bar to.
+    location : str, optional
+        Position on the map. Options: 'lower right', 'lower left',
+        'upper right', etc. By default 'lower right'.
+    length_fraction : float, optional
+        Scale bar length as fraction of axes width, by default 0.25.
+    height_fraction : float, optional
+        Scale bar height as fraction of axes height, by default 0.01.
+    box_alpha : float, optional
+        Transparency of background box (0-1), by default 0.8.
+    font_size : int, optional
+        Font size for distance label, by default 10.
+    color : str, optional
+        Color of scale bar and text, by default 'black'.
+    box_color : str, optional
+        Background box color, by default 'white'.
+
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> add_scale_bar(ax, location='lower left', length_fraction=0.3)
+
+    Notes
+    -----
+    Scale distance uses rough approximation (1 degree ≈ 111 km).
+    Results may be inaccurate for non-geographic projections.
     """
     # Get axis limits
     x_min, x_max = ax.get_xlim()
@@ -207,14 +250,35 @@ def add_scale_bar(
 
 
 def format_number(value: int | float, decimals: int = 0) -> str:
-    """Format number for display with thousands separator.
+    """
+    Format numeric values with thousands separators for display.
 
-    Args:
-        value: Number to format
-        decimals: Number of decimal places
+    Handles missing values (NaN) and formats integers or floats with
+    commas for readability.
 
-    Returns:
-        Formatted string
+    Parameters
+    ----------
+    value : int or float
+        Number to format for display.
+    decimals : int, optional
+        Number of decimal places to show, by default 0.
+
+    Returns
+    -------
+    str
+        Formatted string with thousands separators, or 'N/A' for NaN.
+
+    Examples
+    --------
+    >>> format_number(1234567)
+    '1,234,567'
+
+    >>> format_number(1234.5678, decimals=2)
+    '1,234.57'
+
+    >>> import pandas as pd
+    >>> format_number(pd.NA)
+    'N/A'
     """
     if pd.isna(value):
         return "N/A"
@@ -226,15 +290,38 @@ def format_number(value: int | float, decimals: int = 0) -> str:
 
 
 def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list:
-    """Get a list of colors from a colormap.
+    """
+    Extract evenly-spaced colors from a matplotlib colormap.
 
-    Args:
-        cmap_name: Name of the matplotlib colormap
-        n_colors: Number of colors to extract
-        reverse: Whether to reverse the color order
+    Generates a discrete color palette by sampling from a continuous
+    colormap. Returns colors as hex strings for easy use in plots.
 
-    Returns:
-        List of color hex strings
+    Parameters
+    ----------
+    cmap_name : str
+        Name of the matplotlib colormap (e.g., 'viridis', 'coolwarm',
+        'RdYlBu').
+    n_colors : int
+        Number of discrete colors to extract from the colormap.
+    reverse : bool, optional
+        Whether to reverse the color order, by default False.
+
+    Returns
+    -------
+    list of str
+        List of color hex strings (e.g., ['#440154', '#31688e']).
+
+    Examples
+    --------
+    >>> colors = get_color_ramp('viridis', 5)
+    >>> len(colors)
+    5
+    >>> colors[0].startswith('#')
+    True
+
+    >>> colors = get_color_ramp('RdYlBu', 3, reverse=True)
+    >>> len(colors)
+    3
     """
     cmap = plt.get_cmap(cmap_name)
     colors = [cmap(i / (n_colors - 1)) for i in range(n_colors)]
@@ -254,14 +341,31 @@ def get_color_ramp(cmap_name: str, n_colors: int, reverse: bool = False) -> list
 def calculate_map_extent(
     gdf: gpd.GeoDataFrame, buffer_factor: float = 0.1
 ) -> tuple[float, float, float, float]:
-    """Calculate appropriate map extent with buffer.
+    """
+    Calculate map extent with buffer around geographic data.
 
-    Args:
-        gdf: GeoDataFrame to calculate extent for
-        buffer_factor: Buffer to add around data (fraction of extent)
+    Adds proportional padding around the bounding box of a
+    GeoDataFrame to prevent features from touching map edges.
 
-    Returns:
-        Tuple of (xmin, xmax, ymin, ymax)
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame to calculate extent for.
+    buffer_factor : float, optional
+        Proportional buffer to add around data as fraction of extent
+        dimensions, by default 0.1 (10% padding).
+
+    Returns
+    -------
+    tuple of float
+        Map extent as (xmin, xmax, ymin, ymax).
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> gdf = gpd.read_file('data.geojson')
+    >>> extent = calculate_map_extent(gdf, buffer_factor=0.15)
+    >>> xmin, xmax, ymin, ymax = extent
     """
     bounds = gdf.total_bounds  # minx, miny, maxx, maxy
     width = bounds[2] - bounds[0]
@@ -274,13 +378,35 @@ def calculate_map_extent(
 
 
 def validate_geodataframe(gdf: gpd.GeoDataFrame) -> None:
-    """Validate that a GeoDataFrame is suitable for mapping.
+    """
+    Validate GeoDataFrame suitability for map visualization.
 
-    Args:
-        gdf: GeoDataFrame to validate
+    Checks for common issues: empty data, missing geometries, no CRS
+    definition, and invalid geometries that could cause rendering
+    failures.
 
-    Raises:
-        ValueError: If GeoDataFrame is invalid
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame to validate before visualization.
+
+    Raises
+    ------
+    ValueError
+        If GeoDataFrame is empty, has all null geometries, lacks a
+        CRS, or contains invalid geometries.
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> gdf = gpd.read_file('valid_data.geojson')
+    >>> validate_geodataframe(gdf)  # No exception
+
+    >>> empty_gdf = gpd.GeoDataFrame()
+    >>> validate_geodataframe(empty_gdf)  # Raises ValueError
+    Traceback (most recent call last):
+        ...
+    ValueError: GeoDataFrame is empty
     """
     if gdf.empty:
         raise ValueError("GeoDataFrame is empty")
