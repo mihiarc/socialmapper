@@ -14,7 +14,23 @@ import pandas as pd
 
 @dataclass
 class DataPrepConfig:
-    """Configuration for data preparation."""
+    """
+    Configuration for data preparation and export preprocessing.
+
+    Defines column ordering, exclusions, and deduplication rules for
+    preparing census and POI data before export.
+
+    Attributes
+    ----------
+    preferred_column_order : list of str
+        Preferred order for columns in exported data.
+    excluded_columns : list of str
+        Columns to exclude from exports (e.g., internal IDs).
+    deduplication_columns : list of str
+        Columns used as keys for deduplication.
+    deduplication_agg_rules : dict
+        Aggregation rules for duplicate rows (e.g., 'min', 'first').
+    """
 
     preferred_column_order: list[str] = field(
         default_factory=lambda: [
@@ -84,37 +100,107 @@ class DataPrepConfig:
 
 
 class BaseExporter(ABC):
-    """Base class for all export formats."""
+    """
+    Abstract base class for all data export format implementations.
+
+    Defines the interface that all exporter classes must implement,
+    including format-specific export logic, file extensions, and
+    geometry support capabilities.
+
+    Parameters
+    ----------
+    config : DataPrepConfig, optional
+        Configuration for data preparation, by default None which
+        creates default configuration.
+
+    Attributes
+    ----------
+    config : DataPrepConfig
+        Data preparation configuration instance.
+    """
 
     def __init__(self, config: DataPrepConfig | None = None):
-        """Initialize exporter with configuration."""
+        """
+        Initialize exporter with optional configuration.
+
+        Parameters
+        ----------
+        config : DataPrepConfig, optional
+            Data preparation configuration. Creates default if None.
+        """
         self.config = config or DataPrepConfig()
 
     @abstractmethod
     def export(
         self, data: pd.DataFrame | gpd.GeoDataFrame, output_path: str | Path, **kwargs
     ) -> str:
-        """Export data to the specific format.
+        """
+        Export data to the format-specific file.
 
-        Args:
-            data: Data to export
-            output_path: Path to save the exported file
-            **kwargs: Format-specific options
+        Must be implemented by subclasses to handle format-specific
+        export logic.
 
-        Returns:
-            Path to the exported file
+        Parameters
+        ----------
+        data : pd.DataFrame or gpd.GeoDataFrame
+            Data to export.
+        output_path : str or Path
+            Destination file path.
+        **kwargs : dict
+            Format-specific export options.
+
+        Returns
+        -------
+        str
+            Absolute path to the exported file.
         """
 
     @abstractmethod
     def get_file_extension(self) -> str:
-        """Get the file extension for this format."""
+        """
+        Get the standard file extension for this export format.
+
+        Returns
+        -------
+        str
+            File extension including the dot (e.g., '.csv').
+        """
 
     @abstractmethod
     def supports_geometry(self) -> bool:
-        """Check if this format supports geometry columns."""
+        """
+        Check if this export format supports spatial geometry columns.
+
+        Returns
+        -------
+        bool
+            True if format can store geometry data.
+        """
 
     def validate_output_path(self, output_path: str | Path) -> Path:
-        """Validate and prepare output path."""
+        """
+        Validate and prepare output file path.
+
+        Creates parent directories if needed and ensures the file has
+        the correct extension for this export format.
+
+        Parameters
+        ----------
+        output_path : str or Path
+            Desired output file path.
+
+        Returns
+        -------
+        pathlib.Path
+            Validated and corrected output path with proper extension.
+
+        Examples
+        --------
+        >>> exporter = CSVExporter()
+        >>> path = exporter.validate_output_path('data/output')
+        >>> str(path)
+        'data/output.csv'
+        """
         output_path = Path(output_path)
 
         # Ensure directory exists
@@ -128,12 +214,27 @@ class BaseExporter(ABC):
 
 
 class ExportError(Exception):
-    """Base exception for export errors."""
+    """
+    Base exception for all export-related errors.
+
+    Raised when export operations fail due to various reasons
+    including I/O errors, format incompatibilities, or data issues.
+    """
 
 
 class DataPreparationError(ExportError):
-    """Exception raised during data preparation."""
+    """
+    Exception raised during data preparation phase.
+
+    Indicates issues with cleaning, transforming, or validating data
+    before export (e.g., missing required columns, invalid data types).
+    """
 
 
 class FormatNotSupportedError(ExportError):
-    """Exception raised when a format is not supported."""
+    """
+    Exception raised when requested export format is not supported.
+
+    Indicates the user requested an export format that is not
+    implemented or not available in the current environment.
+    """
