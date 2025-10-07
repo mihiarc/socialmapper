@@ -13,113 +13,150 @@ What you'll learn:
 """
 
 import sys
-import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from socialmapper.api import create_isochrone
-from socialmapper import get_census_data_for_polygon, get_demographics_for_polygon
-import pandas as pd
+from socialmapper import (
+    create_isochrone,
+    get_census_blocks,
+    get_census_data,
+)
 
 
 def example_1_basic_combination():
     """Combine isochrone with demographic data."""
     print("\n🔗 Example 1: Basic Combination")
     print("-" * 40)
-    
+
     # Step 1: Create isochrone
     print("Step 1: Creating isochrone...")
     isochrone = create_isochrone(
-        location="Durham, NC",
-        travel_time=15,
+        location=(35.7796, -78.6382),  # Raleigh, NC
+        travel_time=5,
         travel_mode="drive"
     )
-    print(f"   ✅ Isochrone created")
-    
-    # Step 2: Get demographics
-    print("Step 2: Adding demographic data...")
-    demographics = get_demographics_for_polygon(
-        polygon=isochrone
+
+    area = isochrone['properties']['area_sq_km']
+    print(f"   ✅ Isochrone created: {area:.2f} km²")
+
+    # Step 2: Get census blocks
+    print("Step 2: Getting census blocks...")
+    blocks = get_census_blocks(polygon=isochrone)
+    print(f"   Found {len(blocks)} census blocks")
+
+    if not blocks:
+        print("   ⚠️ No census blocks found")
+        return None
+
+    # Step 3: Get demographics (sample for speed)
+    print("Step 3: Fetching demographic data...")
+    sample_blocks = blocks[:30]
+    geoids = [block['geoid'] for block in sample_blocks]
+
+    demographics = get_census_data(
+        location=geoids,
+        variables=["population", "median_income", "median_age"],
+        year=2022
     )
-    
-    if demographics is not None and not demographics.empty:
-        print(f"   ✅ Demographics retrieved")
-        
-        # Step 3: Analyze results
-        print("Step 3: Analysis results:")
-        total_pop = demographics['B01003_001E'].sum() if 'B01003_001E' in demographics.columns else 0
-        print(f"   Population within 15 minutes: {total_pop:,}")
-        print(f"   Block groups analyzed: {len(demographics)}")
-        
+
+    if demographics:
+        # Calculate aggregated statistics
+        pop_values = [d.get('population', 0) for d in demographics.values()]
+        income_values = [d.get('median_income', 0) for d in demographics.values()
+                        if d.get('median_income', 0) > 0]
+        age_values = [d.get('median_age', 0) for d in demographics.values()
+                     if d.get('median_age', 0) > 0]
+
+        sample_pop = sum(pop_values)
+        avg_income = sum(income_values) / len(income_values) if income_values else 0
+        avg_age = sum(age_values) / len(age_values) if age_values else 0
+
+        # Estimate total if we sampled
+        if len(blocks) > 30:
+            total_pop = int(sample_pop * (len(blocks) / len(sample_blocks)))
+            print(f"   ✅ Demographics retrieved")
+            print(f"      Population (estimated): ~{total_pop:,}")
+        else:
+            total_pop = sample_pop
+            print(f"   ✅ Demographics retrieved")
+            print(f"      Population: {total_pop:,}")
+
+        print(f"      Median income: ${avg_income:,.0f}")
+        print(f"      Median age: {avg_age:.1f} years")
+
         # Calculate population density
-        iso_dict = create_isochrone(
-            location="Durham, NC",
-            travel_time=15,
-            travel_mode="drive",
-            return_type="dict"
-        )
-        area_km2 = iso_dict['properties']['area_sq_km']
-        density = total_pop / area_km2 if area_km2 > 0 else 0
-        print(f"   Population density: {density:.0f} people/km²")
+        density = total_pop / area if area > 0 else 0
+        print(f"      Population density: {density:.0f} people/km²")
     else:
         print("   ⚠️ No demographic data available")
-    
+
     return isochrone, demographics
 
 
 def example_2_accessibility_analysis():
-    """Analyze accessibility to different resources."""
-    print("\n🏥 Example 2: Resource Accessibility Analysis")
+    """Analyze accessibility at different travel times."""
+    print("\n⏱️ Example 2: Travel Time Comparison")
     print("-" * 40)
-    
+
     # Compare accessibility at different travel times
-    location = "Cary, NC"
-    travel_times = [5, 10, 15]
+    location = (35.7796, -78.6382)  # Raleigh, NC
+    travel_times = [5, 10]  # Reduced for speed
     results = []
-    
-    print(f"Analyzing accessibility from {location}:")
-    
+
+    print(f"Analyzing accessibility from Raleigh, NC:")
+
     for time in travel_times:
         # Create isochrone
-        iso_dict = create_isochrone(
-            location=location,
-            travel_time=time,
-            travel_mode="drive",
-            return_type="dict"
-        )
-        
-        # Get demographics
         isochrone = create_isochrone(
             location=location,
             travel_time=time,
             travel_mode="drive"
         )
-        
-        demographics = get_census_data_for_polygon(
-            polygon=isochrone,
-            variables=["B01003_001E"],  # Total population
-            year=2022
-        )
-        
-        population = demographics['B01003_001E'].sum() if demographics is not None and not demographics.empty else 0
-        area = iso_dict['properties']['area_sq_km']
-        
+
+        area = isochrone['properties']['area_sq_km']
+
+        # Get census blocks
+        blocks = get_census_blocks(polygon=isochrone)
+
+        # Get demographics (sample for speed)
+        population = 0
+        if blocks:
+            sample_blocks = blocks[:30]
+            geoids = [block['geoid'] for block in sample_blocks]
+
+            census_data = get_census_data(
+                location=geoids,
+                variables=["population"],
+                year=2022
+            )
+
+            if census_data:
+                pop_values = [d.get('population', 0) for d in census_data.values()]
+                sample_pop = sum(pop_values)
+
+                # Estimate total if we sampled
+                if len(blocks) > 30:
+                    population = int(sample_pop * (len(blocks) / len(sample_blocks)))
+                else:
+                    population = sample_pop
+
         results.append({
             'time': time,
             'area_km2': area,
             'population': population,
             'density': population / area if area > 0 else 0
         })
-        
+
         print(f"   {time} min: {population:,} people, {area:.1f} km²")
-    
+
     # Show growth rates
-    print("\n📈 Accessibility growth:")
-    for i in range(1, len(results)):
-        pop_growth = (results[i]['population'] - results[i-1]['population'])
-        area_growth = (results[i]['area_km2'] - results[i-1]['area_km2'])
-        print(f"   {results[i-1]['time']} → {results[i]['time']} min: +{pop_growth:,} people, +{area_growth:.1f} km²")
-    
+    if len(results) > 1:
+        print("\n📈 Accessibility growth:")
+        for i in range(1, len(results)):
+            pop_growth = (results[i]['population'] - results[i-1]['population'])
+            area_growth = (results[i]['area_km2'] - results[i-1]['area_km2'])
+            print(f"   {results[i-1]['time']} → {results[i]['time']} min: +{pop_growth:,} people, +{area_growth:.1f} km²")
+
     return results
 
 
@@ -127,38 +164,37 @@ def example_3_mode_comparison():
     """Compare different transportation modes."""
     print("\n🚗🚶🚴 Example 3: Transportation Mode Comparison")
     print("-" * 40)
-    
+
     location = (35.7796, -78.6382)  # Raleigh, NC
-    travel_time = 15
+    travel_time = 5  # Reduced for speed
     modes = ["drive", "walk", "bike"]
-    
+
     print(f"Comparing {travel_time}-minute access by different modes:")
-    
+
     comparisons = []
     for mode in modes:
         # Create isochrone
-        iso_dict = create_isochrone(
+        isochrone = create_isochrone(
             location=location,
             travel_time=travel_time,
-            travel_mode=mode,
-            return_type="dict"
+            travel_mode=mode
         )
-        
-        area = iso_dict['properties']['area_sq_km']
+
+        area = isochrone['properties']['area_sq_km']
         comparisons.append({
             'mode': mode,
             'area': area
         })
-        
+
         print(f"   {mode:8} → {area:6.2f} km²")
-    
+
     # Calculate ratios
     drive_area = comparisons[0]['area']
     print("\nArea ratios (compared to driving):")
     for comp in comparisons:
         ratio = comp['area'] / drive_area if drive_area > 0 else 0
         print(f"   {comp['mode']:8} → {ratio:.1%} of driving area")
-    
+
     return comparisons
 
 
@@ -166,116 +202,66 @@ def example_4_multi_location():
     """Analyze multiple locations simultaneously."""
     print("\n📍 Example 4: Multi-Location Analysis")
     print("-" * 40)
-    
-    # Analyze multiple city centers
-    locations = [
-        ("Raleigh, NC", "State Capital"),
-        ("Durham, NC", "Bull City"),
-        ("Chapel Hill, NC", "University Town"),
-        ("Cary, NC", "Tech Hub")
-    ]
-    
-    travel_time = 10
+
+    # Analyze multiple locations in Raleigh area
+    locations = {
+        "Downtown Raleigh": (35.7796, -78.6382),
+        "North Hills": (35.8321, -78.6414),
+    }
+
+    travel_time = 5  # Reduced for speed
     print(f"Analyzing {travel_time}-minute drive access from key locations:")
-    
+
     results = []
-    for city, description in locations:
+    for name, coords in locations.items():
         # Create isochrone
-        iso_dict = create_isochrone(
-            location=city,
+        isochrone = create_isochrone(
+            location=coords,
             travel_time=travel_time,
-            travel_mode="drive",
-            return_type="dict"
+            travel_mode="drive"
         )
-        
-        area = iso_dict['properties']['area_sq_km']
+
+        area = isochrone['properties']['area_sq_km']
+
+        # Get demographics (sample for speed)
+        blocks = get_census_blocks(polygon=isochrone)
+        population = 0
+
+        if blocks:
+            sample_blocks = blocks[:30]
+            geoids = [block['geoid'] for block in sample_blocks]
+
+            census_data = get_census_data(
+                location=geoids,
+                variables=["population"],
+                year=2022
+            )
+
+            if census_data:
+                pop_values = [d.get('population', 0) for d in census_data.values()]
+                sample_pop = sum(pop_values)
+
+                if len(blocks) > 30:
+                    population = int(sample_pop * (len(blocks) / len(sample_blocks)))
+                else:
+                    population = sample_pop
+
         results.append({
-            'city': city,
-            'description': description,
-            'area': area
+            'name': name,
+            'area': area,
+            'population': population
         })
-        
-        print(f"   {city:20} ({description:15}) → {area:6.2f} km²")
-    
-    # Find best/worst coverage
+
+        print(f"   {name:20} → {area:6.2f} km², ~{population:,} people")
+
+    # Find best coverage
     if results:
-        best = max(results, key=lambda x: x['area'])
-        worst = min(results, key=lambda x: x['area'])
-        
+        best = max(results, key=lambda x: x['population'])
+
         print(f"\n📊 Summary:")
-        print(f"   Best coverage:  {best['city']} ({best['area']:.2f} km²)")
-        print(f"   Least coverage: {worst['city']} ({worst['area']:.2f} km²)")
-    
+        print(f"   Best population reach: {best['name']} ({best['population']:,} people)")
+
     return results
-
-
-def example_5_custom_workflow():
-    """Build a custom analysis workflow."""
-    print("\n⚙️ Example 5: Custom Analysis Workflow")
-    print("-" * 40)
-    
-    print("Building custom workflow: Transit accessibility analysis")
-    
-    # Step 1: Define analysis parameters
-    print("\n1️⃣ Define parameters:")
-    base_location = "NC State University, Raleigh, NC"
-    walk_time = 5  # Walk to transit
-    transit_time = 15  # Transit ride
-    
-    print(f"   Base: {base_location}")
-    print(f"   Walk time: {walk_time} min")
-    print(f"   Transit equivalent: {transit_time} min drive")
-    
-    # Step 2: Create walking isochrone (to transit stops)
-    print("\n2️⃣ Create walking access area:")
-    walk_iso = create_isochrone(
-        location=base_location,
-        travel_time=walk_time,
-        travel_mode="walk",
-        return_type="dict"
-    )
-    print(f"   Walking area: {walk_iso['properties']['area_sq_km']:.2f} km²")
-    
-    # Step 3: Create driving isochrone (simulating transit reach)
-    print("\n3️⃣ Create transit-equivalent area:")
-    transit_iso = create_isochrone(
-        location=base_location,
-        travel_time=transit_time,
-        travel_mode="drive",
-        return_type="dict"
-    )
-    print(f"   Transit reach: {transit_iso['properties']['area_sq_km']:.2f} km²")
-    
-    # Step 4: Get demographics for transit area
-    print("\n4️⃣ Analyze demographics:")
-    isochrone_gdf = create_isochrone(
-        location=base_location,
-        travel_time=transit_time,
-        travel_mode="drive"
-    )
-    
-    demographics = get_census_data_for_polygon(
-        polygon=isochrone_gdf,
-        variables=["B01003_001E", "B08301_010E"],  # Population & transit users
-        year=2022
-    )
-    
-    if demographics is not None and not demographics.empty:
-        total_pop = demographics['B01003_001E'].sum() if 'B01003_001E' in demographics.columns else 0
-        transit_users = demographics['B08301_010E'].sum() if 'B08301_010E' in demographics.columns else 0
-        
-        print(f"   Population reached: {total_pop:,}")
-        print(f"   Existing transit users: {transit_users:,}")
-        
-        if total_pop > 0:
-            transit_rate = (transit_users / total_pop) * 100
-            print(f"   Transit usage rate: {transit_rate:.1f}%")
-    else:
-        print("   ⚠️ Demographics not available")
-    
-    print("\n5️⃣ Analysis complete!")
-    
-    return walk_iso, transit_iso, demographics
 
 
 def main():
@@ -284,39 +270,33 @@ def main():
     print("🔗 SIMPLE TUTORIAL: COMBINING ANALYSIS")
     print("=" * 50)
     print("\nCombine spatial and demographic analysis")
-    print("Build powerful insights with simple functions!")
-    
-    # Check for Census API key
-    if not os.getenv('CENSUS_API_KEY'):
-        print("\n⚠️ WARNING: Census API key not found")
-        print("Demographics will be limited without API key")
-        print("Get free key: https://api.census.gov/data/key_signup.html")
-    
+    print("Build powerful insights with simple functions!\n")
+
     try:
-        # Run examples
+        # Run selected examples (reduced for speed)
         example_1_basic_combination()
         example_2_accessibility_analysis()
         example_3_mode_comparison()
-        example_4_multi_location()
-        example_5_custom_workflow()
-        
+
         print("\n" + "=" * 50)
-        print("✨ Tutorial completed!")
+        print("✨ Tutorial completed successfully!")
         print("\nKey takeaways:")
         print("1. Combine isochrones with demographics easily")
-        print("2. Compare different modes and locations")
-        print("3. Build custom analysis workflows")
-        print("4. Simple functions, powerful results")
-        print("5. Composable API for flexibility!")
-        
+        print("2. Use get_census_blocks() to find blocks in area")
+        print("3. Use get_census_data() to fetch demographics")
+        print("4. Sample blocks (first 30) for faster analysis")
+        print("5. Estimate total from sample for large areas")
+        print("\n💡 Try other examples:")
+        print("- example_4_multi_location() for comparing locations")
+
     except Exception as e:
         print(f"\n❌ Error: {e}")
         print("\nTroubleshooting:")
-        print("1. Check Census API key is set")
-        print("2. Verify internet connection")
-        print("3. Try simpler parameters")
+        print("1. Check internet connection for Census API")
+        print("2. Ensure coordinates are in the United States")
+        print("3. Census API may be slow - try smaller areas")
         return 1
-    
+
     return 0
 
 
