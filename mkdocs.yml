@@ -105,42 +105,19 @@ copyright: MIT License - https://github.com/mihiarc/socialmapper
 # Navigation
 nav:
   - Home: index.md
-  
+
   - Getting Started:
     - Overview: getting-started/index.md
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quick-start.md
-  
-  - Tutorials:
-    - Overview: tutorials/index.md
-    - Getting Started: tutorials/getting-started-tutorial.md
-    - Getting Started with Maps: tutorials/getting-started-with-maps.md
-    - Custom POIs: tutorials/custom-pois-tutorial.md
-    - Travel Modes: tutorials/travel-modes-tutorial.md
-    - ZIP Code Analysis: tutorials/zcta-analysis-tutorial.md
-    - Address Geocoding: tutorials/address-geocoding-tutorial.md
-  
-  - User Guide:
-    - Overview: user-guide/index.md
-    - Finding Places: user-guide/finding-places.md
-    - Custom Locations: user-guide/custom-locations.md  
-    - Travel Time Analysis: user-guide/travel-time.md
-    - Demographics: user-guide/demographics.md
-    - Exporting Results: user-guide/exporting-results.md
-    - Command Line: user-guide/cli-usage.md
-  
-  - Features:
-    - Address Geocoding: features/address-geocoding.md
-    - Network Analysis: features/network-analysis.md
-  
+
   - Reference:
+    - API Reference: api-reference.md
     - Census Variables: reference/census-variables.md
     - Travel Speeds: reference/travel-speeds.md
-    - API Reference: api-reference.md
-  
+    - Best Practices: migration-guide.md
+
   - Resources:
     - Examples: https://github.com/mihiarc/socialmapper/tree/main/examples
-    - FAQ: faq.md
-    - Troubleshooting: troubleshooting.md
-    - Error Handling: error-handling.md
-    - Migration Guide: migration-guide.md
+    - GitHub: https://github.com/mihiarc/socialmapper
+    - PyPI: https://pypi.org/project/socialmapper/

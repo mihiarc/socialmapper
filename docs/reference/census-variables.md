@@ -1,20 +1,25 @@
 # Census Variables Reference
 
-This page provides a complete reference of all census variables available in SocialMapper. These variables can be used with the `--census-variables` CLI option or the `census_variables` parameter in the Python API.
+This page provides a complete reference of all census variables available in SocialMapper. These variables can be used with the `variables` parameter in the `get_census_data()` function.
 
 ## Variable Usage
 
 Census variables can be specified using either their human-readable names or their official U.S. Census Bureau variable codes:
 
-```bash
+```python
+from socialmapper import create_isochrone, get_census_data
+
+# Create an isochrone
+iso = create_isochrone((45.5152, -122.6784), travel_time=15)
+
 # Using human-readable names
-socialmapper --location "Portland, OR" --poi amenity:library --census-variables population median_income
+census_data = get_census_data(iso, ["population", "median_income"])
 
 # Using census codes
-socialmapper --location "Portland, OR" --poi amenity:library --census-variables B01003_001E B19013_001E
+census_data = get_census_data(iso, ["B01003_001E", "B19013_001E"])
 
 # Mixing both formats
-socialmapper --location "Portland, OR" --poi amenity:library --census-variables total_population B19013_001E
+census_data = get_census_data(iso, ["total_population", "B19013_001E"])
 ```
 
 ## Available Variables
@@ -79,59 +84,67 @@ All census data comes from the American Community Survey (ACS) 5-Year Estimates,
 Census variables can be retrieved at different geographic levels:
 
 - **Block Group** (default): The smallest geographic unit, typically containing 600-3,000 people
-- **ZIP Code Tabulation Area (ZCTA)**: Approximates ZIP code boundaries, useful for larger area analysis
+- **ZCTA**: ZIP Code Tabulation Areas can be queried directly using `get_census_blocks()` with specific parameters
 
-Use the `--geographic-level` option to specify:
-
-```bash
-# Block group level (default)
-socialmapper --location "Portland, OR" --poi amenity:library --census-variables population
-
-# ZCTA level
-socialmapper --location "Portland, OR" --poi amenity:library --census-variables population --geographic-level zcta
-```
+Note: The current API returns block group level data by default when using isochrones.
 
 ## Examples
 
 ### Basic demographic analysis
-```bash
-socialmapper --location "Austin, TX" --poi amenity:school \
-  --census-variables population median_age median_income
+```python
+from socialmapper import create_isochrone, get_census_data
+
+iso = create_isochrone((30.2672, -97.7431), travel_time=15)  # Austin, TX
+data = get_census_data(iso, ["population", "median_age", "median_income"])
 ```
 
 ### Equity-focused analysis
-```bash
-socialmapper --location "Chicago, IL" --poi amenity:hospital \
-  --census-variables percent_poverty households_no_vehicle median_income
+```python
+from socialmapper import create_isochrone, get_census_data
+
+iso = create_isochrone((41.8781, -87.6298), travel_time=15)  # Chicago, IL
+data = get_census_data(iso, ["percent_poverty", "median_income"])
 ```
 
 ### Housing market analysis
-```bash
-socialmapper --location "Seattle, WA" --poi leisure:park \
-  --census-variables median_home_value median_income households
+```python
+from socialmapper import create_isochrone, get_census_data
+
+iso = create_isochrone((47.6062, -122.3321), travel_time=15)  # Seattle, WA
+data = get_census_data(iso, ["median_home_value", "median_income", "households"])
 ```
 
 ### Comprehensive community profile
-```bash
-socialmapper --location "Boston, MA" --poi amenity:library \
-  --census-variables population median_age median_income \
-  education_bachelors_plus percent_poverty
+```python
+from socialmapper import create_isochrone, get_census_data
+
+iso = create_isochrone((42.3601, -71.0589), travel_time=15)  # Boston, MA
+data = get_census_data(
+    iso,
+    ["population", "median_age", "median_income", "percent_poverty"]
+)
 ```
 
-## Python API Usage
+## Advanced Usage
 
-When using the Python API, census variables work the same way:
+When using the Python API, you can use census variable names or codes:
 
 ```python
-from socialmapper import SocialMapperClient
+from socialmapper import create_isochrone, get_census_data
 
-with SocialMapperClient() as client:
-    result = client.analyze(
-        location="Portland, OR",
-        poi_type="amenity",
-        poi_name="library",
-        census_variables=["population", "median_income", "B01002_001E"]  # Mix of formats
-    )
+# Create an isochrone
+iso = create_isochrone(
+    location=(45.5152, -122.6784),  # Portland, OR
+    travel_time=15,
+    travel_mode="drive"
+)
+
+# Get census data with mixed formats
+census_data = get_census_data(
+    location=iso,
+    variables=["population", "median_income", "B01002_001E"],  # Mix of formats
+    year=2023
+)
 ```
 
 ## Notes

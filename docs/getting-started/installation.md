@@ -126,11 +126,8 @@ Test your installation with these commands:
 # Check version
 uv run python -c "import socialmapper; print(socialmapper.__version__)"
 
-# Run help command
-uv run socialmapper --help
-
-# Quick test (requires internet)
-uv run python -c "from socialmapper import run_socialmapper; print('✅ Installation successful!')"
+# Quick test import
+uv run python -c "from socialmapper import create_isochrone, get_census_data; print('✅ Installation successful!')"
 ```
 
 ## Optional: API Keys
