@@ -28,16 +28,24 @@ Analyze accessibility from your organization's facilities or any custom addresse
 ## Quick Example
 
 ```python
-from socialmapper import run_socialmapper
+from socialmapper import create_isochrone, get_census_data
 
-# Find who can reach libraries in 15 minutes
-results = run_socialmapper(
-    state="North Carolina",
-    county="Wake County",
-    place_type="library",
+# Create a 15-minute driving isochrone from downtown Raleigh
+isochrone = create_isochrone(
+    location=(35.7796, -78.6382),
     travel_time=15,
-    census_variables=["total_population", "median_income"]
+    travel_mode="drive"
 )
+
+# Get demographic data for the area
+census_data = get_census_data(
+    location=isochrone,
+    variables=["population", "median_income"]
+)
+
+# Calculate total population
+total_pop = sum(d.get('population', 0) for d in census_data.values())
+print(f"Population within 15 minutes: {total_pop:,}")
 ```
 
 ## Get Started

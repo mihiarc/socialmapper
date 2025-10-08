@@ -1,6 +1,6 @@
 # API Reference
 
-This page provides a complete reference for the SocialMapper Python API. For census variable details, see the [Census Variables Reference](reference/census-variables.md).
+SocialMapper provides a simple, functional API for spatial analysis and demographic data retrieval. No classes or configuration needed - just import and use the functions directly.
 
 ## Installation
 
@@ -11,938 +11,718 @@ pip install socialmapper
 ## Quick Start
 
 ```python
-from socialmapper import SocialMapperClient
+from socialmapper import create_isochrone, get_census_blocks, get_census_data
 
-# Simple analysis
-with SocialMapperClient() as client:
-    result = client.analyze(
-        location="Portland, OR",
-        poi_type="amenity",
-        poi_name="library",
-        travel_time=15,
-        census_variables=["total_population", "median_income"]
-    )
-    
-    if result.is_ok():
-        analysis = result.unwrap()
-        print(f"Found {analysis.poi_count} libraries")
-        print(f"Census units analyzed: {analysis.census_units_analyzed}")
-```
-
-## Core Classes
-
-### SocialMapperClient
-
-The main client for interacting with SocialMapper. Implements a context manager for proper resource handling.
-
-```python
-from socialmapper import SocialMapperClient, ClientConfig
-
-# Default configuration
-with SocialMapperClient() as client:
-    # Use the client
-    pass
-
-# Custom configuration
-config = ClientConfig(
-    api_key="your-census-api-key",
-    rate_limit=5,      # requests per second
-    timeout=600,       # seconds
-    cache_strategy=None  # Optional cache implementation
+# Create a 15-minute driving isochrone
+isochrone = create_isochrone(
+    location=(45.5152, -122.6784),  # Portland, OR
+    travel_time=15,
+    travel_mode="drive"
 )
 
-with SocialMapperClient(config) as client:
-    # Use the client
-    pass
+# Get census blocks within the isochrone
+blocks = get_census_blocks(polygon=isochrone)
+
+# Fetch demographic data
+geoids = [block['geoid'] for block in blocks]
+demographics = get_census_data(
+    location=geoids,
+    variables=["population", "median_income", "median_age"],
+    year=2023
+)
+
+print(f"Area covered: {isochrone['properties']['area_sq_km']:.2f} km²")
+print(f"Census blocks: {len(blocks)}")
+print(f"Total population: {sum(d.get('population', 0) for d in demographics.values()):,}")
 ```
 
-#### Methods
+## Core Functions
 
-##### analyze()
+SocialMapper exports five core functions for spatial analysis:
 
-Perform a simple analysis for a location and POI type.
+### create_isochrone()
+
+Create a travel-time polygon (isochrone) from a location.
 
 ```python
-def analyze(
-    location: str,
-    poi_type: str,
-    poi_name: str,
+def create_isochrone(
+    location: Union[str, Tuple[float, float]],
     travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    travel_mode: str = "drive",
-    geographic_level: str = "block-group",
-    output_dir: Union[str, Path] = "output",
-    **kwargs
-) -> Result[AnalysisResult, Error]
+    travel_mode: str = "drive"
+) -> Dict[str, Any]
 ```
 
 **Parameters:**
-- `location`: Location in "City, State" format (e.g., "Portland, OR")
-- `poi_type`: OpenStreetMap key (e.g., "amenity", "leisure", "healthcare")
-- `poi_name`: OpenStreetMap value (e.g., "library", "park", "hospital")
-- `travel_time`: Travel time in minutes (1-120, default: 15)
-- `census_variables`: List of census variables to analyze (default: ["total_population"])
-- `travel_mode`: Travel mode - "walk", "bike", or "drive" (default: "drive")
-- `geographic_level`: Geographic unit - "block-group" or "zcta" (default: "block-group")
-- `output_dir`: Directory for output files (default: "output")
 
-**Returns:** `Result[AnalysisResult, Error]` - Success with analysis results or error
+- **location** : `str` or `tuple of float`
+  - Either a "City, State" string for geocoding or a (latitude, longitude) tuple with coordinates.
+- **travel_time** : `int`, optional
+  - Travel time in minutes. Must be between 1 and 120. Default is 15.
+- **travel_mode** : `{'drive', 'walk', 'bike'}`, optional
+  - Mode of transportation. Default is 'drive'.
 
-**Example:**
-```python
-result = client.analyze(
-    location="Seattle, WA",
-    poi_type="leisure",
-    poi_name="park",
-    travel_time=10,
-    census_variables=["total_population", "median_age", "median_income"]
-)
-```
+**Returns:**
 
-##### create_analysis()
+- **dict** : GeoJSON Feature containing:
+  - `'type'`: Always "Feature"
+  - `'geometry'`: GeoJSON polygon of the isochrone
+  - `'properties'`: Dict with location, travel_time, travel_mode, and area_sq_km
 
-Create a builder for complex analysis configurations.
+**Raises:**
 
-```python
-def create_analysis() -> SocialMapperBuilder
-```
-
-**Returns:** `SocialMapperBuilder` - Fluent builder for configuration
-
-**Example:**
-```python
-builder = client.create_analysis()
-config = (builder
-    .with_location("Chicago", "IL")
-    .with_osm_pois("amenity", "school")
-    .with_travel_time(20)
-    .build()
-)
-```
-
-##### run_analysis()
-
-Run analysis with a configuration from the builder.
-
-```python
-def run_analysis(
-    config: Dict[str, Any],
-    on_progress: Optional[Callable[[float], None]] = None
-) -> Result[AnalysisResult, Error]
-```
-
-**Parameters:**
-- `config`: Configuration dictionary from builder
-- `on_progress`: Optional callback function for progress updates (0-100)
-
-**Returns:** `Result[AnalysisResult, Error]` - Success with results or error
-
-##### analyze_addresses()
-
-Geocode and analyze a list of addresses.
-
-```python
-def analyze_addresses(
-    addresses: List[str],
-    travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    **kwargs
-) -> Result[AnalysisResult, Error]
-```
-
-**Parameters:**
-- `addresses`: List of address strings to geocode
-- `travel_time`: Travel time in minutes
-- `census_variables`: Census variables to analyze
-- `**kwargs`: Additional options
-
-**Returns:** `Result[AnalysisResult, Error]` - Success with results or error
-
-##### batch()
-
-Create a batch context for running multiple analyses efficiently.
-
-```python
-def batch() -> BatchContext
-```
-
-**Example:**
-```python
-with client.batch() as batch:
-    batch.add_analysis(config1)
-    batch.add_analysis(config2)
-    results = batch.run()
-```
-
-### SocialMapperBuilder
-
-Fluent builder for creating analysis configurations.
-
-```python
-from socialmapper import SocialMapperBuilder, GeographicLevel
-
-config = (SocialMapperBuilder()
-    .with_location("Durham", "NC")
-    .with_osm_pois("amenity", "library")
-    .with_travel_time(20)
-    .with_travel_mode("bike")
-    .with_census_variables("total_population", "median_income")
-    .with_geographic_level(GeographicLevel.ZCTA)
-    .enable_isochrone_export()
-    .with_output_directory("output/durham")
-    .build()
-)
-```
-
-#### Methods
-
-##### with_location()
-
-Set the geographic area for analysis.
-
-```python
-def with_location(area: str, state: Optional[str] = None) -> Self
-```
-
-**Parameters:**
-- `area`: City, county, or area name
-- `state`: Optional state name or abbreviation
+- **ValidationError** : If travel_time is not between 1-120, travel_mode is invalid, or location cannot be geocoded.
 
 **Examples:**
+
 ```python
-.with_location("San Francisco", "CA")
-.with_location("San Francisco, CA")
-.with_location("Cook County", "IL")
+# Using coordinates (recommended)
+iso = create_isochrone((45.5152, -122.6784), travel_time=20)
+print(f"Area: {iso['properties']['area_sq_km']:.2f} km²")
+# Output: Area: 125.34 km²
+
+# Using city/state string (requires geocoding)
+iso = create_isochrone("Portland, OR", travel_time=15, travel_mode="walk")
+print(f"Travel mode: {iso['properties']['travel_mode']}")
+# Output: Travel mode: walk
+
+# Different travel modes
+drive_iso = create_isochrone((40.7128, -74.0060), travel_time=10, travel_mode="drive")
+bike_iso = create_isochrone((40.7128, -74.0060), travel_time=10, travel_mode="bike")
+walk_iso = create_isochrone((40.7128, -74.0060), travel_time=10, travel_mode="walk")
+
+print(f"Drive: {drive_iso['properties']['area_sq_km']:.2f} km²")
+print(f"Bike:  {bike_iso['properties']['area_sq_km']:.2f} km²")
+print(f"Walk:  {walk_iso['properties']['area_sq_km']:.2f} km²")
 ```
 
-##### with_osm_pois()
+---
 
-Configure OpenStreetMap POI search.
+### get_census_blocks()
 
-```python
-def with_osm_pois(
-    poi_type: str,
-    poi_name: str,
-    additional_tags: Optional[Dict[str, str]] = None
-) -> Self
-```
-
-**Parameters:**
-- `poi_type`: OSM key (e.g., "amenity", "leisure", "healthcare")
-- `poi_name`: OSM value (e.g., "library", "park", "hospital")
-- `additional_tags`: Optional additional OSM tags for filtering
-
-**Example:**
-```python
-.with_osm_pois("amenity", "school", {"school:type": "elementary"})
-```
-
-##### with_custom_pois()
-
-Use custom POI coordinates from a file.
+Get census block groups for a geographic area.
 
 ```python
-def with_custom_pois(
-    file_path: Union[str, Path],
-    name_field: Optional[str] = None,
-    type_field: Optional[str] = None
-) -> Self
+def get_census_blocks(
+    polygon: Optional[Dict] = None,
+    location: Optional[Tuple[float, float]] = None,
+    radius_km: float = 5
+) -> List[Dict[str, Any]]
 ```
 
 **Parameters:**
-- `file_path`: Path to CSV or JSON file with POI data
-- `name_field`: Column name for POI names (auto-detected if not specified)
-- `type_field`: Column name for POI types (auto-detected if not specified)
 
-**Required columns:** `latitude`, `longitude`
+- **polygon** : `dict`, optional
+  - GeoJSON Feature or geometry dict, typically from `create_isochrone()`. Either polygon or location must be provided.
+- **location** : `tuple of float`, optional
+  - (latitude, longitude) coordinates for center point. Creates circular area with radius_km.
+- **radius_km** : `float`, optional
+  - Radius in kilometers when using location parameter. Default is 5.
 
-##### with_travel_time()
+**Returns:**
 
-Set the travel time for isochrone generation.
+- **list of dict** : List of census block groups, each containing:
+  - `'geoid'`: 12-digit census block group ID
+  - `'state_fips'`: 2-digit state FIPS code
+  - `'county_fips'`: 3-digit county FIPS code
+  - `'tract'`: 6-digit census tract code
+  - `'block_group'`: 1-digit block group number
+  - `'geometry'`: GeoJSON polygon geometry
+  - `'area_sq_km'`: Area in square kilometers
+
+**Raises:**
+
+- **ValidationError** : If neither polygon nor location is provided, or if both are provided.
+
+**Examples:**
 
 ```python
-def with_travel_time(minutes: int) -> Self
+# Using an isochrone polygon
+iso = create_isochrone("San Francisco, CA", travel_time=15)
+blocks = get_census_blocks(polygon=iso)
+print(f"Found {len(blocks)} census block groups")
+# Output: Found 42 census block groups
+
+# Using a point and radius
+blocks = get_census_blocks(
+    location=(37.7749, -122.4194),
+    radius_km=3
+)
+print(f"Block group ID: {blocks[0]['geoid']}")
+# Output: Block group ID: 060750201001
+
+# Access block details
+for block in blocks[:3]:
+    print(f"GEOID: {block['geoid']}, Area: {block['area_sq_km']:.2f} km²")
+```
+
+---
+
+### get_census_data()
+
+Get census demographic data for specified locations.
+
+```python
+def get_census_data(
+    location: Union[Dict, List[str], Tuple[float, float]],
+    variables: List[str],
+    year: int = 2023
+) -> Dict[str, Any]
 ```
 
 **Parameters:**
-- `minutes`: Travel time in minutes (1-120)
 
-##### with_travel_mode()
+- **location** : `dict`, `list of str`, or `tuple of float`
+  - Location specification:
+    - `dict`: GeoJSON Feature/geometry from `create_isochrone()`
+    - `list`: GEOID strings like `["060750201001", ...]`
+    - `tuple`: (latitude, longitude) for single point
+- **variables** : `list of str`
+  - Census variables to retrieve. Can be:
+    - Common names: `["population", "median_income", "median_age"]`
+    - Census codes: `["B01003_001E", "B19013_001E", "B01002_001E"]`
+- **year** : `int`, optional
+  - Census year for ACS 5-year estimates. Default is 2023.
 
-Set the travel mode for routing.
+**Returns:**
 
-```python
-def with_travel_mode(mode: Union[str, TravelMode]) -> Self
-```
+- **dict** : Census data organized by location:
+  - For polygon/GEOIDs: `{geoid: {variable: value, ...}, ...}`
+  - For point: `{variable: value, ...}`
 
-**Parameters:**
-- `mode`: "walk", "bike", "drive", or TravelMode enum value
-
-##### with_census_variables()
-
-Set census variables to analyze.
-
-```python
-def with_census_variables(*variables: str) -> Self
-```
-
-**Parameters:**
-- `*variables`: Variable names or census codes
-
-**Example:**
-```python
-.with_census_variables("total_population", "median_income", "B01002_001E")
-```
-
-##### with_geographic_level()
-
-Set the geographic unit for analysis.
+**Examples:**
 
 ```python
-def with_geographic_level(level: Union[str, GeographicLevel]) -> Self
-```
+# From an isochrone
+iso = create_isochrone("Denver, CO", travel_time=20)
+data = get_census_data(
+    location=iso,
+    variables=["population", "median_income"]
+)
+print(f"Number of block groups: {len(data)}")
+# Output: Number of block groups: 35
 
-**Parameters:**
-- `level`: "block-group", "zcta", or GeographicLevel enum value
+# Calculate total population
+total_pop = sum(d.get('population', 0) for d in data.values())
+print(f"Total population: {total_pop:,}")
+# Output: Total population: 45,678
 
-##### enable_isochrone_export()
-
-Enable saving of isochrone geometries to GeoParquet files.
-
-```python
-def enable_isochrone_export() -> Self
-```
-
-When enabled, isochrone polygons are exported to the `output/isochrones/` directory as GeoParquet files. The files are named using the pattern: `{base_filename}_{travel_time}min_isochrones.geoparquet`.
-
-**Example:**
-```python
-config = (SocialMapperBuilder()
-    .with_location("Portland", "OR")
-    .with_osm_pois("amenity", "library")
-    .with_travel_time(15)
-    .enable_isochrone_export()  # Exports isochrones to GeoParquet
-    .build()
+# From specific GEOIDs
+geoids = ["060750201001", "060750201002"]
+data = get_census_data(
+    location=geoids,
+    variables=["population", "median_income", "median_age"]
 )
 
-# After analysis, the isochrone file will be available at:
-# output/isochrones/portland_amenity_library_15min_isochrones.geoparquet
-```
+for geoid, values in data.items():
+    print(f"{geoid}: {values.get('population', 0)} people")
+# Output: 060750201001: 2543 people
 
-**Loading exported isochrones:**
-```python
-import geopandas as gpd
+# From a single point
+data = get_census_data(
+    location=(40.7128, -74.0060),
+    variables=["population"]
+)
+print(f"Population: {data.get('population', 0)}")
+# Output: Population: 3421
 
-# Load the exported isochrone
-isochrones = gpd.read_parquet("output/isochrones/portland_amenity_library_15min_isochrones.geoparquet")
-
-# View the geometry
-isochrones.plot()
-```
-
-##### disable_csv_export()
-
-Disable CSV export (enabled by default).
-
-```python
-def disable_csv_export() -> Self
-```
-
-##### with_output_directory()
-
-Set the output directory for results.
-
-```python
-def with_output_directory(path: Union[str, Path]) -> Self
-```
-
-##### limit_pois()
-
-Limit the number of POIs to analyze.
-
-```python
-def limit_pois(max_count: int) -> Self
-```
-
-##### build()
-
-Build and validate the configuration.
-
-```python
-def build() -> Dict[str, Any]
-```
-
-**Returns:** Configuration dictionary for use with `run_analysis()`
-
-**Raises:** `ValueError` if configuration is invalid
-
-## Result Types
-
-SocialMapper uses the Result pattern for explicit error handling without exceptions.
-
-### Result[T, E]
-
-A generic result type that can contain either a success value (Ok) or an error (Err).
-
-```python
-from socialmapper import Result, Ok, Err
-
-# Pattern matching (Python 3.10+)
-match result:
-    case Ok(value):
-        print(f"Success: {value}")
-    case Err(error):
-        print(f"Error: {error}")
-
-# Traditional approach
-if result.is_ok():
-    value = result.unwrap()
-else:
-    error = result.unwrap_err()
-```
-
-#### Methods
-
-- `is_ok() -> bool`: Check if result is successful
-- `is_err() -> bool`: Check if result is an error
-- `unwrap() -> T`: Get success value (raises if error)
-- `unwrap_err() -> E`: Get error value (raises if success)
-- `unwrap_or(default: T) -> T`: Get value or default
-- `map(func: Callable[[T], U]) -> Result[U, E]`: Transform success value
-- `map_err(func: Callable[[E], F]) -> Result[T, F]`: Transform error value
-
-### AnalysisResult
-
-Results from a successful analysis.
-
-```python
-@dataclass
-class AnalysisResult:
-    poi_count: int                    # Number of POIs found
-    isochrone_count: int             # Number of isochrones generated
-    census_units_analyzed: int       # Number of census units analyzed
-    files_generated: Dict[str, Path] # Paths to generated files
-    metadata: Dict[str, Any]         # Additional metadata
-    
-    def is_complete(self) -> bool:
-        """Check if analysis completed successfully."""
-        return self.poi_count > 0 and self.isochrone_count > 0
-```
-
-**Files Generated:**
-
-The `files_generated` dictionary may contain:
-- `census_data`: Path to the CSV file with census demographics
-- `map`: Path to the generated map image (if maps enabled)
-- `isochrone_data`: Path to the GeoParquet file with isochrone geometries (if isochrone export enabled)
-
-**Example:**
-```python
-if result.is_ok():
-    analysis = result.unwrap()
-    
-    # Access generated files
-    if 'census_data' in analysis.files_generated:
-        print(f"Census data: {analysis.files_generated['census_data']}")
-    
-    if 'isochrone_data' in analysis.files_generated:
-        print(f"Isochrone file: {analysis.files_generated['isochrone_data']}")
-        
-        # Load and use the isochrone
-        import geopandas as gpd
-        isochrones = gpd.read_parquet(analysis.files_generated['isochrone_data'])
-```
-
-### Error
-
-Structured error information.
-
-```python
-@dataclass
-class Error:
-    type: ErrorType              # Error category
-    message: str                 # Human-readable message
-    context: Dict[str, Any]      # Additional context
-    cause: Optional[Exception]   # Original exception if any
-    traceback: Optional[str]     # Stack trace
-```
-
-### ErrorType
-
-Error categories for better error handling.
-
-```python
-class ErrorType(Enum):
-    VALIDATION = auto()         # Invalid input parameters
-    NETWORK = auto()           # Network connectivity issues
-    FILE_NOT_FOUND = auto()    # File or path not found
-    PERMISSION_DENIED = auto() # Insufficient permissions
-    RATE_LIMIT = auto()        # API rate limit exceeded
-    CENSUS_API = auto()        # Census API errors
-    OSM_API = auto()           # OpenStreetMap API errors
-    GEOCODING = auto()         # Address geocoding failures
-    PROCESSING = auto()        # General processing errors
-    UNKNOWN = auto()           # Unclassified errors
-```
-
-## Configuration Classes
-
-### ClientConfig
-
-Configuration for the SocialMapper client.
-
-```python
-@dataclass
-class ClientConfig:
-    api_key: Optional[str] = None       # Census API key
-    rate_limit: float = 1.0             # Requests per second
-    timeout: int = 600                  # Request timeout in seconds
-    cache_strategy: Optional[CacheStrategy] = None  # Cache implementation
-    max_retries: int = 3                # Maximum retry attempts
-    log_level: str = "INFO"             # Logging level
-```
-
-### GeographicLevel
-
-Geographic units for census data.
-
-```python
-class GeographicLevel(Enum):
-    BLOCK_GROUP = "block-group"  # Census block groups (~600-3000 people)
-    ZCTA = "zcta"               # ZIP Code Tabulation Areas
-```
-
-### TravelMode
-
-Available travel modes for routing.
-
-```python
-class TravelMode(Enum):
-    WALK = "walk"   # Walking (5 km/h)
-    BIKE = "bike"   # Cycling (15 km/h)
-    DRIVE = "drive" # Driving (uses road network)
-```
-
-## Convenience Functions
-
-High-level functions for common use cases.
-
-### quick_analysis()
-
-Perform a quick analysis with minimal configuration.
-
-```python
-def quick_analysis(
-    location: str,
-    poi_search: str,
-    travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    output_dir: Union[str, Path] = "output"
-) -> Result[AnalysisResult, Error]
-```
-
-**Parameters:**
-- `location`: Location in "City, State" format
-- `poi_search`: POI search in "type:name" format (e.g., "amenity:library")
-- `travel_time`: Travel time in minutes
-- `census_variables`: Census variables to analyze
-- `output_dir`: Output directory
-
-**Example:**
-```python
-from socialmapper import quick_analysis
-
-result = quick_analysis(
-    "Portland, OR",
-    "amenity:school",
-    travel_time=10,
-    census_variables=["total_population", "median_income"]
+# Using different year
+data = get_census_data(
+    location=geoids,
+    variables=["population"],
+    year=2022
 )
 ```
 
-### analyze_location()
+**Available Variables:**
 
-Analyze a specific location with custom POIs.
+Common variable names (automatically mapped to Census codes):
+
+- `"population"` → Total population
+- `"median_income"` → Median household income
+- `"median_age"` → Median age
+- `"percent_poverty"` → Percent below poverty line
+- `"total_housing_units"` → Total housing units
+- `"median_home_value"` → Median home value
+
+For more variables, see the [Census Variables Reference](reference/census-variables.md).
+
+---
+
+### create_map()
+
+Create a choropleth map visualization.
 
 ```python
-def analyze_location(
-    city: str,
-    state: str,
-    poi_type: str = "amenity",
-    poi_name: str = "library",
-    **options
-) -> Result[AnalysisResult, Error]
+def create_map(
+    data: Union[List[Dict], pd.DataFrame, gpd.GeoDataFrame],
+    column: str,
+    title: Optional[str] = None,
+    save_path: Optional[str] = None,
+    export_format: str = "png"
+) -> Optional[Union[bytes, Dict]]
 ```
 
 **Parameters:**
-- `city`: City name
-- `state`: State name or abbreviation
-- `poi_type`: OpenStreetMap POI type
-- `poi_name`: OpenStreetMap POI name
-- `**options`: Additional options (travel_time, census_variables, etc.)
 
-### analyze_custom_pois()
+- **data** : `list of dict`, `DataFrame`, or `GeoDataFrame`
+  - Geographic data to visualize:
+    - `list`: Dicts with 'geometry' key and data columns
+    - `DataFrame`: Must have a 'geometry' column
+    - `GeoDataFrame`: GeoPandas GeoDataFrame
+- **column** : `str`
+  - Name of the data column to visualize on the map.
+- **title** : `str`, optional
+  - Title to display on the map. Default is None.
+- **save_path** : `str`, optional
+  - Path to save the map file. If None, returns data. Default is None.
+- **export_format** : `{'png', 'pdf', 'svg', 'geojson', 'shapefile'}`, optional
+  - Output format for the map. Default is 'png'.
 
-Analyze custom POIs from a file.
+**Returns:**
+
+- **bytes**, **dict**, or **None**
+  - Image formats (png/pdf/svg): bytes if save_path is None
+  - geojson: dict if save_path is None
+  - shapefile: None (requires save_path)
+  - All formats: None if save_path is provided
+
+**Raises:**
+
+- **ValueError** : If column not found in data, invalid export format, or shapefile format without save_path.
+
+**Examples:**
 
 ```python
-def analyze_custom_pois(
-    poi_file: Union[str, Path],
-    travel_time: int = 15,
-    census_variables: Optional[List[str]] = None,
-    name_field: Optional[str] = None,
-    type_field: Optional[str] = None,
-    **options
-) -> Result[AnalysisResult, Error]
+# Create map from census blocks with population data
+iso = create_isochrone((40.7128, -74.0060), travel_time=15)
+blocks = get_census_blocks(polygon=iso)
+geoids = [b['geoid'] for b in blocks]
+census_data = get_census_data(geoids, ["population"])
+
+# Add population to blocks
+for block in blocks:
+    geoid = block['geoid']
+    block['population'] = census_data.get(geoid, {}).get('population', 0)
+
+# Create and save map
+create_map(
+    data=blocks,
+    column="population",
+    title="Population by Block Group",
+    save_path="population_map.png",
+    export_format="png"
+)
+
+# Return map as bytes without saving
+img_bytes = create_map(
+    data=blocks,
+    column="population",
+    title="Population Distribution"
+)
+
+# Export as GeoJSON
+geojson = create_map(
+    data=blocks,
+    column="population",
+    export_format="geojson"
+)
+
+# Save as shapefile
+create_map(
+    data=blocks,
+    column="population",
+    save_path="output.shp",
+    export_format="shapefile"
+)
+```
+
+---
+
+### get_poi()
+
+Get points of interest near a location.
+
+```python
+def get_poi(
+    location: Union[str, Tuple[float, float]],
+    categories: Optional[List[str]] = None,
+    travel_time: Optional[int] = None,
+    limit: int = 100,
+    validate_coords: bool = True
+) -> List[Dict[str, Any]]
 ```
 
 **Parameters:**
-- `poi_file`: Path to CSV or JSON file with POI coordinates
-- `travel_time`: Travel time in minutes
-- `census_variables`: Census variables to analyze
-- `name_field`: Field name for POI names
-- `type_field`: Field name for POI types
-- `**options`: Additional options
 
-### analyze_dataframe()
+- **location** : `str` or `tuple of float`
+  - Either "City, State" string or (latitude, longitude) tuple.
+- **categories** : `list of str`, optional
+  - POI categories to filter. Options include:
+    - Food: `"restaurant"`, `"cafe"`, `"bar"`, `"fast_food"`
+    - Education: `"school"`, `"university"`, `"library"`
+    - Health: `"hospital"`, `"clinic"`, `"pharmacy"`
+    - Recreation: `"park"`, `"playground"`, `"sports"`
+    - Shopping: `"grocery"`, `"supermarket"`, `"convenience"`
+    - Finance: `"bank"`, `"atm"`
+  - Default is None (all categories).
+- **travel_time** : `int`, optional
+  - Travel time in minutes for boundary (uses driving). If provided, finds POIs within isochrone. If None, uses 5km radius. Default is None.
+- **limit** : `int`, optional
+  - Maximum number of POIs to return. Default is 100.
+- **validate_coords** : `bool`, optional
+  - Whether to validate POI coordinates. Default is True.
 
-Analyze POIs from a pandas DataFrame.
+**Returns:**
 
-```python
-def analyze_dataframe(
-    df: pd.DataFrame,
-    lat_col: str = "latitude",
-    lon_col: str = "longitude",
-    name_col: Optional[str] = "name",
-    type_col: Optional[str] = "type",
-    **options
-) -> Result[AnalysisResult, Error]
-```
+- **list of dict** : POIs sorted by distance, each containing:
+  - `'name'`: POI name
+  - `'category'`: POI category
+  - `'lat'`: Latitude
+  - `'lon'`: Longitude
+  - `'distance_km'`: Distance from origin
+  - `'address'`: Address if available
+  - `'tags'`: Additional OSM tags
 
-**Parameters:**
-- `df`: DataFrame with POI data
-- `lat_col`: Column name for latitude
-- `lon_col`: Column name for longitude
-- `name_col`: Column name for POI names
-- `type_col`: Column name for POI types
-- `**options`: Additional analysis options
-
-## Async Support
-
-SocialMapper provides async support for concurrent operations.
-
-### AsyncSocialMapper
-
-Asynchronous client for streaming and concurrent operations.
+**Examples:**
 
 ```python
-from socialmapper import AsyncSocialMapper
-import asyncio
+# Find restaurants within 5km radius
+pois = get_poi(
+    location="Seattle, WA",
+    categories=["restaurant", "cafe"]
+)
+print(f"Found {len(pois)} restaurants and cafes")
+# Output: Found 75 restaurants and cafes
 
-async def main():
-    async with AsyncSocialMapper(config) as mapper:
-        # Stream POIs as they're found
-        async for poi in mapper.stream_pois():
-            print(f"Found: {poi.name}")
-        
-        # Generate isochrones with progress
-        async for progress in mapper.generate_isochrones_with_progress():
-            print(f"Progress: {progress.completed}/{progress.total}")
+# POIs within 15-minute drive
+pois = get_poi(
+    location=(47.6062, -122.3321),
+    travel_time=15,
+    categories=["hospital", "clinic"]
+)
+print(f"Healthcare facilities: {len(pois)}")
+for poi in pois[:3]:
+    print(f"  {poi['name']}: {poi['distance_km']:.2f} km away")
+# Output: Healthcare facilities: 12
+#   Seattle Medical Center: 0.54 km away
 
-asyncio.run(main())
+# All POIs within radius
+pois = get_poi(
+    location=(40.7128, -74.0060),
+    limit=50
+)
+
+# Find closest POI of each type
+from collections import defaultdict
+closest_by_category = defaultdict(lambda: {'name': None, 'distance': float('inf')})
+
+for poi in pois:
+    cat = poi['category']
+    dist = poi['distance_km']
+    if dist < closest_by_category[cat]['distance']:
+        closest_by_category[cat] = {'name': poi['name'], 'distance': dist}
+
+for category, info in sorted(closest_by_category.items()):
+    print(f"{category}: {info['name']} ({info['distance']:.2f} km)")
 ```
+
+---
 
 ## Error Handling
 
-### Basic Error Handling
+SocialMapper uses standard Python exceptions for error handling. All functions may raise exceptions that inherit from `SocialMapperError`.
+
+### Exception Hierarchy
 
 ```python
-result = client.analyze("Portland, OR", "amenity", "library")
-
-if result.is_ok():
-    analysis = result.unwrap()
-    print(f"Success! Found {analysis.poi_count} POIs")
-else:
-    error = result.unwrap_err()
-    print(f"Error: {error.message}")
-    
-    # Check error type
-    if error.type == ErrorType.CENSUS_API:
-        print("Census API error - check your API key")
+SocialMapperError              # Base exception
+├── ValidationError            # Invalid input parameters
+├── APIError                   # External API errors
+├── DataError                  # Data processing errors
+└── AnalysisError              # Analysis computation errors
 ```
 
-### Pattern Matching (Python 3.10+)
+### Exception Examples
 
 ```python
-match result:
-    case Ok(analysis):
-        print(f"Found {analysis.poi_count} POIs")
-    case Err(Error(type=ErrorType.RATE_LIMIT)):
-        print("Rate limited - try again later")
-    case Err(error):
-        print(f"Other error: {error}")
+from socialmapper import (
+    create_isochrone,
+    ValidationError,
+    APIError
+)
+
+try:
+    # Invalid travel time
+    iso = create_isochrone((45.5152, -122.6784), travel_time=150)
+except ValidationError as e:
+    print(f"Validation error: {e}")
+    # Output: Validation error: travel_time must be between 1 and 120 minutes
+
+try:
+    # Network or API issue
+    census_data = get_census_data(geoids, ["population"])
+except APIError as e:
+    print(f"API error: {e}")
+    # Output: API error: Census API request failed
+
+# Catch all SocialMapper errors
+from socialmapper import SocialMapperError
+
+try:
+    iso = create_isochrone(location, travel_time, travel_mode)
+    blocks = get_census_blocks(polygon=iso)
+    data = get_census_data([b['geoid'] for b in blocks], variables)
+except SocialMapperError as e:
+    print(f"SocialMapper error: {e}")
 ```
 
-### Collecting Multiple Results
+---
+
+## Complete Workflow Example
+
+Here's a complete example combining all functions to analyze library accessibility:
 
 ```python
-from socialmapper import collect_results
+from socialmapper import (
+    create_isochrone,
+    get_poi,
+    get_census_blocks,
+    get_census_data,
+    create_map
+)
 
-results = [
-    client.analyze("Portland, OR", "amenity", "library"),
-    client.analyze("Seattle, WA", "amenity", "school"),
-    client.analyze("Eugene, OR", "leisure", "park")
-]
+# 1. Find libraries in the area
+print("Finding libraries...")
+libraries = get_poi(
+    location=(35.7796, -78.6382),  # Raleigh, NC
+    categories=["library"],
+    limit=10
+)
+print(f"Found {len(libraries)} libraries")
 
-match collect_results(results):
-    case Ok(analyses):
-        for analysis in analyses:
-            print(f"Analysis complete: {analysis.poi_count} POIs")
-    case Err(errors):
-        for error in errors:
-            print(f"Error: {error}")
+# 2. Create 15-minute walking isochrones for each library
+print("\nCreating isochrones...")
+library_analysis = []
+
+for lib in libraries[:5]:  # Analyze first 5 libraries
+    # Create isochrone
+    iso = create_isochrone(
+        location=(lib['lat'], lib['lon']),
+        travel_time=15,
+        travel_mode="walk"
+    )
+
+    # Get census blocks
+    blocks = get_census_blocks(polygon=iso)
+
+    # Get demographics
+    if blocks:
+        geoids = [b['geoid'] for b in blocks]
+        census_data = get_census_data(
+            location=geoids,
+            variables=["population", "median_income", "percent_poverty"]
+        )
+
+        # Calculate totals
+        total_pop = sum(d.get('population', 0) for d in census_data.values())
+        avg_income = sum(
+            d.get('median_income', 0) for d in census_data.values()
+            if d.get('median_income', 0) > 0
+        ) / len([d for d in census_data.values() if d.get('median_income', 0) > 0])
+
+        library_analysis.append({
+            'name': lib['name'],
+            'lat': lib['lat'],
+            'lon': lib['lon'],
+            'area_km2': iso['properties']['area_sq_km'],
+            'population_served': total_pop,
+            'avg_income': avg_income,
+            'blocks': blocks,
+            'census_data': census_data
+        })
+
+        print(f"  {lib['name']}: {total_pop:,} people within 15-min walk")
+
+# 3. Find the library serving the most people
+if library_analysis:
+    best_library = max(library_analysis, key=lambda x: x['population_served'])
+
+    print(f"\n📊 Best Coverage:")
+    print(f"Library: {best_library['name']}")
+    print(f"Population served: {best_library['population_served']:,}")
+    print(f"Average income: ${best_library['avg_income']:,.0f}")
+
+    # 4. Create visualization for best library
+    print("\nCreating map...")
+
+    # Add population data to blocks
+    for block in best_library['blocks']:
+        geoid = block['geoid']
+        block['population'] = best_library['census_data'].get(
+            geoid, {}
+        ).get('population', 0)
+
+    # Generate map
+    create_map(
+        data=best_library['blocks'],
+        column='population',
+        title=f"Population served by {best_library['name']} (15-min walk)",
+        save_path='library_accessibility.png'
+    )
+
+    print("Map saved to library_accessibility.png")
 ```
+
+---
+
+## Working with Results
+
+### GeoJSON Output
+
+All geographic results use standard GeoJSON format, making them easy to use with web mapping libraries and GIS software.
+
+```python
+import json
+
+# Create isochrone
+iso = create_isochrone((45.5152, -122.6784), travel_time=15)
+
+# Save as GeoJSON file
+with open('isochrone.geojson', 'w') as f:
+    json.dump(iso, f, indent=2)
+
+# Use with web mapping libraries (Leaflet, Mapbox, etc.)
+# The geometry can be directly passed to these libraries
+geometry = iso['geometry']
+properties = iso['properties']
+```
+
+### Data Aggregation
+
+Common patterns for aggregating census data:
+
+```python
+# Get census data
+blocks = get_census_blocks(polygon=isochrone)
+geoids = [b['geoid'] for b in blocks]
+census_data = get_census_data(geoids, ["population", "median_income", "median_age"])
+
+# Total population
+total_pop = sum(d.get('population', 0) for d in census_data.values())
+
+# Average median income (excluding zeros)
+incomes = [d.get('median_income', 0) for d in census_data.values() if d.get('median_income', 0) > 0]
+avg_income = sum(incomes) / len(incomes) if incomes else 0
+
+# Median of median ages
+ages = [d.get('median_age', 0) for d in census_data.values() if d.get('median_age', 0) > 0]
+median_age = sorted(ages)[len(ages) // 2] if ages else 0
+
+# Population-weighted average income
+weighted_income = sum(
+    d.get('population', 0) * d.get('median_income', 0)
+    for d in census_data.values()
+    if d.get('median_income', 0) > 0
+) / total_pop if total_pop > 0 else 0
+
+print(f"Total population: {total_pop:,}")
+print(f"Average income: ${avg_income:,.0f}")
+print(f"Median age: {median_age:.1f}")
+print(f"Population-weighted income: ${weighted_income:,.0f}")
+```
+
+---
 
 ## Environment Variables
 
-SocialMapper uses the following environment variables:
+SocialMapper reads configuration from environment variables:
 
-- `CENSUS_API_KEY`: Your Census Bureau API key (required for census data)
-- `SOCIALMAPPER_OUTPUT_DIR`: Default output directory (default: "output")
-- `SOCIALMAPPER_LOG_LEVEL`: Logging level (default: "INFO")
-- `SOCIALMAPPER_CACHE_DIR`: Cache directory (default: "cache")
+- `CENSUS_API_KEY` - Your Census Bureau API key (required for census data)
+- `SOCIALMAPPER_CACHE_DIR` - Directory for caching network data (default: `.cache`)
 
-You can set these in a `.env` file:
+Set these in a `.env` file in your project root:
 
 ```bash
 CENSUS_API_KEY=your-api-key-here
-SOCIALMAPPER_OUTPUT_DIR=/path/to/output
-SOCIALMAPPER_LOG_LEVEL=DEBUG
+SOCIALMAPPER_CACHE_DIR=/path/to/cache
 ```
 
-## Caching
+Get a free Census API key at: https://api.census.gov/data/key_signup.html
 
-SocialMapper supports pluggable caching strategies.
+---
 
-### Implementing a Cache Strategy
+## Performance Tips
+
+### 1. Sample Large Result Sets
+
+When working with many census blocks, sample for faster analysis:
 
 ```python
-from socialmapper import CacheStrategy
-from typing import Any, Optional
+blocks = get_census_blocks(polygon=isochrone)
 
-class RedisCache(CacheStrategy):
-    def get(self, key: str) -> Optional[Any]:
-        # Implement Redis get
-        pass
-    
-    def set(self, key: str, value: Any, ttl: Optional[int] = None):
-        # Implement Redis set with TTL
-        pass
+if len(blocks) > 50:
+    # Sample first 50 blocks
+    sample_blocks = blocks[:50]
+    geoids = [b['geoid'] for b in sample_blocks]
 
-# Use with client
-config = ClientConfig(cache_strategy=RedisCache())
+    census_data = get_census_data(geoids, ["population"])
+
+    # Calculate sample statistics
+    sample_pop = sum(d.get('population', 0) for d in census_data.values())
+
+    # Extrapolate to full area
+    estimated_total = int(sample_pop * len(blocks) / len(sample_blocks))
+    print(f"Estimated population: ~{estimated_total:,}")
 ```
 
-## Rate Limiting
+### 2. Reuse Isochrones
 
-The client includes built-in rate limiting to respect API limits.
+Cache isochrone results when analyzing the same location multiple times:
 
 ```python
-# Configure rate limit
-config = ClientConfig(
-    rate_limit=5.0  # 5 requests per second
+# Create once
+isochrone = create_isochrone(location, travel_time=15)
+
+# Use multiple times
+blocks = get_census_blocks(polygon=isochrone)
+pois = get_poi(location, travel_time=15)  # Uses same boundary
+```
+
+### 3. Batch Census Requests
+
+Request multiple variables in one call rather than separate calls:
+
+```python
+# Good - single request
+data = get_census_data(
+    geoids,
+    variables=["population", "median_income", "median_age", "percent_poverty"]
 )
 
-# Rate limits are applied automatically
-with SocialMapperClient(config) as client:
-    # All API calls are rate limited
-    result = client.analyze(...)
+# Avoid - multiple requests
+pop = get_census_data(geoids, ["population"])
+income = get_census_data(geoids, ["median_income"])
+age = get_census_data(geoids, ["median_age"])
 ```
 
-## Logging
-
-SocialMapper uses Python's standard logging module.
-
-```python
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-
-# Or set via environment variable
-# SOCIALMAPPER_LOG_LEVEL=DEBUG
-```
-
-## Examples
-
-### Complete Analysis Pipeline
-
-```python
-from socialmapper import SocialMapperClient, SocialMapperBuilder
-
-# Configure the analysis
-config = (SocialMapperBuilder()
-    .with_location("Austin", "TX")
-    .with_osm_pois("amenity", "school")
-    .with_travel_time(15)
-    .with_travel_mode("walk")
-    .with_census_variables(
-        "total_population",
-        "median_age",
-        "median_income",
-        "percent_poverty"
-    )
-    .with_geographic_level("block-group")
-    .enable_isochrone_export()
-    .with_output_directory("output/austin-schools")
-    .build()
-)
-
-# Run the analysis
-with SocialMapperClient() as client:
-    result = client.run_analysis(
-        config,
-        on_progress=lambda p: print(f"Progress: {p:.1f}%")
-    )
-    
-    match result:
-        case Ok(analysis):
-            print(f"Analysis complete!")
-            print(f"Found {analysis.poi_count} schools")
-            print(f"Analyzed {analysis.census_units_analyzed} census units")
-            print(f"Files saved to: {analysis.files_generated}")
-        case Err(error):
-            print(f"Analysis failed: {error}")
-```
-
-### Batch Processing
-
-```python
-from socialmapper import SocialMapperClient
-
-locations = [
-    ("Portland", "OR"),
-    ("Seattle", "WA"),
-    ("San Francisco", "CA")
-]
-
-with SocialMapperClient() as client:
-    with client.batch() as batch:
-        for city, state in locations:
-            config = (client.create_analysis()
-                .with_location(city, state)
-                .with_osm_pois("amenity", "hospital")
-                .with_travel_time(20)
-                .build()
-            )
-            batch.add_analysis(config)
-        
-        results = batch.run()
-        
-        for (city, state), result in zip(locations, results):
-            match result:
-                case Ok(analysis):
-                    print(f"{city}: {analysis.poi_count} hospitals")
-                case Err(error):
-                    print(f"{city}: Failed - {error}")
-```
-
-### Custom POI Analysis
-
-```python
-from socialmapper import analyze_custom_pois
-
-# Analyze custom locations from CSV
-result = analyze_custom_pois(
-    "my_locations.csv",
-    travel_time=15,
-    census_variables=["total_population", "median_age"],
-    name_field="location_name",
-    type_field="location_type"
-)
-
-if result.is_ok():
-    analysis = result.unwrap()
-    print(f"Analyzed {analysis.poi_count} custom locations")
-```
-
-### Isochrone Export and Visualization
-
-```python
-from socialmapper import SocialMapperClient, SocialMapperBuilder
-import geopandas as gpd
-import matplotlib.pyplot as plt
-
-# Configure analysis with isochrone export
-with SocialMapperClient() as client:
-    config = (SocialMapperBuilder()
-        .with_location("Portland", "OR")
-        .with_osm_pois("amenity", "library")
-        .with_travel_time(15)
-        .with_travel_mode("walk")
-        .with_census_variables("total_population", "median_income")
-        .enable_isochrone_export()  # Enable isochrone export
-        .build()
-    )
-    
-    result = client.run_analysis(config)
-
-# Process results
-if result.is_ok():
-    analysis = result.unwrap()
-    print(f"Found {analysis.poi_count} libraries")
-    print(f"Population within 15-min walk: {analysis.metadata.get('total_population_sum', 'N/A')}")
-    
-    # Load and visualize the exported isochrones
-    if 'isochrone_data' in analysis.files_generated:
-        isochrones = gpd.read_parquet(analysis.files_generated['isochrone_data'])
-        
-        # Create a visualization
-        fig, ax = plt.subplots(figsize=(10, 10))
-        isochrones.plot(ax=ax, alpha=0.5, color='blue', edgecolor='black')
-        ax.set_title("15-minute walking isochrones from libraries in Portland, OR")
-        plt.show()
-        
-        # Export to other formats for GIS software
-        isochrones.to_file("portland_library_isochrones.geojson", driver="GeoJSON")
-        print("Isochrones exported to GeoJSON for use in GIS software")
-else:
-    print(f"Analysis failed: {result.unwrap_err()}")
-```
-
-## Version Information
-
-```python
-import socialmapper
-
-# Get version
-print(socialmapper.__version__)
-
-# Check API version
-from socialmapper.api import __version__ as api_version
-print(f"API version: {api_version}")
-```
-
-## Migration from Legacy API
-
-If you're using the old `run_socialmapper` function, migrate to the new client-based API:
-
-```python
-# Old API (deprecated)
-from socialmapper import run_socialmapper
-results = run_socialmapper(state="CA", county="Los Angeles", ...)
-
-# New API (recommended)
-from socialmapper import SocialMapperClient
-with SocialMapperClient() as client:
-    result = client.analyze("Los Angeles, CA", "amenity", "library")
-    if result.is_ok():
-        analysis = result.unwrap()
-        # Use analysis results
-```
+---
 
 ## See Also
 
+- [Getting Started Guide](getting-started/quick-start.md) - Step-by-step tutorial
 - [Census Variables Reference](reference/census-variables.md) - Complete list of available census variables
-- [User Guide](user-guide/index.md) - Detailed usage instructions
-- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - Code examples and tutorials
+- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - More code examples
+- [User Guide](user-guide/index.md) - In-depth usage guides
+
+---
+
+## Version
+
+Current version: **0.8.0**
+
+Check your installed version:
+
+```python
+import socialmapper
+print(socialmapper.__version__)
+```
