@@ -30,14 +30,23 @@ SocialMapper helps you understand how people connect with important places in th
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
-## What's New in v0.8.0 🎉
+## What's New in v0.9.0 🎉
 
-### Major Updates: Simple 5-Function API
+### Production-Ready Quality Improvements
 
-- **🎯 Simple API** - Just 5 core functions for all spatial analysis needs
-- **📦 Clean Installation** - Simple installation with `pip install socialmapper`
-- **🔧 Focused Toolkit** - Streamlined Python package for spatial analysis
-- **📚 Clear Documentation** - Working examples and straightforward API
+- **✅ Comprehensive Testing** - 255+ passing tests covering all API functions
+- **📖 NumPy-Style Docstrings** - Professional documentation across all modules
+- **📚 Enhanced Documentation** - Aligned with actual API, progressive tutorials
+- **⚠️ API Simplification** - Replaced pipeline API with direct function calls
+
+### Breaking Changes
+
+**Old (0.8.0):** `SocialMapper()` client with pipeline methods
+**New (0.9.0):** Direct imports of 5 core functions
+
+```python
+from socialmapper import create_isochrone, get_census_data, create_map
+```
 
 ### Core Functions
 

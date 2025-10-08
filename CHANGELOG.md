@@ -5,6 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-10-08
+
+### ⚠️ Breaking Changes
+
+**API Redesign: Pipeline → Individual Functions**
+
+This release replaces the pipeline-based API with individual function calls for simpler, more intuitive usage.
+
+**Old API (0.8.0):**
+```python
+from socialmapper import SocialMapper
+
+client = SocialMapper()
+result = client.pipeline()...
+```
+
+**New API (0.9.0):**
+```python
+from socialmapper import create_isochrone, get_census_data, create_map
+
+isochrone = create_isochrone("Boston, MA", travel_time=15)
+census_data = get_census_data(isochrone['geometry'])
+create_map(census_data)
+```
+
+**Migration Guide:**
+- Replace `SocialMapper()` client with direct function imports
+- Use `create_isochrone()` instead of pipeline methods
+- Use `get_census_blocks()` and `get_census_data()` for demographics
+- Use `get_poi()` for points of interest
+- Use `create_map()` for visualization
+
+### ✨ Features
+
+#### **Documentation & Testing**
+- **Comprehensive test coverage** with 255+ passing tests
+- **NumPy-style docstrings** across all major modules
+- **Enhanced documentation** aligned with actual API implementation
+- **GitHub Actions workflow** for automatic documentation deployment
+
+#### **Development Experience**
+- **Consolidated tutorial series** into progressive learning path
+- **Organized coverage reports** into reports/ directory
+- **Streamlined infrastructure** by removing over-engineered CI/CD
+- **Cleaned up site structure** by archiving outdated documentation
+
+### 🐛 Bug Fixes
+- Fixed 'dict' object has no attribute 'columns' error in quick tutorial
+- Optimized tutorial performance for speed and reliability
+
+### 📚 Documentation
+- Rewrote documentation to match actual API implementation
+- Refactored tutorials to enhance functionality and streamline analysis
+- Updated simple tutorials for current simplified API
+
+### 🧪 Testing
+- Added comprehensive test suite for public API functions
+- Added comprehensive tests for census.py module
+- Added unit tests for validators and helpers modules
+- Added tests for POI and analysis functions
+- Added tests for create_map() visualization function
+
 ## [0.8.0] - 2025-08-03
 
 ### 🚀 Major Features

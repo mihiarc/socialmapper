@@ -718,7 +718,7 @@ age = get_census_data(geoids, ["median_age"])
 
 ## Version
 
-Current version: **0.8.0**
+Current version: **0.9.0**
 
 Check your installed version:
 

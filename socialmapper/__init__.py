@@ -18,29 +18,29 @@ except ImportError:
 # Import the 5 core API functions
 from .api import (
     create_isochrone,
+    create_map,
     get_census_blocks,
     get_census_data,
-    create_map,
     get_poi,
 )
 
 # Import exceptions
 from .exceptions import (
-    SocialMapperError,
-    ValidationError,
-    APIError,
-    DataError,
     AnalysisError,
+    APIError,
     # Legacy aliases
     ConfigurationError,
-    ExternalAPIError,
+    DataError,
     DataProcessingError,
+    ExternalAPIError,
     FileSystemError,
+    SocialMapperError,
+    ValidationError,
     VisualizationError,
 )
 
 # Version
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 # Public API - core functions and exceptions
 __all__ = [
