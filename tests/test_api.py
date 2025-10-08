@@ -13,8 +13,11 @@ from socialmapper.api import (
     create_isochrone,
     get_census_blocks,
     get_census_data,
-    _resolve_geoids_from_location
+    _resolve_geoids_from_location,
+    create_map,
+    _convert_data_to_geodataframe
 )
+import pandas as pd
 
 
 class TestCreateIsochrone:
@@ -487,3 +490,281 @@ class TestResolveGeoidsFromLocation:
         """Test error with invalid location type."""
         with pytest.raises(ValueError, match="Location must be"):
             _resolve_geoids_from_location("invalid string")
+
+
+class TestCreateMap:
+    """Test create_map() visualization function."""
+
+    @patch('socialmapper.api._create_image_map')
+    def test_create_map_png_format(self, mock_image_map):
+        """Test creating map with PNG format."""
+        mock_image_map.return_value = b'fake_png_data'
+
+        data = [
+            {"geometry": Point(0, 0).__geo_interface__, "population": 100},
+            {"geometry": Point(1, 1).__geo_interface__, "population": 200}
+        ]
+
+        result = create_map(data, "population", export_format="png")
+
+        assert result == b'fake_png_data'
+        mock_image_map.assert_called_once()
+        assert mock_image_map.call_args[0][1] == "population"  # column
+        assert mock_image_map.call_args[0][4] == "png"  # format
+
+    @patch('socialmapper.api._create_image_map')
+    def test_create_map_pdf_format(self, mock_image_map):
+        """Test creating map with PDF format."""
+        mock_image_map.return_value = b'fake_pdf_data'
+
+        data = gpd.GeoDataFrame({
+            'geometry': [Point(0, 0), Point(1, 1)],
+            'value': [10, 20]
+        }, crs="EPSG:4326")
+
+        result = create_map(data, "value", export_format="pdf")
+
+        assert result == b'fake_pdf_data'
+        assert mock_image_map.call_args[0][4] == "pdf"
+
+    @patch('socialmapper.api._create_image_map')
+    def test_create_map_svg_format(self, mock_image_map):
+        """Test creating map with SVG format."""
+        mock_image_map.return_value = b'<svg>fake_svg</svg>'
+
+        data = gpd.GeoDataFrame({
+            'geometry': [Point(0, 0)],
+            'metric': [42]
+        }, crs="EPSG:4326")
+
+        result = create_map(data, "metric", export_format="svg")
+
+        assert result == b'<svg>fake_svg</svg>'
+        assert mock_image_map.call_args[0][4] == "svg"
+
+    def test_create_map_geojson_format(self):
+        """Test creating map with GeoJSON format."""
+        data = [
+            {"geometry": Point(0, 0).__geo_interface__, "score": 5},
+            {"geometry": Point(1, 1).__geo_interface__, "score": 10}
+        ]
+
+        result = create_map(data, "score", export_format="geojson")
+
+        assert isinstance(result, dict)
+        assert "features" in result
+        assert len(result["features"]) == 2
+
+    @patch('geopandas.GeoDataFrame.to_file')
+    def test_create_map_shapefile_format(self, mock_to_file):
+        """Test creating map with shapefile format."""
+        data = [
+            {"geometry": Point(0, 0).__geo_interface__, "rating": 1}
+        ]
+
+        result = create_map(
+            data, 
+            "rating",
+            save_path="/tmp/test_output.shp",
+            export_format="shapefile"
+        )
+
+        assert result is None
+        mock_to_file.assert_called_once()
+        assert mock_to_file.call_args[1]['driver'] == 'ESRI Shapefile'
+
+    def test_create_map_shapefile_without_save_path(self):
+        """Test that shapefile format requires save_path."""
+        data = [{"geometry": Point(0, 0).__geo_interface__, "value": 1}]
+
+        with pytest.raises(ValueError, match="save_path is required for shapefile export"):
+            create_map(data, "value", export_format="shapefile")
+
+    @patch('socialmapper.api._create_image_map')
+    def test_create_map_with_title(self, mock_image_map):
+        """Test creating map with custom title."""
+        mock_image_map.return_value = b'map_data'
+
+        data = [{"geometry": Point(0, 0).__geo_interface__, "count": 5}]
+
+        create_map(data, "count", title="Test Map Title", export_format="png")
+
+        assert mock_image_map.call_args[0][2] == "Test Map Title"  # title parameter
+
+    @patch('socialmapper.api._create_image_map')
+    def test_create_map_with_save_path(self, mock_image_map):
+        """Test creating map with save path."""
+        mock_image_map.return_value = None
+
+        data = [{"geometry": Point(0, 0).__geo_interface__, "data": 99}]
+
+        result = create_map(
+            data,
+            "data",
+            save_path="/tmp/output.png",
+            export_format="png"
+        )
+
+        assert result is None
+        assert mock_image_map.call_args[0][3] == "/tmp/output.png"  # save_path
+
+    def test_create_map_list_input(self):
+        """Test create_map with list of dicts input."""
+        data = [
+            {"geometry": {"type": "Point", "coordinates": [0, 0]}, "val": 1},
+            {"geometry": {"type": "Point", "coordinates": [1, 1]}, "val": 2}
+        ]
+
+        result = create_map(data, "val", export_format="geojson")
+
+        assert isinstance(result, dict)
+        assert len(result["features"]) == 2
+
+    def test_create_map_dataframe_input(self):
+        """Test create_map with pandas DataFrame input."""
+        df = pd.DataFrame({
+            'geometry': [Point(0, 0), Point(1, 1)],
+            'metric': [100, 200]
+        })
+
+        result = create_map(df, "metric", export_format="geojson")
+
+        assert isinstance(result, dict)
+        assert len(result["features"]) == 2
+
+    def test_create_map_geodataframe_input(self):
+        """Test create_map with GeoDataFrame input."""
+        gdf = gpd.GeoDataFrame({
+            'geometry': [Point(0, 0), Point(1, 1)],
+            'population': [1000, 2000]
+        }, crs="EPSG:4326")
+
+        result = create_map(gdf, "population", export_format="geojson")
+
+        assert isinstance(result, dict)
+        assert len(result["features"]) == 2
+
+    def test_create_map_column_not_found(self):
+        """Test error when specified column doesn't exist."""
+        data = [{"geometry": Point(0, 0).__geo_interface__, "value": 1}]
+
+        with pytest.raises(ValueError, match="Column 'nonexistent' not found"):
+            create_map(data, "nonexistent", export_format="png")
+
+    def test_create_map_invalid_export_format(self):
+        """Test error with invalid export format."""
+        data = [{"geometry": Point(0, 0).__geo_interface__, "value": 1}]
+
+        with pytest.raises(ValueError, match="Export format must be one of"):
+            create_map(data, "value", export_format="invalid_format")
+
+    def test_create_map_default_format(self):
+        """Test that default export format is PNG."""
+        with patch('socialmapper.api._create_image_map') as mock_image:
+            mock_image.return_value = b'data'
+            data = [{"geometry": Point(0, 0).__geo_interface__, "val": 1}]
+
+            create_map(data, "val")  # No format specified
+
+            assert mock_image.call_args[0][4] == "png"
+
+
+class TestConvertDataToGeoDataFrame:
+    """Test _convert_data_to_geodataframe() helper function."""
+
+    def test_convert_list_of_dicts(self):
+        """Test converting list of dicts to GeoDataFrame."""
+        data = [
+            {"geometry": Point(0, 0), "value": 10},
+            {"geometry": Point(1, 1), "value": 20}
+        ]
+
+        result = _convert_data_to_geodataframe(data)
+
+        assert isinstance(result, gpd.GeoDataFrame)
+        assert len(result) == 2
+        assert "value" in result.columns
+        assert result.crs == "EPSG:4326"
+
+    def test_convert_list_with_geojson_geometry(self):
+        """Test converting list with GeoJSON geometry dicts."""
+        data = [
+            {"geometry": {"type": "Point", "coordinates": [0, 0]}, "name": "A"},
+            {"geometry": {"type": "Point", "coordinates": [1, 1]}, "name": "B"}
+        ]
+
+        result = _convert_data_to_geodataframe(data)
+
+        assert isinstance(result, gpd.GeoDataFrame)
+        assert len(result) == 2
+        assert "name" in result.columns
+
+    def test_convert_pandas_dataframe(self):
+        """Test converting pandas DataFrame to GeoDataFrame."""
+        df = pd.DataFrame({
+            'geometry': [Point(0, 0), Point(1, 1)],
+            'population': [100, 200]
+        })
+
+        result = _convert_data_to_geodataframe(df)
+
+        assert isinstance(result, gpd.GeoDataFrame)
+        assert "population" in result.columns
+        assert result.crs == "EPSG:4326"
+
+    def test_convert_geodataframe_passthrough(self):
+        """Test that GeoDataFrame passes through unchanged."""
+        gdf = gpd.GeoDataFrame({
+            'geometry': [Point(0, 0)],
+            'value': [42]
+        }, crs="EPSG:4326")
+
+        result = _convert_data_to_geodataframe(gdf)
+
+        # Function returns the same GeoDataFrame
+        assert isinstance(result, gpd.GeoDataFrame)
+        assert len(result) == len(gdf)
+        assert "value" in result.columns
+
+    def test_convert_list_missing_geometry(self):
+        """Test error when list items missing geometry field."""
+        data = [
+            {"value": 10},  # Missing geometry
+            {"geometry": Point(1, 1), "value": 20}
+        ]
+
+        with pytest.raises(ValueError, match="Each item must have a 'geometry' field"):
+            _convert_data_to_geodataframe(data)
+
+    def test_convert_dataframe_missing_geometry(self):
+        """Test error when DataFrame missing geometry column."""
+        df = pd.DataFrame({
+            'value': [10, 20]  # No geometry column
+        })
+
+        with pytest.raises(ValueError, match="DataFrame must have a 'geometry' column"):
+            _convert_data_to_geodataframe(df)
+
+    def test_convert_invalid_data_type(self):
+        """Test error with invalid data type."""
+        with pytest.raises(ValueError, match="Data must be a list of dicts"):
+            _convert_data_to_geodataframe("invalid string")
+
+    def test_convert_preserves_attributes(self):
+        """Test that all non-geometry attributes are preserved."""
+        data = [
+            {
+                "geometry": Point(0, 0),
+                "name": "Location A",
+                "value": 100,
+                "category": "Type1"
+            }
+        ]
+
+        result = _convert_data_to_geodataframe(data)
+
+        assert "name" in result.columns
+        assert "value" in result.columns
+        assert "category" in result.columns
+        assert result["name"].iloc[0] == "Location A"
+        assert result["value"].iloc[0] == 100
