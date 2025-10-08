@@ -1,165 +1,54 @@
 # SocialMapper Examples
 
-Welcome to the SocialMapper examples! This directory contains tutorials, demos, and real-world case studies to help you get started with SocialMapper.
+Welcome to the SocialMapper examples! This directory contains a comprehensive tutorial series and sample data to help you master SocialMapper.
 
 ## 📚 Quick Start
 
 New to SocialMapper? Start here:
 
 ```bash
-# Install SocialMapper first
+# Install SocialMapper
 uv add socialmapper
 
-# Run the getting started tutorial
-python examples/tutorials/01_getting_started.py
-
-# Try ZCTA analysis
-python examples/zcta_analysis.py
+# Run the first tutorial
+uv run python examples/tutorials/01_getting_started.py
 ```
 
 ## 📁 Directory Structure
 
 ```
 examples/
-├── tutorials/          # Step-by-step tutorials for beginners
-├── demos/             # Comprehensive test demonstrations
-├── core/              # Demonstrations of core features
-├── case_studies/      # Real-world analysis examples
-├── data/              # Sample datasets
-├── zcta_analysis.py   # ZIP Code Tabulation Area example
-└── example_output/    # Sample output files
+├── tutorials/          # 8 progressive tutorials (START HERE!)
+├── data/              # Sample datasets for testing
+└── README.md          # This file
 ```
 
-## 🎓 Tutorials (Start Here!)
+## 🎓 Tutorials
 
-Perfect for beginners - learn SocialMapper step by step:
+**8 progressive tutorials** covering everything from basics to advanced techniques.
 
-### 1. **Getting Started** (`tutorials/01_getting_started.py`)
-Learn the basics: finding POIs, generating isochrones, and analyzing demographics.
+See the [complete tutorial guide](tutorials/README.md) for detailed descriptions.
+
+### Quick Tutorial Overview
+
+1. **Getting Started** - Complete workflow with isochrones, POIs, and demographics
+2. **Travel Modes** - Compare walk, bike, and drive accessibility
+3. **Census Demographics** - Deep dive into demographic analysis
+4. **Custom POIs** - Import and analyze your own locations from CSV
+5. **Combining Analysis** - Build sophisticated multi-step workflows
+6. **Multi-Location** - Batch processing and coverage comparisons
+7. **ZIP Code Analysis** - Work with ZCTA boundaries
+8. **Address Geocoding** - Convert addresses to coordinates
+
+### Run All Tutorials
 
 ```bash
-python examples/tutorials/01_getting_started.py
+cd examples/tutorials
+uv run python 01_getting_started.py
+uv run python 02_travel_modes.py
+uv run python 03_census_demographics.py
+# ... and so on
 ```
-
-### 2. **Custom POIs** (`tutorials/02_custom_pois.py`)
-Use your own points of interest from CSV files.
-
-```bash
-python examples/tutorials/02_custom_pois.py
-```
-
-## 🗺️ Geographic Analysis Examples
-
-### **ZCTA Analysis** (`zcta_analysis.py`) ⭐️
-Complete ZIP Code Tabulation Area analysis example.
-
-```bash
-python examples/zcta_analysis.py
-```
-
-**Features:**
-- Fetch ZCTA boundaries for a state
-- Get census demographics for specific ZCTAs
-- Combine boundary and demographic data
-- Generate analysis reports and CSV output
-
-**Perfect for:**
-- Business intelligence and market analysis
-- Regional demographic studies
-- ZIP code-level reporting
-- Faster processing than block groups
-
-## 🧪 Test Demos
-
-Comprehensive demonstrations for testing and validation:
-
-### **ZCTA Test Demos** (`tests/demos/`)
-Detailed test demonstrations for ZCTA functionality:
-
-```bash
-# Test ZCTA fundamentals
-python tests/demos/zcta_fundamentals_demo.py
-
-# Test POI integration
-python tests/demos/zcta_poi_integration_demo.py
-
-# Test modern Census API
-python tests/demos/modern_zcta_api_demo.py
-
-# Test TIGER boundary API
-python tests/demos/tiger_api_boundaries_demo.py
-```
-
-See `tests/demos/README_ZCTA_DEMOS.md` for detailed information.
-
-## 🔧 Core Feature Demos
-
-Explore specific SocialMapper capabilities:
-
-### **Address Geocoding** (`core/address_geocoding.py`)
-Convert addresses to coordinates with multiple geocoding providers.
-- Batch geocoding
-- Provider comparison
-- Caching strategies
-
-### **Neighbor System** (`core/neighbor_system.py`)
-Efficient census block group lookups using the parquet-based system.
-- Performance comparisons
-- API usage examples
-- Memory efficiency
-
-### **OSMnx Integration** (`core/osmnx_integration.py`)
-Advanced OpenStreetMap queries and network analysis.
-- Custom OSM queries
-- Network statistics
-- Multi-modal routing
-
-### **ZCTA Analysis** (`core/zcta_analysis.py`)
-Compare block group vs ZIP code level analysis.
-- ZCTA boundaries
-- Trade-offs in geographic resolution
-- Use case examples
-
-### **Cary Police ZCTA Demo** (`core/cary_zcta_demo.py`)
-Real-world ZCTA service demonstration using Cary, NC police station.
-- Municipal planning use case
-- ZCTA census data retrieval
-- Service area analysis
-- Local government applications
-
-**CLI Usage Examples:**
-```bash
-# Run the demo
-python examples/core/cary_zcta_demo.py
-
-# Use the generated coordinates with ZCTA analysis
-socialmapper --custom-coords output/cary_police_coords.csv --geographic-level zcta --travel-time 15
-
-# Compare with block group analysis
-socialmapper --custom-coords output/cary_police_coords.csv --geographic-level block-group --travel-time 15
-```
-
-### **Cold Cache Test** (`core/cold_cache_test.py`)
-Test SocialMapper with no cached data.
-- Fresh installation simulation
-- Performance benchmarks
-- Cache building strategies
-
-### **Rich UI Demo** (`core/rich_ui_demo.py`)
-Beautiful terminal output with progress tracking.
-- Progress bars and spinners
-- Formatted tables
-- Status updates
-
-## 🌍 Case Studies
-
-Real-world examples with complete workflows:
-
-### **Fuquay-Varina Library Analysis** (`case_studies/fuquay_varina_library.py`)
-A complete accessibility analysis of a community library in North Carolina.
-- Real location data
-- Multiple census variables
-- Performance optimization techniques
 
 ## 📊 Sample Data
 
@@ -167,96 +56,90 @@ Example datasets for testing:
 
 - **`data/custom_coordinates.csv`** - Simple POI format example
 - **`data/sample_addresses.csv`** - Addresses for geocoding demos
-- **`data/trail_heads.csv`** - Large dataset (2,661 trails) for performance testing
 
 ## 🚀 Common Usage Patterns
 
-### Basic Analysis
+### Basic Isochrone Analysis
 ```python
-from socialmapper import run_socialmapper
+from socialmapper import create_isochrone, get_census_blocks, get_census_data
 
-results = run_socialmapper(
-    state="North Carolina",
-    county="Wake County",
-    place_type="library",
+# Create isochrone
+iso = create_isochrone(
+    location=(35.7796, -78.6382),  # Raleigh, NC
     travel_time=15,
-    census_variables=['total_population', 'median_income']
+    travel_mode="drive"
+)
+
+# Get demographics
+blocks = get_census_blocks(polygon=iso)
+data = get_census_data(
+    location=[b['geoid'] for b in blocks[:30]],
+    variables=['population', 'median_income']
 )
 ```
 
-### ZCTA Analysis
+### Custom POIs from CSV
 ```python
-from socialmapper import get_census_system
+from socialmapper.api import import_poi_csv
 
-# Get census system
-census_system = get_census_system()
+# Load your locations
+pois = import_poi_csv("my_locations.csv")
 
-# Fetch ZCTA boundaries
-zctas = census_system._zcta_service.get_zctas_for_state("37")  # North Carolina
-
-# Get census data
-data = census_system._zcta_service.get_census_data(
-    geoids=['27601', '27605', '27609'],
-    variables=['B01003_001E', 'B19013_001E']
-)
-```
-
-### Custom POIs
-```python
-results = run_socialmapper(
-    custom_coords_path="my_locations.csv",
-    travel_time=10,
-    census_variables=['total_population'],
-    export_maps=True
-)
-```
-
-### Batch Processing
-```python
-# Analyze multiple POI types
-for poi_type in ['library', 'school', 'park']:
-    results = run_socialmapper(
-        state="California",
-        county="Los Angeles County",
-        place_type=poi_type,
-        travel_time=15
+# Analyze each location
+for poi in pois:
+    iso = create_isochrone(
+        location=(poi['lat'], poi['lon']),
+        travel_time=10
     )
 ```
 
-## 💡 Tips for Examples
+### Multi-Mode Comparison
+```python
+modes = ["drive", "bike", "walk"]
 
-1. **Start Simple**: Begin with tutorials before moving to advanced demos
-2. **Check Dependencies**: Ensure SocialMapper is installed: `uv add socialmapper`
-3. **API Keys**: Some features work better with a Census API key (set `CENSUS_API_KEY` environment variable)
-4. **Performance**: First runs may be slower due to cache building
-5. **Visualizations**: Set `export_maps=True` to generate map outputs
-6. **ZCTA vs Block Groups**: Use ZCTAs for faster regional analysis, block groups for detailed local analysis
+for mode in modes:
+    iso = create_isochrone(location, travel_time=15, travel_mode=mode)
+    print(f"{mode}: {iso['properties']['area_sq_km']:.2f} km²")
+```
+
+## 💡 Tips for Learning
+
+1. **Follow the tutorial sequence** - They build progressively
+2. **Start with short travel times** - Use 5-10 minutes for quick testing
+3. **Experiment freely** - Modify locations, parameters, and variables
+4. **Read the code** - Tutorials are heavily commented
+5. **Use coordinates** - More reliable than address geocoding
 
 ## 🆘 Troubleshooting
 
 ### Common Issues
 
-- **Import Errors**: Make sure SocialMapper is installed
-- **No Results**: Check internet connection and API availability
-- **Slow Performance**: Normal on first run - caches will speed up subsequent runs
-- **Memory Issues**: Use smaller datasets or reduce the number of census variables
-- **ZCTA Issues**: Ensure proper state FIPS codes and valid ZCTA identifiers
+- **Import Errors**: Ensure SocialMapper is installed: `uv add socialmapper`
+- **Slow Performance**: Normal on first run (building caches)
+- **Census API Limits**: Sample blocks (first 20-30) for faster testing
+- **Geocoding Failures**: Use coordinates instead of addresses
 
 ### Getting Help
 
-- Check the [main documentation](../docs/)
-- Review error messages - they often suggest solutions
+- Check tutorial READMEs for detailed guidance
+- Review error messages - they suggest solutions
 - Open an issue on GitHub for bugs
 
 ## 📈 Next Steps
 
-After exploring these examples:
+After completing the tutorials:
 
-1. Create your own analysis with local data
-2. Experiment with different travel times and modes
-3. Compare accessibility across different communities
-4. Try ZCTA analysis for regional studies
-5. Share your findings!
+1. Analyze locations that matter to you
+2. Build custom workflows for your use case
+3. Explore the main SocialMapper documentation
+4. Contribute your own examples!
+
+## 🤝 Contributing
+
+Found an issue or have a new tutorial idea?
+- Open an issue on GitHub
+- Submit a pull request
+- Share your analysis examples
 
 ---
 
