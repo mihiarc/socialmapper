@@ -97,6 +97,10 @@ scripts/debug/
 # pytest cache
 .pytest_cache/
 
+# Coverage and test reports
+reports/
+.coverage
+
 # ty type checker cache
 .ty_cache/
 .env
