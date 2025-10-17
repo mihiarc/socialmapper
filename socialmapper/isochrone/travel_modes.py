@@ -93,7 +93,8 @@ def get_highway_speeds(mode: TravelMode) -> dict[str, float]:
     Args:
         mode: Travel mode (walk, bike, or drive)
 
-    Returns:
+    Returns
+    -------
         Dictionary mapping highway types to speeds in km/h
     """
     if mode == TravelMode.WALK:

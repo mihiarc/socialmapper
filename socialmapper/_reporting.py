@@ -23,7 +23,8 @@ def create_analysis_report(
         template: Report template
         include_maps: Whether to include maps
 
-    Returns:
+    Returns
+    -------
         HTML string or PDF bytes
     """
     if format not in ["html", "pdf"]:
@@ -45,7 +46,6 @@ def generate_html_report(
     include_maps: bool
 ) -> str:
     """Generate HTML report content."""
-
     # Extract components
     isochrone = data.get("isochrone")
     census_data = data.get("census_data", {})

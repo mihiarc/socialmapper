@@ -25,7 +25,8 @@ def parse_csv_pois(
         lon_field: Column name for longitude
         type_field: Column name for POI type
 
-    Returns:
+    Returns
+    -------
         List of POI dicts in standard format
     """
     # Security: Validate and sanitize file path

@@ -236,7 +236,8 @@ def build_osmnx_tags(poi_type: str, poi_name: str, additional_tags: Optional[dic
         poi_name: The OSM value (e.g., 'school', 'park', 'supermarket')
         additional_tags: Optional additional tags to filter by
         
-    Returns:
+    Returns
+    -------
         Dictionary of OSM tags for OSMnx query
     """
     tags = {poi_type: poi_name}
@@ -265,7 +266,8 @@ def query_pois_with_fallback(
         additional_tags: Optional additional OSM tags
         use_overpass_fallback: Whether to fall back to Overpass API if OSMnx fails
         
-    Returns:
+    Returns
+    -------
         Dictionary with POI data
     """
     # Build tags for OSMnx

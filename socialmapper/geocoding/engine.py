@@ -55,7 +55,8 @@ class AddressGeocodingEngine:
         Args:
             address: Address string or AddressInput object
 
-        Returns:
+        Returns
+        -------
             GeocodingResult with geocoding outcome
         """
         # Convert string to AddressInput if needed
@@ -135,7 +136,8 @@ class AddressGeocodingEngine:
             addresses: List of address strings or AddressInput objects
             progress: Whether to show progress bar
 
-        Returns:
+        Returns
+        -------
             List of GeocodingResult objects
         """
         results = []

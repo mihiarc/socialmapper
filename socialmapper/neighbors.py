@@ -4,7 +4,8 @@ Direct access to geographic neighbor relationships for US states
 and counties. This module provides a simple, standalone API for
 neighbor analysis without requiring the full SocialMapper workflow.
 
-Examples:
+Examples
+--------
     Basic usage:
         >>> import socialmapper.neighbors as neighbors
         >>> nc_states = neighbors.get_neighboring_states("37")  # North Carolina

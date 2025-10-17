@@ -302,7 +302,8 @@ class ModernProgressTracker:
             stage: The processing stage to start
             total_items: Optional total number of items to process
 
-        Returns:
+        Returns
+        -------
             ProgressMetrics object for this stage
         """
         with self._lock:
@@ -472,7 +473,8 @@ def get_progress_tracker(enable_performance_metrics: bool = True) -> ModernProgr
     Args:
         enable_performance_metrics: Whether to enable performance metrics
 
-    Returns:
+    Returns
+    -------
         ModernProgressTracker instance
     """
     global _global_tracker
@@ -492,7 +494,8 @@ def get_progress_bar(iterable=None, **kwargs):
         iterable: The iterable to wrap with a progress bar
         **kwargs: Additional arguments to pass to the progress bar
 
-    Returns:
+    Returns
+    -------
         A Rich progress bar instance that can be used as a context manager
     """
     # Always use Rich progress bars
@@ -514,7 +517,8 @@ def track_stage(stage: ProcessingStage, total_items: int | None = None):
         stage: The processing stage to track
         total_items: Optional total number of items to process
 
-    Yields:
+    Yields
+    ------
         ProgressMetrics object for updating progress
     """
     tracker = get_progress_tracker()

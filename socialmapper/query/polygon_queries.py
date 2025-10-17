@@ -38,7 +38,8 @@ def _format_coordinate(value: float, precision: int = COORDINATE_PRECISION) -> s
         value: Coordinate value (latitude or longitude)
         precision: Number of decimal places
 
-    Returns:
+    Returns
+    -------
         Formatted coordinate string
     """
     return f"{value:.{precision}f}"
@@ -50,10 +51,12 @@ def _polygon_to_overpass_format(polygon: Polygon) -> str:
     Args:
         polygon: Shapely Polygon object
 
-    Returns:
+    Returns
+    -------
         Space-separated string of lat/lon pairs
 
-    Raises:
+    Raises
+    ------
         ValueError: If polygon has too many coordinates
     """
     # Get exterior coordinates (excluding the closing coordinate)
@@ -79,7 +82,8 @@ def _multipolygon_to_overpass_queries(multipolygon: MultiPolygon) -> list[str]:
     Args:
         multipolygon: Shapely MultiPolygon object
 
-    Returns:
+    Returns
+    -------
         List of polygon format strings, one for each polygon
     """
     polygon_strings = []
@@ -102,7 +106,8 @@ def _build_category_tag_filters(categories: list[str] | None = None) -> list[dic
         categories: List of category names from POI_CATEGORY_MAPPING.
                    If None, includes all categories.
 
-    Returns:
+    Returns
+    -------
         List of tag filter dictionaries
     """
     tag_filters = []
@@ -194,7 +199,8 @@ def _infer_osm_key(value: str, category: str) -> str:
         value: The OSM tag value
         category: The POI category
 
-    Returns:
+    Returns
+    -------
         The inferred OSM key (e.g., 'amenity', 'shop', 'leisure')
     """
     category_mapping = _OSM_KEY_MAPPINGS.get(category, {})
@@ -222,10 +228,12 @@ def build_poi_discovery_query(
         timeout: Query timeout in seconds
         additional_tags: Optional additional OSM tags to filter by
 
-    Returns:
+    Returns
+    -------
         Complete Overpass API query string
 
-    Raises:
+    Raises
+    ------
         ValueError: If geometry is not a Polygon or MultiPolygon
     """
     if not isinstance(geometry, Polygon | MultiPolygon):
@@ -282,10 +290,12 @@ def _query_overpass_with_polygon(query: str) -> overpy.Result:
     Args:
         query: The Overpass API query string
 
-    Returns:
+    Returns
+    -------
         Query result from overpy
 
-    Raises:
+    Raises
+    ------
         Exception: If query fails after retries
     """
     import time
@@ -328,13 +338,15 @@ def query_pois_in_polygon(
         additional_tags: Optional additional OSM tags to filter by
         simplify_tolerance: Optional tolerance for simplifying the geometry before querying
 
-    Returns:
+    Returns
+    -------
         Dictionary containing:
             - poi_count: Total number of POIs found
             - pois: List of POI dictionaries with id, type, lat, lon, tags
             - query_info: Metadata about the query (geometry area, categories, etc.)
 
-    Raises:
+    Raises
+    ------
         ValueError: If geometry is invalid or too complex
         Exception: If Overpass API query fails
 
@@ -453,10 +465,12 @@ def query_pois_from_isochrone(
         additional_tags: Optional additional OSM tags to filter by
         simplify_tolerance: Tolerance for simplifying the geometry (default: 0.001)
 
-    Returns:
+    Returns
+    -------
         Dictionary containing POI results
 
-    Raises:
+    Raises
+    ------
         ValueError: If isochrone_gdf is invalid or empty
     """
     if isochrone_gdf is None or isochrone_gdf.empty:

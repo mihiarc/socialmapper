@@ -66,7 +66,8 @@ class IntelligentPOIClusterer:
             pois: List of POI dictionaries with 'lat' and 'lon' keys
             travel_time_minutes: Travel time limit to adjust clustering parameters
 
-        Returns:
+        Returns
+        -------
             List of POI clusters (each cluster is a list of POIs)
         """
         start_time = time.time()
@@ -210,7 +211,8 @@ class OptimizedPOICluster:
             travel_time_minutes: Travel time limit in minutes
             buffer_km: Base buffer in kilometers
 
-        Returns:
+        Returns
+        -------
             Bounding box tuple (min_lat, min_lon, max_lat, max_lon)
         """
         min_lat, min_lon, max_lat, max_lon = self.bbox
@@ -279,7 +281,8 @@ def create_optimized_clusters(
         max_cluster_radius_km: Maximum clustering radius in kilometers
         min_cluster_size: Minimum POIs per cluster
 
-    Returns:
+    Returns
+    -------
         List of OptimizedPOICluster objects
     """
     if not pois:
@@ -315,7 +318,8 @@ def download_network_for_cluster(
         network_buffer_km: Additional buffer around cluster
         travel_mode: Mode of travel (walk, bike, drive)
 
-    Returns:
+    Returns
+    -------
         True if successful, False otherwise
     """
     try:
@@ -416,7 +420,8 @@ def create_isochrone_from_poi_with_network(
         travel_time_minutes: Travel time limit in minutes
         travel_mode: Mode of travel (walk, bike, drive)
 
-    Returns:
+    Returns
+    -------
         GeoDataFrame with isochrone or None if failed
     """
     try:
@@ -590,7 +595,8 @@ def benchmark_clustering_performance(
         travel_time_minutes: Travel time limit
         max_cluster_radius_km: Maximum clustering radius
 
-    Returns:
+    Returns
+    -------
         Dictionary with performance metrics and recommendations
     """
     start_time = time.time()

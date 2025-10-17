@@ -45,6 +45,7 @@ class Result(Generic[T, E]):
 @dataclass
 class Ok(Result[T, E]):
     """Successful result containing a value."""
+
     value: T
 
     def __init__(self, value: T):
@@ -54,6 +55,7 @@ class Ok(Result[T, E]):
 @dataclass
 class Err(Result[T, E]):
     """Error result containing an error."""
+
     error: E
 
     def __init__(self, error: E):
@@ -62,6 +64,7 @@ class Err(Result[T, E]):
 
 class ErrorType(str, Enum):
     """Types of errors that can occur in the API."""
+
     VALIDATION = "validation"
     API_ERROR = "api_error"
     NOT_FOUND = "not_found"
@@ -74,6 +77,7 @@ class ErrorType(str, Enum):
 @dataclass
 class Error:
     """Standard error information."""
+
     type: ErrorType
     message: str
     details: Optional[Dict[str, Any]] = None
@@ -81,6 +85,7 @@ class Error:
 
 class DiscoveredPOI(BaseModel):
     """Information about a discovered POI."""
+
     osm_id: int
     name: Optional[str] = None
     category: str
@@ -95,6 +100,7 @@ class DiscoveredPOI(BaseModel):
 
 class NearbyPOIResult(BaseModel):
     """Result of nearby POI discovery."""
+
     origin: Dict[str, float]  # {"latitude": ..., "longitude": ...}
     travel_time_minutes: int
     travel_mode: str
@@ -107,6 +113,7 @@ class NearbyPOIResult(BaseModel):
 
 class NearbyPOIDiscoveryConfig(BaseModel):
     """Configuration for nearby POI discovery."""
+
     location: Union[str, Dict[str, float]]  # Address or {"latitude": ..., "longitude": ...}
     travel_time: int = Field(ge=1, le=60)
     travel_mode: str = "drive"

@@ -85,7 +85,8 @@ def create_isochrone_from_poi(
         restrict_to_country (str, optional): ISO 3166-1 alpha-2 country code (e.g., 'US')
                                             to restrict roads to that country only
 
-    Returns:
+    Returns
+    -------
         Union[str, gpd.GeoDataFrame]: File path if save_file=True, or GeoDataFrame if save_file=False
     """
     # Extract coordinates
@@ -170,7 +171,8 @@ def get_bounding_box(
         pois: List of POI dictionaries with 'lat' and 'lon'
         buffer_km: Buffer in kilometers to add around the POIs
 
-    Returns:
+    Returns
+    -------
         Tuple of (min_lat, min_lon, max_lat, max_lon)
     """
     lons = [poi.get("lon") for poi in pois if poi.get("lon") is not None]
@@ -226,7 +228,8 @@ def create_isochrones_from_poi_list(
         progress_callback (Callable, optional): Progress callback function
         travel_mode (TravelMode): Mode of travel (walk, bike, drive)
 
-    Returns:
+    Returns
+    -------
         Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
     """
     pois = poi_data.get("pois", [])
@@ -424,7 +427,8 @@ def create_isochrones_from_json_file(
         use_parquet (bool): Whether to use GeoParquet instead of GeoJSON format
         **kwargs: Additional arguments passed to create_isochrones_from_poi_list
 
-    Returns:
+    Returns
+    -------
         Union[str, gpd.GeoDataFrame, List[str]]: Results based on save/combine options
     """
     # Load POI data from JSON file

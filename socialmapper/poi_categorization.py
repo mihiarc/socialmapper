@@ -423,7 +423,8 @@ def categorize_poi(poi_tags: dict[str, Any]) -> str:
     Args:
         poi_tags: Dictionary of OSM tags for the POI
 
-    Returns:
+    Returns
+    -------
         Category string (e.g., "food_and_drink", "shopping") or "other" if no match
 
     Example:
@@ -472,7 +473,8 @@ def organize_pois_by_category(pois: list[dict[str, Any]]) -> dict[str, list[dict
     Args:
         pois: List of POI dictionaries, each containing a 'tags' field
 
-    Returns:
+    Returns
+    -------
         Dictionary mapping category names to lists of POIs in that category
 
     Example:
@@ -506,7 +508,8 @@ def organize_pois_by_category(pois: list[dict[str, Any]]) -> dict[str, list[dict
 def get_poi_category_info() -> dict[str, Any]:
     """Get information about available POI categories.
 
-    Returns:
+    Returns
+    -------
         Dictionary containing category mapping and statistics
     """
     info = {
@@ -530,7 +533,8 @@ def is_valid_category(category: str) -> bool:
     Args:
         category: Category name to validate
 
-    Returns:
+    Returns
+    -------
         True if the category exists in POI_CATEGORY_MAPPING, False otherwise
     """
     return category in POI_CATEGORY_MAPPING
@@ -542,7 +546,8 @@ def get_category_values(category: str) -> list[str] | None:
     Args:
         category: Category name
 
-    Returns:
+    Returns
+    -------
         List of OSM tag values for the category, or None if category is invalid
     """
     if not is_valid_category(category):
@@ -558,7 +563,8 @@ def add_category_value(category: str, value: str) -> bool:
         category: Category name
         value: OSM tag value to add
 
-    Returns:
+    Returns
+    -------
         True if successfully added, False if category doesn't exist
     """
     if not is_valid_category(category):
@@ -577,7 +583,8 @@ def create_custom_category(category_name: str, values: list[str]) -> bool:
         category_name: Name for the new category
         values: List of OSM tag values for the category
 
-    Returns:
+    Returns
+    -------
         True if successfully created, False if category already exists
     """
     if category_name in POI_CATEGORY_MAPPING:

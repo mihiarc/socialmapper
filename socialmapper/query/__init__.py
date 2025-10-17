@@ -58,7 +58,8 @@ def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_
         poi_name: The name of the POI (e.g., 'library', 'park')
         additional_tags: Dictionary of additional tags to filter by (optional)
 
-    Returns:
+    Returns
+    -------
         Dictionary containing POI configuration
     """
     config = {"geocode_area": geocode_area, "state": state, "type": poi_type, "name": poi_name}
@@ -236,7 +237,8 @@ def format_results(result, config=None):
         result: The result from the Overpass API query.
         config: Optional configuration dictionary that may contain state information.
 
-    Returns:
+    Returns
+    -------
         A dictionary containing the POIs in JSON format.
 
         Keys:
@@ -397,7 +399,8 @@ def query_pois(
         output_file: Optional output file path to save results
         verbose: Whether to output detailed information
 
-    Returns:
+    Returns
+    -------
         Dictionary with POI results
     """
     # Build query

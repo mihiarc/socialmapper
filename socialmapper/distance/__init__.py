@@ -263,7 +263,8 @@ def run_distance_benchmark(poi_points: list[Point], centroids: gpd.GeoSeries) ->
         poi_points: List of POI Point geometries
         centroids: GeoSeries of centroid geometries
 
-    Returns:
+    Returns
+    -------
         Dictionary with benchmark results
     """
     results = benchmark_distance_engines(poi_points, centroids)

@@ -64,7 +64,8 @@ class VectorizedDistanceEngine:
             poi_coords: Array of POI coordinates in projected CRS (n_pois, 2)
             centroid_coords: Array of centroid coordinates in projected CRS (n_centroids, 2)
 
-        Returns:
+        Returns
+        -------
             Array of minimum distances for each centroid (n_centroids,)
         """
         n_centroids = centroid_coords.shape[0]
@@ -113,10 +114,12 @@ class VectorizedDistanceEngine:
         Args:
             points: List of Shapely Point objects in WGS84
 
-        Returns:
+        Returns
+        -------
             Array of transformed coordinates (n_points, 2)
 
-        Raises:
+        Raises
+        ------
             ValueError: If validation fails or insufficient points for distance calculations
         """
         # Pre-validate data before PyProj operations
@@ -135,14 +138,23 @@ class VectorizedDistanceEngine:
         return np.column_stack([x_proj, y_proj])
 
     def calculate_distances(self, poi_points: list[Point], centroids: gpd.GeoSeries) -> np.ndarray:
-        """Main distance calculation method using vectorized operations.
+        """
+        Calculate distances using vectorized operations.
 
-        Args:
-            poi_points: List of POI Point geometries in WGS84
-            centroids: GeoSeries of centroid Point geometries in WGS84
+        Computes minimum distances from census centroids to all POIs
+        using optimized vectorized calculations in projected coordinates.
 
-        Returns:
-            Array of minimum distances in kilometers for each centroid
+        Parameters
+        ----------
+        poi_points : list of Point
+            List of POI Point geometries in WGS84 coordinates.
+        centroids : gpd.GeoSeries
+            GeoSeries of centroid Point geometries in WGS84 coordinates.
+
+        Returns
+        -------
+        np.ndarray
+            Array of minimum distances in kilometers for each centroid.
         """
         start_time = time.time()
 
@@ -186,7 +198,8 @@ class VectorizedDistanceEngine:
             poi_points: List of POI Point geometries in WGS84
             centroids: GeoSeries of centroid Point geometries in WGS84
 
-        Returns:
+        Returns
+        -------
             Array of minimum distances in kilometers for each centroid
         """
         start_time = time.time()
@@ -245,7 +258,8 @@ class ParallelDistanceProcessor:
             poi_points: List of POI Point geometries
             centroids: GeoSeries of centroid geometries
 
-        Returns:
+        Returns
+        -------
             Array of minimum distances for all centroids
         """
         if len(centroids) <= self.chunk_size:
@@ -290,7 +304,8 @@ def benchmark_distance_engines(poi_points: list[Point], centroids: gpd.GeoSeries
         poi_points: List of POI Point geometries
         centroids: GeoSeries of centroid geometries
 
-    Returns:
+    Returns
+    -------
         Dictionary with benchmark results
     """
     results = {}

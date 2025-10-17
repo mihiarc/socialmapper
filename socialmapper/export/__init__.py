@@ -44,7 +44,8 @@ def export_census_data_to_csv(
         base_filename: Base filename to use if output_path is not provided
         output_dir: Directory to save the CSV if output_path is not provided
 
-    Returns:
+    Returns
+    -------
         Path to the saved CSV file
     """
     logger.info("Using legacy CSV export (consider upgrading to modern formats)")
@@ -70,7 +71,8 @@ def export_to_parquet(data: pd.DataFrame, output_path: str | Path, **kwargs) -> 
         output_path: Output file path
         **kwargs: Additional options for ParquetExporter
 
-    Returns:
+    Returns
+    -------
         Path to saved file
     """
     exporter = ParquetExporter()
@@ -85,7 +87,8 @@ def export_to_geoparquet(data: gpd.GeoDataFrame, output_path: str | Path, **kwar
         output_path: Output file path
         **kwargs: Additional options for GeoParquetExporter
 
-    Returns:
+    Returns
+    -------
         Path to saved file
     """
     exporter = GeoParquetExporter()

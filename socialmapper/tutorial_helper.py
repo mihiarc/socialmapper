@@ -132,7 +132,8 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
         module_name: Name of module to import
         package: Package name for installation instructions
 
-    Returns:
+    Returns
+    -------
         Imported module or None if import failed
     """
     try:
@@ -158,7 +159,8 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
 def check_dependencies() -> bool:
     """Check if all backend tutorial dependencies are available.
 
-    Returns:
+    Returns
+    -------
         True if all dependencies are available
     """
     required = [
@@ -186,7 +188,8 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
     Args:
         config: Configuration dictionary to validate
 
-    Raises:
+    Raises
+    ------
         ConfigurationError: If configuration is invalid
     """
     required_fields = ["location", "poi_type", "poi_name"]

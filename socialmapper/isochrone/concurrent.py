@@ -54,7 +54,8 @@ def _generate_cluster_isochrones_worker(
         travel_time_minutes: Travel time limit
         travel_mode: Mode of travel
 
-    Returns:
+    Returns
+    -------
         List of isochrone GeoDataFrames
     """
     import copy
@@ -211,7 +212,8 @@ class ConcurrentIsochroneProcessor:
             travel_mode: Mode of travel
             retry_count: Current retry attempt number
 
-        Returns:
+        Returns
+        -------
             Tuple of (cluster_id, network graph or None)
         """
         try:
@@ -349,7 +351,8 @@ class ConcurrentIsochroneProcessor:
             progress_callback: Optional callback for progress updates
             travel_mode: Mode of travel (walk, bike, drive)
 
-        Returns:
+        Returns
+        -------
             List of isochrone GeoDataFrames
         """
         start_time = time.time()
@@ -545,7 +548,8 @@ def process_isochrones_concurrent(
         progress_callback: Optional progress callback
         travel_mode: Mode of travel (walk, bike, drive)
 
-    Returns:
+    Returns
+    -------
         List of isochrone GeoDataFrames
     """
     processor = ConcurrentIsochroneProcessor(

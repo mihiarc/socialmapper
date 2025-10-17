@@ -19,10 +19,12 @@ def _validate_coordinates_strict(lat: Union[str, int, float], lon: Union[str, in
         lat: Latitude value
         lon: Longitude value
 
-    Returns:
+    Returns
+    -------
         Tuple of validated (latitude, longitude) as floats
 
-    Raises:
+    Raises
+    ------
         InputValidationError: If coordinates are invalid
     """
     try:

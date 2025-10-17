@@ -212,7 +212,8 @@ def get_block_groups_for_polygon(polygon: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Args:
         polygon: GeoDataFrame with polygon geometry
         
-    Returns:
+    Returns
+    -------
         GeoDataFrame of block groups that intersect the polygon
     """
     # Extract state and county from polygon bounds
@@ -252,7 +253,8 @@ def identify_states_counties(polygon: gpd.GeoDataFrame) -> List[Tuple[str, str]]
     Args:
         polygon: GeoDataFrame with polygon geometry
         
-    Returns:
+    Returns
+    -------
         List of (state_fips, county_fips) tuples
     """
     # Get polygon centroid for geocoding
@@ -285,7 +287,8 @@ def geocode_point(lat: float, lon: float) -> Optional[Dict[str, str]]:
         lat: Latitude
         lon: Longitude
         
-    Returns:
+    Returns
+    -------
         Dict with state_fips, county_fips, tract, block_group
     """
     url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
@@ -331,7 +334,8 @@ def fetch_block_groups(state_fips: str, county_fips: str, year: int = 2023) -> g
         county_fips: 3-digit county FIPS code
         year: Census year
         
-    Returns:
+    Returns
+    -------
         GeoDataFrame with block group boundaries
     """
     # Build URL for TIGER/Line shapefile
@@ -383,7 +387,8 @@ def normalize_variables(variables: List[str]) -> List[str]:
     Args:
         variables: List of variable names (can be codes or readable names)
         
-    Returns:
+    Returns
+    -------
         List of census variable codes
     """
     normalized = []
@@ -421,7 +426,8 @@ def get_census_data(
         api_key: Census API key
         year: Census year
         
-    Returns:
+    Returns
+    -------
         DataFrame with census data
     """
     # Normalize variables
@@ -475,7 +481,8 @@ def get_demographics_for_polygon(
         polygon: GeoDataFrame with polygon geometry (any source)
         api_key: Census API key
         
-    Returns:
+    Returns
+    -------
         Dict with demographic summary statistics
         
     Example:

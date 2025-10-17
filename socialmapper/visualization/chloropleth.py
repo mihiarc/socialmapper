@@ -448,7 +448,8 @@ class ChoroplethMap:
         title: str | None = None,
         **kwargs
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Convenience method to create a demographic choropleth map.
+        """
+        Create a demographic choropleth map with sensible defaults.
 
         Parameters
         ----------
@@ -486,7 +487,8 @@ class ChoroplethMap:
         title: str | None = None,
         **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Convenience method to create a distance-based choropleth map.
+        """
+        Create a distance-based choropleth map with sensible defaults.
 
         Parameters
         ----------
@@ -540,7 +542,8 @@ class ChoroplethMap:
         title: str | None = None,
         **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Convenience method to create an accessibility-focused map.
+        """
+        Create an accessibility-focused map with sensible defaults.
 
         Parameters
         ----------
