@@ -16,13 +16,29 @@ logger = logging.getLogger(__name__)
 
 
 def extract_geoid_components(df: pd.DataFrame) -> pd.DataFrame:
-    """Extract tract and block group components from GEOID.
+    """
+    Extract tract and block group components from GEOID.
 
-    Args:
-        df: DataFrame with GEOID column
+    Parses census GEOID strings to extract tract and block group
+    identifiers as separate columns for geographic analysis.
 
-    Returns:
-        DataFrame with added tract and block_group columns
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with GEOID column containing census identifiers.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added tract and block_group columns.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({'GEOID': ['370630001001']})
+    >>> result = extract_geoid_components(df)
+    >>> 'tract' in result.columns
+    True
     """
     if "GEOID" not in df.columns or df["GEOID"].empty:
         return df
@@ -42,13 +58,33 @@ def extract_geoid_components(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def process_fips_codes(df: pd.DataFrame) -> pd.DataFrame:
-    """Process and add FIPS codes for state and county.
+    """
+    Process and add FIPS codes for state and county.
 
-    Args:
-        df: DataFrame with STATE and COUNTY columns
+    Formats and zero-pads state and county FIPS codes to standard
+    2-digit and 5-digit formats respectively.
 
-    Returns:
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with STATE and COUNTY columns containing numeric
+        FIPS codes.
+
+    Returns
+    -------
+    pd.DataFrame
         DataFrame with added state_fips and county_fips columns
+        formatted with proper zero-padding.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({'STATE': ['37'], 'COUNTY': ['63']})
+    >>> result = process_fips_codes(df)
+    >>> result['state_fips'].iloc[0]
+    '37'
+    >>> result['county_fips'].iloc[0]
+    '37063'
     """
     # Process state FIPS
     if "STATE" in df.columns and not df["STATE"].empty:
@@ -76,16 +112,39 @@ def add_travel_columns(
     travel_time_minutes: int | None = None,
     travel_mode: str | None = None,
 ) -> pd.DataFrame:
-    """Add POI and travel-related columns to the dataframe.
+    """
+    Add POI and travel-related columns to the dataframe.
 
-    Args:
-        df: DataFrame to add columns to
-        poi_data: POI data dictionary or list
-        travel_time_minutes: Travel time in minutes
-        travel_mode: Travel mode (walk, bike, drive)
+    Enriches census data with point-of-interest information and
+    travel time/mode metadata for accessibility analysis.
 
-    Returns:
-        DataFrame with added travel columns
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to add columns to.
+    poi_data : dict or list of dict
+        POI data dictionary or list containing POI information with
+        keys: 'name', 'type', 'lat', 'lon'.
+    travel_time_minutes : int, optional
+        Travel time in minutes from census area to POI.
+    travel_mode : str, optional
+        Travel mode used (e.g., 'walk', 'bike', 'drive').
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added columns: poi_name, poi_type, poi_lat,
+        poi_lon, travel_time_minutes, travel_mode.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({'pop': [100]})
+    >>> poi = {'name': 'Park', 'type': 'recreation', 'lat': 35.0,
+    ...        'lon': -78.0}
+    >>> result = add_travel_columns(df, poi, 15, 'walk')
+    >>> result['poi_name'].iloc[0]
+    'Park'
     """
     # Extract POIs from dictionary if needed
     pois = poi_data
@@ -116,15 +175,34 @@ def add_travel_columns(
 def reorder_columns(
     df: pd.DataFrame, config: DataPrepConfig, exclude_missing: bool = True
 ) -> pd.DataFrame:
-    """Reorder DataFrame columns according to preferred order.
+    """
+    Reorder DataFrame columns according to preferred order.
 
-    Args:
-        df: DataFrame to reorder
-        config: Data preparation configuration
-        exclude_missing: Whether to exclude columns not in dataframe
+    Arranges columns in a logical order for export, placing key
+    identifiers first followed by demographic data.
 
-    Returns:
-        DataFrame with reordered columns
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to reorder.
+    config : DataPrepConfig
+        Data preparation configuration with preferred column order
+        and exclusion rules.
+    exclude_missing : bool, optional
+        Whether to exclude columns not in dataframe, by default True.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with reordered columns and excluded columns removed.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from socialmapper.export.base import DataPrepConfig
+    >>> df = pd.DataFrame({'b': [1], 'a': [2]})
+    >>> config = DataPrepConfig()
+    >>> result = reorder_columns(df, config)
     """
     # Get columns that exist in both preferred order and dataframe
     existing_preferred = [col for col in config.preferred_column_order if col in df.columns]
@@ -144,15 +222,41 @@ def reorder_columns(
 def deduplicate_records(
     df: pd.DataFrame, config: DataPrepConfig, additional_groupby_cols: list[str] | None = None
 ) -> pd.DataFrame:
-    """Deduplicate records based on grouping columns.
+    """
+    Deduplicate records based on grouping columns.
 
-    Args:
-        df: DataFrame to deduplicate
-        config: Data preparation configuration
-        additional_groupby_cols: Additional columns to group by
+    Removes duplicate rows by grouping on key columns and applying
+    aggregation rules to consolidate multiple records.
 
-    Returns:
-        Deduplicated DataFrame
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame to deduplicate.
+    config : DataPrepConfig
+        Data preparation configuration with deduplication columns and
+        aggregation rules.
+    additional_groupby_cols : list of str, optional
+        Additional columns to include in grouping beyond those in
+        config.
+
+    Returns
+    -------
+    pd.DataFrame
+        Deduplicated DataFrame with aggregated values.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from socialmapper.export.base import DataPrepConfig
+    >>> df = pd.DataFrame({
+    ...     'census_block_group': ['001', '001'],
+    ...     'poi_name': ['Park', 'Park'],
+    ...     'distance': [1.0, 1.5]
+    ... })
+    >>> config = DataPrepConfig()
+    >>> result = deduplicate_records(df, config)
+    >>> len(result)
+    1
     """
     if df.empty:
         return df
@@ -196,18 +300,42 @@ def prepare_census_data(
     travel_mode: str | None = None,
     deduplicate: bool = True,
 ) -> pd.DataFrame:
-    """Prepare census data for export with all common transformations.
+    """
+    Prepare census data for export with all transformations.
 
-    Args:
-        census_data: GeoDataFrame with census data
-        poi_data: POI data dictionary or list
-        config: Data preparation configuration
-        travel_time_minutes: Travel time in minutes
-        travel_mode: Travel mode
-        deduplicate: Whether to deduplicate records
+    Applies a comprehensive pipeline of transformations including GEOID
+    parsing, FIPS formatting, travel metadata addition, deduplication,
+    and column reordering to prepare census data for export.
 
-    Returns:
-        Prepared DataFrame ready for export
+    Parameters
+    ----------
+    census_data : gpd.GeoDataFrame
+        GeoDataFrame with census demographic and geographic data.
+    poi_data : dict or list of dict
+        POI data dictionary or list with location information.
+    config : DataPrepConfig, optional
+        Data preparation configuration. Creates default if None.
+    travel_time_minutes : int, optional
+        Travel time in minutes for accessibility analysis.
+    travel_mode : str, optional
+        Travel mode (e.g., 'walk', 'bike', 'drive').
+    deduplicate : bool, optional
+        Whether to deduplicate records, by default True.
+
+    Returns
+    -------
+    pd.DataFrame
+        Prepared DataFrame ready for export with all transformations
+        applied.
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> census = gpd.GeoDataFrame({'GEOID': ['370630001001']})
+    >>> poi = {'name': 'Park', 'type': 'recreation'}
+    >>> result = prepare_census_data(census, poi)
+    >>> 'census_block_group' in result.columns
+    True
     """
     config = config or DataPrepConfig()
 
