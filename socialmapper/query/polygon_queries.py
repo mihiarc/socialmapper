@@ -6,12 +6,11 @@ using the Overpass API, with support for isochrone geometries and category
 filtering based on the POI categorization system.
 """
 
+import logging
 from typing import Any
 
 import overpy
 from shapely.geometry import MultiPolygon, Polygon
-
-import logging
 
 from ..poi_categorization import (
     POI_CATEGORY_MAPPING,
@@ -34,27 +33,38 @@ COORDINATE_PRECISION = 7
 def _format_coordinate(value: float, precision: int = COORDINATE_PRECISION) -> str:
     """Format a coordinate value with specified precision.
 
-    Args:
-        value: Coordinate value (latitude or longitude)
-        precision: Number of decimal places
+    Parameters
+    ----------
+    value : float
+        Coordinate value (latitude or longitude).
+    precision : int, optional
+        Number of decimal places, by default COORDINATE_PRECISION.
 
-    Returns:
-        Formatted coordinate string
+    Returns
+    -------
+    str
+        Formatted coordinate string.
     """
     return f"{value:.{precision}f}"
 
 
 def _polygon_to_overpass_format(polygon: Polygon) -> str:
-    """Convert a Shapely Polygon to Overpass API polygon format.
+    """Convert a Shapely Polygon to Overpass API format.
 
-    Args:
-        polygon: Shapely Polygon object
+    Parameters
+    ----------
+    polygon : Polygon
+        Shapely Polygon object.
 
-    Returns:
-        Space-separated string of lat/lon pairs
+    Returns
+    -------
+    str
+        Space-separated string of lat/lon pairs.
 
-    Raises:
-        ValueError: If polygon has too many coordinates
+    Raises
+    ------
+    ValueError
+        If polygon has too many coordinates.
     """
     # Get exterior coordinates (excluding the closing coordinate)
     coords = list(polygon.exterior.coords[:-1])
@@ -74,13 +84,17 @@ def _polygon_to_overpass_format(polygon: Polygon) -> str:
 
 
 def _multipolygon_to_overpass_queries(multipolygon: MultiPolygon) -> list[str]:
-    """Convert a MultiPolygon to multiple Overpass polygon queries.
+    """Convert MultiPolygon to multiple Overpass polygon queries.
 
-    Args:
-        multipolygon: Shapely MultiPolygon object
+    Parameters
+    ----------
+    multipolygon : MultiPolygon
+        Shapely MultiPolygon object.
 
-    Returns:
-        List of polygon format strings, one for each polygon
+    Returns
+    -------
+    list of str
+        List of polygon format strings, one for each polygon.
     """
     polygon_strings = []
 
@@ -98,12 +112,16 @@ def _multipolygon_to_overpass_queries(multipolygon: MultiPolygon) -> list[str]:
 def _build_category_tag_filters(categories: list[str] | None = None) -> list[dict[str, str]]:
     """Build tag filters for specified POI categories.
 
-    Args:
-        categories: List of category names from POI_CATEGORY_MAPPING.
-                   If None, includes all categories.
+    Parameters
+    ----------
+    categories : list of str, optional
+        List of category names from POI_CATEGORY_MAPPING.
+        If None, includes all categories, by default None.
 
-    Returns:
-        List of tag filter dictionaries
+    Returns
+    -------
+    list of dict
+        List of tag filter dictionaries.
     """
     tag_filters = []
 
@@ -188,14 +206,19 @@ _OSM_KEY_MAPPINGS = {
 
 
 def _infer_osm_key(value: str, category: str) -> str:
-    """Infer the OSM key for a given value based on category context.
+    """Infer the OSM key for value based on category context.
 
-    Args:
-        value: The OSM tag value
-        category: The POI category
+    Parameters
+    ----------
+    value : str
+        The OSM tag value.
+    category : str
+        The POI category.
 
-    Returns:
-        The inferred OSM key (e.g., 'amenity', 'shop', 'leisure')
+    Returns
+    -------
+    str
+        The inferred OSM key (e.g., 'amenity', 'shop', 'leisure').
     """
     category_mapping = _OSM_KEY_MAPPINGS.get(category, {})
 
@@ -214,19 +237,28 @@ def build_poi_discovery_query(
     timeout: int = DEFAULT_OVERPASS_TIMEOUT,
     additional_tags: dict[str, str] | None = None,
 ) -> str:
-    """Build an Overpass API query for POI discovery within a polygon.
+    """Build Overpass API query for POI discovery in polygon.
 
-    Args:
-        geometry: Shapely Polygon or MultiPolygon defining the search area
-        categories: Optional list of POI categories to filter by
-        timeout: Query timeout in seconds
-        additional_tags: Optional additional OSM tags to filter by
+    Parameters
+    ----------
+    geometry : Polygon or MultiPolygon
+        Shapely Polygon or MultiPolygon defining the search area.
+    categories : list of str, optional
+        Optional list of POI categories to filter by, by default None.
+    timeout : int, optional
+        Query timeout in seconds, by default DEFAULT_OVERPASS_TIMEOUT.
+    additional_tags : dict, optional
+        Optional additional OSM tags to filter by, by default None.
 
-    Returns:
-        Complete Overpass API query string
+    Returns
+    -------
+    str
+        Complete Overpass API query string.
 
-    Raises:
-        ValueError: If geometry is not a Polygon or MultiPolygon
+    Raises
+    ------
+    ValueError
+        If geometry is not a Polygon or MultiPolygon.
     """
     if not isinstance(geometry, Polygon | MultiPolygon):
         raise ValueError(
@@ -277,16 +309,22 @@ def build_poi_discovery_query(
 
 
 def _query_overpass_with_polygon(query: str) -> overpy.Result:
-    """Execute an Overpass API query with simple retry logic.
+    """Execute Overpass API query with simple retry logic.
 
-    Args:
-        query: The Overpass API query string
+    Parameters
+    ----------
+    query : str
+        The Overpass API query string.
 
-    Returns:
-        Query result from overpy
+    Returns
+    -------
+    overpy.Result
+        Query result from overpy.
 
-    Raises:
-        Exception: If query fails after retries
+    Raises
+    ------
+    Exception
+        If query fails after retries.
     """
     import time
 
@@ -316,35 +354,53 @@ def query_pois_in_polygon(
     additional_tags: dict[str, str] | None = None,
     simplify_tolerance: float | None = None,
 ) -> dict[str, Any]:
-    """Query POIs within a polygon boundary using Overpass API.
+    """Query POIs within polygon boundary using Overpass API.
 
-    This function builds and executes an Overpass API query to find POIs
-    within the specified polygon geometry, with optional category filtering.
+    Build and execute an Overpass API query to find POIs within the
+    specified polygon geometry, with optional category filtering.
 
-    Args:
-        geometry: Shapely Polygon or MultiPolygon defining the search area
-        categories: Optional list of POI categories to filter by (from POI_CATEGORY_MAPPING)
-        timeout: Query timeout in seconds (default: 180)
-        additional_tags: Optional additional OSM tags to filter by
-        simplify_tolerance: Optional tolerance for simplifying the geometry before querying
+    Parameters
+    ----------
+    geometry : Polygon or MultiPolygon
+        Shapely Polygon or MultiPolygon defining the search area.
+    categories : list of str, optional
+        Optional list of POI categories to filter by (from
+        POI_CATEGORY_MAPPING), by default None.
+    timeout : int, optional
+        Query timeout in seconds, by default 180.
+    additional_tags : dict, optional
+        Optional additional OSM tags to filter by, by default None.
+    simplify_tolerance : float, optional
+        Optional tolerance for simplifying the geometry before
+        querying, by default None.
 
-    Returns:
+    Returns
+    -------
+    dict
         Dictionary containing:
-            - poi_count: Total number of POIs found
-            - pois: List of POI dictionaries with id, type, lat, lon, tags
-            - query_info: Metadata about the query (geometry area, categories, etc.)
+        - poi_count : int
+            Total number of POIs found.
+        - pois : list of dict
+            List of POI dictionaries with id, type, lat, lon, tags.
+        - query_info : dict
+            Metadata about the query (geometry area, categories).
 
-    Raises:
-        ValueError: If geometry is invalid or too complex
-        Exception: If Overpass API query fails
+    Raises
+    ------
+    ValueError
+        If geometry is invalid or too complex.
+    Exception
+        If Overpass API query fails.
 
-    Example:
-        >>> from shapely.geometry import Polygon
-        >>> # Create a simple square polygon
-        >>> polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
-        >>> # Query restaurants and cafes within the polygon
-        >>> result = query_pois_in_polygon(polygon, categories=["food_and_drink"])
-        >>> print(f"Found {result['poi_count']} POIs")
+    Examples
+    --------
+    >>> from shapely.geometry import Polygon
+    >>> polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    >>> result = query_pois_in_polygon(
+    ...     polygon, categories=["food_and_drink"]
+    ... )
+    >>> print(f"Found {result['poi_count']} POIs")
+    Found 5 POIs
     """
     # Validate and potentially simplify geometry
     if not geometry.is_valid:
@@ -443,21 +499,31 @@ def query_pois_from_isochrone(
 ) -> dict[str, Any]:
     """Query POIs within an isochrone boundary.
 
-    This is a convenience function that extracts the geometry from an
+    Convenience function that extracts the geometry from an
     isochrone GeoDataFrame and queries POIs within it.
 
-    Args:
-        isochrone_gdf: GeoDataFrame containing isochrone geometry
-        categories: Optional list of POI categories to filter by
-        timeout: Query timeout in seconds
-        additional_tags: Optional additional OSM tags to filter by
-        simplify_tolerance: Tolerance for simplifying the geometry (default: 0.001)
+    Parameters
+    ----------
+    isochrone_gdf : gpd.GeoDataFrame
+        GeoDataFrame containing isochrone geometry.
+    categories : list of str, optional
+        Optional list of POI categories to filter by, by default None.
+    timeout : int, optional
+        Query timeout in seconds, by default DEFAULT_OVERPASS_TIMEOUT.
+    additional_tags : dict, optional
+        Optional additional OSM tags to filter by, by default None.
+    simplify_tolerance : float, optional
+        Tolerance for simplifying the geometry, by default 0.001.
 
-    Returns:
-        Dictionary containing POI results
+    Returns
+    -------
+    dict
+        Dictionary containing POI results.
 
-    Raises:
-        ValueError: If isochrone_gdf is invalid or empty
+    Raises
+    ------
+    ValueError
+        If isochrone_gdf is invalid or empty.
     """
     if isochrone_gdf is None or isochrone_gdf.empty:
         raise ValueError("Isochrone GeoDataFrame is empty or None")

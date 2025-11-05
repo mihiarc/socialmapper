@@ -1,30 +1,36 @@
 """Internal reporting utilities for SocialMapper."""
 
-import json
-import logging
 import html
-from typing import Dict, Any, Union
+import logging
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 def create_analysis_report(
-    analysis_data: Dict[str, Any],
+    analysis_data: dict[str, Any],
     format: str,
     template: str,
     include_maps: bool
-) -> Union[str, bytes]:
+) -> str | bytes:
     """Create an analysis report from data.
 
-    Args:
-        analysis_data: Analysis results
-        format: Output format (html or pdf)
-        template: Report template
-        include_maps: Whether to include maps
+    Parameters
+    ----------
+    analysis_data : dict
+        Analysis results.
+    format : str
+        Output format (html or pdf).
+    template : str
+        Report template.
+    include_maps : bool
+        Whether to include maps.
 
-    Returns:
-        HTML string or PDF bytes
+    Returns
+    -------
+    str or bytes
+        HTML string or PDF bytes.
     """
     if format not in ["html", "pdf"]:
         raise ValueError(f"Format must be 'html' or 'pdf', got '{format}'")
@@ -40,12 +46,11 @@ def create_analysis_report(
 
 
 def generate_html_report(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     template: str,
     include_maps: bool
 ) -> str:
     """Generate HTML report content."""
-
     # Extract components
     isochrone = data.get("isochrone")
     census_data = data.get("census_data", {})
@@ -187,7 +192,7 @@ def generate_html_report(
 
     # Census Data Statistics
     if census_data and stats:
-        html_str += f"""
+        html_str += """
     <div class="section">
         <h2>Demographic Statistics</h2>
         <div class="stats-grid">
@@ -319,7 +324,7 @@ def generate_html_report(
     return html_str
 
 
-def calculate_statistics(census_data: Dict[str, Dict]) -> Dict[str, Any]:
+def calculate_statistics(census_data: dict[str, dict]) -> dict[str, Any]:
     """Calculate aggregate statistics from census data."""
     if not census_data:
         return {}

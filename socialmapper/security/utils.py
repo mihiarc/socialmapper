@@ -1,14 +1,14 @@
 """Security utility functions for backward compatibility."""
 
-import os
 import logging
-from typing import Optional
-from .key_manager import SecureKeyManager, KeyStorage
+import os
+
+from .key_manager import KeyStorage, SecureKeyManager
 
 logger = logging.getLogger(__name__)
 
 # Global key manager instance
-_key_manager: Optional[SecureKeyManager] = None
+_key_manager: SecureKeyManager | None = None
 
 
 def get_key_manager() -> SecureKeyManager:
@@ -26,7 +26,7 @@ def get_key_manager() -> SecureKeyManager:
     return _key_manager
 
 
-def get_api_key(key_name: str = "census_api", fallback_env: Optional[str] = None) -> Optional[str]:
+def get_api_key(key_name: str = "census_api", fallback_env: str | None = None) -> str | None:
     """
     Get API key with backward compatibility.
 
@@ -72,7 +72,7 @@ def get_api_key(key_name: str = "census_api", fallback_env: Optional[str] = None
     return key
 
 
-def set_api_key(key_name: str, key_value: str, storage: Optional[KeyStorage] = None) -> bool:
+def set_api_key(key_name: str, key_value: str, storage: KeyStorage | None = None) -> bool:
     """
     Set API key in secure storage.
 
@@ -103,7 +103,7 @@ def set_api_key(key_name: str, key_value: str, storage: Optional[KeyStorage] = N
     return manager.set_key(key_name, key_value, storage)
 
 
-def validate_api_key(key_name: str, key_value: Optional[str] = None) -> bool:
+def validate_api_key(key_name: str, key_value: str | None = None) -> bool:
     """
     Validate API key format.
 

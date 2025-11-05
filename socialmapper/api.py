@@ -6,28 +6,29 @@ more closely by separating concerns, extracting validators, and using helper fun
 
 import json
 import logging
-from typing import Optional, Union, List, Dict, Any, Tuple
-import pandas as pd
-import geopandas as gpd
-from shapely.geometry import shape
-from geopy.distance import geodesic
+from typing import Any
 
-from .validators import validate_location_input, validate_export_format
+import geopandas as gpd
+import pandas as pd
+from geopy.distance import geodesic
+from shapely.geometry import shape
+
 from .helpers import (
-    resolve_coordinates,
     calculate_polygon_area,
     create_circular_geometry,
-    extract_geometry_from_geojson
+    extract_geometry_from_geojson,
+    resolve_coordinates,
 )
+from .validators import validate_export_format, validate_location_input
 
 logger = logging.getLogger(__name__)
 
 
 def create_isochrone(
-    location: Union[str, Tuple[float, float]],
+    location: str | tuple[float, float],
     travel_time: int = 15,
     travel_mode: str = "drive"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a travel-time polygon (isochrone) from a location.
 
@@ -70,9 +71,9 @@ def create_isochrone(
     >>> iso['properties']['travel_mode']
     'drive'
     """
-    from .validators import validate_travel_time, validate_travel_mode
     from .isochrone import create_isochrone_from_poi
     from .isochrone.travel_modes import TravelMode
+    from .validators import validate_travel_mode, validate_travel_time
 
     # Validate parameters
     validate_travel_time(travel_time)
@@ -123,10 +124,10 @@ def create_isochrone(
 
 
 def get_census_blocks(
-    polygon: Optional[Dict] = None,
-    location: Optional[Tuple[float, float]] = None,
+    polygon: dict | None = None,
+    location: tuple[float, float] | None = None,
     radius_km: float = 5
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get census block groups for a geographic area.
 
@@ -191,10 +192,10 @@ def get_census_blocks(
 
 
 def get_census_data(
-    location: Union[Dict, List[str], Tuple[float, float]],
-    variables: List[str],
+    location: dict | list[str] | tuple[float, float],
+    variables: list[str],
     year: int = 2023
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get census demographic data for specified locations.
 
@@ -254,7 +255,7 @@ def get_census_data(
         return data
 
 
-def _resolve_geoids_from_location(location) -> List[str]:
+def _resolve_geoids_from_location(location) -> list[str]:
     """
     Convert location specification to census GEOIDs.
 
@@ -298,12 +299,12 @@ def _resolve_geoids_from_location(location) -> List[str]:
 
 
 def create_map(
-    data: Union[List[Dict], pd.DataFrame, gpd.GeoDataFrame],
+    data: list[dict] | pd.DataFrame | gpd.GeoDataFrame,
     column: str,
-    title: Optional[str] = None,
-    save_path: Optional[str] = None,
+    title: str | None = None,
+    save_path: str | None = None,
     export_format: str = "png"
-) -> Optional[Union[bytes, Dict]]:
+) -> bytes | dict | None:
     """
     Create a choropleth map visualization.
 
@@ -436,8 +437,8 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
 def _create_image_map(
     gdf: gpd.GeoDataFrame,
     column: str,
-    title: Optional[str],
-    save_path: Optional[str],
+    title: str | None,
+    save_path: str | None,
     export_format: str
 ):
     """
@@ -470,7 +471,7 @@ def _create_image_map(
     )
 
 
-def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
+def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: str | None):
     """
     Export GeoDataFrame to GeoJSON format.
 
@@ -489,15 +490,16 @@ def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
         GeoJSON dict if save_path is None, otherwise None.
     """
     if save_path:
-        from .io.writers import write_geojson
         from pathlib import Path
+
+        from .io.writers import write_geojson
         write_geojson(gdf, Path(save_path))
         return None
     else:
         return json.loads(gdf.to_json())
 
 
-def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
+def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: str | None):
     """
     Export GeoDataFrame to ESRI Shapefile.
 
@@ -530,16 +532,15 @@ def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: Optional[str]):
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     gdf.to_file(output_path, driver='ESRI Shapefile')
-    return None
 
 
 def get_poi(
-    location: Union[str, Tuple[float, float]],
-    categories: Optional[List[str]] = None,
-    travel_time: Optional[int] = None,
+    location: str | tuple[float, float],
+    categories: list[str] | None = None,
+    travel_time: int | None = None,
     limit: int = 100,
     validate_coords: bool = True
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get points of interest near a location.
 
@@ -593,8 +594,8 @@ def get_poi(
     >>> pois[0]['distance_km']
     0.542
     """
-    from .validators import validate_travel_time
     from ._osm import query_pois
+    from .validators import validate_travel_time
 
     # Validate travel time if provided
     if travel_time is not None:
@@ -631,7 +632,7 @@ def get_poi(
     return pois[:limit]
 
 
-def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int]):
+def _create_search_area(coords: tuple[float, float], travel_time: int | None):
     """
     Generate geographic search boundary.
 
@@ -660,7 +661,7 @@ def _create_search_area(coords: Tuple[float, float], travel_time: Optional[int])
         return create_circular_geometry(coords, DEFAULT_SEARCH_RADIUS_KM)
 
 
-def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _validate_and_filter_pois(pois: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Validate and filter POI data.
 
@@ -707,8 +708,8 @@ def _validate_and_filter_pois(pois: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
 
 def _calculate_poi_distances(
-    pois: List[Dict[str, Any]],
-    origin: Tuple[float, float],
+    pois: list[dict[str, Any]],
+    origin: tuple[float, float],
     validate_coords: bool
 ):
     """
@@ -744,12 +745,12 @@ def _calculate_poi_distances(
 
 
 def analyze_multiple_pois(
-    locations: List[Union[str, Tuple[float, float]]],
+    locations: list[str | tuple[float, float]],
     travel_time: int = 15,
     travel_mode: str = "drive",
-    variables: List[str] = None,
+    variables: list[str] = None,
     compare: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Analyze multiple locations and optionally compare them.
 
@@ -850,7 +851,7 @@ def analyze_multiple_pois(
     return results
 
 
-def _create_comparison_analysis(locations: List[Dict], variables: List[str]) -> Dict:
+def _create_comparison_analysis(locations: list[dict], variables: list[str]) -> dict:
     """
     Generate comparative metrics across multiple locations.
 
@@ -897,7 +898,7 @@ def import_poi_csv(
     lat_field: str = "latitude",
     lon_field: str = "longitude",
     type_field: str = "type"
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Import points of interest from a CSV file.
 
@@ -931,11 +932,11 @@ def import_poi_csv(
 
 
 def generate_report(
-    analysis_data: Dict[str, Any],
+    analysis_data: dict[str, Any],
     format: str = "html",
     template: str = "default",
     include_maps: bool = True
-) -> Union[str, bytes]:
+) -> str | bytes:
     """
     Generate a formatted report from analysis results.
 
@@ -965,8 +966,8 @@ def generate_report(
     ...     "census_data": census
     ... })
     """
-    from .validators import validate_report_format
     from ._reporting import create_analysis_report
+    from .validators import validate_report_format
 
     # Validate format
     validate_report_format(format)

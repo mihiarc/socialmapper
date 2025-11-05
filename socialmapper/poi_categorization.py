@@ -420,19 +420,25 @@ OSM_KEY_PRIORITY = [
 def categorize_poi(poi_tags: dict[str, Any]) -> str:
     """Categorize a POI based on its OSM tags.
 
-    Args:
-        poi_tags: Dictionary of OSM tags for the POI
+    Parameters
+    ----------
+    poi_tags : dict
+        Dictionary of OSM tags for the POI.
 
-    Returns:
-        Category string (e.g., "food_and_drink", "shopping") or "other" if no match
+    Returns
+    -------
+    str
+        Category string (e.g., "food_and_drink", "shopping") or
+        "other" if no match.
 
-    Example:
-        >>> categorize_poi({"amenity": "restaurant"})
-        'food_and_drink'
-        >>> categorize_poi({"shop": "supermarket"})
-        'shopping'
-        >>> categorize_poi({"unknown": "value"})
-        'other'
+    Examples
+    --------
+    >>> categorize_poi({"amenity": "restaurant"})
+    'food_and_drink'
+    >>> categorize_poi({"shop": "supermarket"})
+    'shopping'
+    >>> categorize_poi({"unknown": "value"})
+    'other'
     """
     if not poi_tags or not isinstance(poi_tags, dict):
         return "other"
@@ -469,21 +475,27 @@ def categorize_poi(poi_tags: dict[str, Any]) -> str:
 def organize_pois_by_category(pois: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     """Organize a list of POIs by their categories.
 
-    Args:
-        pois: List of POI dictionaries, each containing a 'tags' field
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries, each containing a 'tags' field.
 
-    Returns:
-        Dictionary mapping category names to lists of POIs in that category
+    Returns
+    -------
+    dict
+        Dictionary mapping category names to lists of POIs in that
+        category.
 
-    Example:
-        >>> pois = [
-        ...     {"id": 1, "tags": {"amenity": "restaurant"}},
-        ...     {"id": 2, "tags": {"shop": "supermarket"}},
-        ...     {"id": 3, "tags": {"amenity": "hospital"}},
-        ... ]
-        >>> result = organize_pois_by_category(pois)
-        >>> list(result.keys())
-        ['food_and_drink', 'shopping', 'healthcare']
+    Examples
+    --------
+    >>> pois = [
+    ...     {"id": 1, "tags": {"amenity": "restaurant"}},
+    ...     {"id": 2, "tags": {"shop": "supermarket"}},
+    ...     {"id": 3, "tags": {"amenity": "hospital"}},
+    ... ]
+    >>> result = organize_pois_by_category(pois)
+    >>> list(result.keys())
+    ['food_and_drink', 'shopping', 'healthcare']
     """
     categorized_pois: dict[str, list[dict[str, Any]]] = {}
 
@@ -506,7 +518,8 @@ def organize_pois_by_category(pois: list[dict[str, Any]]) -> dict[str, list[dict
 def get_poi_category_info() -> dict[str, Any]:
     """Get information about available POI categories.
 
-    Returns:
+    Returns
+    -------
         Dictionary containing category mapping and statistics
     """
     info = {
@@ -527,11 +540,16 @@ def get_poi_category_info() -> dict[str, Any]:
 def is_valid_category(category: str) -> bool:
     """Check if a category name is valid.
 
-    Args:
-        category: Category name to validate
+    Parameters
+    ----------
+    category : str
+        Category name to validate.
 
-    Returns:
-        True if the category exists in POI_CATEGORY_MAPPING, False otherwise
+    Returns
+    -------
+    bool
+        True if the category exists in POI_CATEGORY_MAPPING,
+        False otherwise.
     """
     return category in POI_CATEGORY_MAPPING
 
@@ -539,11 +557,16 @@ def is_valid_category(category: str) -> bool:
 def get_category_values(category: str) -> list[str] | None:
     """Get all OSM tag values for a specific category.
 
-    Args:
-        category: Category name
+    Parameters
+    ----------
+    category : str
+        Category name.
 
-    Returns:
-        List of OSM tag values for the category, or None if category is invalid
+    Returns
+    -------
+    list of str or None
+        List of OSM tag values for the category, or None if category
+        is invalid.
     """
     if not is_valid_category(category):
         return None
@@ -554,12 +577,17 @@ def get_category_values(category: str) -> list[str] | None:
 def add_category_value(category: str, value: str) -> bool:
     """Add a new value to an existing category (for extensibility).
 
-    Args:
-        category: Category name
-        value: OSM tag value to add
+    Parameters
+    ----------
+    category : str
+        Category name.
+    value : str
+        OSM tag value to add.
 
-    Returns:
-        True if successfully added, False if category doesn't exist
+    Returns
+    -------
+    bool
+        True if successfully added, False if category doesn't exist.
     """
     if not is_valid_category(category):
         return False
@@ -573,12 +601,17 @@ def add_category_value(category: str, value: str) -> bool:
 def create_custom_category(category_name: str, values: list[str]) -> bool:
     """Create a new custom category (for extensibility).
 
-    Args:
-        category_name: Name for the new category
-        values: List of OSM tag values for the category
+    Parameters
+    ----------
+    category_name : str
+        Name for the new category.
+    values : list of str
+        List of OSM tag values for the category.
 
-    Returns:
-        True if successfully created, False if category already exists
+    Returns
+    -------
+    bool
+        True if successfully created, False if category already exists.
     """
     if category_name in POI_CATEGORY_MAPPING:
         return False

@@ -88,13 +88,18 @@ def get_highway_speeds(mode: TravelMode) -> dict[str, float]:
     """Get highway-type-specific speeds for OSMnx routing.
 
     These speeds are used by OSMnx's add_edge_speeds function to assign
-    speeds to edges based on their highway type when maxspeed data is missing.
+    speeds to edges based on their highway type when maxspeed data
+    is missing.
 
-    Args:
-        mode: Travel mode (walk, bike, or drive)
+    Parameters
+    ----------
+    mode : TravelMode
+        Travel mode (walk, bike, or drive).
 
-    Returns:
-        Dictionary mapping highway types to speeds in km/h
+    Returns
+    -------
+    dict
+        Dictionary mapping highway types to speeds in km/h.
     """
     if mode == TravelMode.WALK:
         # Walking speeds for different path types

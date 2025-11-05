@@ -1,14 +1,13 @@
 """Internal geocoding utilities for SocialMapper."""
 
-import requests
-from typing import Optional, Tuple, Dict
 import logging
-from time import sleep
+
+import requests
 
 logger = logging.getLogger(__name__)
 
 
-def geocode_location(address: str) -> Optional[Tuple[float, float]]:
+def geocode_location(address: str) -> tuple[float, float] | None:
     """
     Geocode an address string to coordinates.
 
@@ -65,11 +64,11 @@ def geocode_location(address: str) -> Optional[Tuple[float, float]]:
     headers = {
         "User-Agent": "SocialMapper/2.0 (https://github.com/socialmapper)"
     }
-    
+
     try:
         response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
-        
+
         data = response.json()
         if data:
             result = data[0]
@@ -77,15 +76,15 @@ def geocode_location(address: str) -> Optional[Tuple[float, float]]:
             lon = float(result["lon"])
             logger.debug(f"Geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
-            
+
     except Exception as e:
         logger.warning(f"Nominatim geocoding failed for '{address}': {e}")
-    
+
     # Fallback to Census geocoder
     return geocode_with_census(address)
 
 
-def geocode_with_census(address: str) -> Optional[Tuple[float, float]]:
+def geocode_with_census(address: str) -> tuple[float, float] | None:
     """
     Geocode using US Census geocoder as fallback.
 
@@ -126,11 +125,11 @@ def geocode_with_census(address: str) -> Optional[Tuple[float, float]]:
         "benchmark": "Public_AR_Current",
         "format": "json"
     }
-    
+
     try:
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
-        
+
         data = response.json()
         if data.get("result") and data["result"].get("addressMatches"):
             match = data["result"]["addressMatches"][0]
@@ -139,14 +138,14 @@ def geocode_with_census(address: str) -> Optional[Tuple[float, float]]:
             lon = coords["x"]
             logger.debug(f"Census geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
-            
+
     except Exception as e:
         logger.error(f"Census geocoding failed for '{address}': {e}")
-    
+
     return None
 
 
-def get_census_geography(lat: float, lon: float) -> Optional[Dict[str, str]]:
+def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     """
     Get census geographic identifiers for a point.
 
@@ -196,7 +195,7 @@ def get_census_geography(lat: float, lon: float) -> Optional[Dict[str, str]]:
         "layers": "2020 Census Blocks",
         "format": "json"
     }
-    
+
     try:
         response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()

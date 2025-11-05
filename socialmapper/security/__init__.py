@@ -1,5 +1,5 @@
 """Security module for SocialMapper."""
 
-from .key_manager import SecureKeyManager, KeyStorage
+from .key_manager import KeyStorage, SecureKeyManager
 
-__all__ = ["SecureKeyManager", "KeyStorage"]
+__all__ = ["KeyStorage", "SecureKeyManager"]

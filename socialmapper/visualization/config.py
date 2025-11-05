@@ -24,6 +24,7 @@ DEFAULT_LEGEND_FMT = "{:.0f}"
 # These will raise helpful errors if used
 class ColorScheme:
     """DEPRECATED: Pass colormap names directly instead of using this enum."""
+
     def __init__(self):
         raise NotImplementedError(
             "ColorScheme enum has been removed. "
@@ -32,6 +33,7 @@ class ColorScheme:
 
 class ClassificationScheme:
     """DEPRECATED: Pass scheme names directly instead of using this enum."""
+
     def __init__(self):
         raise NotImplementedError(
             "ClassificationScheme enum has been removed. "
@@ -40,6 +42,7 @@ class ClassificationScheme:
 
 class MapConfig:
     """DEPRECATED: Pass parameters directly to ChoroplethMap instead."""
+
     def __init__(self):
         raise NotImplementedError(
             "MapConfig has been removed. "
@@ -48,6 +51,7 @@ class MapConfig:
 
 class LegendConfig:
     """DEPRECATED: Pass legend parameters directly instead."""
+
     def __init__(self):
         raise NotImplementedError(
             "LegendConfig has been removed. "

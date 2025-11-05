@@ -11,6 +11,8 @@ Key Features:
 - Performance monitoring and benchmarking
 """
 
+# Setup logging
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -22,9 +24,6 @@ import numpy as np
 import osmnx as ox
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
-
-# Setup logging
-import logging
 
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
@@ -51,9 +50,12 @@ class IntelligentPOIClusterer:
     def __init__(self, max_cluster_radius_km: float = 15.0, min_cluster_size: int = 2):
         """Initialize the intelligent clusterer.
 
-        Args:
-            max_cluster_radius_km: Maximum radius for clustering in kilometers
-            min_cluster_size: Minimum number of POIs to form a cluster
+        Parameters
+        ----------
+        max_cluster_radius_km : float, optional
+            Maximum radius for clustering in kilometers, by default 15.0.
+        min_cluster_size : int, optional
+            Minimum number of POIs to form a cluster, by default 2.
         """
         self.max_cluster_radius_km = max_cluster_radius_km
         self.min_cluster_size = min_cluster_size
@@ -62,12 +64,18 @@ class IntelligentPOIClusterer:
     def cluster_pois(self, pois: list[dict], travel_time_minutes: int = 15) -> list[list[dict]]:
         """Cluster POIs using DBSCAN with geographic distance.
 
-        Args:
-            pois: List of POI dictionaries with 'lat' and 'lon' keys
-            travel_time_minutes: Travel time limit to adjust clustering parameters
+        Parameters
+        ----------
+        pois : list of dict
+            List of POI dictionaries with 'lat' and 'lon' keys.
+        travel_time_minutes : int, optional
+            Travel time limit to adjust clustering parameters,
+            by default 15.
 
-        Returns:
-            List of POI clusters (each cluster is a list of POIs)
+        Returns
+        -------
+        list of list of dict
+            List of POI clusters (each cluster is a list of POIs).
         """
         start_time = time.time()
 
@@ -206,12 +214,17 @@ class OptimizedPOICluster:
     ) -> tuple[float, float, float, float]:
         """Get optimized bounding box for network download.
 
-        Args:
-            travel_time_minutes: Travel time limit in minutes
-            buffer_km: Base buffer in kilometers
+        Parameters
+        ----------
+        travel_time_minutes : int
+            Travel time limit in minutes.
+        buffer_km : float, optional
+            Base buffer in kilometers, by default 2.0.
 
-        Returns:
-            Bounding box tuple (min_lat, min_lon, max_lat, max_lon)
+        Returns
+        -------
+        tuple of (float, float, float, float)
+            Bounding box tuple (min_lat, min_lon, max_lat, max_lon).
         """
         min_lat, min_lon, max_lat, max_lon = self.bbox
 
@@ -273,14 +286,21 @@ def create_optimized_clusters(
 ) -> list[OptimizedPOICluster]:
     """Create optimized POI clusters using intelligent spatial algorithms.
 
-    Args:
-        pois: List of POI dictionaries with 'lat' and 'lon' keys
-        travel_time_minutes: Travel time limit for isochrone generation
-        max_cluster_radius_km: Maximum clustering radius in kilometers
-        min_cluster_size: Minimum POIs per cluster
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries with 'lat' and 'lon' keys.
+    travel_time_minutes : int, optional
+        Travel time limit for isochrone generation, by default 15.
+    max_cluster_radius_km : float, optional
+        Maximum clustering radius in kilometers, by default 15.0.
+    min_cluster_size : int, optional
+        Minimum POIs per cluster, by default 2.
 
-    Returns:
-        List of OptimizedPOICluster objects
+    Returns
+    -------
+    list of OptimizedPOICluster
+        List of OptimizedPOICluster objects.
     """
     if not pois:
         return []
@@ -309,14 +329,21 @@ def download_network_for_cluster(
 ) -> bool:
     """Download and prepare road network for an optimized cluster.
 
-    Args:
-        cluster: OptimizedPOICluster to download network for
-        travel_time_minutes: Travel time limit in minutes
-        network_buffer_km: Additional buffer around cluster
-        travel_mode: Mode of travel (walk, bike, drive)
+    Parameters
+    ----------
+    cluster : OptimizedPOICluster
+        OptimizedPOICluster to download network for.
+    travel_time_minutes : int
+        Travel time limit in minutes.
+    network_buffer_km : float, optional
+        Additional buffer around cluster, by default 2.0.
+    travel_mode : TravelMode, optional
+        Mode of travel (walk, bike, drive), by default TravelMode.DRIVE.
 
-    Returns:
-        True if successful, False otherwise
+    Returns
+    -------
+    bool
+        True if successful, False otherwise.
     """
     try:
         # Get network type, default speed, and highway speeds for travel mode
@@ -409,15 +436,23 @@ def create_isochrone_from_poi_with_network(
 ) -> gpd.GeoDataFrame | None:
     """Create isochrone for a POI using pre-downloaded network.
 
-    Args:
-        poi: POI dictionary with 'lat' and 'lon'
-        network: Pre-downloaded road network
-        network_crs: CRS of the network
-        travel_time_minutes: Travel time limit in minutes
-        travel_mode: Mode of travel (walk, bike, drive)
+    Parameters
+    ----------
+    poi : dict
+        POI dictionary with 'lat' and 'lon'.
+    network : nx.MultiDiGraph
+        Pre-downloaded road network.
+    network_crs : str
+        CRS of the network.
+    travel_time_minutes : int
+        Travel time limit in minutes.
+    travel_mode : TravelMode, optional
+        Mode of travel (walk, bike, drive), by default TravelMode.DRIVE.
 
-    Returns:
-        GeoDataFrame with isochrone or None if failed
+    Returns
+    -------
+    gpd.GeoDataFrame or None
+        GeoDataFrame with isochrone or None if failed.
     """
     try:
         # Import validation utilities
@@ -474,7 +509,7 @@ def create_isochrone_from_poi_with_network(
             cutoff=travel_time_minutes * 60,  # seconds
             weight="travel_time"
         )
-        
+
         # Calculate actual distances along shortest paths
         distances_m = []
         for target_node in paths_by_time.keys():
@@ -487,7 +522,7 @@ def create_isochrone_from_poi_with_network(
                         target_node,
                         weight="travel_time"
                     )
-                    
+
                     # Sum edge lengths along the path
                     total_distance = 0.0
                     for i in range(len(path) - 1):
@@ -501,24 +536,24 @@ def create_isochrone_from_poi_with_network(
                                     e.get("length", 0) for e in edge_data.values()
                                 )
                                 total_distance += min_length
-                    
+
                     if total_distance > 0:
                         distances_m.append(total_distance)
                 except (nx.NetworkXNoPath, KeyError):
                     # Skip nodes that can't be reached or have missing data
                     continue
-        
+
         # Calculate distance statistics
         if distances_m:
             min_distance_m = min(distances_m)
             max_distance_m = max(distances_m)
             avg_distance_m = sum(distances_m) / len(distances_m)
-            
+
             # Convert to kilometers
             min_distance_km = min_distance_m / 1000.0
             max_distance_km = max_distance_m / 1000.0
             avg_distance_km = avg_distance_m / 1000.0
-            
+
             # Calculate median and standard deviation
             import numpy as np
             median_distance_km = np.median(distances_m) / 1000.0
@@ -556,7 +591,7 @@ def create_isochrone_from_poi_with_network(
         )
         isochrone_gdf["travel_time_minutes"] = travel_time_minutes
         isochrone_gdf["travel_mode"] = travel_mode.value
-        
+
         # Add distance statistics
         isochrone_gdf["min_distance_km"] = min_distance_km
         isochrone_gdf["max_distance_km"] = max_distance_km
@@ -565,7 +600,7 @@ def create_isochrone_from_poi_with_network(
         isochrone_gdf["std_dev_distance_km"] = std_dev_km
         isochrone_gdf["reachable_nodes"] = len(subgraph.nodes)
         isochrone_gdf["analyzed_paths"] = len(distances_m)
-        
+
         # Log distance statistics for debugging
         logger.info(
             f"Distance stats for {poi.get('id', 'unknown')} at {travel_time_minutes} min: "
@@ -585,13 +620,19 @@ def benchmark_clustering_performance(
 ) -> dict[str, Any]:
     """Benchmark clustering performance and provide optimization recommendations.
 
-    Args:
-        pois: List of POI dictionaries
-        travel_time_minutes: Travel time limit
-        max_cluster_radius_km: Maximum clustering radius
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries.
+    travel_time_minutes : int, optional
+        Travel time limit, by default 15.
+    max_cluster_radius_km : float, optional
+        Maximum clustering radius, by default 15.0.
 
-    Returns:
-        Dictionary with performance metrics and recommendations
+    Returns
+    -------
+    dict
+        Dictionary with performance metrics and recommendations.
     """
     start_time = time.time()
 

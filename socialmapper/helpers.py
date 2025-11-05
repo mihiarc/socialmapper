@@ -5,13 +5,14 @@ across the SocialMapper API, including coordinate resolution, geometry
 calculations, and data format conversions.
 """
 
-from typing import Tuple, Union, Dict, Any
+from typing import Any
+
+import pyproj
 from shapely.geometry import Point, shape
 from shapely.ops import transform
-import pyproj
 
 
-def resolve_coordinates(location: Union[str, Tuple[float, float]]) -> Tuple[Tuple[float, float], str]:
+def resolve_coordinates(location: str | tuple[float, float]) -> tuple[tuple[float, float], str]:
     """
     Resolve location input to coordinates and name.
 
@@ -50,9 +51,8 @@ def resolve_coordinates(location: Union[str, Tuple[float, float]]) -> Tuple[Tupl
     '45.5152, -122.6784'
     """
     from ._geocoding import geocode_location
-    from .validators import validate_coordinates
-
     from .exceptions import ValidationError
+    from .validators import validate_coordinates
 
     if isinstance(location, str):
         coords = geocode_location(location)
@@ -107,7 +107,7 @@ def calculate_polygon_area(polygon) -> float:
     return area_sq_m / 1_000_000
 
 
-def create_circular_geometry(location: Tuple[float, float], radius_km: float):
+def create_circular_geometry(location: tuple[float, float], radius_km: float):
     """
     Create circular polygon from center point and radius.
 
@@ -147,7 +147,7 @@ def create_circular_geometry(location: Tuple[float, float], radius_km: float):
     return transform(project_to_wgs84, buffer_mercator)
 
 
-def extract_geometry_from_geojson(polygon: Dict) -> Any:
+def extract_geometry_from_geojson(polygon: dict) -> Any:
     """
     Extract Shapely geometry from GeoJSON structure.
 

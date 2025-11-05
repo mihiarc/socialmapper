@@ -18,17 +18,16 @@ import logging
 import multiprocessing as mp
 import time
 from collections.abc import Callable
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 
+import diskcache as dc
 import geopandas as gpd
 import psutil
 
 from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
 from ..progress import get_progress_bar
-import diskcache as dc
-
 from .cache import download_and_cache_network, get_cache, get_cache_stats
 from .clustering import (
     OptimizedPOICluster,
@@ -47,18 +46,23 @@ def _generate_cluster_isochrones_worker(
 ) -> list[gpd.GeoDataFrame]:
     """Worker function for ProcessPoolExecutor to generate isochrones.
 
-    This is a module-level function that can be pickled for multiprocessing.
+    This is a module-level function that can be pickled for
+    multiprocessing.
 
-    Args:
-        cluster: The cluster to process
-        travel_time_minutes: Travel time limit
-        travel_mode: Mode of travel
+    Parameters
+    ----------
+    cluster : OptimizedPOICluster
+        The cluster to process.
+    travel_time_minutes : int
+        Travel time limit.
+    travel_mode : TravelMode, optional
+        Mode of travel, by default TravelMode.DRIVE.
 
-    Returns:
-        List of isochrone GeoDataFrames
+    Returns
+    -------
+    list of gpd.GeoDataFrame
+        List of isochrone GeoDataFrames.
     """
-    import copy
-
     isochrones = []
 
     if cluster.network is None:
@@ -130,10 +134,15 @@ class ConcurrentIsochroneProcessor:
     ):
         """Initialize the concurrent processor.
 
-        Args:
-            max_network_workers: Maximum concurrent network downloads
-            max_isochrone_workers: Maximum concurrent isochrone calculations (defaults to CPU count)
-            cache: Network cache instance
+        Parameters
+        ----------
+        max_network_workers : int, optional
+            Maximum concurrent network downloads, by default 8.
+        max_isochrone_workers : int or None, optional
+            Maximum concurrent isochrone calculations (defaults to CPU
+            count), by default None.
+        cache : dc.Cache or None, optional
+            Network cache instance, by default None.
         """
         self.max_network_workers = max_network_workers
         self.max_isochrone_workers = max_isochrone_workers or mp.cpu_count()
@@ -205,14 +214,21 @@ class ConcurrentIsochroneProcessor:
     ) -> tuple[str, Any | None]:
         """Download network for a cluster (thread-safe) with retry logic.
 
-        Args:
-            cluster: The cluster to download network for
-            travel_time_minutes: Travel time limit
-            travel_mode: Mode of travel
-            retry_count: Current retry attempt number
+        Parameters
+        ----------
+        cluster : OptimizedPOICluster
+            The cluster to download network for.
+        travel_time_minutes : int
+            Travel time limit.
+        travel_mode : TravelMode, optional
+            Mode of travel, by default TravelMode.DRIVE.
+        retry_count : int, optional
+            Current retry attempt number, by default 0.
 
-        Returns:
-            Tuple of (cluster_id, network graph or None)
+        Returns
+        -------
+        tuple of (str, Any or None)
+            Tuple of (cluster_id, network graph or None).
         """
         try:
             # Get bbox with potentially increased buffer on retry
@@ -341,16 +357,26 @@ class ConcurrentIsochroneProcessor:
     ) -> list[gpd.GeoDataFrame]:
         """Process POIs concurrently to generate isochrones.
 
-        Args:
-            pois: List of POI dictionaries
-            travel_time_minutes: Travel time limit for isochrones
-            max_cluster_radius_km: Maximum clustering radius
-            min_cluster_size: Minimum POIs per cluster
-            progress_callback: Optional callback for progress updates
-            travel_mode: Mode of travel (walk, bike, drive)
+        Parameters
+        ----------
+        pois : list of dict
+            List of POI dictionaries.
+        travel_time_minutes : int, optional
+            Travel time limit for isochrones, by default 15.
+        max_cluster_radius_km : float, optional
+            Maximum clustering radius, by default 15.0.
+        min_cluster_size : int, optional
+            Minimum POIs per cluster, by default 2.
+        progress_callback : Callable or None, optional
+            Optional callback for progress updates, by default None.
+        travel_mode : TravelMode, optional
+            Mode of travel (walk, bike, drive), by default
+            TravelMode.DRIVE.
 
-        Returns:
-            List of isochrone GeoDataFrames
+        Returns
+        -------
+        list of gpd.GeoDataFrame
+            List of isochrone GeoDataFrames.
         """
         start_time = time.time()
 
@@ -534,19 +560,32 @@ def process_isochrones_concurrent(
 ) -> list[gpd.GeoDataFrame]:
     """Process isochrones concurrently with optimized settings.
 
-    Args:
-        pois: List of POI dictionaries
-        travel_time_minutes: Travel time limit
-        max_cluster_radius_km: Maximum clustering radius
-        min_cluster_size: Minimum POIs per cluster
-        max_network_workers: Maximum concurrent network downloads
-        max_isochrone_workers: Maximum concurrent isochrone calculations
-        cache: Network cache instance
-        progress_callback: Optional progress callback
-        travel_mode: Mode of travel (walk, bike, drive)
+    Parameters
+    ----------
+    pois : list of dict
+        List of POI dictionaries.
+    travel_time_minutes : int, optional
+        Travel time limit, by default 15.
+    max_cluster_radius_km : float, optional
+        Maximum clustering radius, by default 15.0.
+    min_cluster_size : int, optional
+        Minimum POIs per cluster, by default 2.
+    max_network_workers : int, optional
+        Maximum concurrent network downloads, by default 8.
+    max_isochrone_workers : int or None, optional
+        Maximum concurrent isochrone calculations, by default None.
+    cache : dc.Cache or None, optional
+        Network cache instance, by default None.
+    progress_callback : Callable or None, optional
+        Optional progress callback, by default None.
+    travel_mode : TravelMode, optional
+        Mode of travel (walk, bike, drive), by default
+        TravelMode.DRIVE.
 
-    Returns:
-        List of isochrone GeoDataFrames
+    Returns
+    -------
+    list of gpd.GeoDataFrame
+        List of isochrone GeoDataFrames.
     """
     processor = ConcurrentIsochroneProcessor(
         max_network_workers=max_network_workers,

@@ -1,10 +1,15 @@
 """Input validation for SocialMapper API functions."""
 
-from typing import Tuple, Union, List, Any
 from .constants import (
-    MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE,
-    MIN_TRAVEL_TIME, MAX_TRAVEL_TIME, VALID_TRAVEL_MODES,
-    VALID_EXPORT_FORMATS, VALID_REPORT_FORMATS
+    MAX_LATITUDE,
+    MAX_LONGITUDE,
+    MAX_TRAVEL_TIME,
+    MIN_LATITUDE,
+    MIN_LONGITUDE,
+    MIN_TRAVEL_TIME,
+    VALID_EXPORT_FORMATS,
+    VALID_REPORT_FORMATS,
+    VALID_TRAVEL_MODES,
 )
 
 
@@ -12,18 +17,25 @@ class InputValidationError(Exception):
     """Exception raised when input validation fails."""
 
 
-def _validate_coordinates_strict(lat: Union[str, int, float], lon: Union[str, int, float]) -> Tuple[float, float]:
+def _validate_coordinates_strict(lat: str | int | float, lon: str | int | float) -> tuple[float, float]:
     """Validate coordinate values (raises exception on invalid).
 
-    Args:
-        lat: Latitude value
-        lon: Longitude value
+    Parameters
+    ----------
+    lat : str or int or float
+        Latitude value.
+    lon : str or int or float
+        Longitude value.
 
-    Returns:
-        Tuple of validated (latitude, longitude) as floats
+    Returns
+    -------
+    tuple of (float, float)
+        Tuple of validated (latitude, longitude) as floats.
 
-    Raises:
-        InputValidationError: If coordinates are invalid
+    Raises
+    ------
+    InputValidationError
+        If coordinates are invalid.
     """
     try:
         lat = float(lat)

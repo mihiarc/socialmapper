@@ -9,9 +9,9 @@ from typing import Any
 
 from .exceptions import (
     APIError,
-    ValidationError,
     DataError,
     SocialMapperError,
+    ValidationError,
 )
 
 # Map old exception names to new simple ones
@@ -128,12 +128,17 @@ def tutorial_error_handler(tutorial_name: str = "Tutorial"):
 def safe_import(module_name: str, package: str | None = None) -> Any:
     """Safely import a module with helpful error messages.
 
-    Args:
-        module_name: Name of module to import
-        package: Package name for installation instructions
+    Parameters
+    ----------
+    module_name : str
+        Name of module to import.
+    package : str or None, optional
+        Package name for installation instructions, by default None.
 
-    Returns:
-        Imported module or None if import failed
+    Returns
+    -------
+    Any
+        Imported module or None if import failed.
     """
     try:
         if module_name.startswith("."):
@@ -158,7 +163,8 @@ def safe_import(module_name: str, package: str | None = None) -> Any:
 def check_dependencies() -> bool:
     """Check if all backend tutorial dependencies are available.
 
-    Returns:
+    Returns
+    -------
         True if all dependencies are available
     """
     required = [
@@ -183,11 +189,15 @@ def check_dependencies() -> bool:
 def validate_tutorial_config(config: dict[str, Any]) -> None:
     """Validate tutorial configuration with helpful error messages.
 
-    Args:
-        config: Configuration dictionary to validate
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary to validate.
 
-    Raises:
-        ConfigurationError: If configuration is invalid
+    Raises
+    ------
+    ConfigurationError
+        If configuration is invalid.
     """
     required_fields = ["location", "poi_type", "poi_name"]
     missing = [field for field in required_fields if not config.get(field)]
@@ -219,9 +229,12 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
 def print_tutorial_header(title: str, description: str) -> None:
     """Print a formatted tutorial header.
 
-    Args:
-        title: Tutorial title
-        description: Tutorial description
+    Parameters
+    ----------
+    title : str
+        Tutorial title.
+    description : str
+        Tutorial description.
     """
     print("=" * 60)
     print(f"🗺️  {title}")
@@ -232,8 +245,10 @@ def print_tutorial_header(title: str, description: str) -> None:
 def print_tutorial_section(title: str) -> None:
     """Print a formatted section header.
 
-    Args:
-        title: Section title
+    Parameters
+    ----------
+    title : str
+        Section title.
     """
     print(f"\n{'─' * 40}")
     print(f"📍 {title}")

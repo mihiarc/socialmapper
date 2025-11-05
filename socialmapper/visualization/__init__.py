@@ -5,8 +5,8 @@ Simplified interface - pass parameters directly instead of using config objects.
 
 from .chloropleth import ChoroplethMap, MapType
 from .config import (
-    ColorScheme,  # Deprecated - raises helpful error
     ClassificationScheme,  # Deprecated - raises helpful error
+    ColorScheme,  # Deprecated - raises helpful error
     MapConfig,  # Deprecated - raises helpful error
 )
 
