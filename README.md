@@ -8,6 +8,38 @@
 
 SocialMapper is an open-source Python toolkit for spatial analysis, demographic mapping, and geospatial data processing. It provides comprehensive functionality for understanding community connections, accessibility patterns, and demographic insights.
 
+## 🎯 Why SocialMapper?
+
+**The only Python library that integrates Census demographics, OpenStreetMap POIs, and travel-time analysis in one simple API.**
+
+Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper provides end-to-end accessibility analysis:
+
+| What You Need | With Other Tools | With SocialMapper |
+|---------------|------------------|-------------------|
+| Census data | censusdis or census | ✅ Built-in |
+| POI discovery | overpy + manual queries | ✅ Built-in (338+ categories) |
+| Travel-time areas | OSMnx + custom code | ✅ Built-in (3 modes) |
+| Accessibility metrics | Custom calculations | ✅ Built-in |
+| Visualizations | matplotlib + geopandas | ✅ Built-in |
+| **Total setup** | 15-20 minutes, 4+ libraries | **2 minutes, 1 library** |
+| **Lines of code** | 50-100+ lines | **5-10 lines** |
+
+### Perfect For
+
+- **Transit Equity Analysis** - Identify communities underserved by public resources
+- **Food Desert Research** - Map grocery store accessibility and demographic patterns
+- **Healthcare Access Studies** - Analyze hospital and clinic reachability
+- **Urban Planning** - Quick, defensible accessibility analysis without GIS expertise
+- **Policy Research** - Reproducible workflows with comprehensive documentation
+
+### Key Differentiators
+
+✅ **Integrated Workflow** - Census + OSM + Isochrones in one toolkit (no other library does this)
+✅ **Practitioner-Friendly** - 5 core functions cover 90% of accessibility analysis needs
+✅ **Production-Ready** - 255+ tests, NumPy-style docs, modern Python 3.11+
+✅ **Real-Time Data** - Live OSM queries and latest Census data (2023 ACS)
+✅ **Purpose-Built** - Designed specifically for accessibility and equity analysis
+
 ## 🏗️ Repository Structure
 
 - **🔧 Core Package** (`socialmapper/`) - Python toolkit for spatial analysis
@@ -485,9 +517,51 @@ Here are some examples of community mapping projects you could create:
    )
    ```
 
+## Comparison with Alternatives
+
+### vs. censusdis
+**censusdis** is excellent for Census data access with a Pythonic interface. However, it's Census-only.
+
+**Use SocialMapper when you need:**
+- POI discovery from OpenStreetMap (libraries, hospitals, grocery stores)
+- Travel-time isochrones (walkable/drivable areas)
+- Integrated accessibility analysis (who can reach what)
+
+**Use censusdis when you need:**
+- Deep Census API coverage without spatial analysis
+- Pure demographic data queries
+
+### vs. geosnap
+**geosnap** excels at historical neighborhood analysis and geodemographic clustering.
+
+**Use SocialMapper when you need:**
+- Real-time accessibility analysis with current POI data
+- Simpler API for practitioners (not spatial statistics experts)
+- Production-ready workflows for planning departments
+
+**Use geosnap when you need:**
+- Academic research on neighborhood change over time
+- Advanced spatial clustering and regionalization
+- Geodemographic typologies
+
+### vs. DIY (census + geopandas + OSMnx + overpy)
+**Building your own** stack gives you maximum flexibility.
+
+**Use SocialMapper when you need:**
+- Faster time to results (2 min setup vs. 20+ min)
+- Tested, documented workflows
+- Production-grade reliability (255+ tests)
+- Simplified maintenance (1 dependency vs. 4+)
+
+**Build your own when:**
+- You need custom spatial algorithms
+- You're already deeply familiar with all the tools
+- You have unique requirements SocialMapper doesn't cover
+
 ## Learn More
 
 - 📖 **[Documentation](https://mihiarc.github.io/socialmapper)** - Full documentation and tutorials
+- 📊 **[Competitive Analysis](docs/competitive-analysis.md)** - Detailed comparison with alternatives
 - 🎯 **[Examples](https://github.com/mihiarc/socialmapper/tree/main/examples)** - Working code examples
 - 💬 **[Discussions](https://github.com/mihiarc/socialmapper/discussions)** - Ask questions and share ideas
 - 🐛 **[Issues](https://github.com/mihiarc/socialmapper/issues)** - Report bugs or request features
