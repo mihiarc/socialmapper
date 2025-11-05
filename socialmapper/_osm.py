@@ -195,6 +195,8 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
         "https://overpass.openstreetmap.ru/api/interpreter"
     ]
 
+    last_error = None
+
     for endpoint in endpoints:
         try:
             response = requests.post(
@@ -208,19 +210,42 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
                 elements = data.get("elements", [])
                 logger.info(f"Overpass query returned {len(elements)} elements")
                 return elements
+            elif response.status_code == 429:
+                from .exceptions import RateLimitError
+                logger.warning(f"Overpass endpoint {endpoint} returned rate limit")
+                last_error = RateLimitError("OpenStreetMap Overpass API")
+            elif response.status_code >= 500:
+                from .exceptions import InvalidAPIResponseError
+                logger.warning(f"Overpass endpoint {endpoint} returned server error {response.status_code}")
+                last_error = InvalidAPIResponseError(
+                    "OpenStreetMap Overpass API",
+                    status_code=response.status_code
+                )
             else:
                 logger.warning(f"Overpass endpoint {endpoint} returned status {response.status_code}")
 
         except requests.exceptions.Timeout:
+            from .exceptions import NetworkError
             logger.warning(f"Overpass endpoint {endpoint} timed out")
+            last_error = NetworkError("OpenStreetMap Overpass API", "Request timed out")
+        except requests.exceptions.ConnectionError as e:
+            from .exceptions import NetworkError
+            logger.warning(f"Overpass endpoint {endpoint} connection error: {e}")
+            last_error = NetworkError("OpenStreetMap Overpass API", str(e))
         except Exception as e:
             logger.warning(f"Overpass endpoint {endpoint} failed: {e}")
+            last_error = Exception(str(e))
 
         # Small delay before trying next endpoint
         time.sleep(0.5)
 
+    # All endpoints failed, raise the most helpful error
     logger.error("All Overpass endpoints failed")
-    return []
+    if last_error and isinstance(last_error, Exception):
+        raise last_error
+    else:
+        from .exceptions import APIError
+        raise APIError("All OpenStreetMap Overpass API endpoints failed")
 
 
 def process_poi_results(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:

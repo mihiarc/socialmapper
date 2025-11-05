@@ -50,6 +50,13 @@ from .exceptions import (
     DataProcessingError,
     ExternalAPIError,
     FileSystemError,
+    # Helpful specific exceptions
+    InvalidAPIResponseError,
+    InvalidLocationError,
+    InvalidPOICategoryError,
+    MissingAPIKeyError,
+    NetworkError,
+    RateLimitError,
     SocialMapperError,
     ValidationError,
     VisualizationError,
@@ -86,6 +93,13 @@ __all__ = [
     "APIError",
     "DataError",
     "AnalysisError",
+    # Helpful specific exceptions
+    "MissingAPIKeyError",
+    "InvalidLocationError",
+    "InvalidPOICategoryError",
+    "NetworkError",
+    "RateLimitError",
+    "InvalidAPIResponseError",
     # Legacy aliases
     "ConfigurationError",
     "ExternalAPIError",

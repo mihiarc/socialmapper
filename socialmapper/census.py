@@ -110,9 +110,30 @@ class CensusClient:
 
             return df
 
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                from .exceptions import MissingAPIKeyError
+                raise MissingAPIKeyError("Census")
+            elif e.response.status_code == 429:
+                from .exceptions import RateLimitError
+                raise RateLimitError("Census API")
+            else:
+                from .exceptions import InvalidAPIResponseError
+                raise InvalidAPIResponseError(
+                    "Census API",
+                    status_code=e.response.status_code,
+                    details=str(e)
+                )
+        except requests.exceptions.Timeout:
+            from .exceptions import NetworkError
+            raise NetworkError("Census API", "Request timed out")
+        except requests.exceptions.ConnectionError as e:
+            from .exceptions import NetworkError
+            raise NetworkError("Census API", str(e))
         except Exception as e:
             logger.error(f"Census API error: {e}")
-            return pd.DataFrame()
+            from .exceptions import APIError
+            raise APIError(f"Census API error: {e}")
 
     def _format_geography(self, units: list[str]) -> str:
         """Format geographic units for API query."""

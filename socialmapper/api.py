@@ -702,6 +702,17 @@ def get_poi(
     """
     from ._osm import query_pois
     from .validators import validate_travel_time
+    from .poi_categorization import POI_CATEGORY_MAPPING
+
+    # Validate categories if provided
+    if categories:
+        for category in categories:
+            if category not in POI_CATEGORY_MAPPING:
+                from .exceptions import InvalidPOICategoryError
+                raise InvalidPOICategoryError(
+                    category,
+                    list(POI_CATEGORY_MAPPING.keys())
+                )
 
     # Validate travel time if provided
     if travel_time is not None:

@@ -8,6 +8,13 @@ from socialmapper.exceptions import (
     APIError,
     DataError,
     AnalysisError,
+    # Helpful specific exceptions
+    MissingAPIKeyError,
+    InvalidLocationError,
+    InvalidPOICategoryError,
+    NetworkError,
+    RateLimitError,
+    InvalidAPIResponseError,
     # Legacy aliases
     ConfigurationError,
     ExternalAPIError,
@@ -125,3 +132,122 @@ class TestCatchAll:
         """Test catching AnalysisError with SocialMapperError."""
         with pytest.raises(SocialMapperError):
             raise AnalysisError("Analysis failed")
+
+
+class TestHelpfulExceptions:
+    """Test helpful specific exceptions with guidance."""
+
+    def test_missing_api_key_error(self):
+        """Test MissingAPIKeyError provides helpful guidance."""
+        with pytest.raises(MissingAPIKeyError) as exc_info:
+            raise MissingAPIKeyError("Census")
+
+        error_msg = str(exc_info.value)
+        assert "Census API key not found" in error_msg
+        assert "https://api.census.gov/data/key_signup.html" in error_msg
+        assert "CENSUS_API_KEY" in error_msg
+        assert "socialmapper-keys" in error_msg
+
+    def test_missing_api_key_error_inherits_from_validation_error(self):
+        """Test MissingAPIKeyError inherits from ValidationError."""
+        assert issubclass(MissingAPIKeyError, ValidationError)
+        with pytest.raises(ValidationError):
+            raise MissingAPIKeyError()
+
+    def test_invalid_location_error(self):
+        """Test InvalidLocationError provides helpful suggestions."""
+        with pytest.raises(InvalidLocationError) as exc_info:
+            raise InvalidLocationError("Fake City, XX")
+
+        error_msg = str(exc_info.value)
+        assert "Could not find location: 'Fake City, XX'" in error_msg
+        assert "City, State" in error_msg
+        assert "Portland, OR" in error_msg
+
+    def test_invalid_location_error_with_suggestions(self):
+        """Test InvalidLocationError with custom suggestions."""
+        with pytest.raises(InvalidLocationError) as exc_info:
+            raise InvalidLocationError(
+                "Portlnd",
+                suggestions=["Portland, OR", "Portland, ME"]
+            )
+
+        error_msg = str(exc_info.value)
+        assert "Did you mean one of these?" in error_msg
+        assert "Portland, OR" in error_msg
+        assert "Portland, ME" in error_msg
+
+    def test_invalid_poi_category_error(self):
+        """Test InvalidPOICategoryError lists valid categories."""
+        valid_categories = ["food_and_drink", "shopping", "education"]
+
+        with pytest.raises(InvalidPOICategoryError) as exc_info:
+            raise InvalidPOICategoryError("invalid_cat", valid_categories)
+
+        error_msg = str(exc_info.value)
+        assert "Invalid POI category: 'invalid_cat'" in error_msg
+        assert "food_and_drink" in error_msg
+        assert "shopping" in error_msg
+        assert "education" in error_msg
+        assert "get_poi" in error_msg
+
+    def test_network_error(self):
+        """Test NetworkError provides troubleshooting help."""
+        with pytest.raises(NetworkError) as exc_info:
+            raise NetworkError("Census API", "Connection timeout")
+
+        error_msg = str(exc_info.value)
+        assert "Network error connecting to Census API" in error_msg
+        assert "Connection timeout" in error_msg
+        assert "internet connection" in error_msg
+        assert "Try again" in error_msg
+
+    def test_network_error_inherits_from_api_error(self):
+        """Test NetworkError inherits from APIError."""
+        assert issubclass(NetworkError, APIError)
+        with pytest.raises(APIError):
+            raise NetworkError("Test Service")
+
+    def test_rate_limit_error(self):
+        """Test RateLimitError provides rate limiting guidance."""
+        with pytest.raises(RateLimitError) as exc_info:
+            raise RateLimitError("Census API", retry_after=60)
+
+        error_msg = str(exc_info.value)
+        assert "Rate limit exceeded for Census API" in error_msg
+        assert "Retry after: 60 seconds" in error_msg
+        assert "Add delays between requests" in error_msg
+        assert "caching" in error_msg
+
+    def test_invalid_api_response_error_403(self):
+        """Test InvalidAPIResponseError with 403 status."""
+        with pytest.raises(InvalidAPIResponseError) as exc_info:
+            raise InvalidAPIResponseError("Census API", status_code=403)
+
+        error_msg = str(exc_info.value)
+        assert "Invalid response from Census API (HTTP 403)" in error_msg
+        assert "Invalid or missing API key" in error_msg
+
+    def test_invalid_api_response_error_404(self):
+        """Test InvalidAPIResponseError with 404 status."""
+        with pytest.raises(InvalidAPIResponseError) as exc_info:
+            raise InvalidAPIResponseError(
+                "Census API",
+                status_code=404,
+                details="Resource not found"
+            )
+
+        error_msg = str(exc_info.value)
+        assert "HTTP 404" in error_msg
+        assert "Resource not found" in error_msg
+        assert "Check location or identifier" in error_msg
+
+    def test_invalid_api_response_error_500(self):
+        """Test InvalidAPIResponseError with 500 status."""
+        with pytest.raises(InvalidAPIResponseError) as exc_info:
+            raise InvalidAPIResponseError("Census API", status_code=500)
+
+        error_msg = str(exc_info.value)
+        assert "HTTP 500" in error_msg
+        assert "server error" in error_msg
+        assert "Try again later" in error_msg

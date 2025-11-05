@@ -77,11 +77,33 @@ def geocode_location(address: str) -> tuple[float, float] | None:
             logger.debug(f"Geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
 
+    except requests.exceptions.Timeout:
+        logger.warning(f"Nominatim geocoding timed out for '{address}'")
+        # Try fallback before giving up
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Nominatim network error for '{address}': {e}")
+        # Try fallback before giving up
     except Exception as e:
         logger.warning(f"Nominatim geocoding failed for '{address}': {e}")
+        # Try fallback before giving up
 
     # Fallback to Census geocoder
-    return geocode_with_census(address)
+    result = geocode_with_census(address)
+
+    # If both failed, raise helpful error
+    if result is None:
+        from .exceptions import InvalidLocationError
+        raise InvalidLocationError(
+            address,
+            suggestions=[
+                "Portland, OR",
+                "Seattle, WA",
+                "New York, NY",
+                "Los Angeles, CA"
+            ]
+        )
+
+    return result
 
 
 def geocode_with_census(address: str) -> tuple[float, float] | None:
@@ -230,17 +252,22 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
         )
 
     except requests.Timeout:
-        logger.warning(
-            f"Census Geocoding API request timed out for ({lat}, {lon}). "
-            f"Your internet connection may be slow or the service is experiencing high load. "
-            f"Try again or check your network connection."
+        from .exceptions import NetworkError
+        logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
+        raise NetworkError(
+            "Census Geocoding API",
+            "Request timed out"
         )
     except requests.RequestException as e:
-        logger.warning(
-            f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}. "
-            f"Check your internet connection or try again later."
+        from .exceptions import NetworkError
+        logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
+        raise NetworkError(
+            "Census Geocoding API",
+            str(e)
         )
     except Exception as e:
         logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
+        from .exceptions import DataError
+        raise DataError(f"Failed to get census geography: {e}")
 
     return None

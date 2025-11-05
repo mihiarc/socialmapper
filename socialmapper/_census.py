@@ -334,20 +334,27 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         return result
 
     except requests.Timeout:
+        from .exceptions import NetworkError
         logger.warning(
-            f"Request timeout accessing TIGERweb service for state {state_fips}, county {county_fips}. "
-            f"Your internet connection may be slow or the service is experiencing high load."
+            f"Request timeout accessing TIGERweb service for state {state_fips}, county {county_fips}"
         )
-        return []
+        raise NetworkError(
+            "TIGERweb (Census Geography)",
+            "Request timed out"
+        )
     except requests.RequestException as e:
+        from .exceptions import NetworkError
         logger.warning(
-            f"Network error accessing TIGERweb service for state {state_fips}, county {county_fips}: {e}. "
-            f"Check your internet connection."
+            f"Network error accessing TIGERweb service for state {state_fips}, county {county_fips}: {e}"
         )
-        return []
+        raise NetworkError(
+            "TIGERweb (Census Geography)",
+            str(e)
+        )
     except Exception as e:
         logger.error(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
-        return []
+        from .exceptions import DataError
+        raise DataError(f"Failed to fetch census block groups: {e}")
 
 
 def fetch_census_data(
@@ -486,19 +493,41 @@ def fetch_census_data(
 
                             result[geoid] = geoid_data
 
+                    except requests.HTTPError as e:
+                        if e.response and e.response.status_code == 403:
+                            from .exceptions import MissingAPIKeyError
+                            logger.error(f"Census API authentication failed for GEOID {geoid}")
+                            raise MissingAPIKeyError("Census")
+                        elif e.response and e.response.status_code == 429:
+                            from .exceptions import RateLimitError
+                            logger.warning(f"Census API rate limit exceeded for GEOID {geoid}")
+                            raise RateLimitError("Census API")
+                        else:
+                            from .exceptions import InvalidAPIResponseError
+                            status = e.response.status_code if e.response else None
+                            raise InvalidAPIResponseError(
+                                "Census API",
+                                status_code=status,
+                                details=str(e)
+                            )
                     except requests.Timeout:
-                        logger.warning(
-                            f"Census API request timed out for GEOID {geoid}. "
-                            f"Your internet connection may be slow or the Census API is experiencing high load. "
-                            f"Try again later or check your network connection."
+                        from .exceptions import NetworkError
+                        logger.warning(f"Census API request timed out for GEOID {geoid}")
+                        raise NetworkError(
+                            "Census API",
+                            "Request timed out"
                         )
                     except requests.RequestException as e:
-                        logger.warning(
-                            f"Network error fetching census data for GEOID {geoid}: {e}. "
-                            f"Check your internet connection or Census API status."
+                        from .exceptions import NetworkError
+                        logger.warning(f"Network error fetching census data for GEOID {geoid}: {e}")
+                        raise NetworkError(
+                            "Census API",
+                            str(e)
                         )
                     except Exception as e:
                         logger.warning(f"Failed to fetch census data for {geoid}: {e}")
+                        from .exceptions import DataError
+                        raise DataError(f"Failed to fetch census data: {e}")
 
     logger.info(f"Fetched census data for {len(result)}/{len(geoids)} GEOIDs")
     return result
