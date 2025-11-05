@@ -56,9 +56,30 @@ SocialMapper helps you understand how people connect with important places in th
 - **Calculating Accessibility** - Measure travel distances and identify access patterns
 - **Supporting Multiple Formats** - Export data as CSV, GeoJSON, Parquet, and more
 
-## 🚀 Get Started with SocialMapper
+## 🚀 Try It Now - No Setup Required!
 
-**Example: Total Population Within 15-Minute Walk of Libraries in Fuquay-Varina, NC**
+```python
+# Install and run in under 2 minutes - no API keys needed!
+pip install socialmapper
+
+# Run instant demo analysis
+from socialmapper import demo
+result = demo.quick_start("Portland, OR")
+
+# You just analyzed:
+# ✓ 15-minute walk from downtown Portland
+# ✓ Found 8 libraries within reach
+# ✓ Analyzed 45,000+ people's demographics
+# ✓ No API keys or setup required!
+```
+
+**[📖 2-Minute Quick Start Guide](docs/quick-start.md)** | **[💻 Example Script](examples/quick_start.py)**
+
+*Note: Interactive Jupyter notebook available after installation at `examples/notebooks/quick_start.ipynb`*
+
+### Real-World Example
+
+**Total Population Within 15-Minute Walk of Libraries in Fuquay-Varina, NC**
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
 
@@ -102,23 +123,24 @@ from socialmapper import create_isochrone, get_census_data, create_map
 
 ## Installation
 
-SocialMapper is available on PyPI with flexible installation options:
+### Quick Install (Recommended)
 
-### Standard Installation
 ```bash
-# Install SocialMapper
 pip install socialmapper
 ```
 
+That's it! You can start analyzing immediately with demo mode - no API keys required.
+
+**Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
+
 ### Development Installation
+
 ```bash
 # Clone and install in development mode
 git clone https://github.com/mihiarc/socialmapper.git
 cd socialmapper
 pip install -e ".[dev]"
 ```
-
-**Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
 
 ### Environment Variables
 
@@ -138,9 +160,27 @@ See `env.example` for all available configuration options.
 
 ## Using SocialMapper
 
-SocialMapper provides a simple Python API with 5 core functions for spatial analysis.
+### Quick Start - Demo Mode (No API Key Required)
 
-### Quick Start with Python API
+Start exploring SocialMapper's capabilities instantly with demo mode:
+
+```python
+from socialmapper import demo
+
+# List available demo cities
+demo.list_available_demos()
+
+# Run complete analysis
+result = demo.quick_start("Portland, OR")
+
+# Try specialized analyses
+demo.show_libraries("Chapel Hill, NC")
+demo.show_food_access("Durham, NC")
+```
+
+### Full API - Live Data (Requires Census API Key)
+
+SocialMapper provides 5 core functions for spatial analysis:
 
 #### 1. Create Travel-Time Polygons (Isochrones)
 
@@ -239,6 +279,16 @@ map_image = create_map(
     save_path="population_map.png"
 )
 ```
+
+### Transitioning from Demo to Live Data
+
+Once you're comfortable with demo mode, getting live data is simple:
+
+1. **Get your free Census API key**: https://api.census.gov/data/key_signup.html
+2. **Set the environment variable**: `export CENSUS_API_KEY=your_key_here`
+3. **Use the same functions with any US location**
+
+The API is nearly identical - you already know how to use it from the demos!
 
 ### Complete Example: Analyzing Library Access
 

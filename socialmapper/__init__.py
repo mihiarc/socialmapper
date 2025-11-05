@@ -6,6 +6,10 @@ Five core functions for all your spatial analysis needs:
 - get_census_data: Get demographic data from US Census
 - create_map: Generate choropleth map visualizations
 - get_poi: Find points of interest near locations
+
+New to SocialMapper? Try the demo module first:
+    >>> from socialmapper import demo
+    >>> demo.quick_start("Portland, OR")
 """
 
 # Load environment variables from .env file if available
@@ -23,6 +27,9 @@ from .api import (
     get_census_data,
     get_poi,
 )
+
+# Import demo module for easy onboarding
+from . import demo
 
 # Import result types
 from .api_result_types import (
@@ -73,6 +80,8 @@ __all__ = [
     "get_census_data",
     "create_map",
     "get_poi",
+    # Demo module for easy onboarding
+    "demo",
     # Result types
     "MapResult",
     "CensusDataResult",
