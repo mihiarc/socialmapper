@@ -1,196 +1,443 @@
-# Contributing to SocialMapper
+# Contributing to SocialMapper 🌍
 
-Thank you for your interest in contributing to SocialMapper!
-This document provides guidelines and instructions for
-contributing to the project.
+Welcome! We're thrilled that you're interested in contributing to SocialMapper. Whether you're fixing a bug, adding a feature, improving documentation, or sharing ideas, your contribution matters and helps make spatial analysis more accessible to everyone.
+
+SocialMapper is a community-driven project, and we believe the best software comes from diverse perspectives and collaborative development. This guide will help you get started contributing to our Python toolkit for spatial analysis and demographic mapping.
 
 ## Table of Contents
 
+- [Code of Conduct](#code-of-conduct)
+- [Ways to Contribute](#ways-to-contribute)
 - [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Code Standards](#code-standards)
+- [Development Guidelines](#development-guidelines)
+- [Making Your Contribution](#making-your-contribution)
 - [Testing](#testing)
 - [Documentation](#documentation)
-- [Pull Request Process](#pull-request-process)
-- [Project Structure](#project-structure)
+- [Release Process](#release-process)
 - [Getting Help](#getting-help)
+- [Recognition](#recognition)
+
+## Code of Conduct
+
+We are committed to providing a welcoming and inspiring community for all. By participating in this project, you agree to abide by our Code of Conduct:
+
+### Our Pledge
+
+We pledge to make participation in our project a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
+
+### Expected Behavior
+
+- Use welcoming and inclusive language
+- Be respectful of differing viewpoints and experiences
+- Gracefully accept constructive criticism
+- Focus on what is best for the community
+- Show empathy towards other community members
+
+### Unacceptable Behavior
+
+- Harassment, discriminatory language, and personal attacks
+- Publishing others' private information without permission
+- Conduct which could reasonably be considered inappropriate in a professional setting
+
+### Enforcement
+
+Instances of unacceptable behavior may be reported by opening an issue or contacting the maintainer directly. All complaints will be reviewed and investigated promptly and fairly.
+
+## Ways to Contribute
+
+Every contribution is valuable! Here are some ways you can help:
+
+### 🐛 Report Bugs
+Found something that doesn't work? [Open an issue](https://github.com/mihiarc/socialmapper/issues/new) with:
+- Clear title and description
+- Steps to reproduce
+- Expected vs actual behavior
+- Your environment (Python version, OS)
+
+### 💡 Suggest Features
+Have an idea to improve SocialMapper? We'd love to hear it! [Open a feature request](https://github.com/mihiarc/socialmapper/issues/new) describing:
+- The problem you're trying to solve
+- Your proposed solution
+- Example use cases
+
+### 📖 Improve Documentation
+- Fix typos or clarify explanations
+- Add examples and tutorials
+- Translate documentation
+- Create educational content (blog posts, videos)
+
+### 💻 Write Code
+- Fix bugs (look for ["good first issue"](https://github.com/mihiarc/socialmapper/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) labels)
+- Add new features
+- Improve performance
+- Add tests
+
+### 🎨 Design & UX
+- Improve visualizations
+- Create better map styles
+- Design intuitive APIs
+
+### 🔬 Share Use Cases
+- Write about how you use SocialMapper
+- Share analysis results
+- Contribute example notebooks
 
 ## Getting Started
 
-SocialMapper is a Python toolkit for spatial analysis and
-demographic mapping. We welcome contributions of all kinds:
-
-- 🐛 Bug reports and fixes
-- ✨ New features and enhancements
-- 📝 Documentation improvements
-- 🧪 Test coverage improvements
-- 💡 Ideas and suggestions
-
-## Development Setup
-
 ### Prerequisites
 
-- **Python 3.11, 3.12, or 3.13** (3.11+ required)
-- **Git** for version control
-- **uv** (recommended) or pip for package management
-- **Census API key** (free from
-  https://api.census.gov/data/key_signup.html)
+- Python 3.11 or higher
+- Git for version control
+- A Census API key (free from [api.census.gov](https://api.census.gov/data/key_signup.html)) - only needed for census-related features
 
-### Initial Setup
+### Development Setup
 
-1. **Fork and Clone**
+1. **Fork the repository**
+
+   Click the "Fork" button at the top right of the [SocialMapper repository](https://github.com/mihiarc/socialmapper).
+
+2. **Clone your fork**
 
    ```bash
-   # Fork the repository on GitHub first, then:
-   git clone https://github.com/YOUR-USERNAME/socialmapper.git
+   git clone https://github.com/YOUR_USERNAME/socialmapper.git
    cd socialmapper
    ```
 
-2. **Create Virtual Environment**
+3. **Set up the development environment using uv**
 
-   Using uv (recommended):
+   We use `uv` for fast, reliable Python package management:
+
    ```bash
+   # Install uv if you haven't already
+   pip install uv
+
+   # Create virtual environment
    uv venv
-   source .venv/bin/activate
-   # On Windows: .venv\Scripts\activate
-   ```
 
-   Or using standard Python:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   # On Windows: .venv\Scripts\activate
-   ```
+   # Activate it
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-3. **Install in Development Mode**
-
-   ```bash
-   # Install package with development dependencies
+   # Install SocialMapper in development mode with all dependencies
    uv pip install -e ".[dev]"
-
-   # Or with standard pip:
-   pip install -e ".[dev]"
    ```
 
-4. **Configure Environment**
+4. **Set up pre-commit hooks (optional but recommended)**
 
    ```bash
-   # Copy environment template
+   # Install pre-commit
+   uv pip install pre-commit
+
+   # Set up the git hooks
+   pre-commit install
+   ```
+
+5. **Configure environment variables**
+
+   ```bash
+   # Copy the example environment file
    cp .env.example .env
 
-   # Edit .env and add your Census API key
-   CENSUS_API_KEY=your_key_here
+   # Edit .env and add your Census API key (if you have one)
    ```
 
-5. **Verify Installation**
+6. **Verify your setup**
 
    ```bash
-   # Run basic tests
-   pytest tests/test_basic.py
+   # Run the test suite
+   uv run pytest tests/ -v
 
-   # Check code quality
-   ruff check socialmapper/
+   # Run a quick example
+   uv run python -c "from socialmapper import demo; print(demo.quick_start('Portland, OR'))"
    ```
 
-## Code Standards
+   You're all set! 🎉
 
-### Code Style
+## Development Guidelines
 
-SocialMapper uses **Ruff** for linting and formatting
-(replaces Black and Flake8):
+### Code Standards
+
+#### Python Style
+
+We use modern Python 3.11+ features and follow these conventions:
+
+- **Type hints** for all function parameters and returns
+- **Pydantic v2** for data validation
+- **Rich** for terminal output
+- **Line length**: 100 characters (configured in `pyproject.toml`)
+- **Import sorting**: Handled automatically by ruff
+
+#### Code Quality Tools
+
+We use `ruff` for linting and formatting:
 
 ```bash
+# Check code quality
+uv run ruff check socialmapper/
+
+# Fix auto-fixable issues
+uv run ruff check --fix socialmapper/
+
 # Format code
-ruff format .
-
-# Check and fix linting issues
-ruff check --fix .
-
-# Check without fixing
-ruff check .
+uv run ruff format socialmapper/
 ```
 
-**Key Style Guidelines:**
-- Line length: 100 characters
-- Quote style: Double quotes
-- Import sorting: Handled by ruff
-- Type hints: Required for all public functions
+#### Docstring Format
 
-### Docstring Convention
-
-All functions, classes, and modules must use
-**NumPy-style docstrings**:
+All public functions MUST use NumPy-style docstrings. Here's our standard template:
 
 ```python
-def example_function(param1, param2, optional_param=None):
+def analyze_accessibility(
+    location: str | tuple[float, float],
+    poi_type: str,
+    travel_time: int = 15
+) -> pd.DataFrame:
     """
-    Brief one-line description of the function.
+    Analyze accessibility to points of interest from a location.
 
-    Extended description providing more context about
-    the function's behavior and usage.
+    Calculates travel times and demographic characteristics for
+    populations with access to specified points of interest.
 
     Parameters
     ----------
-    param1 : type
-        Description of param1.
-    param2 : type
-        Description of param2.
-    optional_param : type, optional
-        Description of optional parameter. Default is
-        None.
+    location : str or tuple of float
+        Either a "City, State" string for geocoding or a
+        (latitude, longitude) tuple with coordinates.
+    poi_type : str
+        OpenStreetMap amenity type (e.g., "library", "hospital").
+    travel_time : int, optional
+        Maximum travel time in minutes, by default 15.
+        Must be between 1 and 120.
 
     Returns
     -------
-    return_type
-        Description of return value.
+    pd.DataFrame
+        DataFrame with columns:
+        - 'poi_name': Name of the point of interest
+        - 'distance_km': Distance in kilometers
+        - 'population': Population with access
+        - 'demographics': Demographic breakdown
 
     Raises
     ------
     ValueError
-        When invalid input is provided.
+        If location cannot be geocoded or poi_type is invalid.
+    ConnectionError
+        If OpenStreetMap or Census API is unavailable.
 
     Examples
     --------
-    >>> result = example_function(1, 2)
-    >>> print(result)
-    3
+    >>> df = analyze_accessibility("Portland, OR", "library")
+    >>> df['population'].sum()
+    125000
+
+    >>> df = analyze_accessibility((45.5152, -122.6784), "hospital",
+    ...                            travel_time=20)
+    >>> len(df)
+    5
 
     Notes
     -----
-    Additional implementation notes or mathematical
-    details.
+    This function combines multiple data sources:
+    1. OpenStreetMap for POI locations
+    2. Census API for demographic data
+    3. OSMNX for travel-time calculations
+
+    See Also
+    --------
+    get_poi : Retrieve points of interest
+    create_isochrone : Generate travel-time polygons
     """
 ```
 
-**Docstring Requirements:**
-- Maximum 75 characters per line for readability
-- Parameters section with types and descriptions
-- Returns section with type and description
-- Examples section with doctests when appropriate
-- Raises section for exceptions
-- Notes section for important details
+### Performance Considerations
 
-### Type Hints
+SocialMapper prioritizes performance for large-scale analyses:
 
-All public functions must include type hints:
+- **Use concurrent processing** where possible (we have 4-8x speedups)
+- **Implement caching** for expensive operations (geocoding, API calls)
+- **Profile before optimizing** - measure first, optimize second
+- **Memory efficiency** - use generators for large datasets
+- **Add benchmarks** for performance-critical code
+
+Example of adding a performance test:
 
 ```python
-from typing import Optional, List, Dict, Any
-
-def process_data(
-    data: List[Dict[str, Any]],
-    threshold: float = 0.5
-) -> Optional[Dict[str, Any]]:
-    """Process data with type hints."""
-    ...
+@pytest.mark.benchmark
+def test_isochrone_performance(benchmark):
+    """Benchmark isochrone generation performance."""
+    result = benchmark(create_isochrone, "Portland, OR", travel_time=15)
+    assert result is not None
+    # Performance assertions
+    assert benchmark.stats['mean'] < 2.0  # Should complete in < 2 seconds
 ```
 
-### Naming Conventions
+### Testing Requirements
 
-- **Functions/Methods**: `snake_case`
-- **Classes**: `PascalCase`
-- **Constants**: `UPPER_SNAKE_CASE`
-- **Private members**: Prefix with underscore `_private_method`
+We maintain high code quality with comprehensive testing:
+
+- **Minimum coverage**: 80% for new code
+- **Test types**: Unit, integration, and performance tests
+- **Real API calls**: We test against real services (not mocks) where feasible
+- **Test markers**: Use appropriate pytest markers
+
+```python
+@pytest.mark.unit
+def test_validate_travel_time():
+    """Test travel time validation logic."""
+    assert validate_travel_time(15) == 15
+    with pytest.raises(ValueError):
+        validate_travel_time(150)  # Exceeds maximum
+
+@pytest.mark.integration
+@pytest.mark.external
+def test_census_api_connection():
+    """Test real Census API connectivity."""
+    data = get_census_data("North Carolina")
+    assert len(data) > 0
+```
+
+## Making Your Contribution
+
+### Contribution Workflow
+
+1. **Create an issue first** (if one doesn't exist)
+
+   Before starting work, [open an issue](https://github.com/mihiarc/socialmapper/issues/new) or comment on an existing one. This helps:
+   - Avoid duplicate work
+   - Discuss the approach
+   - Get early feedback
+
+2. **Create a feature branch**
+
+   ```bash
+   # Update your main branch
+   git checkout main
+   git pull upstream main
+
+   # Create a feature branch
+   git checkout -b feature/your-feature-name
+   # or
+   git checkout -b fix/issue-number-description
+   ```
+
+3. **Make your changes**
+
+   - Write clear, self-documenting code
+   - Add tests for new functionality
+   - Update documentation as needed
+   - Follow our code standards
+
+4. **Commit your changes**
+
+   We follow conventional commit messages for clarity:
+
+   ```bash
+   # Format: <type>: <description>
+
+   # Examples:
+   git commit -m "feat: Add support for bicycle isochrones"
+   git commit -m "fix: Correct census tract boundary calculation"
+   git commit -m "docs: Update accessibility analysis tutorial"
+   git commit -m "test: Add integration tests for POI search"
+   git commit -m "perf: Optimize isochrone generation with caching"
+   ```
+
+   **Commit message types:**
+   - `feat`: New feature
+   - `fix`: Bug fix
+   - `docs`: Documentation changes
+   - `test`: Adding or updating tests
+   - `perf`: Performance improvements
+   - `refactor`: Code restructuring
+   - `style`: Code formatting
+   - `chore`: Maintenance tasks
+
+   **Example of a good commit message:**
+
+   ```
+   feat: Add demographic filtering to POI analysis
+
+   - Implement age and income filters for get_poi()
+   - Add validation for demographic parameters
+   - Include tests for edge cases
+   - Update API documentation with examples
+
+   Closes #67
+   ```
+
+5. **Run tests locally**
+
+   ```bash
+   # Run all tests
+   uv run pytest
+
+   # Run specific test file
+   uv run pytest tests/test_api.py
+
+   # Run with coverage
+   uv run pytest --cov=socialmapper --cov-report=html
+
+   # Run only fast tests
+   uv run pytest -m "not slow"
+   ```
+
+6. **Push your branch**
+
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+7. **Create a Pull Request**
+
+   - Go to your fork on GitHub
+   - Click "New Pull Request"
+   - Select your feature branch
+   - Fill out the PR template:
+
+   ```markdown
+   ## Description
+   Brief description of what this PR does.
+
+   ## Related Issue
+   Fixes #(issue number)
+
+   ## Type of Change
+   - [ ] Bug fix
+   - [ ] New feature
+   - [ ] Documentation update
+   - [ ] Performance improvement
+
+   ## Testing
+   - [ ] Tests pass locally
+   - [ ] Added new tests for changes
+   - [ ] Updated documentation
+
+   ## Screenshots (if applicable)
+   Add any relevant screenshots here.
+
+   ## Checklist
+   - [ ] Code follows project style guidelines
+   - [ ] Self-review completed
+   - [ ] Documentation updated
+   - [ ] Tests added/updated
+   - [ ] All tests passing
+   ```
+
+### Code Review Process
+
+After submitting your PR:
+
+1. **Automated checks** run (tests, linting)
+2. **Maintainer review** - usually within 48-72 hours
+3. **Address feedback** - push additional commits as needed
+4. **Approval and merge** - maintainers will merge when ready
+
+**What we look for in reviews:**
+- Code quality and style consistency
+- Test coverage
+- Documentation completeness
+- Performance implications
+- Security considerations
 
 ## Testing
 
@@ -198,232 +445,251 @@ def process_data(
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
-# Run specific test file
-pytest tests/test_api.py
+# Run with verbose output
+uv run pytest -v
 
-# Run tests with coverage
-pytest --cov=socialmapper \
-       --cov-report=html
+# Run specific test markers
+uv run pytest -m unit           # Fast unit tests only
+uv run pytest -m integration    # Integration tests
+uv run pytest -m "not slow"     # Skip slow tests
+uv run pytest -m performance    # Performance benchmarks
 
-# Run only unit tests
-pytest -m unit
+# Run tests for specific module
+uv run pytest tests/test_api.py::TestCreateIsochrone
 
-# Run integration tests
-pytest -m integration
+# Run with coverage report
+uv run pytest --cov=socialmapper --cov-report=term-missing
+
+# Run tests in parallel (faster)
+uv run pytest -n auto
 ```
 
 ### Writing Tests
 
-- Place tests in `tests/` directory
-- Name test files as `test_*.py`
-- Name test functions as `test_*`
-- Use pytest fixtures from `conftest.py`
-- Aim for >80% code coverage
-- Test both success and failure cases
-
-**Example Test:**
+Place tests in the `tests/` directory following the pattern `test_*.py`:
 
 ```python
-def test_create_isochrone():
-    """Test isochrone creation from coordinates."""
-    result = create_isochrone(
-        location=(45.5152, -122.6784),
-        travel_time=15,
-        travel_mode="walk"
-    )
+"""Test demographic analysis functions."""
 
-    assert result["type"] == "Feature"
-    assert "geometry" in result
-    assert result["properties"]["travel_time"] == 15
+import pytest
+import pandas as pd
+from socialmapper import analyze_demographics
+
+
+class TestDemographicAnalysis:
+    """Test suite for demographic analysis."""
+
+    @pytest.fixture
+    def sample_location(self):
+        """Provide sample location for tests."""
+        return "Durham, NC"
+
+    @pytest.mark.unit
+    def test_basic_analysis(self, sample_location):
+        """Test basic demographic analysis returns expected structure."""
+        result = analyze_demographics(sample_location)
+
+        assert isinstance(result, pd.DataFrame)
+        assert 'population' in result.columns
+        assert len(result) > 0
+
+    @pytest.mark.integration
+    @pytest.mark.external
+    def test_census_integration(self, sample_location):
+        """Test integration with Census API."""
+        result = analyze_demographics(
+            sample_location,
+            include_census=True
+        )
+
+        assert 'median_income' in result.columns
+        assert result['median_income'].notna().any()
 ```
 
-### Test Markers
+### Test Fixtures
 
-Use pytest markers to categorize tests:
+Common fixtures are available in `tests/conftest.py`:
 
-- `@pytest.mark.unit` - Fast, isolated unit tests
-- `@pytest.mark.integration` - Tests with external
-  dependencies
-- `@pytest.mark.slow` - Long-running tests
-- `@pytest.mark.external` - Requires network/APIs
+```python
+@pytest.fixture
+def mock_census_data():
+    """Provide mock census data for testing."""
+    return pd.DataFrame({
+        'tract': ['001', '002'],
+        'population': [5000, 3000],
+        'median_income': [65000, 45000]
+    })
+```
 
 ## Documentation
 
-### Building Documentation
+### When to Update Documentation
+
+Update documentation when you:
+- Add new public functions or classes
+- Change function signatures or behavior
+- Add new examples or use cases
+- Fix documentation errors
+- Add new dependencies or requirements
+
+### Building Documentation Locally
 
 ```bash
-# Install documentation dependencies (included in dev)
-pip install -e ".[dev]"
+# Install documentation dependencies
+uv pip install mkdocs mkdocs-material
 
-# Serve documentation locally
-mkdocs serve
+# Build and serve documentation
+uv run mkdocs serve
 
-# Build static documentation
-mkdocs build
+# View at http://localhost:8000
 ```
 
 ### Documentation Structure
 
-- **User Guides**: `docs/user-guide/` - How to use
-  features
-- **Tutorials**: `docs/tutorials/` - Step-by-step
-  examples
-- **API Reference**: `docs/api-reference.md` - Function
-  reference
-- **Developer Docs**: `docs/` - Architecture and design
-  docs
-
-### Adding Documentation
-
-When adding new features:
-1. Update relevant user guide in `docs/user-guide/`
-2. Add examples to `examples/` directory
-3. Update API reference if adding public functions
-4. Add docstrings to all new code
-
-## Pull Request Process
-
-### Before Submitting
-
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes**
-   - Write clear, focused commits
-   - Follow code standards
-   - Add tests for new functionality
-   - Update documentation
-
-3. **Run quality checks**
-   ```bash
-   # Format code
-   ruff format .
-
-   # Check linting
-   ruff check .
-
-   # Run tests
-   pytest
-
-   # Check test coverage
-   pytest --cov=socialmapper
-   ```
-
-4. **Commit your changes**
-   ```bash
-   git add .
-   git commit -m "Add: Brief description of changes"
-   git push origin feature/your-feature-name
-   ```
-
-### Commit Message Convention
-
-Use clear, descriptive commit messages:
-
 ```
-Add: New feature or functionality
-Fix: Bug fix
-Update: Modify existing feature
-Docs: Documentation changes
-Test: Add or modify tests
-Refactor: Code restructuring
-Style: Formatting changes
+docs/
+├── index.md           # Home page
+├── quick-start.md     # Getting started guide
+├── tutorials/         # Step-by-step tutorials
+├── api/              # API reference
+├── examples/         # Code examples
+└── contributing.md   # This file
 ```
 
-### Creating the Pull Request
+### Adding Examples
 
-1. Go to GitHub and create a pull request
-2. Fill out the PR template with:
-   - **Description**: What does this PR do?
-   - **Motivation**: Why is this change needed?
-   - **Testing**: How was this tested?
-   - **Screenshots**: If applicable
-   - **Related Issues**: Link to issues
+Place example scripts in `examples/` and notebooks in `examples/notebooks/`:
 
-3. Wait for review and address feedback
+```python
+#!/usr/bin/env python
+"""
+Example: Analyzing Library Accessibility in Portland
 
-### Review Process
+This script demonstrates how to:
+1. Find all libraries in a city
+2. Calculate 15-minute walking areas
+3. Analyze demographics of served populations
+"""
 
-- Maintainers will review your PR
-- Address any requested changes
-- Once approved, your PR will be merged
-- Your contribution will be credited in the
-  changelog
+from socialmapper import get_poi, create_isochrone, get_census_data
 
-## Project Structure
+def main():
+    # Find libraries in Portland
+    libraries = get_poi("Portland, OR", "library")
+    print(f"Found {len(libraries)} libraries")
 
-```
-socialmapper/
-├── socialmapper/           # Main package
-│   ├── api.py             # Public API functions
-│   ├── census.py          # Census data integration
-│   ├── geocoding/         # Address geocoding
-│   ├── isochrone/         # Travel time polygons
-│   ├── export/            # Data export functionality
-│   ├── visualization/     # Map creation
-│   └── neighbors.py       # Geographic neighbor queries
-├── tests/                 # Test suite
-├── examples/              # Usage examples
-├── docs/                  # Documentation
-└── pyproject.toml        # Project configuration
+    # Create walking isochrones
+    for lib in libraries[:3]:  # First 3 for demo
+        iso = create_isochrone(
+            (lib['lat'], lib['lon']),
+            travel_time=15,
+            travel_mode="walk"
+        )
+        print(f"Library: {lib['name']}")
+        print(f"Area covered: {iso['properties']['area_sq_km']:.2f} km²")
+
+if __name__ == "__main__":
+    main()
 ```
 
-### Key Modules
+## Release Process
 
-- **`api.py`**: Main API with 5 core functions
-- **`isochrone/`**: Isochrone generation with
-  optimization
-- **`geocoding/`**: Multi-provider address geocoding
-- **`census.py`**: US Census data integration
-- **`export/`**: Data export in multiple formats
-- **`visualization/`**: Choropleth map creation
+We follow [semantic versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
+
+- **MAJOR**: Incompatible API changes
+- **MINOR**: New functionality, backwards compatible
+- **PATCH**: Bug fixes, backwards compatible
+
+### Release Checklist
+
+1. **Update version** in `pyproject.toml`
+2. **Update CHANGELOG.md** with release notes
+3. **Run full test suite**: `uv run pytest`
+4. **Build distribution**: `uv run python -m build`
+5. **Create git tag**: `git tag -a v0.9.1 -m "Release version 0.9.1"`
+6. **Push tag**: `git push upstream v0.9.1`
+
+Releases are automatically deployed to PyPI when tags are pushed.
+
+### Changelog Format
+
+```markdown
+## [0.9.1] - 2025-01-15
+
+### Added
+- Bicycle mode for isochrone generation
+- Caching for geocoding requests
+
+### Fixed
+- Memory leak in large POI queries
+- Incorrect census tract boundaries
+
+### Changed
+- Improved performance of demographic calculations by 40%
+
+### Deprecated
+- `analyze_area()` - use `analyze_region()` instead
+```
 
 ## Getting Help
 
-### Resources
+### Where to Ask Questions
 
-- **Documentation**:
-  https://mihiarc.github.io/socialmapper
-- **Issue Tracker**:
-  https://github.com/mihiarc/socialmapper/issues
-- **Discussions**:
-  https://github.com/mihiarc/socialmapper/discussions
+- **🐛 Bug Reports**: [Open an issue](https://github.com/mihiarc/socialmapper/issues/new)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/mihiarc/socialmapper/discussions) for general questions
+- **📧 Email**: Contact the maintainer for sensitive issues
+- **📖 Documentation**: Check our [comprehensive docs](https://github.com/mihiarc/socialmapper/tree/main/docs)
 
-### Asking Questions
+### Response Times
 
-- Search existing issues first
-- Use GitHub Discussions for general questions
-- Create issues for bug reports or feature requests
-- Include code examples and error messages
+- **Critical bugs**: Within 24 hours
+- **Feature requests**: Within 72 hours
+- **General questions**: Within 1 week
+- **PR reviews**: Within 48-72 hours
 
-### Reporting Bugs
+### Tips for Getting Help
 
-When reporting bugs, include:
+1. **Search first** - Check if your question has been answered
+2. **Be specific** - Include error messages, code snippets, environment details
+3. **Provide context** - Explain what you're trying to achieve
+4. **Be patient** - Maintainers are volunteers
 
-1. **Description**: Clear description of the issue
-2. **Steps to Reproduce**: Minimal code to reproduce
-3. **Expected Behavior**: What should happen
-4. **Actual Behavior**: What actually happens
-5. **Environment**: Python version, OS, package
-   versions
-6. **Error Messages**: Complete error traceback
+## Recognition
 
-## Code of Conduct
+### Contributors
 
-- Be respectful and professional
-- Welcome newcomers and help them learn
-- Focus on constructive feedback
-- Assume good intentions
+We value all contributions! Contributors are recognized in:
 
-## License
+- **README.md**: Major contributors section
+- **Release notes**: Credited for specific contributions
+- **GitHub insights**: Automatic contribution tracking
 
-By contributing to SocialMapper, you agree that your
-contributions will be licensed under the MIT License.
+### First-Time Contributors
+
+Look for issues labeled ["good first issue"](https://github.com/mihiarc/socialmapper/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) - these are specifically chosen to be approachable for newcomers.
+
+**Your first PR merged?** We'll add you to our contributors list! 🎉
+
+### Types of Recognition
+
+- **🌟 Core Contributors**: Regular contributors with merge rights
+- **📖 Documentation Heroes**: Significant documentation improvements
+- **🐛 Bug Hunters**: Finding and fixing critical bugs
+- **🚀 Performance Champions**: Major performance improvements
+- **💡 Feature Creators**: Implementing new capabilities
 
 ---
 
-Thank you for contributing to SocialMapper! 🎉
+## Thank You! 💙
+
+Thank you for contributing to SocialMapper! Your efforts help make spatial analysis more accessible and powerful for researchers, planners, and communities worldwide.
+
+Together, we're building tools that help create more equitable, accessible communities.
+
+**Ready to contribute?** Pick an [issue](https://github.com/mihiarc/socialmapper/issues), fork the repo, and let's build something amazing together!
+
+---
+
+*Last updated: January 2025 | Version: 1.0.0*
