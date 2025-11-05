@@ -37,6 +37,7 @@ Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper
 ✅ **Integrated Workflow** - Census + OSM + Isochrones in one toolkit (no other library does this)
 ✅ **Practitioner-Friendly** - 5 core functions cover 90% of accessibility analysis needs
 ✅ **Production-Ready** - 255+ tests, NumPy-style docs, modern Python 3.11+
+✅ **High Performance** - 4-8x faster with concurrent processing and intelligent caching ([see benchmarks](docs/performance.md))
 ✅ **Real-Time Data** - Live OSM queries and latest Census data (2023 ACS)
 ✅ **Purpose-Built** - Designed specifically for accessibility and equity analysis
 
