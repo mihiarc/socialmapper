@@ -14,13 +14,38 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from ..neighbors import get_neighbor_manager
-from .models import AddressInput, AddressProvider, AddressQuality, GeocodingConfig, GeocodingResult
+from .models import (
+    AddressInput,
+    AddressProvider,
+    AddressQuality,
+    GeocodingConfig,
+    GeocodingResult,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class GeocodingProvider(ABC):
-    """Abstract base class for geocoding providers."""
+    """
+    Abstract base class for geocoding providers.
+
+    Provides common functionality for HTTP session management,
+    rate limiting, and retry logic.
+
+    Parameters
+    ----------
+    config : GeocodingConfig
+        Configuration for geocoding behavior.
+
+    Attributes
+    ----------
+    config : GeocodingConfig
+        Active configuration.
+    session : requests.Session
+        HTTP session with retry strategy.
+    last_request_time : float
+        Timestamp of last request for rate limiting.
+    """
 
     def __init__(self, config: GeocodingConfig):
         self.config = config
@@ -28,7 +53,15 @@ class GeocodingProvider(ABC):
         self.last_request_time = 0.0
 
     def _create_session(self) -> requests.Session:
-        """Create HTTP session with retry strategy."""
+        """
+        Create HTTP session with retry strategy.
+
+        Returns
+        -------
+        requests.Session
+            Session configured with automatic retries for
+            transient failures.
+        """
         session = requests.Session()
 
         retry_strategy = Retry(
@@ -45,8 +78,14 @@ class GeocodingProvider(ABC):
         return session
 
     def _enforce_rate_limit(self):
-        """Enforce rate limiting between requests."""
-        min_interval = 1.0 / self.config.rate_limit_requests_per_second
+        """
+        Enforce rate limiting between requests.
+
+        Sleeps if necessary to maintain configured rate
+        limit.
+        """
+        rate_limit = self.config.rate_limit_requests_per_second
+        min_interval = 1.0 / rate_limit
         elapsed = time.time() - self.last_request_time
 
         if elapsed < min_interval:
@@ -57,24 +96,76 @@ class GeocodingProvider(ABC):
 
     @abstractmethod
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode a single address."""
+        """
+        Geocode a single address.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode.
+
+        Returns
+        -------
+        GeocodingResult
+            Result with coordinates and quality
+            information.
+        """
 
     @abstractmethod
     def get_provider_name(self) -> AddressProvider:
-        """Get the provider identifier."""
+        """
+        Get the provider identifier.
+
+        Returns
+        -------
+        AddressProvider
+            Enum identifying this provider.
+        """
 
 
 class NominatimProvider(GeocodingProvider):
-    """OpenStreetMap Nominatim geocoding provider (free, rate-limited)."""
+    """
+    OpenStreetMap Nominatim geocoding provider.
+
+    Free geocoding service with rate limiting. Best for
+    international addresses and general geocoding needs.
+
+    Notes
+    -----
+    Requires respectful rate limiting (max 1
+    request/second). See the following URL for usage
+    policy:
+    https://operations.osmfoundation.org/policies/nominatim/
+    """
 
     BASE_URL = "https://nominatim.openstreetmap.org/search"
 
     def get_provider_name(self) -> AddressProvider:
-        """Return the provider name for this geocoder."""
+        """
+        Return the provider name for this geocoder.
+
+        Returns
+        -------
+        AddressProvider
+            NOMINATIM enum value.
+        """
         return AddressProvider.NOMINATIM
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode address using Nominatim."""
+        """
+        Geocode address using Nominatim API.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode.
+
+        Returns
+        -------
+        GeocodingResult
+            Geocoding result with coordinates and quality
+            assessment.
+        """
         start_time = time.time()
 
         try:
@@ -89,10 +180,17 @@ class NominatimProvider(GeocodingProvider):
                 "extratags": 1,
             }
 
-            headers = {"User-Agent": "SocialMapper/1.0 (https://github.com/your-org/socialmapper)"}
+            user_agent = (
+                "SocialMapper/1.0 "
+                "(https://github.com/your-org/socialmapper)"
+            )
+            headers = {"User-Agent": user_agent}
 
             response = self.session.get(
-                self.BASE_URL, params=params, headers=headers, timeout=self.config.timeout_seconds
+                self.BASE_URL,
+                params=params,
+                headers=headers,
+                timeout=self.config.timeout_seconds,
             )
             response.raise_for_status()
 
@@ -104,7 +202,9 @@ class NominatimProvider(GeocodingProvider):
                     success=False,
                     quality=AddressQuality.FAILED,
                     error_message="No results found",
-                    processing_time_ms=(time.time() - start_time) * 1000,
+                    processing_time_ms=(
+                        (time.time() - start_time) * 1000
+                    ),
                 )
 
             result = data[0]
@@ -124,17 +224,25 @@ class NominatimProvider(GeocodingProvider):
                 longitude=lon,
                 quality=quality,
                 provider_used=AddressProvider.NOMINATIM,
-                confidence_score=self._calculate_confidence(result),
+                confidence_score=self._calculate_confidence(
+                    result
+                ),
                 formatted_address=result.get("display_name"),
                 street_number=address_parts.get("house_number"),
                 street_name=address_parts.get("road"),
-                city=address_parts.get("city")
-                or address_parts.get("town")
-                or address_parts.get("village"),
+                city=(
+                    address_parts.get("city")
+                    or address_parts.get("town")
+                    or address_parts.get("village")
+                ),
                 state=address_parts.get("state"),
                 postal_code=address_parts.get("postcode"),
-                country=address_parts.get("country_code", "").upper(),
-                processing_time_ms=(time.time() - start_time) * 1000,
+                country=address_parts.get(
+                    "country_code", ""
+                ).upper(),
+                processing_time_ms=(
+                    (time.time() - start_time) * 1000
+                ),
             )
 
             # Add geographic context using neighbor system
@@ -143,16 +251,24 @@ class NominatimProvider(GeocodingProvider):
             return geocoding_result
 
         except Exception as e:
-            logger.warning(f"Nominatim geocoding failed for {address.address}: {e}")
+            error_msg = (
+                f"Nominatim geocoding failed for "
+                f"{address.address}: {e}"
+            )
+            logger.warning(error_msg)
             return GeocodingResult(
                 input_address=address,
                 success=False,
                 quality=AddressQuality.FAILED,
                 error_message=str(e),
-                processing_time_ms=(time.time() - start_time) * 1000,
+                processing_time_ms=(
+                    (time.time() - start_time) * 1000
+                ),
             )
 
-    def _determine_quality_from_osm(self, result: dict[str, Any]) -> AddressQuality:
+    def _determine_quality_from_osm(
+        self, result: dict[str, Any]
+    ) -> AddressQuality:
         """Determine address quality from OSM result."""
         osm_class = result.get("class", "")
         osm_type = result.get("type", "")
@@ -166,47 +282,105 @@ class NominatimProvider(GeocodingProvider):
             return AddressQuality.INTERPOLATED
 
         # Administrative area matches
-        if osm_class == "place" and osm_type in ["city", "town", "village"]:
+        admin_types = ["city", "town", "village"]
+        if osm_class == "place" and osm_type in admin_types:
             return AddressQuality.CENTROID
 
         # Default to approximate
         return AddressQuality.APPROXIMATE
 
-    def _calculate_confidence(self, result: dict[str, Any]) -> float:
+    def _calculate_confidence(
+        self, result: dict[str, Any]
+    ) -> float:
         """Calculate confidence score from OSM result."""
         importance = float(result.get("importance", 0.5))
-        return min(importance * 2, 1.0)  # Scale to 0-1 range
+        # Scale to 0-1 range
+        return min(importance * 2, 1.0)
 
-    def _add_geographic_context(self, result: GeocodingResult):
-        """Add geographic context using SocialMapper's neighbor system."""
-        if not result.success or not result.latitude or not result.longitude:
+    def _add_geographic_context(
+        self, result: GeocodingResult
+    ):
+        """Add geographic context using neighbor system."""
+        if (
+            not result.success
+            or not result.latitude
+            or not result.longitude
+        ):
             return
 
         try:
             neighbor_manager = get_neighbor_manager()
-            geo_info = neighbor_manager.get_geography_from_point(result.latitude, result.longitude)
+            geo_info = (
+                neighbor_manager.get_geography_from_point(
+                    result.latitude, result.longitude
+                )
+            )
 
             if geo_info:
-                result.state_fips = geo_info.get("state_fips")
-                result.county_fips = geo_info.get("county_fips")
-                result.tract_geoid = geo_info.get("tract_geoid")
-                result.block_group_geoid = geo_info.get("block_group_geoid")
+                result.state_fips = geo_info.get(
+                    "state_fips"
+                )
+                result.county_fips = geo_info.get(
+                    "county_fips"
+                )
+                result.tract_geoid = geo_info.get(
+                    "tract_geoid"
+                )
+                result.block_group_geoid = geo_info.get(
+                    "block_group_geoid"
+                )
 
         except Exception as e:
-            logger.warning(f"Failed to get geographic context: {e}")
+            logger.warning(
+                f"Failed to get geographic context: {e}"
+            )
 
 
 class CensusProvider(GeocodingProvider):
-    """US Census Bureau geocoding provider (free, US-only)."""
+    """
+    US Census Bureau geocoding provider.
 
-    BASE_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+    Free, high-quality geocoding for US addresses. Best for
+    US-only applications requiring accurate census
+    block-level matching.
+
+    Notes
+    -----
+    US addresses only. Automatically enriches results with
+    census geography (FIPS codes, block groups).
+    """
+
+    BASE_URL = (
+        "https://geocoding.geo.census.gov/"
+        "geocoder/locations/onelineaddress"
+    )
 
     def get_provider_name(self) -> AddressProvider:
-        """Return the provider name for this geocoder."""
+        """
+        Return the provider name for this geocoder.
+
+        Returns
+        -------
+        AddressProvider
+            CENSUS enum value.
+        """
         return AddressProvider.CENSUS
 
     def geocode_address(self, address: AddressInput) -> GeocodingResult:
-        """Geocode address using Census Bureau API."""
+        """
+        Geocode address using Census Bureau API.
+
+        Parameters
+        ----------
+        address : AddressInput
+            Address to geocode (must be US address).
+
+        Returns
+        -------
+        GeocodingResult
+            Geocoding result with census geography
+            enrichment.
+        """
         start_time = time.time()
 
         try:
@@ -219,7 +393,9 @@ class CensusProvider(GeocodingProvider):
             }
 
             response = self.session.get(
-                self.BASE_URL, params=params, timeout=self.config.timeout_seconds
+                self.BASE_URL,
+                params=params,
+                timeout=self.config.timeout_seconds,
             )
             response.raise_for_status()
 
@@ -236,7 +412,9 @@ class CensusProvider(GeocodingProvider):
                     success=False,
                     quality=AddressQuality.FAILED,
                     error_message="No address matches found",
-                    processing_time_ms=(time.time() - start_time) * 1000,
+                    processing_time_ms=(
+                        (time.time() - start_time) * 1000
+                    ),
                 )
 
             match = data["result"]["addressMatches"][0]
@@ -258,7 +436,8 @@ class CensusProvider(GeocodingProvider):
                 longitude=lon,
                 quality=quality,
                 provider_used=AddressProvider.CENSUS,
-                confidence_score=0.95,  # Census results are typically high quality
+                # Census results are typically high quality
+                confidence_score=0.95,
                 formatted_address=match.get("matchedAddress"),
                 street_number=address_parts.get("fromAddress"),
                 street_name=address_parts.get("streetName"),
@@ -266,7 +445,9 @@ class CensusProvider(GeocodingProvider):
                 state=address_parts.get("state"),
                 postal_code=address_parts.get("zip"),
                 country="US",
-                processing_time_ms=(time.time() - start_time) * 1000,
+                processing_time_ms=(
+                    (time.time() - start_time) * 1000
+                ),
             )
 
             # Add geographic context using neighbor system
@@ -275,36 +456,64 @@ class CensusProvider(GeocodingProvider):
             return geocoding_result
 
         except Exception as e:
-            logger.warning(f"Census geocoding failed for {address.address}: {e}")
+            error_msg = (
+                f"Census geocoding failed for "
+                f"{address.address}: {e}"
+            )
+            logger.warning(error_msg)
             return GeocodingResult(
                 input_address=address,
                 success=False,
                 quality=AddressQuality.FAILED,
                 error_message=str(e),
-                processing_time_ms=(time.time() - start_time) * 1000,
+                processing_time_ms=(
+                    (time.time() - start_time) * 1000
+                ),
             )
 
-    def _add_geographic_context(self, result: GeocodingResult):
-        """Add geographic context using SocialMapper's neighbor system."""
-        if not result.success or not result.latitude or not result.longitude:
+    def _add_geographic_context(
+        self, result: GeocodingResult
+    ):
+        """Add geographic context using neighbor system."""
+        if (
+            not result.success
+            or not result.latitude
+            or not result.longitude
+        ):
             return
 
         try:
             neighbor_manager = get_neighbor_manager()
-            geo_info = neighbor_manager.get_geography_from_point(result.latitude, result.longitude)
+            geo_info = (
+                neighbor_manager.get_geography_from_point(
+                    result.latitude, result.longitude
+                )
+            )
 
             if geo_info:
-                result.state_fips = geo_info.get("state_fips")
-                result.county_fips = geo_info.get("county_fips")
-                result.tract_geoid = geo_info.get("tract_geoid")
-                result.block_group_geoid = geo_info.get("block_group_geoid")
+                result.state_fips = geo_info.get(
+                    "state_fips"
+                )
+                result.county_fips = geo_info.get(
+                    "county_fips"
+                )
+                result.tract_geoid = geo_info.get(
+                    "tract_geoid"
+                )
+                result.block_group_geoid = geo_info.get(
+                    "block_group_geoid"
+                )
 
         except Exception as e:
-            logger.warning(f"Failed to get geographic context: {e}")
+            logger.warning(
+                f"Failed to get geographic context: {e}"
+            )
 
 
 # Factory function for creating providers
-def create_provider(provider_type: AddressProvider, config: GeocodingConfig) -> GeocodingProvider:
+def create_provider(
+    provider_type: AddressProvider, config: GeocodingConfig
+) -> GeocodingProvider:
     """Create a geocoding provider instance."""
     providers = {
         AddressProvider.NOMINATIM: NominatimProvider,
