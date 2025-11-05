@@ -259,13 +259,17 @@ def _calculate_distances_vectorized(
 def run_distance_benchmark(poi_points: list[Point], centroids: gpd.GeoSeries) -> dict:
     """Run performance benchmark of the vectorized distance calculation methods.
 
-    Args:
-        poi_points: List of POI Point geometries
-        centroids: GeoSeries of centroid geometries
+    Parameters
+    ----------
+    poi_points : list of Point
+        List of POI Point geometries.
+    centroids : gpd.GeoSeries
+        GeoSeries of centroid geometries.
 
     Returns
     -------
-        Dictionary with benchmark results
+    dict
+        Dictionary with benchmark results.
     """
     results = benchmark_distance_engines(poi_points, centroids)
 

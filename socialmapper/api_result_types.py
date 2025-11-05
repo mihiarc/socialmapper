@@ -6,10 +6,9 @@ along with specific result types for POI discovery operations.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
-
 
 T = TypeVar('T')
 E = TypeVar('E')
@@ -80,45 +79,45 @@ class Error:
 
     type: ErrorType
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
 
 class DiscoveredPOI(BaseModel):
     """Information about a discovered POI."""
 
     osm_id: int
-    name: Optional[str] = None
+    name: str | None = None
     category: str
-    subcategory: Optional[str] = None
+    subcategory: str | None = None
     latitude: float
     longitude: float
     distance_meters: float
-    travel_time_minutes: Optional[float] = None
-    tags: Dict[str, Any] = Field(default_factory=dict)
-    address: Optional[str] = None
+    travel_time_minutes: float | None = None
+    tags: dict[str, Any] = Field(default_factory=dict)
+    address: str | None = None
 
 
 class NearbyPOIResult(BaseModel):
     """Result of nearby POI discovery."""
 
-    origin: Dict[str, float]  # {"latitude": ..., "longitude": ...}
+    origin: dict[str, float]  # {"latitude": ..., "longitude": ...}
     travel_time_minutes: int
     travel_mode: str
-    discovered_pois: List[DiscoveredPOI]
-    isochrone_area_sqkm: Optional[float] = None
-    categories_found: List[str] = Field(default_factory=list)
+    discovered_pois: list[DiscoveredPOI]
+    isochrone_area_sqkm: float | None = None
+    categories_found: list[str] = Field(default_factory=list)
     total_pois: int = 0
-    search_radius_meters: Optional[float] = None
+    search_radius_meters: float | None = None
 
 
 class NearbyPOIDiscoveryConfig(BaseModel):
     """Configuration for nearby POI discovery."""
 
-    location: Union[str, Dict[str, float]]  # Address or {"latitude": ..., "longitude": ...}
+    location: str | dict[str, float]  # Address or {"latitude": ..., "longitude": ...}
     travel_time: int = Field(ge=1, le=60)
     travel_mode: str = "drive"
-    categories: Optional[List[str]] = None
+    categories: list[str] | None = None
     max_results: int = 100
     include_details: bool = True
     output_format: str = "json"
-    output_file: Optional[str] = None
+    output_file: str | None = None

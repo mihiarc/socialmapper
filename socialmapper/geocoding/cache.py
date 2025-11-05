@@ -6,7 +6,6 @@ Uses diskcache for simple, reliable caching of geocoded addresses.
 
 import logging
 import os
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import diskcache as dc
@@ -137,7 +136,6 @@ class AddressCache:
         >>> cache.save_cache()  # No-op, kept for compatibility
         """
         # diskcache automatically persists, so this is a no-op
-        pass
 
     def close(self):
         """Close the cache and release resources.

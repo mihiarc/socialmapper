@@ -1,10 +1,11 @@
 """Internal OpenStreetMap/POI query utilities for SocialMapper."""
 
-import requests
-from typing import List, Dict, Any, Optional
-from shapely.geometry import Polygon, Point
 import logging
 import time
+from typing import Any
+
+import requests
+from shapely.geometry import Polygon
 
 logger = logging.getLogger(__name__)
 
@@ -16,31 +17,31 @@ CATEGORY_MAPPINGS = {
     "cafe": ["amenity=cafe"],
     "bar": ["amenity=bar", "amenity=pub"],
     "fast_food": ["amenity=fast_food"],
-    
+
     # Education
     "school": ["amenity=school"],
     "university": ["amenity=university", "amenity=college"],
     "library": ["amenity=library"],
-    
+
     # Healthcare
     "hospital": ["amenity=hospital"],
     "clinic": ["amenity=clinic", "amenity=doctors"],
     "pharmacy": ["amenity=pharmacy"],
-    
+
     # Recreation
     "park": ["leisure=park", "leisure=garden"],
     "playground": ["leisure=playground"],
     "sports": ["leisure=sports_centre", "leisure=stadium", "leisure=pitch"],
-    
+
     # Shopping
     "grocery": ["shop=supermarket", "shop=convenience"],
     "supermarket": ["shop=supermarket"],
     "convenience": ["shop=convenience"],
-    
+
     # Finance
     "bank": ["amenity=bank"],
     "atm": ["amenity=atm"],
-    
+
     # Transportation
     "gas_station": ["amenity=fuel"],
     "parking": ["amenity=parking"],
@@ -50,8 +51,8 @@ CATEGORY_MAPPINGS = {
 
 def query_pois(
     area: Polygon,
-    categories: Optional[List[str]] = None
-) -> List[Dict[str, Any]]:
+    categories: list[str] | None = None
+) -> list[dict[str, Any]]:
     """
     Query Points of Interest within an area using Overpass API.
 
@@ -85,15 +86,15 @@ def query_pois(
     """
     # Build Overpass query
     query = build_overpass_query(area, categories)
-    
+
     # Execute query
     pois = execute_overpass_query(query)
-    
+
     # Process and categorize results
     return process_poi_results(pois)
 
 
-def build_overpass_query(area: Polygon, categories: Optional[List[str]]) -> str:
+def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     """
     Build an Overpass QL query string for POI retrieval.
 
@@ -126,7 +127,7 @@ def build_overpass_query(area: Polygon, categories: Optional[List[str]]) -> str:
     # Get bounding box
     bounds = area.bounds  # (minx, miny, maxx, maxy)
     bbox = f"{bounds[1]},{bounds[0]},{bounds[3]},{bounds[2]}"  # S,W,N,E
-    
+
     # Determine which OSM tags to query
     if categories:
         # Collect all OSM tags for requested categories
@@ -142,26 +143,26 @@ def build_overpass_query(area: Polygon, categories: Optional[List[str]]) -> str:
         tags = []
         for cat_tags in CATEGORY_MAPPINGS.values():
             tags.extend(cat_tags)
-    
+
     # Remove duplicates
     tags = list(set(tags))
-    
+
     # Build Overpass query
     query_parts = ["[out:json][timeout:25];("]
-    
+
     for tag in tags:
         # Parse tag into key=value
         if "=" in tag:
             key, value = tag.split("=", 1)
             query_parts.append(f"node[{key}={value}]({bbox});")
             query_parts.append(f"way[{key}={value}]({bbox});")
-    
+
     query_parts.append(");out center;")
-    
+
     return "".join(query_parts)
 
 
-def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
+def execute_overpass_query(query: str) -> list[dict[str, Any]]:
     """
     Execute an Overpass API query with automatic endpoint fallback.
 
@@ -193,7 +194,7 @@ def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
         "https://overpass.kumi.systems/api/interpreter",
         "https://overpass.openstreetmap.ru/api/interpreter"
     ]
-    
+
     for endpoint in endpoints:
         try:
             response = requests.post(
@@ -201,7 +202,7 @@ def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
                 data={"data": query},
                 timeout=30
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 elements = data.get("elements", [])
@@ -209,20 +210,20 @@ def execute_overpass_query(query: str) -> List[Dict[str, Any]]:
                 return elements
             else:
                 logger.warning(f"Overpass endpoint {endpoint} returned status {response.status_code}")
-                
+
         except requests.exceptions.Timeout:
             logger.warning(f"Overpass endpoint {endpoint} timed out")
         except Exception as e:
             logger.warning(f"Overpass endpoint {endpoint} failed: {e}")
-        
+
         # Small delay before trying next endpoint
         time.sleep(0.5)
-    
+
     logger.error("All Overpass endpoints failed")
     return []
 
 
-def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def process_poi_results(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Process raw Overpass API elements into standardized POI dicts.
 
@@ -252,17 +253,17 @@ def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     True
     """
     pois = []
-    
+
     for element in elements:
         # Extract basic info
         tags = element.get("tags", {})
-        
+
         # Skip if no name
         name = tags.get("name")
         if not name:
             # Use type as name if no proper name
             name = tags.get("amenity") or tags.get("shop") or tags.get("leisure") or "Unnamed"
-        
+
         # Get coordinates
         if element["type"] == "node":
             lat = element["lat"]
@@ -272,10 +273,10 @@ def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             lon = element["center"]["lon"]
         else:
             continue
-        
+
         # Determine category
         category = determine_category(tags)
-        
+
         # Build POI dict
         poi = {
             "name": name,
@@ -284,7 +285,7 @@ def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "lon": lon,
             "tags": tags
         }
-        
+
         # Add address if available
         address_parts = []
         if "addr:housenumber" in tags:
@@ -297,16 +298,16 @@ def process_poi_results(elements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             address_parts.append(tags["addr:state"])
         if "addr:postcode" in tags:
             address_parts.append(tags["addr:postcode"])
-        
+
         if address_parts:
             poi["address"] = " ".join(address_parts)
-        
+
         pois.append(poi)
-    
+
     return pois
 
 
-def determine_category(tags: Dict[str, str]) -> str:
+def determine_category(tags: dict[str, str]) -> str:
     """
     Determine POI category from OpenStreetMap tags.
 
@@ -343,7 +344,7 @@ def determine_category(tags: Dict[str, str]) -> str:
                 key, value = osm_tag.split("=", 1)
                 if tags.get(key) == value:
                     return category
-    
+
     # Fallback to primary tag
     if "amenity" in tags:
         return tags["amenity"]

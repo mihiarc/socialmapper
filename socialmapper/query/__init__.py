@@ -7,13 +7,6 @@ import os
 import sys
 from typing import Any, Optional
 
-# Export polygon query functions
-from .polygon_queries import (
-    build_poi_discovery_query,
-    query_pois_from_isochrone,
-    query_pois_in_polygon,
-)
-
 # Export OSMnx query functions
 from .osmnx_query import (
     build_osmnx_tags,
@@ -21,9 +14,16 @@ from .osmnx_query import (
     query_pois_with_fallback,
 )
 
+# Export polygon query functions
+from .polygon_queries import (
+    build_poi_discovery_query,
+    query_pois_from_isochrone,
+    query_pois_in_polygon,
+)
+
 __all__ = [
-    "build_overpass_query",
     "build_osmnx_tags",
+    "build_overpass_query",
     "build_poi_discovery_query",
     "create_poi_config",
     "format_results",
@@ -37,30 +37,37 @@ __all__ = [
     "save_json",
 ]
 
-import overpy
-import yaml
-
 # Configure logger
 import logging
 
+import overpy
+import yaml
 
 logger = logging.getLogger(__name__)
 
 
 def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_tags=None):
-    """Create a POI configuration dictionary directly from parameters.
+    """Create a POI configuration dictionary from parameters.
 
-    Args:
-        geocode_area: The area to search within (city/town name)
-        state: The state name or abbreviation
-        city: The city name (optional, defaults to geocode_area)
-        poi_type: The type of POI (e.g., 'amenity', 'leisure')
-        poi_name: The name of the POI (e.g., 'library', 'park')
-        additional_tags: Dictionary of additional tags to filter by (optional)
+    Parameters
+    ----------
+    geocode_area : str
+        The area to search within (city/town name).
+    state : str
+        The state name or abbreviation.
+    city : str
+        The city name (optional, defaults to geocode_area).
+    poi_type : str
+        The type of POI (e.g., 'amenity', 'leisure').
+    poi_name : str
+        The name of the POI (e.g., 'library', 'park').
+    additional_tags : dict, optional
+        Dictionary of additional tags to filter by, by default None.
 
     Returns
     -------
-        Dictionary containing POI configuration
+    dict
+        Dictionary containing POI configuration.
     """
     config = {"geocode_area": geocode_area, "state": state, "type": poi_type, "name": poi_name}
 
@@ -231,26 +238,36 @@ def query_overpass(query):
 
 
 def format_results(result, config=None):
-    """Format the Overpass API results into a structured dictionary.
+    """Format the Overpass API results into structured dictionary.
 
-    Args:
-        result: The result from the Overpass API query.
-        config: Optional configuration dictionary that may contain state information.
+    Parameters
+    ----------
+    result : overpy.Result
+        The result from the Overpass API query.
+    config : dict, optional
+        Optional configuration dictionary that may contain state
+        information, by default None.
 
     Returns
     -------
-        A dictionary containing the POIs in JSON format.
-
-        Keys:
-            poi_count: The total number of POIs found.
-            pois: A list of dictionaries containing the POIs.
-                Keys:
-                    id: The ID of the POI.
-                    type: The type of the POI.
-                    lat: The latitude of the POI.
-                    lon: The longitude of the POI.
-                    tags: A dictionary containing the tags of the POI.
-                    state: The state of the POI (if available in config).
+    dict
+        A dictionary containing the POIs in JSON format with keys:
+        - poi_count : int
+            The total number of POIs found.
+        - pois : list of dict
+            List of dictionaries containing the POIs with keys:
+            - id : int
+                The ID of the POI.
+            - type : str
+                The type of the POI.
+            - lat : float
+                The latitude of the POI.
+            - lon : float
+                The longitude of the POI.
+            - tags : dict
+                Dictionary containing the tags of the POI.
+            - state : str
+                The state of the POI (if available in config).
     """
     data = {"poi_count": 0, "pois": []}  # Initialize with 0, will be updated at the end
 
@@ -392,16 +409,21 @@ def save_json(data, output_file):
 def query_pois(
     config: dict[str, Any], output_file: str | None = None, verbose: bool = False
 ) -> dict[str, Any]:
-    """Query POIs from OpenStreetMap with the given configuration.
+    """Query POIs from OpenStreetMap with given configuration.
 
-    Args:
-        config: POI configuration dictionary
-        output_file: Optional output file path to save results
-        verbose: Whether to output detailed information
+    Parameters
+    ----------
+    config : dict
+        POI configuration dictionary.
+    output_file : str, optional
+        Optional output file path to save results, by default None.
+    verbose : bool, optional
+        Whether to output detailed information, by default False.
 
     Returns
     -------
-        Dictionary with POI results
+    dict
+        Dictionary with POI results.
     """
     # Build query
     query = build_overpass_query(config)

@@ -4,7 +4,6 @@ Replaces over-engineered coordinate_validation module with minimal validation.
 """
 
 import logging
-from typing import Any
 
 from shapely.geometry import Point
 

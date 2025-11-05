@@ -70,7 +70,21 @@ class RichProgressWrapper:
     """tqdm-compatible wrapper for Rich progress bars."""
 
     def __init__(self, iterable=None, desc="", total=None, unit="it", **kwargs):
-        """Initialize Rich progress bar with tqdm-compatible interface."""
+        """Initialize Rich progress bar with tqdm-compatible interface.
+
+        Parameters
+        ----------
+        iterable : iterable, optional
+            Iterable to wrap with progress bar, by default None.
+        desc : str, optional
+            Description text for progress bar, by default "".
+        total : int, optional
+            Total number of iterations, by default None.
+        unit : str, optional
+            Unit name for items being processed, by default "it".
+        **kwargs : dict
+            Additional keyword arguments (for compatibility).
+        """
         self.iterable = iterable
         self.desc = desc
         self.total = total or (len(iterable) if iterable else None)
@@ -142,7 +156,6 @@ class RichProgressWrapper:
     def set_postfix(self, postfix_dict):
         """Update the progress bar postfix (tqdm compatibility)."""
         # Rich progress bars don't have postfix, but we'll store it for compatibility
-        pass
 
     def refresh(self):
         """Refresh the progress bar display (tqdm compatibility)."""
@@ -261,8 +274,10 @@ class ModernProgressTracker:
     def __init__(self, enable_performance_metrics: bool = True):
         """Initialize the modern progress tracker.
 
-        Args:
-            enable_performance_metrics: Whether to track performance metrics
+        Parameters
+        ----------
+        enable_performance_metrics : bool, optional
+            Whether to track performance metrics, by default True.
         """
         self.enable_performance_metrics = enable_performance_metrics
         self.current_stage: ProcessingStage | None = None
@@ -298,13 +313,17 @@ class ModernProgressTracker:
     ) -> ProgressMetrics:
         """Start tracking a new processing stage with tqdm progress bar.
 
-        Args:
-            stage: The processing stage to start
-            total_items: Optional total number of items to process
+        Parameters
+        ----------
+        stage : ProcessingStage
+            The processing stage to start.
+        total_items : int or None, optional
+            Total number of items to process, by default None.
 
         Returns
         -------
-            ProgressMetrics object for this stage
+        ProgressMetrics
+            ProgressMetrics object for this stage.
         """
         with self._lock:
             # Close any existing progress bar
@@ -334,10 +353,14 @@ class ModernProgressTracker:
     ) -> None:
         """Update progress for the current stage with tqdm.
 
-        Args:
-            items_processed: Number of items processed
-            substage: Optional substage description
-            memory_usage_mb: Optional memory usage in MB
+        Parameters
+        ----------
+        items_processed : int
+            Number of items processed.
+        substage : str or None, optional
+            Substage description, by default None.
+        memory_usage_mb : float or None, optional
+            Memory usage in MB, by default None.
         """
         if not self.current_stage:
             return
@@ -391,8 +414,10 @@ class ModernProgressTracker:
     def complete_stage(self, stage: ProcessingStage) -> None:
         """Mark a processing stage as complete and close progress bar.
 
-        Args:
-            stage: The processing stage to complete
+        Parameters
+        ----------
+        stage : ProcessingStage
+            The processing stage to complete.
         """
         with self._lock:
             metrics = self.stage_metrics.get(stage)
@@ -470,12 +495,15 @@ _global_tracker: ModernProgressTracker | None = None
 def get_progress_tracker(enable_performance_metrics: bool = True) -> ModernProgressTracker:
     """Get the global progress tracker instance.
 
-    Args:
-        enable_performance_metrics: Whether to enable performance metrics
+    Parameters
+    ----------
+    enable_performance_metrics : bool, optional
+        Whether to enable performance metrics, by default True.
 
     Returns
     -------
-        ModernProgressTracker instance
+    ModernProgressTracker
+        ModernProgressTracker instance.
     """
     global _global_tracker
 
@@ -490,13 +518,18 @@ def get_progress_bar(iterable=None, **kwargs):
 
     This function provides Rich tqdm progress bars for CLI usage.
 
-    Args:
-        iterable: The iterable to wrap with a progress bar
-        **kwargs: Additional arguments to pass to the progress bar
+    Parameters
+    ----------
+    iterable : iterable, optional
+        The iterable to wrap with a progress bar, by default None.
+    **kwargs : dict
+        Additional arguments to pass to the progress bar.
 
     Returns
     -------
-        A Rich progress bar instance that can be used as a context manager
+    RichProgressWrapper
+        A Rich progress bar instance that can be used as a context
+        manager.
     """
     # Always use Rich progress bars
     progress_bar_class = rich_tqdm
@@ -513,13 +546,17 @@ def get_progress_bar(iterable=None, **kwargs):
 def track_stage(stage: ProcessingStage, total_items: int | None = None):
     """Context manager for tracking a processing stage with tqdm progress bar.
 
-    Args:
-        stage: The processing stage to track
-        total_items: Optional total number of items to process
+    Parameters
+    ----------
+    stage : ProcessingStage
+        The processing stage to track.
+    total_items : int or None, optional
+        Total number of items to process, by default None.
 
     Yields
     ------
-        ProgressMetrics object for updating progress
+    ProgressMetrics
+        ProgressMetrics object for updating progress.
     """
     tracker = get_progress_tracker()
     metrics = tracker.start_stage(stage, total_items)

@@ -22,7 +22,6 @@ class SocialMapperError(Exception):
     ...     print(f"Library error: {e}")
     """
 
-    pass
 
 
 class ValidationError(SocialMapperError):
@@ -44,7 +43,6 @@ class ValidationError(SocialMapperError):
     >>> # raise ValidationError("Census API key is required")
     """
 
-    pass
 
 
 class APIError(SocialMapperError):
@@ -67,7 +65,6 @@ class APIError(SocialMapperError):
     >>> # raise APIError("Failed to connect to geocoding service")
     """
 
-    pass
 
 
 class DataError(SocialMapperError):
@@ -89,7 +86,6 @@ class DataError(SocialMapperError):
     >>> # raise DataError("Unable to parse GeoJSON response")
     """
 
-    pass
 
 
 class AnalysisError(SocialMapperError):
@@ -112,7 +108,6 @@ class AnalysisError(SocialMapperError):
     >>> # raise AnalysisError("Invalid geometry for spatial operation")
     """
 
-    pass
 
 
 # Legacy aliases for backward compatibility during transition

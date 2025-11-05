@@ -52,12 +52,15 @@ class AddressGeocodingEngine:
     def geocode_address(self, address: str | AddressInput) -> GeocodingResult:
         """Geocode a single address with intelligent provider selection and fallback.
 
-        Args:
-            address: Address string or AddressInput object
+        Parameters
+        ----------
+        address : str or AddressInput
+            Address string or AddressInput object.
 
         Returns
         -------
-            GeocodingResult with geocoding outcome
+        GeocodingResult
+            GeocodingResult with geocoding outcome.
         """
         # Convert string to AddressInput if needed
         if isinstance(address, str):
@@ -132,13 +135,17 @@ class AddressGeocodingEngine:
     ) -> list[GeocodingResult]:
         """Geocode multiple addresses in batch with progress tracking.
 
-        Args:
-            addresses: List of address strings or AddressInput objects
-            progress: Whether to show progress bar
+        Parameters
+        ----------
+        addresses : list of str or AddressInput
+            List of address strings or AddressInput objects.
+        progress : bool, optional
+            Whether to show progress bar, by default True.
 
         Returns
         -------
-            List of GeocodingResult objects
+        list of GeocodingResult
+            List of GeocodingResult objects.
         """
         results = []
 

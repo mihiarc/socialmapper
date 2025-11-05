@@ -2,9 +2,8 @@
 
 import csv
 import logging
-import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,19 +14,26 @@ def parse_csv_pois(
     lat_field: str,
     lon_field: str,
     type_field: str
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Parse POIs from a CSV file.
 
-    Args:
-        csv_path: Path to the CSV file
-        name_field: Column name for POI names
-        lat_field: Column name for latitude
-        lon_field: Column name for longitude
-        type_field: Column name for POI type
+    Parameters
+    ----------
+    csv_path : str
+        Path to the CSV file.
+    name_field : str
+        Column name for POI names.
+    lat_field : str
+        Column name for latitude.
+    lon_field : str
+        Column name for longitude.
+    type_field : str
+        Column name for POI type.
 
     Returns
     -------
-        List of POI dicts in standard format
+    list of dict
+        List of POI dicts in standard format.
     """
     # Security: Validate and sanitize file path
     csv_file = Path(csv_path)

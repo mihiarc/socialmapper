@@ -1,16 +1,16 @@
 """Command-line interface for managing API keys."""
 
-import click
 import sys
-from typing import Optional
-from .key_manager import SecureKeyManager, KeyStorage
+
+import click
+
+from .key_manager import KeyStorage, SecureKeyManager
 from .utils import migrate_from_env
 
 
 @click.group()
 def cli():
     """SocialMapper API key management."""
-    pass
 
 
 @cli.command()
@@ -21,7 +21,7 @@ def cli():
     type=click.Choice(["keyring", "encrypted", "environment"]),
     help="Storage backend to use"
 )
-def set(key_name: str, key_value: str, storage: Optional[str]):
+def set(key_name: str, key_value: str, storage: str | None):
     """Store an API key securely."""
     manager = SecureKeyManager()
 
@@ -38,9 +38,9 @@ def set(key_name: str, key_value: str, storage: Optional[str]):
 
         # Validate the key
         if manager.validate_key(key_name, key_value):
-            click.echo(f"✅ Key format validated")
+            click.echo("✅ Key format validated")
         else:
-            click.echo(f"⚠️  Warning: Key format may be invalid")
+            click.echo("⚠️  Warning: Key format may be invalid")
     else:
         click.echo(f"❌ Failed to store key '{key_name}'", err=True)
         sys.exit(1)

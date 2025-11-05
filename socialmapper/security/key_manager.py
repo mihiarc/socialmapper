@@ -1,13 +1,12 @@
 """Secure API key management for SocialMapper."""
 
-import os
-import re
 import json
 import logging
-from pathlib import Path
-from typing import Optional, Dict, Any
-from enum import Enum
+import os
+import re
 from contextlib import contextmanager
+from enum import Enum
+from pathlib import Path
 
 try:
     import keyring
@@ -16,10 +15,11 @@ except ImportError:
     KEYRING_AVAILABLE = False
 
 try:
+    import base64
+
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    import base64
     CRYPTO_AVAILABLE = True
 except ImportError:
     CRYPTO_AVAILABLE = False
@@ -70,8 +70,8 @@ class SecureKeyManager:
     def __init__(
         self,
         app_name: str = "socialmapper",
-        config_path: Optional[Path] = None,
-        storage_preference: Optional[list] = None
+        config_path: Path | None = None,
+        storage_preference: list | None = None
     ):
         """Initialize secure key manager."""
         self.app_name = app_name
@@ -79,7 +79,7 @@ class SecureKeyManager:
         self.master_key_path = self.config_path.parent / ".master.key"
 
         # In-memory storage for temporary keys
-        self._memory_keys: Dict[str, str] = {}
+        self._memory_keys: dict[str, str] = {}
 
         # Set storage preference order
         if storage_preference:
@@ -163,7 +163,7 @@ class SecureKeyManager:
 
         self._cipher = Fernet(key)
 
-    def get_key(self, key_name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_key(self, key_name: str, default: str | None = None) -> str | None:
         """
         Retrieve an API key using configured storage backends.
 
@@ -214,7 +214,7 @@ class SecureKeyManager:
         self,
         key_name: str,
         key_value: str,
-        storage: Optional[KeyStorage] = None
+        storage: KeyStorage | None = None
     ) -> bool:
         """
         Store an API key in specified storage backend.
@@ -275,7 +275,7 @@ class SecureKeyManager:
             logger.error(f"Failed to store key in {storage.value}: {e}")
             return False
 
-    def delete_key(self, key_name: str, storage: Optional[KeyStorage] = None) -> bool:
+    def delete_key(self, key_name: str, storage: KeyStorage | None = None) -> bool:
         """
         Delete an API key from storage.
 
@@ -352,7 +352,7 @@ class SecureKeyManager:
                 del self._memory_keys[key_name]
 
     # Keyring storage methods
-    def _get_from_keyring(self, key_name: str) -> Optional[str]:
+    def _get_from_keyring(self, key_name: str) -> str | None:
         """Get key from system keyring."""
         if not KEYRING_AVAILABLE:
             return None
@@ -389,7 +389,7 @@ class SecureKeyManager:
             return False
 
     # Encrypted file storage methods
-    def _get_from_encrypted_file(self, key_name: str) -> Optional[str]:
+    def _get_from_encrypted_file(self, key_name: str) -> str | None:
         """Get key from encrypted file."""
         if not CRYPTO_AVAILABLE or not self._cipher:
             return None
@@ -475,7 +475,7 @@ class SecureKeyManager:
             return False
 
     # Environment variable storage methods
-    def _get_from_environment(self, key_name: str) -> Optional[str]:
+    def _get_from_environment(self, key_name: str) -> str | None:
         """Get key from environment variable."""
         # Map key names to environment variable names
         env_mapping = {
@@ -514,7 +514,7 @@ class SecureKeyManager:
             return True
         return False
 
-    def validate_key(self, key_name: str, key_value: Optional[str] = None) -> bool:
+    def validate_key(self, key_name: str, key_value: str | None = None) -> bool:
         """
         Validate API key format.
 
@@ -547,7 +547,7 @@ class SecureKeyManager:
             # Generic validation - not empty, no spaces
             return bool(key_value) and ' ' not in key_value
 
-    def list_keys(self) -> Dict[str, list]:
+    def list_keys(self) -> dict[str, list]:
         """
         List all available keys by storage backend.
 

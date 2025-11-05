@@ -12,7 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from socialmapper.isochrone import clear_network_cache, get_cache_stats as get_network_stats
+from socialmapper.isochrone import clear_network_cache
+from socialmapper.isochrone import get_cache_stats as get_network_stats
 
 logger = logging.getLogger(__name__)
 

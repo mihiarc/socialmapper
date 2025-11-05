@@ -1,13 +1,11 @@
 """Internal census data utilities for SocialMapper."""
 
-import os
-import re
-import requests
-from typing import List, Dict, Any, Optional
-from shapely.geometry import shape, Polygon
-import geopandas as gpd
-import pandas as pd
 import logging
+import re
+from typing import Any
+
+import requests
+from shapely.geometry import Polygon, shape
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +99,7 @@ VARIABLE_MAPPING = {
 }
 
 
-def normalize_variable_names(variables: List[str]) -> List[str]:
+def normalize_variable_names(variables: list[str]) -> list[str]:
     """
     Convert human-readable variable names to census codes.
 
@@ -137,7 +135,7 @@ def normalize_variable_names(variables: List[str]) -> List[str]:
     underscores during the mapping process.
     """
     normalized = []
-    
+
     for var in variables:
         # Check if already a census code (has underscore and starts with letter)
         if '_' in var and var[0].isalpha() and var[0].isupper():
@@ -150,11 +148,11 @@ def normalize_variable_names(variables: List[str]) -> List[str]:
             else:
                 logger.warning(f"Unknown variable '{var}', keeping as-is")
                 normalized.append(var)
-    
+
     return normalized
 
 
-def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
+def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     """
     Fetch census block groups that intersect with a geometry.
 
@@ -228,10 +226,10 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
     county_fips = geo_info["county_fips"]
 
     logger.debug(f"Identified census geography: State={state_fips}, County={county_fips}")
-    
+
     # Fetch block groups for the county
     block_groups = fetch_tiger_block_groups(state_fips, county_fips)
-    
+
     # Filter to those that intersect the geometry
     result = []
     for bg in block_groups:
@@ -240,20 +238,20 @@ def fetch_block_groups_for_area(geometry: Polygon) -> List[Dict[str, Any]]:
             # Calculate area
             import pyproj
             from shapely.ops import transform
-            
+
             project = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True).transform
             bg_geom_projected = transform(project, bg_geom)
             area_sq_m = bg_geom_projected.area
             area_sq_km = area_sq_m / 1_000_000
-            
+
             bg["area_sq_km"] = area_sq_km
             result.append(bg)
-    
+
     logger.info(f"Found {len(result)} block groups in area")
     return result
 
 
-def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str, Any]]:
+def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str, Any]]:
     """
     Fetch block group geometries from Census TIGER/Line shapefiles.
 
@@ -353,10 +351,10 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> List[Dict[str
 
 
 def fetch_census_data(
-    geoids: List[str],
-    variables: List[str],
+    geoids: list[str],
+    variables: list[str],
     year: int = 2023
-) -> Dict[str, Dict[str, Any]]:
+) -> dict[str, dict[str, Any]]:
     """
     Fetch census data for specified GEOIDs and variables.
 
@@ -406,14 +404,14 @@ def fetch_census_data(
     """
     if not geoids or not variables:
         return {}
-    
+
     # Census API base URL
     base_url = f"https://api.census.gov/data/{year}/acs/acs5"
-    
+
     # Get API key using secure storage
     from .security.utils import get_api_key
     api_key = get_api_key("census_api", "CENSUS_API_KEY")
-    
+
     # Group GEOIDs by state (first 2 digits)
     from collections import defaultdict
     geoids_by_state = defaultdict(list)
@@ -424,15 +422,15 @@ def fetch_census_data(
             geoids_by_state[state].append(geoid)
         else:
             logger.warning(f"Skipping invalid GEOID format: {geoid}")
-    
+
     result = {}
-    
+
     for state, state_geoids in geoids_by_state.items():
         # Build query - Census API has limits, so batch if needed
         batch_size = 50
         for i in range(0, len(state_geoids), batch_size):
             batch = state_geoids[i:i + batch_size]
-            
+
             # Parse GEOIDs to get tract and block group
             for geoid in batch:
                 if len(geoid) == 12:  # State + County + Tract + Block Group
@@ -451,19 +449,19 @@ def fetch_census_data(
                         "for": f"block group:{block_group}",
                         "in": f"state:{state} county:{county} tract:{tract}"
                     }
-                    
+
                     if api_key:
                         params["key"] = api_key
-                    
+
                     try:
                         response = requests.get(base_url, params=params, timeout=30)
                         response.raise_for_status()
-                        
+
                         data = response.json()
                         if len(data) > 1:  # First row is headers
                             headers = data[0]
                             values = data[1]
-                            
+
                             # Build result dict for this GEOID
                             geoid_data = {}
                             for j, header in enumerate(headers):
@@ -472,7 +470,7 @@ def fetch_census_data(
                                         geoid_data[header] = float(values[j]) if values[j] else None
                                     except (ValueError, TypeError):
                                         geoid_data[header] = values[j]
-                            
+
                             # Map back to human-readable names
                             # Build reverse mapping that includes ALL aliases for each code
                             from collections import defaultdict
@@ -485,7 +483,7 @@ def fetch_census_data(
                                     # Add value for all human-readable aliases
                                     for alias in reverse_mapping[var_code]:
                                         geoid_data[alias] = value
-                            
+
                             result[geoid] = geoid_data
 
                     except requests.Timeout:
@@ -501,6 +499,6 @@ def fetch_census_data(
                         )
                     except Exception as e:
                         logger.warning(f"Failed to fetch census data for {geoid}: {e}")
-    
+
     logger.info(f"Fetched census data for {len(result)}/{len(geoids)} GEOIDs")
     return result

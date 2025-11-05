@@ -20,7 +20,7 @@ Examples
         >>> counties = neighbors.get_counties_from_pois(pois, include_neighbors=True)
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Import geocoding functionality
 from .census import geocode_point
@@ -81,7 +81,7 @@ STATE_NEIGHBORS = {
 }
 
 
-def get_neighboring_states(state_fips: str) -> List[str]:
+def get_neighboring_states(state_fips: str) -> list[str]:
     """
     Get list of neighboring states for a given state FIPS code.
 
@@ -112,7 +112,7 @@ def get_neighboring_states(state_fips: str) -> List[str]:
 
 def get_neighboring_counties(
     state_fips: str, county_fips: str, include_cross_state: bool = True
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     """
     Get list of neighboring counties for a given county.
 
@@ -152,7 +152,7 @@ def get_neighboring_counties(
     return []
 
 
-def get_geography_from_point(lat: float, lon: float) -> Optional[Dict[str, str]]:
+def get_geography_from_point(lat: float, lon: float) -> dict[str, str] | None:
     """
     Get geographic identifiers (FIPS codes) for a point.
 

@@ -4,7 +4,6 @@ import contextlib
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 import geopandas as gpd
 import mapclassify
@@ -18,18 +17,18 @@ except ImportError:
     CONTEXTILY_AVAILABLE = False
 
 from .config import (
-    DEFAULT_FIGSIZE,
-    DEFAULT_DPI,
-    DEFAULT_CMAP,
+    DEFAULT_ALPHA,
     DEFAULT_CLASSIFICATION,
-    DEFAULT_N_CLASSES,
+    DEFAULT_CMAP,
+    DEFAULT_DPI,
     DEFAULT_EDGE_COLOR,
     DEFAULT_EDGE_WIDTH,
-    DEFAULT_ALPHA,
-    DEFAULT_MISSING_COLOR,
-    DEFAULT_LEGEND_LOC,
-    DEFAULT_LEGEND_FONTSIZE,
+    DEFAULT_FIGSIZE,
     DEFAULT_LEGEND_FMT,
+    DEFAULT_LEGEND_FONTSIZE,
+    DEFAULT_LEGEND_LOC,
+    DEFAULT_MISSING_COLOR,
+    DEFAULT_N_CLASSES,
 )
 from .utils import add_north_arrow, add_scale_bar
 
