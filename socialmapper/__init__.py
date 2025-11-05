@@ -24,6 +24,22 @@ from .api import (
     get_poi,
 )
 
+# Import result types
+from .api_result_types import (
+    CensusBlock,
+    CensusBlocksRequest,
+    CensusDataRequest,
+    CensusDataResult,
+    DiscoveredPOI,
+    IsochroneRequest,
+    IsochroneResult,
+    MapRequest,
+    MapResult,
+    NearbyPOIResult,
+    POIRequest,
+    ReportResult,
+)
+
 # Import exceptions
 from .exceptions import (
     AnalysisError,
@@ -50,6 +66,20 @@ __all__ = [
     "get_census_data",
     "create_map",
     "get_poi",
+    # Result types
+    "MapResult",
+    "CensusDataResult",
+    "IsochroneResult",
+    "CensusBlock",
+    "DiscoveredPOI",
+    "NearbyPOIResult",
+    "ReportResult",
+    # Request types
+    "MapRequest",
+    "CensusDataRequest",
+    "CensusBlocksRequest",
+    "IsochroneRequest",
+    "POIRequest",
     # Core exceptions
     "SocialMapperError",
     "ValidationError",

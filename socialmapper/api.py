@@ -6,6 +6,7 @@ more closely by separating concerns, extracting validators, and using helper fun
 
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
@@ -13,6 +14,7 @@ import pandas as pd
 from geopy.distance import geodesic
 from shapely.geometry import shape
 
+from .api_result_types import CensusDataResult, MapResult
 from .helpers import (
     calculate_polygon_area,
     create_circular_geometry,
@@ -195,13 +197,14 @@ def get_census_data(
     location: dict | list[str] | tuple[float, float],
     variables: list[str],
     year: int = 2023
-) -> dict[str, Any]:
+):
     """
     Get census demographic data for specified locations.
 
     Retrieves census data for various geographic units. Supports
-    multiple input formats and automatically handles different
-    census geographic levels (block groups, tracts, ZCTAs).
+    multiple input formats and automatically handles different census
+    geographic levels (block groups, tracts, ZCTAs). Returns a
+    consistent structure regardless of location type.
 
     Parameters
     ----------
@@ -219,28 +222,54 @@ def get_census_data(
 
     Returns
     -------
-    dict
-        Census data organized by location:
-        - For polygon/GEOIDs: {geoid: {variable: value, ...}, ...}
-        - For point: {variable: value, ...}
+    CensusDataResult
+        Structured result containing:
+        - data: Census data as {geoid: {variable: value, ...}}
+          Always uses nested dict structure for consistency.
+        - location_type: Type of location query (polygon, geoids, point)
+        - query_info: Metadata including year and variables requested
 
     Examples
     --------
     >>> # From an isochrone
     >>> iso = create_isochrone("Denver, CO", travel_time=20)
-    >>> data = get_census_data(iso, ["population", "median_income"])
-    >>> len(data)  # Number of block groups
+    >>> result = get_census_data(iso, ["population", "median_income"])
+    >>> len(result.data)  # Number of block groups
     35
+    >>> result.location_type
+    'polygon'
 
     >>> # From specific GEOIDs
-    >>> data = get_census_data(["060750201001"], ["B01003_001E"])
-    >>> data["060750201001"]["B01003_001E"]
+    >>> result = get_census_data(["060750201001"], ["B01003_001E"])
+    >>> result.data["060750201001"]["B01003_001E"]
     2543
+    >>> result.location_type
+    'geoids'
+
+    >>> # From a point location
+    >>> result = get_census_data((37.7749, -122.4194), ["population"])
+    >>> geoid = list(result.data.keys())[0]
+    >>> result.data[geoid]["population"]
+    1842
+    >>> result.location_type
+    'point'
     """
     from ._census import fetch_census_data, normalize_variable_names
 
     # Normalize variable names
     var_codes = normalize_variable_names(variables)
+
+    # Determine location type
+    if isinstance(location, dict):
+        location_type = "polygon"
+    elif isinstance(location, list):
+        location_type = "geoids"
+    elif isinstance(location, tuple):
+        location_type = "point"
+    else:
+        raise ValueError(
+            "Location must be GeoJSON dict, list of GEOIDs, or (lat, lon) tuple"
+        )
 
     # Resolve location to GEOIDs
     geoids = _resolve_geoids_from_location(location)
@@ -248,11 +277,17 @@ def get_census_data(
     # Fetch census data
     data = fetch_census_data(geoids, var_codes, year)
 
-    # Return single value for coordinate tuples, full dict otherwise
-    if isinstance(location, tuple):
-        return data.get(geoids[0], {}) if geoids else {}
-    else:
-        return data
+    # Return consistent structure - always {geoid: {variable: value}}
+    return CensusDataResult(
+        data=data,
+        location_type=location_type,
+        query_info={
+            "year": year,
+            "variables": variables,
+            "variable_codes": var_codes,
+            "geoid_count": len(geoids)
+        }
+    )
 
 
 def _resolve_geoids_from_location(location) -> list[str]:
@@ -304,12 +339,14 @@ def create_map(
     title: str | None = None,
     save_path: str | None = None,
     export_format: str = "png"
-) -> bytes | dict | None:
+) -> MapResult:
     """
     Create a choropleth map visualization.
 
     Generates a thematic map where geographic areas are colored
-    according to the values of a data variable.
+    according to the values of a data variable. Always returns
+    a MapResult object for consistent return types regardless of
+    format or save behavior.
 
     Parameters
     ----------
@@ -323,18 +360,21 @@ def create_map(
     title : str, optional
         Title to display on the map. Default is None.
     save_path : str, optional
-        Path to save the map file. If None, returns data.
-        Default is None.
+        Path to save the map file. If provided, the result will
+        include the absolute path. Default is None.
     export_format : {'png', 'pdf', 'svg', 'geojson', 'shapefile'}, optional
         Output format for the map. Default is 'png'.
 
     Returns
     -------
-    bytes, dict, or None
-        - Image formats (png/pdf/svg): bytes if save_path is None
-        - geojson: dict if save_path is None
-        - shapefile: None (requires save_path)
-        - All formats: None if save_path is provided
+    MapResult
+        Structured result containing:
+        - format: The export format used
+        - image_data: Raw bytes for image formats (if not saved)
+        - geojson_data: GeoJSON dict (if format is geojson and
+          not saved)
+        - file_path: Absolute path to saved file (if saved)
+        - metadata: Additional info like column name, title, etc.
 
     Raises
     ------
@@ -344,21 +384,33 @@ def create_map(
 
     Examples
     --------
-    >>> # Create map from census blocks
+    >>> # Create map from census blocks - get image bytes
     >>> blocks = get_census_blocks(location=(40.7128, -74.0060),
     ...                           radius_km=2)
-    >>> census = get_census_data([b["geoid"] for b in blocks],
+    >>> result = get_census_data([b["geoid"] for b in blocks],
     ...                         ["population"])
     >>> for block in blocks:
-    ...     block["population"] = census.get(block["geoid"], {}).get(
-    ...         "population", 0)
-    >>> img_bytes = create_map(blocks, "population",
-    ...                       title="Population by Block Group")
+    ...     block["population"] = result.data.get(
+    ...         block["geoid"], {}).get("population", 0)
+    >>> map_result = create_map(blocks, "population",
+    ...                        title="Population by Block Group")
+    >>> map_result.format
+    'png'
+    >>> len(map_result.image_data)
+    45231
 
-    >>> # Save as shapefile
-    >>> create_map(blocks, "population",
-    ...           save_path="output.shp",
-    ...           export_format="shapefile")
+    >>> # Create GeoJSON map
+    >>> map_result = create_map(blocks, "population",
+    ...                        export_format="geojson")
+    >>> map_result.geojson_data['type']
+    'FeatureCollection'
+
+    >>> # Save as shapefile - get file path
+    >>> map_result = create_map(blocks, "population",
+    ...                        save_path="output.shp",
+    ...                        export_format="shapefile")
+    >>> map_result.file_path
+    PosixPath('/absolute/path/to/output.shp')
     """
     # Validate export format
     validate_export_format(export_format)
@@ -370,13 +422,21 @@ def create_map(
     if column not in gdf.columns:
         raise ValueError(f"Column '{column}' not found in data")
 
+    # Prepare metadata
+    metadata = {
+        "column": column,
+        "title": title,
+        "num_features": len(gdf),
+        "column_type": str(gdf[column].dtype)
+    }
+
     # Generate map based on format
     if export_format in ["png", "pdf", "svg"]:
-        return _create_image_map(gdf, column, title, save_path, export_format)
+        return _create_image_map(gdf, column, title, save_path, export_format, metadata)
     elif export_format == "geojson":
-        return _create_geojson_export(gdf, save_path)
+        return _create_geojson_export(gdf, save_path, metadata)
     elif export_format == "shapefile":
-        return _create_shapefile_export(gdf, save_path)
+        return _create_shapefile_export(gdf, save_path, metadata)
 
 
 def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
@@ -439,12 +499,14 @@ def _create_image_map(
     column: str,
     title: str | None,
     save_path: str | None,
-    export_format: str
-):
+    export_format: str,
+    metadata: dict[str, Any]
+) -> MapResult:
     """
     Generate image-format choropleth map.
 
-    Creates a visual map in PNG, PDF, or SVG format.
+    Creates a visual map in PNG, PDF, or SVG format and returns
+    a MapResult object.
 
     Parameters
     ----------
@@ -458,24 +520,45 @@ def _create_image_map(
         File path for saving.
     export_format : str
         Image format (png, pdf, svg).
+    metadata : dict
+        Metadata about the map.
 
     Returns
     -------
-    bytes or None
-        Image data if save_path is None, otherwise None.
+    MapResult
+        Structured result with image_data or file_path populated.
     """
     from ._visualization import generate_choropleth_map
 
-    return generate_choropleth_map(
+    image_data = generate_choropleth_map(
         gdf, column, title, save_path, format=export_format
     )
 
+    # If saved to file, image_data will be None
+    if save_path:
+        return MapResult(
+            format=export_format,
+            file_path=Path(save_path).resolve(),
+            metadata=metadata
+        )
+    else:
+        return MapResult(
+            format=export_format,
+            image_data=image_data,
+            metadata=metadata
+        )
 
-def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: str | None):
+
+def _create_geojson_export(
+    gdf: gpd.GeoDataFrame,
+    save_path: str | None,
+    metadata: dict[str, Any]
+) -> MapResult:
     """
     Export GeoDataFrame to GeoJSON format.
 
-    Converts geographic data to GeoJSON for web mapping.
+    Converts geographic data to GeoJSON for web mapping and
+    returns a MapResult object.
 
     Parameters
     ----------
@@ -483,27 +566,43 @@ def _create_geojson_export(gdf: gpd.GeoDataFrame, save_path: str | None):
         Geographic data to export.
     save_path : str, optional
         File path for saving, if None returns dict.
+    metadata : dict
+        Metadata about the map.
 
     Returns
     -------
-    dict or None
-        GeoJSON dict if save_path is None, otherwise None.
+    MapResult
+        Structured result with geojson_data or file_path populated.
     """
+    geojson_data = json.loads(gdf.to_json())
+
     if save_path:
-        from pathlib import Path
-
         from .io.writers import write_geojson
-        write_geojson(gdf, Path(save_path))
-        return None
+        output_path = Path(save_path).resolve()
+        write_geojson(gdf, output_path)
+        return MapResult(
+            format="geojson",
+            file_path=output_path,
+            metadata=metadata
+        )
     else:
-        return json.loads(gdf.to_json())
+        return MapResult(
+            format="geojson",
+            geojson_data=geojson_data,
+            metadata=metadata
+        )
 
 
-def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: str | None):
+def _create_shapefile_export(
+    gdf: gpd.GeoDataFrame,
+    save_path: str | None,
+    metadata: dict[str, Any]
+) -> MapResult:
     """
     Export GeoDataFrame to ESRI Shapefile.
 
-    Creates shapefile for GIS software compatibility.
+    Creates shapefile for GIS software compatibility and returns
+    a MapResult object with the file path.
 
     Parameters
     ----------
@@ -511,11 +610,13 @@ def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: str | None):
         Geographic data to export.
     save_path : str
         Required file path for shapefile output.
+    metadata : dict
+        Metadata about the map.
 
     Returns
     -------
-    None
-        Always returns None after saving to file.
+    MapResult
+        Structured result with file_path populated.
 
     Raises
     ------
@@ -525,13 +626,18 @@ def _create_shapefile_export(gdf: gpd.GeoDataFrame, save_path: str | None):
     if not save_path:
         raise ValueError("save_path is required for shapefile export")
 
-    from pathlib import Path
     output_path = Path(save_path)
     if not output_path.suffix:
         output_path = output_path.with_suffix('.shp')
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     gdf.to_file(output_path, driver='ESRI Shapefile')
+
+    return MapResult(
+        format="shapefile",
+        file_path=output_path.resolve(),
+        metadata=metadata
+    )
 
 
 def get_poi(
@@ -809,12 +915,12 @@ def analyze_multiple_pois(
     for loc in locations:
         try:
             iso = create_isochrone(loc, travel_time, travel_mode)
-            census_data = get_census_data(iso, variables)
+            census_result = get_census_data(iso, variables)
 
             aggregated = {}
             for var in variables:
                 values = [
-                    data.get(var, 0) for data in census_data.values()
+                    data.get(var, 0) for data in census_result.data.values()
                     if data.get(var) is not None
                 ]
                 if values:
@@ -830,9 +936,9 @@ def analyze_multiple_pois(
                 "location": (loc if isinstance(loc, str)
                              else f"{loc[0]:.4f}, {loc[1]:.4f}"),
                 "isochrone": iso,
-                "census_data": census_data,
+                "census_data": census_result.data,
                 "aggregated": aggregated,
-                "block_group_count": len(census_data)
+                "block_group_count": len(census_result.data)
             }
             results["locations"].append(location_result)
 

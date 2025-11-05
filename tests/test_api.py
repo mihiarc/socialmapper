@@ -25,7 +25,9 @@ from socialmapper.api import (
     _create_comparison_analysis,
     generate_report
 )
+from socialmapper.api_result_types import MapResult, CensusDataResult
 import pandas as pd
+from pathlib import Path
 
 
 class TestCreateIsochrone:
@@ -402,8 +404,8 @@ class TestGetCensusData:
             variables=["population"]
         )
 
-        assert "060750201001" in result
-        assert result["060750201001"]["B01003_001E"] == 1234
+        assert "060750201001" in result.data
+        assert result.data["060750201001"]["B01003_001E"] == 1234
 
     @patch('socialmapper._census.fetch_census_data')
     @patch('socialmapper.api._resolve_geoids_from_location')
@@ -421,9 +423,9 @@ class TestGetCensusData:
             variables=["population"]
         )
 
-        # For tuple input, should return single dict not nested
-        assert "B01003_001E" in result
-        assert result["B01003_001E"] == 5678
+        # Point queries now also return nested structure
+        assert "371830501001" in result.data
+        assert result.data["371830501001"]["B01003_001E"] == 5678
 
     @patch('socialmapper._census.fetch_census_data')
     @patch('socialmapper.api._resolve_geoids_from_location')
@@ -447,9 +449,9 @@ class TestGetCensusData:
             variables=["population", "median_income"]
         )
 
-        assert len(result) == 2
-        assert "060750201001" in result
-        assert "060750201002" in result
+        assert len(result.data) == 2
+        assert "060750201001" in result.data
+        assert "060750201002" in result.data
 
 
 class TestResolveGeoidsFromLocation:
@@ -506,7 +508,10 @@ class TestCreateMap:
     @patch('socialmapper.api._create_image_map')
     def test_create_map_png_format(self, mock_image_map):
         """Test creating map with PNG format."""
-        mock_image_map.return_value = b'fake_png_data'
+        mock_image_map.return_value = MapResult(
+            format="png",
+            image_data=b'fake_png_data'
+        )
 
         data = [
             {"geometry": Point(0, 0).__geo_interface__, "population": 100},
@@ -515,7 +520,8 @@ class TestCreateMap:
 
         result = create_map(data, "population", export_format="png")
 
-        assert result == b'fake_png_data'
+        assert result.image_data is not None
+        assert result.image_data == b'fake_png_data'
         mock_image_map.assert_called_once()
         assert mock_image_map.call_args[0][1] == "population"  # column
         assert mock_image_map.call_args[0][4] == "png"  # format
@@ -523,7 +529,10 @@ class TestCreateMap:
     @patch('socialmapper.api._create_image_map')
     def test_create_map_pdf_format(self, mock_image_map):
         """Test creating map with PDF format."""
-        mock_image_map.return_value = b'fake_pdf_data'
+        mock_image_map.return_value = MapResult(
+            format="pdf",
+            image_data=b'fake_pdf_data'
+        )
 
         data = gpd.GeoDataFrame({
             'geometry': [Point(0, 0), Point(1, 1)],
@@ -532,13 +541,17 @@ class TestCreateMap:
 
         result = create_map(data, "value", export_format="pdf")
 
-        assert result == b'fake_pdf_data'
+        assert result.image_data is not None
+        assert result.image_data == b'fake_pdf_data'
         assert mock_image_map.call_args[0][4] == "pdf"
 
     @patch('socialmapper.api._create_image_map')
     def test_create_map_svg_format(self, mock_image_map):
         """Test creating map with SVG format."""
-        mock_image_map.return_value = b'<svg>fake_svg</svg>'
+        mock_image_map.return_value = MapResult(
+            format="svg",
+            image_data=b'<svg>fake_svg</svg>'
+        )
 
         data = gpd.GeoDataFrame({
             'geometry': [Point(0, 0)],
@@ -547,7 +560,8 @@ class TestCreateMap:
 
         result = create_map(data, "metric", export_format="svg")
 
-        assert result == b'<svg>fake_svg</svg>'
+        assert result.image_data is not None
+        assert result.image_data == b'<svg>fake_svg</svg>'
         assert mock_image_map.call_args[0][4] == "svg"
 
     def test_create_map_geojson_format(self):
@@ -559,9 +573,10 @@ class TestCreateMap:
 
         result = create_map(data, "score", export_format="geojson")
 
-        assert isinstance(result, dict)
-        assert "features" in result
-        assert len(result["features"]) == 2
+        assert result.geojson_data is not None
+        assert isinstance(result.geojson_data, dict)
+        assert "features" in result.geojson_data
+        assert len(result.geojson_data["features"]) == 2
 
     @patch('geopandas.GeoDataFrame.to_file')
     def test_create_map_shapefile_format(self, mock_to_file):
@@ -571,13 +586,13 @@ class TestCreateMap:
         ]
 
         result = create_map(
-            data, 
+            data,
             "rating",
             save_path="/tmp/test_output.shp",
             export_format="shapefile"
         )
 
-        assert result is None
+        assert result.file_path is not None
         mock_to_file.assert_called_once()
         assert mock_to_file.call_args[1]['driver'] == 'ESRI Shapefile'
 
@@ -602,7 +617,10 @@ class TestCreateMap:
     @patch('socialmapper.api._create_image_map')
     def test_create_map_with_save_path(self, mock_image_map):
         """Test creating map with save path."""
-        mock_image_map.return_value = None
+        mock_image_map.return_value = MapResult(
+            format="png",
+            file_path=Path("/tmp/output.png")
+        )
 
         data = [{"geometry": Point(0, 0).__geo_interface__, "data": 99}]
 
@@ -613,7 +631,7 @@ class TestCreateMap:
             export_format="png"
         )
 
-        assert result is None
+        assert result.file_path is not None
         assert mock_image_map.call_args[0][3] == "/tmp/output.png"  # save_path
 
     def test_create_map_list_input(self):
@@ -625,8 +643,9 @@ class TestCreateMap:
 
         result = create_map(data, "val", export_format="geojson")
 
-        assert isinstance(result, dict)
-        assert len(result["features"]) == 2
+        assert result.geojson_data is not None
+        assert isinstance(result.geojson_data, dict)
+        assert len(result.geojson_data["features"]) == 2
 
     def test_create_map_dataframe_input(self):
         """Test create_map with pandas DataFrame input."""
@@ -637,8 +656,9 @@ class TestCreateMap:
 
         result = create_map(df, "metric", export_format="geojson")
 
-        assert isinstance(result, dict)
-        assert len(result["features"]) == 2
+        assert result.geojson_data is not None
+        assert isinstance(result.geojson_data, dict)
+        assert len(result.geojson_data["features"]) == 2
 
     def test_create_map_geodataframe_input(self):
         """Test create_map with GeoDataFrame input."""
@@ -649,8 +669,9 @@ class TestCreateMap:
 
         result = create_map(gdf, "population", export_format="geojson")
 
-        assert isinstance(result, dict)
-        assert len(result["features"]) == 2
+        assert result.geojson_data is not None
+        assert isinstance(result.geojson_data, dict)
+        assert len(result.geojson_data["features"]) == 2
 
     def test_create_map_column_not_found(self):
         """Test error when specified column doesn't exist."""
@@ -1548,14 +1569,20 @@ class TestAnalyzeMultiplePois:
 
         # Mock census data returns
         mock_census.side_effect = [
-            {
-                "geoid1": {"population": 1000, "median_income": 50000},
-                "geoid2": {"population": 2000, "median_income": 60000}
-            },
-            {
-                "geoid3": {"population": 1500, "median_income": 55000},
-                "geoid4": {"population": 2500, "median_income": 65000}
-            }
+            CensusDataResult(
+                data={
+                    "geoid1": {"population": 1000, "median_income": 50000},
+                    "geoid2": {"population": 2000, "median_income": 60000}
+                },
+                location_type="polygon"
+            ),
+            CensusDataResult(
+                data={
+                    "geoid3": {"population": 1500, "median_income": 55000},
+                    "geoid4": {"population": 2500, "median_income": 65000}
+                },
+                location_type="polygon"
+            )
         ]
 
         result = analyze_multiple_pois(
@@ -1593,8 +1620,8 @@ class TestAnalyzeMultiplePois:
         ]
 
         mock_census.side_effect = [
-            {"geoid1": {"population": 1000}},
-            {"geoid2": {"population": 2000}}
+            CensusDataResult(data={"geoid1": {"population": 1000}}, location_type="polygon"),
+            CensusDataResult(data={"geoid2": {"population": 2000}}, location_type="polygon")
         ]
 
         result = analyze_multiple_pois(
@@ -1615,11 +1642,14 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {
-            "geoid1": {"population": 100},
-            "geoid2": {"population": 200},
-            "geoid3": {"population": 300}
-        }
+        mock_census.return_value = CensusDataResult(
+            data={
+                "geoid1": {"population": 100},
+                "geoid2": {"population": 200},
+                "geoid3": {"population": 300}
+            },
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["Test City"],
@@ -1643,7 +1673,10 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {"geoid1": {"population": 1000}}
+        mock_census.return_value = CensusDataResult(
+            data={"geoid1": {"population": 1000}},
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(["City"])
 
@@ -1660,7 +1693,10 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {"geoid1": {"population": 1000}}
+        mock_census.return_value = CensusDataResult(
+            data={"geoid1": {"population": 1000}},
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["City"],
@@ -1683,8 +1719,8 @@ class TestAnalyzeMultiplePois:
         ]
 
         mock_census.side_effect = [
-            {"geoid1": {"population": 1000}},
-            {"geoid2": {"population": 2000}}
+            CensusDataResult(data={"geoid1": {"population": 1000}}, location_type="polygon"),
+            CensusDataResult(data={"geoid2": {"population": 2000}}, location_type="polygon")
         ]
 
         result = analyze_multiple_pois(
@@ -1707,8 +1743,8 @@ class TestAnalyzeMultiplePois:
         ]
 
         mock_census.side_effect = [
-            {"geoid1": {"population": 1000}},
-            {"geoid2": {"population": 2000}}
+            CensusDataResult(data={"geoid1": {"population": 1000}}, location_type="polygon"),
+            CensusDataResult(data={"geoid2": {"population": 2000}}, location_type="polygon")
         ]
 
         result = analyze_multiple_pois(
@@ -1729,7 +1765,10 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {"geoid1": {"population": 1000}}
+        mock_census.return_value = CensusDataResult(
+            data={"geoid1": {"population": 1000}},
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["Single City"],
@@ -1750,7 +1789,10 @@ class TestAnalyzeMultiplePois:
             ValueError("Geocoding failed")  # Second location fails
         ]
 
-        mock_census.return_value = {"geoid1": {"population": 1000}}
+        mock_census.return_value = CensusDataResult(
+            data={"geoid1": {"population": 1000}},
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["Valid City", "Invalid City"],
@@ -1776,10 +1818,13 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {
-            "geoid1": {"population": 1000, "median_income": 50000, "median_age": 35},
-            "geoid2": {"population": 2000, "median_income": 60000, "median_age": 40}
-        }
+        mock_census.return_value = CensusDataResult(
+            data={
+                "geoid1": {"population": 1000, "median_income": 50000, "median_age": 35},
+                "geoid2": {"population": 2000, "median_income": 60000, "median_age": 40}
+            },
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["City"],
@@ -1800,11 +1845,14 @@ class TestAnalyzeMultiplePois:
             "geometry": {"type": "Polygon", "coordinates": [[]]}
         }
 
-        mock_census.return_value = {
-            "geoid1": {"population": 1000},
-            "geoid2": {"population": None},  # None value
-            "geoid3": {"population": 2000}
-        }
+        mock_census.return_value = CensusDataResult(
+            data={
+                "geoid1": {"population": 1000},
+                "geoid2": {"population": None},  # None value
+                "geoid3": {"population": 2000}
+            },
+            location_type="polygon"
+        )
 
         result = analyze_multiple_pois(
             ["City"],
