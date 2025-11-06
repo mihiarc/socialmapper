@@ -1,275 +1,422 @@
 # SocialMapper Tutorials
 
-A comprehensive, progressive tutorial series to master SocialMapper's geospatial analysis capabilities.
+A comprehensive, progressive tutorial series to master SocialMapper's geospatial analysis capabilities for urban planning, public health, and social equity research.
 
-## 🎯 Learning Path
+## 🎯 Tutorial Collection Overview
 
-These tutorials build progressively from basic concepts to advanced techniques. Follow them in order for the best learning experience.
+**Total Tutorials:** 13 (8 core + 5 advanced)
+**Total Learning Time:** 8-10 hours
+**Skill Levels:** Beginner → Intermediate → Advanced → Expert
+**Prerequisites:** Basic Python knowledge
 
-### Tutorial 1: Getting Started
+## 📚 Learning Paths
+
+Choose a learning path based on your goals and experience:
+
+### 🚀 Path 1: Quick Start (2-3 hours)
+**For:** Getting productive quickly
+1. Tutorial 01: Getting Started (20 min)
+2. Tutorial 02: Travel Modes (25 min)
+3. Tutorial 05: Combining Analysis (30 min)
+4. Selected exercises from EXERCISES.md
+
+### 🏛️ Path 2: Urban Planning Focus (4-5 hours)
+**For:** Urban planners and policy makers
+1. Tutorials 01-03: Core concepts (1 hour)
+2. Tutorial 06: Multi-Location Analysis (30 min)
+3. Tutorial 07: ZIP Code Analysis (25 min)
+4. Tutorial 09: Equity Analysis (35 min)
+5. Tutorial 10: Food Desert Analysis (40 min)
+
+### 🏥 Path 3: Public Health Research (5-6 hours)
+**For:** Public health professionals and researchers
+1. Tutorials 01-03: Foundation (1 hour)
+2. Tutorial 09: Equity Analysis (35 min)
+3. Tutorial 10: Food Desert Analysis (40 min)
+4. Tutorial 11: Healthcare Accessibility (35 min)
+5. Tutorial 13: Reproducible Research (45 min)
+
+### 📊 Path 4: Data Science Applications (6-7 hours)
+**For:** Data scientists and analysts
+1. All core tutorials (01-08): 3 hours
+2. Tutorial 12: Comparative Analysis (40 min)
+3. Tutorial 13: Reproducible Research (45 min)
+4. Advanced exercises and challenges
+
+### 🎓 Path 5: Complete Mastery (8-10 hours)
+**For:** Comprehensive understanding
+- All 13 tutorials in sequence
+- Complete exercise set
+- Challenge problems
+
+---
+
+## 📖 Core Tutorials (Beginner-Intermediate)
+
+### Tutorial 1: Getting Started ⭐
 **File:** `01_getting_started.py`
-**Duration:** ~5 minutes
-**Concepts:** Complete workflow, isochrones, POIs, census data, visualization
+**Time:** 15-20 minutes
+**Learning Objectives:**
+- Create travel-time isochrones from any location
+- Discover points of interest within accessible areas
+- Retrieve and analyze census demographics
+- Visualize accessibility patterns on maps
 
-Your first complete SocialMapper analysis combining all core features:
-- Creating travel-time isochrones
-- Finding Points of Interest (POIs)
-- Analyzing census demographics
-- Creating choropleth maps
+**Key Concepts:** Isochrones, POIs, Census blocks, Choropleth maps
 
 ```bash
 uv run python examples/tutorials/01_getting_started.py
 ```
 
-### Tutorial 2: Travel Modes
+### Tutorial 2: Travel Modes ⭐
 **File:** `02_travel_modes.py`
-**Duration:** ~3 minutes
-**Concepts:** Walk, bike, drive modes, area comparison
+**Time:** 20-25 minutes
+**Learning Objectives:**
+- Generate and compare isochrones for walk, bike, and drive
+- Calculate coverage multipliers between modes
+- Analyze equity implications of transportation
+- Understand multi-modal accessibility
 
-Compare how different transportation modes affect accessibility:
-- Walking isochrones (pedestrian paths)
-- Biking isochrones (bike lanes and paths)
-- Driving isochrones (road networks)
-- Coverage area analysis
+**Key Concepts:** Modal choice, Network distance, Accessibility equity
 
 ```bash
 uv run python examples/tutorials/02_travel_modes.py
 ```
 
-### Tutorial 3: Census Demographics
+### Tutorial 3: Census Demographics ⭐⭐
 **File:** `03_census_demographics.py`
-**Duration:** ~4 minutes
-**Concepts:** Census API, demographic variables, aggregation
+**Time:** 20-25 minutes
+**Learning Objectives:**
+- Master Census Bureau data retrieval
+- Work with demographic variables
+- Aggregate and analyze population data
+- Create demographic visualizations
 
-Deep dive into demographic analysis:
-- Getting census block groups
-- Fetching population, income, age data
-- Working with housing statistics
-- Aggregating and analyzing demographics
+**Key Concepts:** ACS data, GEOIDs, Variable selection, Data aggregation
 
 ```bash
 uv run python examples/tutorials/03_census_demographics.py
 ```
 
-### Tutorial 4: Custom POIs
+### Tutorial 4: Custom POIs ⭐⭐
 **File:** `04_custom_pois.py`
-**Duration:** ~3 minutes
-**Concepts:** CSV import, batch processing, comparative analysis
+**Time:** 15-20 minutes
+**Learning Objectives:**
+- Import custom POI data from CSV
+- Perform batch accessibility analysis
+- Compare multiple locations
+- Generate comparative reports
 
-Analyze your own points of interest:
-- CSV file format and requirements
-- Importing custom POI locations
-- Batch isochrone generation
-- Comparing multiple locations
+**Key Concepts:** CSV import, Batch processing, Comparative analysis
 
 ```bash
 uv run python examples/tutorials/04_custom_pois.py
 ```
 
-### Tutorial 5: Combining Analysis
+### Tutorial 5: Combining Analysis ⭐⭐
 **File:** `05_combining_analysis.py`
-**Duration:** ~4 minutes
-**Concepts:** Workflow composition, accessibility metrics
+**Time:** 25-30 minutes
+**Learning Objectives:**
+- Build complex analytical workflows
+- Merge spatial and demographic data
+- Create composite accessibility metrics
+- Design reusable analysis patterns
 
-Build sophisticated analyses by combining features:
-- Merging spatial and demographic data
-- Accessibility analysis workflows
-- Transportation mode comparison
-- Custom analysis patterns
+**Key Concepts:** Workflow composition, Data integration, Metrics design
 
 ```bash
 uv run python examples/tutorials/05_combining_analysis.py
 ```
 
-### Tutorial 6: Multi-Location Analysis
+### Tutorial 6: Multi-Location Analysis ⭐⭐
 **File:** `06_multi_location_analysis.py`
-**Duration:** ~5 minutes
-**Concepts:** Batch processing, overlap analysis, accessibility matrices
+**Time:** 25-30 minutes
+**Learning Objectives:**
+- Analyze multiple locations simultaneously
+- Detect service area overlaps
+- Identify gaps in coverage
+- Create accessibility matrices
 
-Advanced techniques for analyzing multiple locations:
-- Batch processing multiple POIs
-- Service area overlap detection
-- Gap analysis for underserved areas
-- Accessibility comparison matrices
+**Key Concepts:** Batch analysis, Overlap detection, Gap analysis
 
 ```bash
 uv run python examples/tutorials/06_multi_location_analysis.py
 ```
 
-### Tutorial 7: ZIP Code Analysis
+### Tutorial 7: ZIP Code Analysis ⭐⭐
 **File:** `07_zipcode_analysis.py`
-**Duration:** ~4 minutes
-**Concepts:** ZCTA boundaries, regional analysis
+**Time:** 20-25 minutes
+**Learning Objectives:**
+- Work with ZIP Code Tabulation Areas
+- Perform regional-scale analysis
+- Compare ZCTA vs block group approaches
+- Optimize for performance
 
-Work with ZIP Code Tabulation Areas (ZCTAs):
-- ZCTA vs block group analysis
-- Fetching ZCTA boundaries
-- Regional demographic patterns
-- Performance considerations
+**Key Concepts:** ZCTAs, Regional analysis, Geographic hierarchies
 
 ```bash
 uv run python examples/tutorials/07_zipcode_analysis.py
 ```
 
-### Tutorial 8: Address Geocoding
+### Tutorial 8: Address Geocoding ⭐⭐
 **File:** `08_address_geocoding.py`
-**Duration:** ~3 minutes
-**Concepts:** Geocoding services, address standardization, batch geocoding
+**Time:** 15-20 minutes
+**Learning Objectives:**
+- Convert addresses to coordinates
+- Use multiple geocoding providers
+- Implement batch geocoding
+- Handle geocoding failures gracefully
 
-Convert addresses to coordinates:
-- Multiple geocoding providers
-- Address validation and standardization
-- Batch address geocoding
-- Caching strategies for efficiency
+**Key Concepts:** Geocoding, Address validation, Error handling
 
 ```bash
 uv run python examples/tutorials/08_address_geocoding.py
 ```
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
+## 🚀 Advanced Tutorials (Intermediate-Expert)
 
+### Tutorial 9: Transit Equity Analysis ⭐⭐⭐
+**File:** `09_equity_analysis.py`
+**Time:** 30-35 minutes
+**Learning Objectives:**
+- Analyze service access across income levels
+- Calculate equity metrics (Gini coefficient)
+- Identify underserved communities
+- Generate policy recommendations
+
+**Key Concepts:** Environmental justice, Disparity ratios, Spatial equity
+
+```bash
+uv run python examples/tutorials/09_equity_analysis.py
+```
+
+### Tutorial 10: Food Desert Analysis ⭐⭐⭐
+**File:** `10_food_desert_analysis.py`
+**Time:** 35-40 minutes
+**Learning Objectives:**
+- Identify food deserts using USDA criteria
+- Analyze food access by demographics
+- Assess food environment quality
+- Model intervention impacts
+
+**Key Concepts:** Food security, USDA definitions, Health impacts
+
+```bash
+uv run python examples/tutorials/10_food_desert_analysis.py
+```
+
+### Tutorial 11: Healthcare Accessibility ⭐⭐⭐
+**File:** `11_healthcare_accessibility.py`
+**Time:** 30-35 minutes
+**Learning Objectives:**
+- Map healthcare facility access
+- Analyze emergency response times
+- Identify vulnerable populations
+- Optimize service locations
+
+**Key Concepts:** Healthcare equity, Emergency services, Facility planning
+
+```bash
+# Coming soon
+uv run python examples/tutorials/11_healthcare_accessibility.py
+```
+
+### Tutorial 12: Multi-City Comparison ⭐⭐⭐
+**File:** `12_comparative_analysis.py`
+**Time:** 35-40 minutes
+**Learning Objectives:**
+- Compare accessibility across cities
+- Create benchmarking metrics
+- Identify best practices
+- Generate comparison visualizations
+
+**Key Concepts:** Benchmarking, Cross-city analysis, Best practices
+
+```bash
+# Coming soon
+uv run python examples/tutorials/12_comparative_analysis.py
+```
+
+### Tutorial 13: Reproducible Research ⭐⭐⭐⭐
+**File:** `13_reproducible_research.py`
+**Time:** 40-45 minutes
+**Learning Objectives:**
+- Build reproducible workflows
+- Implement data validation
+- Create publication-ready outputs
+- Document research methods
+
+**Key Concepts:** Reproducibility, Validation, Documentation
+
+```bash
+# Coming soon
+uv run python examples/tutorials/13_reproducible_research.py
+```
+
+---
+
+## 💡 Prerequisites & Setup
+
+### System Requirements
+- Python 3.11 or higher
+- 4GB RAM minimum (8GB recommended)
+- Internet connection for API calls
+
+### Installation
 ```bash
 # Install SocialMapper
 uv add socialmapper
 
-# Set Census API key (optional but recommended)
+# Set Census API key (free from census.gov)
 export CENSUS_API_KEY="your-key-here"
+
+# Create .env file (optional)
+echo "CENSUS_API_KEY=your-key-here" > .env
 ```
 
-Get a free Census API key at: https://api.census.gov/data/key_signup.html
-
-### Run Your First Tutorial
-
-```bash
-uv run python examples/tutorials/01_getting_started.py
-```
-
-## 💡 API Philosophy
-
-All tutorials use SocialMapper's **direct functional API**:
-
-```python
-from socialmapper import (
-    create_isochrone,      # Generate travel-time polygons
-    get_census_blocks,     # Find census block groups
-    get_census_data,       # Fetch demographic data
-    get_poi,               # Search for POIs
-    create_map,            # Create choropleth maps
-)
-
-# Simple, direct function calls - no client classes needed
-isochrone = create_isochrone(
-    location=(35.7796, -78.6382),
-    travel_time=15,
-    travel_mode="drive"
-)
-```
-
-**Key principles:**
-- Direct functions, no abstractions
-- Simple imports
-- Composable building blocks
-- Standard Python data structures (dicts, lists)
-- Fast learning curve
-
-## 📊 Common Patterns
-
-### Basic Accessibility Analysis
-```python
-# 1. Create isochrone
-iso = create_isochrone(location, travel_time=15, travel_mode="drive")
-
-# 2. Get demographics
-blocks = get_census_blocks(polygon=iso)
-data = get_census_data(
-    location=[b['geoid'] for b in blocks],
-    variables=["population", "median_income"]
-)
-
-# 3. Analyze
-total_population = sum(d['population'] for d in data.values())
-```
-
-### Multi-Location Comparison
-```python
-locations = [(35.7796, -78.6382), (35.9940, -78.8986)]
-
-for loc in locations:
-    iso = create_isochrone(loc, travel_time=10)
-    # Compare coverage areas, demographics, etc.
-```
-
-### Transportation Mode Analysis
-```python
-modes = ["drive", "bike", "walk"]
-
-for mode in modes:
-    iso = create_isochrone(location, travel_time=15, travel_mode=mode)
-    print(f"{mode}: {iso['properties']['area_sq_km']:.2f} km²")
-```
-
-## 🎓 Learning Tips
-
-1. **Follow the sequence** - Tutorials build on each other
-2. **Experiment** - Modify parameters and locations
-3. **Read the code** - Each tutorial is heavily commented
-4. **Check outputs** - Many tutorials create maps and visualizations
-5. **Start small** - Use short travel times (5-10 min) while learning
-
-## ⚡ Performance Tips
-
-- **Cache warming**: First runs may be slower due to data downloads
-- **Sample census blocks**: Limit to 20-30 blocks for faster API calls
-- **Short travel times**: Use 5-10 minutes for quick testing
-- **ZCTA vs blocks**: ZCTAs are faster for regional analysis
-
-## 🆘 Troubleshooting
-
-### Import Errors
-```bash
-# Ensure SocialMapper is installed
-uv add socialmapper
-```
-
-### Slow Performance
-- Normal on first run (building caches)
-- Use smaller travel times while learning
-- Sample census blocks (first 20-30)
-
-### No Census Data
-- Set `CENSUS_API_KEY` environment variable
-- Check internet connection
-- Verify location is in the United States
-
-### Geocoding Failures
-- Use coordinates instead of addresses for reliability
-- Tutorial files include coordinate dictionaries for common cities
-
-## 📚 Next Steps
-
-After completing these tutorials:
-
-1. **Try your own locations** - Analyze areas you care about
-2. **Custom analyses** - Build workflows for your use case
-3. **Explore the API** - Check the main documentation
-4. **Share insights** - Contribute examples back to the community
-
-## 🤝 Contributing
-
-Have ideas for new tutorials? Found an issue?
-- Open an issue on GitHub
-- Submit a pull request with improvements
-- Share your own analysis examples
-
-## 📖 Additional Resources
-
-- **Main Documentation**: `/docs`
-- **API Reference**: Check function docstrings
-- **Example Data**: `/examples/data`
-- **Project README**: `/README.md`
+Get your free Census API key: https://api.census.gov/data/key_signup.html
 
 ---
 
-Happy mapping! 🗺️✨
+## 📊 Tutorial Features Matrix
+
+| Tutorial | Isochrones | POIs | Census | Maps | Equity | Batch | Advanced |
+|----------|------------|------|---------|------|--------|-------|----------|
+| 01 Getting Started | ✅ | ✅ | ✅ | ✅ | | | |
+| 02 Travel Modes | ✅ | ✅ | ✅ | | ✅ | | |
+| 03 Census Demographics | | | ✅ | ✅ | | | |
+| 04 Custom POIs | ✅ | ✅ | | | | ✅ | |
+| 05 Combining Analysis | ✅ | ✅ | ✅ | ✅ | | | ✅ |
+| 06 Multi-Location | ✅ | ✅ | ✅ | | | ✅ | ✅ |
+| 07 ZIP Code Analysis | | | ✅ | ✅ | | | ✅ |
+| 08 Address Geocoding | | | | | | ✅ | |
+| 09 Equity Analysis | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+| 10 Food Desert | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+
+---
+
+## 🎯 Learning Resources
+
+### 📚 Documentation
+- **[Exercise Compilation](EXERCISES.md)** - All exercises with solutions
+- **[API Reference](../../docs/api.md)** - Complete API documentation
+- **[Best Practices](../../docs/best_practices.md)** - Tips and patterns
+
+### 🛠️ Practice Datasets
+- **Sample POIs**: `examples/data/sample_pois.csv`
+- **Test Locations**: Pre-configured coordinates for major cities
+- **Demo Mode**: Run without API keys for learning
+
+### 💬 Getting Help
+- **Issues**: GitHub Issues for bugs/questions
+- **Discussions**: Community forum for help
+- **Examples**: Share your analyses
+
+---
+
+## ⚡ Quick Reference
+
+### Core API Functions
+```python
+from socialmapper import (
+    create_isochrone,      # Travel-time areas
+    get_poi,              # Find points of interest
+    get_census_blocks,    # Get census geography
+    get_census_data,      # Fetch demographics
+    create_map,           # Generate visualizations
+)
+```
+
+### Common Patterns
+
+**Basic Analysis:**
+```python
+# 1. Define area
+iso = create_isochrone(location, travel_time=15)
+
+# 2. Find services
+pois = get_poi(location, categories=["library"])
+
+# 3. Get demographics
+blocks = get_census_blocks(polygon=iso)
+data = get_census_data(location=[b['geoid'] for b in blocks])
+
+# 4. Visualize
+map = create_map(data=map_data, column="population")
+```
+
+**Multi-Modal Comparison:**
+```python
+modes = ["walk", "bike", "drive"]
+results = {}
+
+for mode in modes:
+    iso = create_isochrone(location, 15, mode)
+    results[mode] = iso['properties']['area_sq_km']
+```
+
+---
+
+## 🏆 Tutorial Completion Checklist
+
+Track your progress through the tutorial series:
+
+### Core Tutorials
+- [ ] 01 Getting Started
+- [ ] 02 Travel Modes
+- [ ] 03 Census Demographics
+- [ ] 04 Custom POIs
+- [ ] 05 Combining Analysis
+- [ ] 06 Multi-Location
+- [ ] 07 ZIP Code Analysis
+- [ ] 08 Address Geocoding
+
+### Advanced Tutorials
+- [ ] 09 Equity Analysis
+- [ ] 10 Food Desert Analysis
+- [ ] 11 Healthcare Accessibility
+- [ ] 12 Comparative Analysis
+- [ ] 13 Reproducible Research
+
+### Exercises
+- [ ] Complete 5 Beginner exercises
+- [ ] Complete 3 Intermediate exercises
+- [ ] Complete 1 Advanced exercise
+- [ ] Complete 1 Challenge problem
+
+---
+
+## 🚀 Next Steps
+
+After completing the tutorials:
+
+1. **Apply to Your Area**: Analyze your city or region
+2. **Extend the Analysis**: Add new metrics or data sources
+3. **Build Applications**: Create web apps or dashboards
+4. **Share Results**: Publish findings or contribute examples
+5. **Contribute**: Improve tutorials or add new ones
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions to improve and expand the tutorials:
+
+- **Bug Fixes**: Report issues or submit fixes
+- **New Tutorials**: Propose new topics
+- **Improvements**: Enhance existing tutorials
+- **Translations**: Help translate tutorials
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📄 License
+
+These tutorials are part of the SocialMapper project and are available under the same license. See [LICENSE](../../LICENSE) for details.
+
+---
+
+*Happy learning! For questions and discussions, visit our community forums.* 🗺️✨
