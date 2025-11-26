@@ -367,7 +367,8 @@ def fetch_census_data(
 
     Retrieves demographic and socioeconomic data from the Census Bureau
     API for specific geographic units (block groups) and variables.
-    Data is fetched in batches to respect API limits.
+    Uses efficient batching by grouping GEOIDs by tract and fetching
+    all block groups per tract in a single API call.
 
     Parameters
     ----------
@@ -406,8 +407,9 @@ def fetch_census_data(
     Notes
     -----
     Requires CENSUS_API_KEY environment variable to be set.
-    API has rate limits; function implements batching with 50 GEOIDs
-    per request to avoid exceeding limits.
+    Uses efficient batching: groups GEOIDs by tract and fetches all
+    block groups per tract using wildcard queries. This reduces API
+    calls from N (one per GEOID) to T (one per unique tract).
     """
     if not geoids or not variables:
         return {}
@@ -419,115 +421,138 @@ def fetch_census_data(
     from .security.utils import get_api_key
     api_key = get_api_key("census_api", "CENSUS_API_KEY")
 
-    # Group GEOIDs by state (first 2 digits)
+    # Build reverse mapping for human-readable names (computed once)
     from collections import defaultdict
-    geoids_by_state = defaultdict(list)
+    reverse_mapping = defaultdict(list)
+    for name, code in VARIABLE_MAPPING.items():
+        reverse_mapping[code].append(name)
+
+    # Group GEOIDs by tract (state + county + tract = first 11 digits)
+    # This allows us to use wildcard queries to fetch all block groups per tract
+    geoids_by_tract: dict[str, set[str]] = defaultdict(set)
+    requested_geoids = set()
+
     for geoid in geoids:
-        # Validate GEOID format before processing
-        if len(geoid) >= 2 and re.match(r'^[0-9]+$', geoid):
-            state = geoid[:2]
-            geoids_by_state[state].append(geoid)
-        else:
+        # Validate GEOID format: must be 12 digits
+        if not re.match(r'^[0-9]{12}$', geoid):
             logger.warning(f"Skipping invalid GEOID format: {geoid}")
+            continue
+
+        tract_key = geoid[:11]  # State (2) + County (3) + Tract (6)
+        geoids_by_tract[tract_key].add(geoid)
+        requested_geoids.add(geoid)
 
     result = {}
+    total_api_calls = 0
 
-    for state, state_geoids in geoids_by_state.items():
-        # Build query - Census API has limits, so batch if needed
-        batch_size = 50
-        for i in range(0, len(state_geoids), batch_size):
-            batch = state_geoids[i:i + batch_size]
+    # Process tracts in batches to respect rate limits
+    tract_keys = list(geoids_by_tract.keys())
+    batch_size = 10  # Process 10 tracts per batch, with delay between batches
 
-            # Parse GEOIDs to get tract and block group
-            for geoid in batch:
-                if len(geoid) == 12:  # State + County + Tract + Block Group
-                    # Validate GEOID is all digits to prevent injection
-                    if not re.match(r'^[0-9]{12}$', geoid):
-                        logger.warning(f"Skipping invalid GEOID: {geoid}")
-                        continue
+    for batch_start in range(0, len(tract_keys), batch_size):
+        batch_tracts = tract_keys[batch_start:batch_start + batch_size]
 
-                    county = geoid[2:5]
-                    tract = geoid[5:11]
-                    block_group = geoid[11:12]
+        for tract_key in batch_tracts:
+            state = tract_key[:2]
+            county = tract_key[2:5]
+            tract = tract_key[5:11]
+            target_geoids = geoids_by_tract[tract_key]
 
-                    # Build query parameters with validated components
-                    params = {
-                        "get": ",".join(["NAME"] + variables),
-                        "for": f"block group:{block_group}",
-                        "in": f"state:{state} county:{county} tract:{tract}"
-                    }
+            # Use wildcard to fetch ALL block groups in this tract at once
+            params = {
+                "get": ",".join(["NAME"] + variables),
+                "for": "block group:*",  # Wildcard: get all block groups in tract
+                "in": f"state:{state} county:{county} tract:{tract}"
+            }
 
-                    if api_key:
-                        params["key"] = api_key
+            if api_key:
+                params["key"] = api_key
 
-                    try:
-                        response = requests.get(base_url, params=params, timeout=30)
-                        response.raise_for_status()
+            try:
+                response = requests.get(base_url, params=params, timeout=30)
+                response.raise_for_status()
+                total_api_calls += 1
 
-                        data = response.json()
-                        if len(data) > 1:  # First row is headers
-                            headers = data[0]
-                            values = data[1]
+                data = response.json()
+                if len(data) > 1:  # First row is headers
+                    headers = data[0]
 
-                            # Build result dict for this GEOID
-                            geoid_data = {}
-                            for j, header in enumerate(headers):
-                                if header in variables:
-                                    try:
-                                        geoid_data[header] = float(values[j]) if values[j] else None
-                                    except (ValueError, TypeError):
-                                        geoid_data[header] = values[j]
+                    # Find column indices for reconstructing GEOID
+                    state_idx = headers.index("state") if "state" in headers else None
+                    county_idx = headers.index("county") if "county" in headers else None
+                    tract_idx = headers.index("tract") if "tract" in headers else None
+                    bg_idx = headers.index("block group") if "block group" in headers else None
 
-                            # Map back to human-readable names
-                            # Build reverse mapping that includes ALL aliases for each code
-                            from collections import defaultdict
-                            reverse_mapping = defaultdict(list)
-                            for name, code in VARIABLE_MAPPING.items():
-                                reverse_mapping[code].append(name)
-
-                            for var_code, value in list(geoid_data.items()):
-                                if var_code in reverse_mapping:
-                                    # Add value for all human-readable aliases
-                                    for alias in reverse_mapping[var_code]:
-                                        geoid_data[alias] = value
-
-                            result[geoid] = geoid_data
-
-                    except requests.HTTPError as e:
-                        if e.response and e.response.status_code == 403:
-                            from .exceptions import MissingAPIKeyError
-                            logger.error(f"Census API authentication failed for GEOID {geoid}")
-                            raise MissingAPIKeyError("Census")
-                        elif e.response and e.response.status_code == 429:
-                            from .exceptions import RateLimitError
-                            logger.warning(f"Census API rate limit exceeded for GEOID {geoid}")
-                            raise RateLimitError("Census API")
-                        else:
-                            from .exceptions import InvalidAPIResponseError
-                            status = e.response.status_code if e.response else None
-                            raise InvalidAPIResponseError(
-                                "Census API",
-                                status_code=status,
-                                details=str(e)
+                    # Process each row (skip header row)
+                    for row in data[1:]:
+                        # Reconstruct GEOID from response columns
+                        if all(idx is not None for idx in [state_idx, county_idx, tract_idx, bg_idx]):
+                            row_geoid = (
+                                f"{row[state_idx]}{row[county_idx]}"
+                                f"{row[tract_idx]}{row[bg_idx]}"
                             )
-                    except requests.Timeout:
-                        from .exceptions import NetworkError
-                        logger.warning(f"Census API request timed out for GEOID {geoid}")
-                        raise NetworkError(
-                            "Census API",
-                            "Request timed out"
-                        )
-                    except requests.RequestException as e:
-                        from .exceptions import NetworkError
-                        logger.warning(f"Network error fetching census data for GEOID {geoid}: {e}")
-                        raise NetworkError(
-                            "Census API",
-                            str(e)
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to fetch census data for {geoid}: {e}")
-                        from .exceptions import DataError
-                        raise DataError(f"Failed to fetch census data: {e}")
+                        else:
+                            # Fallback: construct from known tract + block group position
+                            row_geoid = f"{tract_key}{row[-1]}"
 
-    logger.info(f"Fetched census data for {len(result)}/{len(geoids)} GEOIDs")
+                        # Only include if this GEOID was in our request
+                        if row_geoid not in target_geoids:
+                            continue
+
+                        # Build result dict for this GEOID
+                        geoid_data = {}
+                        for j, header in enumerate(headers):
+                            if header in variables:
+                                try:
+                                    geoid_data[header] = float(row[j]) if row[j] else None
+                                except (ValueError, TypeError):
+                                    geoid_data[header] = row[j]
+
+                        # Map census codes to human-readable names
+                        for var_code, value in list(geoid_data.items()):
+                            if var_code in reverse_mapping:
+                                for alias in reverse_mapping[var_code]:
+                                    geoid_data[alias] = value
+
+                        result[row_geoid] = geoid_data
+
+            except requests.HTTPError as e:
+                if e.response is not None and e.response.status_code == 403:
+                    from .exceptions import MissingAPIKeyError
+                    logger.error(f"Census API authentication failed for tract {tract_key}")
+                    raise MissingAPIKeyError("Census")
+                elif e.response is not None and e.response.status_code == 429:
+                    from .exceptions import RateLimitError
+                    logger.warning(f"Census API rate limit exceeded for tract {tract_key}")
+                    raise RateLimitError("Census API")
+                else:
+                    from .exceptions import InvalidAPIResponseError
+                    status = e.response.status_code if e.response else None
+                    raise InvalidAPIResponseError(
+                        "Census API",
+                        status_code=status,
+                        details=str(e)
+                    )
+            except requests.Timeout:
+                from .exceptions import NetworkError
+                logger.warning(f"Census API request timed out for tract {tract_key}")
+                raise NetworkError("Census API", "Request timed out")
+            except requests.RequestException as e:
+                from .exceptions import NetworkError
+                logger.warning(f"Network error fetching census data for tract {tract_key}: {e}")
+                raise NetworkError("Census API", str(e))
+            except Exception as e:
+                logger.warning(f"Failed to fetch census data for tract {tract_key}: {e}")
+                from .exceptions import DataError
+                raise DataError(f"Failed to fetch census data: {e}")
+
+        # Add small delay between batches to respect rate limits
+        if batch_start + batch_size < len(tract_keys):
+            import time
+            time.sleep(0.1)  # 100ms delay between batches
+
+    logger.info(
+        f"Fetched census data for {len(result)}/{len(requested_geoids)} GEOIDs "
+        f"using {total_api_calls} API calls (grouped by {len(geoids_by_tract)} tracts)"
+    )
     return result
