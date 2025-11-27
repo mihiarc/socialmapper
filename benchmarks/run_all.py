@@ -128,9 +128,9 @@ def main():
 
     # Disable caching if requested
     if args.no_cache:
-        from socialmapper.cache_manager import CacheManager
+        from socialmapper.performance.cache import CacheManager
         cache = CacheManager()
-        cache.clear_cache(cache_type='all')
+        cache.clear_all_caches()
         print("Cache cleared for baseline measurements")
 
     # Run benchmarks

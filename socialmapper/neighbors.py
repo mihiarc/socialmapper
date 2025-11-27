@@ -22,8 +22,8 @@ Examples
 
 from typing import Any
 
-# Import geocoding functionality
-from .census import geocode_point
+# Import geocoding functionality from internal module
+from ._geocoding import get_census_geography
 
 # Re-export with enhanced documentation
 
@@ -182,8 +182,8 @@ def get_geography_from_point(lat: float, lon: float) -> dict[str, str] | None:
     >>> result['county_fips']
     '183'
     """
-    # Use the geocode_point function from census module
-    return geocode_point(lat, lon)
+    # Use the get_census_geography function from internal geocoding module
+    return get_census_geography(lat, lon)
 
 
 def get_counties_from_pois(
@@ -232,15 +232,39 @@ def get_counties_from_pois(
     ... )
     >>> len(counties) >= 2
     True
-
-    Notes
-    -----
-    Requires get_census_system() to be available. This is a
-    pre-existing implementation dependency.
     """
-    # Use modern census system for geographic operations
-    census_system = get_census_system()
-    return census_system.get_counties_from_pois(pois, include_neighbors)
+    import logging
+    logger = logging.getLogger(__name__)
+
+    counties = set()
+
+    for poi in pois:
+        lat = poi.get("lat")
+        lon = poi.get("lon")
+
+        if lat is None or lon is None:
+            logger.warning(f"POI missing lat/lon coordinates: {poi}")
+            continue
+
+        try:
+            geo_info = get_census_geography(lat, lon)
+            if geo_info:
+                state_fips = geo_info.get("state_fips")
+                county_fips = geo_info.get("county_fips")
+                if state_fips and county_fips:
+                    counties.add((state_fips, county_fips))
+        except Exception as e:
+            logger.warning(f"Failed to get geography for POI ({lat}, {lon}): {e}")
+
+    # Note: include_neighbors and neighbor_distance are accepted but
+    # county neighbor functionality is not yet implemented
+    if include_neighbors:
+        logger.debug(
+            "County neighbor expansion requested but not yet implemented. "
+            "Returning only POI-containing counties."
+        )
+
+    return list(counties)
 
 
 def get_neighbor_manager(db_path: str | None = None):
@@ -298,7 +322,7 @@ def get_neighbor_manager(db_path: str | None = None):
 
         def get_geography_from_point(self, lat, lon):
             """Get geographic identifiers for a point."""
-            return geocode_point(lat, lon)
+            return get_census_geography(lat, lon)
 
     return SimpleNeighborManager()
 

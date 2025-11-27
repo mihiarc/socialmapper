@@ -31,14 +31,14 @@ from .memory import (
 
 __all__ = [
     "CacheManager",
-    "get_cache_stats",
     "PerformanceConfig",
     "PerformancePreset",
-    "get_performance_config",
-    "get_http_session",
-    "init_connection_pool",
     "clear_memory_cache",
+    "get_cache_stats",
+    "get_http_session",
     "get_memory_stats",
+    "get_performance_config",
+    "init_connection_pool",
     "memory_efficient_iterator",
     "optimize_dataframe_memory",
 ]

@@ -5,7 +5,6 @@ HTTP requests to Census API, Overpass API, and other services.
 """
 
 import logging
-from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter

@@ -9,7 +9,7 @@ import time
 from typing import Any
 
 from socialmapper import api
-from socialmapper.cache_manager import CacheManager
+from socialmapper.performance.cache import CacheManager
 
 from .base import BaseBenchmark
 from .utils import TEST_LOCATIONS, TEST_COORDS

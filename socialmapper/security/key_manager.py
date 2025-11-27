@@ -62,7 +62,7 @@ def _get_machine_identifier() -> bytes:
                 ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=5, check=False,
             )
             for line in result.stdout.split("\n"):
                 if "IOPlatformUUID" in line:
@@ -84,7 +84,7 @@ def _get_machine_identifier() -> bytes:
                 ["wmic", "csproduct", "get", "UUID"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=5, check=False,
             )
             lines = result.stdout.strip().split("\n")
             if len(lines) > 1:

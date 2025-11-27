@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from socialmapper.cache_manager import (
+from socialmapper.performance.cache import (
     cleanup_expired_cache_entries,
     clear_all_caches,
     clear_census_cache,

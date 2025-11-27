@@ -1,8 +1,27 @@
-"""Internal geocoding utilities for SocialMapper."""
+"""Internal geocoding utilities for SocialMapper.
+
+This module provides low-level geocoding functions used internally
+by SocialMapper. For user-facing geocoding functionality with advanced
+features like batch processing, quality validation, and multiple
+providers, use the `socialmapper.geocoding` package instead.
+
+Functions
+---------
+geocode_location : Simple address-to-coordinates geocoding
+geocode_with_census : US Census geocoder fallback
+get_census_geography : Reverse geocode to census geography IDs
+"""
 
 import logging
 
-import requests
+from .constants import (
+    CENSUS_GEOCODER_GEOGRAPHIES_URL,
+    CENSUS_GEOCODER_LOCATIONS_URL,
+    GEOCODING_TIMEOUT,
+    NOMINATIM_API_URL,
+    USER_AGENT,
+)
+from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +73,7 @@ def geocode_location(address: str) -> tuple[float, float] | None:
     service providers' usage policies. Results are logged at debug level.
     """
     # Try Nominatim first (no API key needed)
-    url = "https://nominatim.openstreetmap.org/search"
+    session = get_http_session()
     params = {
         "q": address,
         "format": "json",
@@ -62,11 +81,13 @@ def geocode_location(address: str) -> tuple[float, float] | None:
         "countrycodes": "us"  # Focus on US addresses
     }
     headers = {
-        "User-Agent": "SocialMapper/2.0 (https://github.com/socialmapper)"
+        "User-Agent": USER_AGENT
     }
 
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = session.get(
+            NOMINATIM_API_URL, params=params, headers=headers, timeout=GEOCODING_TIMEOUT
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -77,14 +98,11 @@ def geocode_location(address: str) -> tuple[float, float] | None:
             logger.debug(f"Geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
 
-    except requests.exceptions.Timeout:
-        logger.warning(f"Nominatim geocoding timed out for '{address}'")
-        # Try fallback before giving up
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"Nominatim network error for '{address}': {e}")
-        # Try fallback before giving up
     except Exception as e:
-        logger.warning(f"Nominatim geocoding failed for '{address}': {e}")
+        if "timeout" in str(e).lower():
+            logger.warning(f"Nominatim geocoding timed out for '{address}'")
+        else:
+            logger.warning(f"Nominatim geocoding failed for '{address}': {e}")
         # Try fallback before giving up
 
     # Fallback to Census geocoder
@@ -141,7 +159,7 @@ def geocode_with_census(address: str) -> tuple[float, float] | None:
     Does not require an API key but has rate limiting.
     Returns the most accurate match from the Census geocoding database.
     """
-    url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+    session = get_http_session()
     params = {
         "address": address,
         "benchmark": "Public_AR_Current",
@@ -149,7 +167,9 @@ def geocode_with_census(address: str) -> tuple[float, float] | None:
     }
 
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = session.get(
+            CENSUS_GEOCODER_LOCATIONS_URL, params=params, timeout=GEOCODING_TIMEOUT
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -208,7 +228,9 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     Uses the 2020 Census block boundaries for geographic matching.
     Only works for coordinates within the United States and territories.
     """
-    url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
+    from .constants import DEFAULT_HTTP_TIMEOUT
+
+    session = get_http_session()
     params = {
         "x": lon,
         "y": lat,
@@ -219,7 +241,9 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     }
 
     try:
-        response = requests.get(url, params=params, timeout=30)
+        response = session.get(
+            CENSUS_GEOCODER_GEOGRAPHIES_URL, params=params, timeout=DEFAULT_HTTP_TIMEOUT
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -251,23 +275,23 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
             f"The location may be outside the US or in a territory without census block data."
         )
 
-    except requests.Timeout:
-        from .exceptions import NetworkError
-        logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
-        raise NetworkError(
-            "Census Geocoding API",
-            "Request timed out"
-        )
-    except requests.RequestException as e:
-        from .exceptions import NetworkError
-        logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
-        raise NetworkError(
-            "Census Geocoding API",
-            str(e)
-        )
     except Exception as e:
-        logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
-        from .exceptions import DataError
-        raise DataError(f"Failed to get census geography: {e}")
+        from .exceptions import DataError, NetworkError
+        error_str = str(e).lower()
+        if "timeout" in error_str:
+            logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
+            raise NetworkError(
+                "Census Geocoding API",
+                "Request timed out"
+            )
+        elif "connection" in error_str or "network" in error_str:
+            logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
+            raise NetworkError(
+                "Census Geocoding API",
+                str(e)
+            )
+        else:
+            logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
+            raise DataError(f"Failed to get census geography: {e}")
 
     return None

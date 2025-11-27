@@ -1,15 +1,24 @@
 """Unified caching system for SocialMapper.
 
 Provides a centralized cache manager for Census API responses,
-geocoding results, and other frequently accessed data.
+geocoding results, network graphs, and other frequently accessed data.
+
+This module consolidates all caching functionality including:
+- Census data caching
+- Geocoding result caching
+- Network graph cache statistics
+- Cache administration (clearing, statistics)
 """
 
 import functools
 import hashlib
 import logging
 import os
+import shutil
+from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import diskcache as dc
 
@@ -361,6 +370,127 @@ class CacheManager:
             }
         }
 
+    def get_cache_statistics(self) -> dict[str, Any]:
+        """Get comprehensive statistics for all cache subsystems.
+
+        Collects size, item count, and status information from
+        all cache types including network cache.
+
+        Returns
+        -------
+        dict
+            Nested dictionary with keys 'summary',
+            'network_cache', 'geocoding_cache', 'census_cache'.
+            Summary contains 'total_size_mb', 'total_items',
+            'last_updated'.
+
+        Examples
+        --------
+        >>> cache = CacheManager()
+        >>> stats = cache.get_cache_statistics()
+        >>> stats['summary']['total_size_mb']
+        45.3
+        """
+        from ..isochrone.cache import get_cache_stats as get_network_stats
+
+        stats = {
+            "summary": {
+                "total_size_mb": 0,
+                "total_items": 0,
+                "last_updated": datetime.now().isoformat(),
+            },
+            "network_cache": self._get_network_cache_stats(get_network_stats),
+            "geocoding_cache": {
+                "size_mb": self._geocoding_cache.volume() / (1024 * 1024),
+                "item_count": len(self._geocoding_cache),
+                "status": "active" if len(self._geocoding_cache) > 0 else "empty",
+                "location": str(self._base_path / "geocoding"),
+            },
+            "census_cache": {
+                "size_mb": self._census_cache.volume() / (1024 * 1024),
+                "item_count": len(self._census_cache),
+                "status": "active" if len(self._census_cache) > 0 else "empty",
+                "location": str(self._base_path / "census"),
+            },
+        }
+
+        # Calculate totals
+        for cache_type in ["network_cache", "geocoding_cache", "census_cache"]:
+            cache_stats = stats[cache_type]
+            stats["summary"]["total_size_mb"] += cache_stats.get("size_mb", 0)
+            stats["summary"]["total_items"] += cache_stats.get("item_count", 0)
+
+        return stats
+
+    def _get_network_cache_stats(self, get_network_stats) -> dict[str, Any]:
+        """Get statistics for network routing cache."""
+        try:
+            cache_stats = get_network_stats()
+            return {
+                "size_mb": cache_stats.get("size_mb", 0),
+                "item_count": cache_stats.get("count", 0),
+                "status": "active" if cache_stats.get("count", 0) > 0 else "empty",
+                "location": str(self._base_path / "networks"),
+            }
+        except Exception as e:
+            logger.error(f"Failed to get network cache stats: {e}")
+            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
+
+    def clear_network_cache(self) -> dict[str, Any]:
+        """Clear the network routing cache.
+
+        Returns
+        -------
+        dict
+            Dictionary with 'success', 'message', 'cleared_size_mb'.
+        """
+        try:
+            from ..isochrone.cache import clear_cache as clear_network
+            from ..isochrone.cache import get_cache_stats as get_network_stats
+
+            stats_before = get_network_stats()
+            clear_network()
+
+            return {
+                "success": True,
+                "message": "Network cache cleared successfully",
+                "cleared_size_mb": stats_before.get("size_mb", 0),
+            }
+        except Exception as e:
+            logger.error(f"Failed to clear network cache: {e}")
+            return {"success": False, "error": str(e)}
+
+    def clear_all_caches(self) -> dict[str, Any]:
+        """Clear all cache subsystems.
+
+        Returns
+        -------
+        dict
+            Nested dictionary with results for each cache type
+            plus summary.
+        """
+        results = {
+            "network": self.clear_network_cache(),
+            "geocoding": {"success": True, "cleared_size_mb": self._geocoding_cache.volume() / (1024 * 1024)},
+            "census": {"success": True, "cleared_size_mb": self._census_cache.volume() / (1024 * 1024)},
+        }
+
+        # Clear the caches
+        self.clear_geocoding()
+        self.clear_census()
+
+        # Calculate totals
+        total_cleared_mb = sum(result.get("cleared_size_mb", 0) for result in results.values())
+        all_successful = all(result.get("success", False) for result in results.values())
+
+        results["summary"] = {
+            "success": all_successful,
+            "total_cleared_mb": total_cleared_mb,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        return results
+
     def close(self):
         """Close all caches and release resources.
 
@@ -433,3 +563,109 @@ def get_cache_stats() -> dict[str, Any]:
         }
 
     return stats
+
+
+# Module-level convenience functions for cache administration
+# These maintain backward compatibility with the old cache_manager module
+
+def get_cache_statistics() -> dict[str, Any]:
+    """Get comprehensive statistics for all caches.
+
+    Convenience function that creates a manager and collects all
+    cache statistics in one call.
+
+    Returns
+    -------
+    dict
+        Nested dictionary with 'summary' and individual cache
+        type statistics.
+
+    Examples
+    --------
+    >>> stats = get_cache_statistics()
+    >>> total_mb = stats['summary']['total_size_mb']
+    >>> total_mb >= 0
+    True
+    """
+    manager = CacheManager()
+    return manager.get_cache_statistics()
+
+
+def clear_all_caches() -> dict[str, Any]:
+    """Clear all SocialMapper cache subsystems.
+
+    Convenience function for removing all cached data in one call.
+
+    Returns
+    -------
+    dict
+        Dictionary with results for each cache type plus summary.
+
+    Examples
+    --------
+    >>> result = clear_all_caches()
+    >>> result['summary']['success']
+    True
+    """
+    manager = CacheManager()
+    return manager.clear_all_caches()
+
+
+def clear_geocoding_cache() -> dict[str, Any]:
+    """Clear the geocoding address cache.
+
+    Returns
+    -------
+    dict
+        Dictionary with 'success', 'message', 'cleared_size_mb'.
+    """
+    manager = CacheManager()
+    stats_before = manager.get_stats()
+    manager.clear_geocoding()
+    return {
+        "success": True,
+        "message": "Geocoding cache cleared successfully",
+        "cleared_size_mb": stats_before["geocoding"]["size_mb"],
+    }
+
+
+def clear_census_cache() -> dict[str, Any]:
+    """Clear the census data cache.
+
+    Returns
+    -------
+    dict
+        Dictionary with 'success', 'message', 'cleared_size_mb'.
+    """
+    manager = CacheManager()
+    stats_before = manager.get_stats()
+    manager.clear_census()
+    return {
+        "success": True,
+        "message": "Census cache cleared successfully",
+        "cleared_size_mb": stats_before["census"]["size_mb"],
+    }
+
+
+def cleanup_expired_cache_entries() -> dict[str, Any]:
+    """Clean up expired entries from all caches.
+
+    Returns
+    -------
+    dict
+        Dictionary with status for each cache type.
+    """
+    return {
+        "census": {
+            "success": True,
+            "message": "Census cache uses LRU eviction",
+        },
+        "network": {
+            "success": True,
+            "message": "Network cache uses LRU eviction",
+        },
+        "geocoding": {
+            "success": True,
+            "message": "Geocoding cache uses LRU eviction",
+        },
+    }

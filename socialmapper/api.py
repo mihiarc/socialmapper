@@ -197,7 +197,7 @@ def get_census_data(
     location: dict | list[str] | tuple[float, float],
     variables: list[str],
     year: int = 2023
-):
+) -> CensusDataResult:
     """
     Get census demographic data for specified locations.
 
@@ -701,8 +701,8 @@ def get_poi(
     0.542
     """
     from ._osm import query_pois
-    from .validators import validate_travel_time
     from .poi_categorization import POI_CATEGORY_MAPPING
+    from .validators import validate_travel_time
 
     # Validate categories if provided
     if categories:
@@ -794,14 +794,14 @@ def _validate_and_filter_pois(pois: list[dict[str, Any]]) -> list[dict[str, Any]
     list of dict
         POIs with valid coordinates only.
     """
-    from ._validation import validate_coordinates
+    from .validators import _validate_coordinates_strict
 
     valid_pois = []
     invalid_count = 0
 
     for poi in pois:
         try:
-            lat, lon = validate_coordinates(poi["lat"], poi["lon"])
+            lat, lon = _validate_coordinates_strict(poi["lat"], poi["lon"])
             # Skip null island (0, 0) which is often an error
             if lat == 0 and lon == 0:
                 invalid_count += 1

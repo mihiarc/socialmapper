@@ -4,8 +4,10 @@ import logging
 import re
 from typing import Any
 
-import requests
 from shapely.geometry import Polygon, shape
+
+from .constants import CENSUS_API_TIMEOUT
+from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +94,8 @@ VARIABLE_MAPPING = {
     'poverty_population': 'B17001_002E',
     'bachelors_degree': 'B15003_022E',
     'high_school': 'B15003_017E',
-    'households_with_vehicle': 'B08201_002E',
-    'households_no_vehicle': 'B08201_002E',
+    'households_with_vehicle': 'B08201_001E',  # Total households (subtract no_vehicle to get with_vehicle)
+    'households_no_vehicle': 'B08201_002E',  # Households with no vehicle available
     'median_home_value': 'B25077_001E',
     'median_rent': 'B25064_001E',
 }
@@ -239,16 +241,15 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             import pyproj
             from shapely.ops import transform
 
+            from .helpers import get_equal_area_transformer
+
             # Determine appropriate projection based on location
             centroid = bg_geom.centroid
             lon, lat = centroid.x, centroid.y
 
-            # CONUS bounds: roughly 24°N to 50°N, -125°W to -66°W
-            is_conus = (24.0 <= lat <= 50.0) and (-125.0 <= lon <= -66.0)
-            target_crs = 'EPSG:5070' if is_conus else 'EPSG:6933'
-
-            project = pyproj.Transformer.from_crs('EPSG:4326', target_crs, always_xy=True).transform
-            bg_geom_projected = transform(project, bg_geom)
+            # Use helper to get appropriate equal-area transformer
+            transformer = get_equal_area_transformer(lat, lon)
+            bg_geom_projected = transform(transformer.transform, bg_geom)
             area_sq_m = bg_geom_projected.area
             area_sq_km = area_sq_m / 1_000_000
 
@@ -317,7 +318,8 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         }
 
         logger.debug(f"Querying block groups for state {state_fips}, county {county_fips}")
-        response = requests.get(url, params=params, timeout=30)
+        session = get_http_session()
+        response = session.get(url, params=params, timeout=CENSUS_API_TIMEOUT)
         response.raise_for_status()
 
         data = response.json()
@@ -477,7 +479,8 @@ def fetch_census_data(
                 params["key"] = api_key
 
             try:
-                response = requests.get(base_url, params=params, timeout=30)
+                session = get_http_session()
+                response = session.get(base_url, params=params, timeout=CENSUS_API_TIMEOUT)
                 response.raise_for_status()
                 total_api_calls += 1
 

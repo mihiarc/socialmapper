@@ -11,6 +11,8 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
+from ..exceptions import SocialMapperError
+
 
 @dataclass
 class DataPrepConfig:
@@ -213,12 +215,15 @@ class BaseExporter(ABC):
         return output_path
 
 
-class ExportError(Exception):
+class ExportError(SocialMapperError):
     """
     Base exception for all export-related errors.
 
     Raised when export operations fail due to various reasons
     including I/O errors, format incompatibilities, or data issues.
+
+    Inherits from SocialMapperError to maintain consistent
+    exception hierarchy across the library.
     """
 
 

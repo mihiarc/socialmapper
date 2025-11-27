@@ -9,11 +9,13 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
+from ..constants import (
+    CENSUS_GEOCODER_LOCATIONS_URL,
+    NOMINATIM_API_URL,
+    USER_AGENT,
+)
 from ..neighbors import get_neighbor_manager
+from ..performance.connection_pool import get_http_session
 from .models import (
     AddressInput,
     AddressProvider,
@@ -30,7 +32,8 @@ class GeocodingProvider(ABC):
     Abstract base class for geocoding providers.
 
     Provides common functionality for HTTP session management,
-    rate limiting, and retry logic.
+    rate limiting, and retry logic. Uses centralized connection
+    pool for consistent HTTP handling across the application.
 
     Parameters
     ----------
@@ -41,41 +44,18 @@ class GeocodingProvider(ABC):
     ----------
     config : GeocodingConfig
         Active configuration.
-    session : requests.Session
-        HTTP session with retry strategy.
     last_request_time : float
         Timestamp of last request for rate limiting.
     """
 
     def __init__(self, config: GeocodingConfig):
         self.config = config
-        self.session = self._create_session()
         self.last_request_time = 0.0
 
-    def _create_session(self) -> requests.Session:
-        """
-        Create HTTP session with retry strategy.
-
-        Returns
-        -------
-        requests.Session
-            Session configured with automatic retries for
-            transient failures.
-        """
-        session = requests.Session()
-
-        retry_strategy = Retry(
-            total=self.config.max_retries,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            respect_retry_after_header=True,
-        )
-
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
-
-        return session
+    @property
+    def session(self):
+        """Get HTTP session from centralized connection pool."""
+        return get_http_session()
 
     def _enforce_rate_limit(self):
         """
@@ -138,7 +118,7 @@ class NominatimProvider(GeocodingProvider):
     https://operations.osmfoundation.org/policies/nominatim/
     """
 
-    BASE_URL = "https://nominatim.openstreetmap.org/search"
+    BASE_URL = NOMINATIM_API_URL
 
     def get_provider_name(self) -> AddressProvider:
         """
@@ -180,11 +160,7 @@ class NominatimProvider(GeocodingProvider):
                 "extratags": 1,
             }
 
-            user_agent = (
-                "SocialMapper/1.0 "
-                "(https://github.com/your-org/socialmapper)"
-            )
-            headers = {"User-Agent": user_agent}
+            headers = {"User-Agent": USER_AGENT}
 
             response = self.session.get(
                 self.BASE_URL,
@@ -350,10 +326,7 @@ class CensusProvider(GeocodingProvider):
     census geography (FIPS codes, block groups).
     """
 
-    BASE_URL = (
-        "https://geocoding.geo.census.gov/"
-        "geocoder/locations/onelineaddress"
-    )
+    BASE_URL = CENSUS_GEOCODER_LOCATIONS_URL
 
     def get_provider_name(self) -> AddressProvider:
         """

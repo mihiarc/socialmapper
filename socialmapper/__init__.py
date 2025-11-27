@@ -20,6 +20,8 @@ except ImportError:
     pass
 
 # Import the 5 core API functions
+# Import demo module for easy onboarding
+from . import demo
 from .api import (
     create_isochrone,
     create_map,
@@ -27,9 +29,6 @@ from .api import (
     get_census_data,
     get_poi,
 )
-
-# Import demo module for easy onboarding
-from . import demo
 
 # Import result types
 from .api_result_types import (

@@ -58,3 +58,57 @@ CATEGORICAL_CONVERSION_THRESHOLD = 0.5  # Convert to categorical if unique ratio
 
 # Census geography
 FULL_BLOCK_GROUP_GEOID_LENGTH = 12  # 2 state + 3 county + 6 tract + 1 block group
+
+# ==========================================
+# HTTP Timeout Constants (seconds)
+# ==========================================
+DEFAULT_HTTP_TIMEOUT = 30  # Default for most API calls
+GEOCODING_TIMEOUT = 10  # For geocoding requests (quick responses expected)
+OSM_TIMEOUT = 180  # For OSMnx/Overpass requests (large data, slow)
+CENSUS_API_TIMEOUT = 30  # For Census API requests
+SECURITY_TIMEOUT = 5  # For key manager operations
+
+# ==========================================
+# CONUS Bounds (Contiguous United States)
+# Used for selecting appropriate equal-area projection
+# ==========================================
+CONUS_MIN_LAT = 24.0  # Southern tip of Florida Keys
+CONUS_MAX_LAT = 50.0  # Northern border with Canada
+CONUS_MIN_LON = -125.0  # West coast of Washington state
+CONUS_MAX_LON = -66.0  # Eastern tip of Maine
+
+# ==========================================
+# Coordinate Reference Systems (CRS)
+# ==========================================
+CRS_WGS84 = "EPSG:4326"  # Standard lat/lon coordinates
+CRS_CONUS_ALBERS = "EPSG:5070"  # NAD83 / Conus Albers - optimized for CONUS (~0.1% accuracy)
+CRS_GLOBAL_EQUAL_AREA = "EPSG:6933"  # NSIDC EASE-Grid 2.0 - global equal-area (~1-2% accuracy)
+
+# ==========================================
+# API Base URLs
+# ==========================================
+NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search"
+CENSUS_GEOCODER_BASE_URL = "https://geocoding.geo.census.gov/geocoder"
+CENSUS_GEOCODER_LOCATIONS_URL = f"{CENSUS_GEOCODER_BASE_URL}/locations/onelineaddress"
+CENSUS_GEOCODER_GEOGRAPHIES_URL = f"{CENSUS_GEOCODER_BASE_URL}/geographies/coordinates"
+CENSUS_API_BASE_URL = "https://api.census.gov/data"
+CENSUS_KEY_SIGNUP_URL = "https://api.census.gov/data/key_signup.html"
+
+# ==========================================
+# Rate Limiting
+# ==========================================
+DEFAULT_RATE_LIMIT_RPS = 1.0  # Default requests per second
+NOMINATIM_RATE_LIMIT_RPS = 1.0  # Nominatim policy: max 1 request/second
+CENSUS_RATE_LIMIT_RPS = 10.0  # Census API is more generous
+
+# ==========================================
+# User Agent String
+# ==========================================
+USER_AGENT = "SocialMapper/2.0 (https://github.com/socialmapper)"
+
+# ==========================================
+# Retry Configuration
+# ==========================================
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_RETRY_BACKOFF = 0.5  # seconds
+RETRY_STATUS_CODES = [429, 500, 502, 503, 504]

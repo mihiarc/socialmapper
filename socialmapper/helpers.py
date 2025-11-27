@@ -11,6 +11,119 @@ import pyproj
 from shapely.geometry import Point, shape
 from shapely.ops import transform
 
+from .constants import (
+    CONUS_MAX_LAT,
+    CONUS_MAX_LON,
+    CONUS_MIN_LAT,
+    CONUS_MIN_LON,
+    CRS_CONUS_ALBERS,
+    CRS_GLOBAL_EQUAL_AREA,
+    CRS_WGS84,
+)
+
+
+def is_conus(lat: float, lon: float) -> bool:
+    """
+    Check if coordinates are within the contiguous United States (CONUS).
+
+    Used to determine the appropriate equal-area projection for
+    accurate area and distance calculations.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees.
+    lon : float
+        Longitude in decimal degrees.
+
+    Returns
+    -------
+    bool
+        True if coordinates are within CONUS bounds.
+
+    Examples
+    --------
+    >>> is_conus(45.5152, -122.6784)  # Portland, OR
+    True
+    >>> is_conus(21.3069, -157.8583)  # Honolulu, HI
+    False
+    >>> is_conus(51.5074, -0.1278)  # London, UK
+    False
+    """
+    return (CONUS_MIN_LAT <= lat <= CONUS_MAX_LAT) and (CONUS_MIN_LON <= lon <= CONUS_MAX_LON)
+
+
+def get_equal_area_crs(lat: float, lon: float) -> str:
+    """
+    Get the appropriate equal-area CRS for a location.
+
+    Returns EPSG:5070 (NAD83 / Conus Albers) for locations within
+    the contiguous United States, which provides ~0.1% accuracy.
+    Returns EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for all other
+    locations, which provides ~1-2% accuracy globally.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees.
+    lon : float
+        Longitude in decimal degrees.
+
+    Returns
+    -------
+    str
+        EPSG code string for the appropriate CRS.
+
+    Examples
+    --------
+    >>> get_equal_area_crs(45.5152, -122.6784)  # Portland, OR
+    'EPSG:5070'
+    >>> get_equal_area_crs(21.3069, -157.8583)  # Honolulu, HI
+    'EPSG:6933'
+    """
+    if is_conus(lat, lon):
+        return CRS_CONUS_ALBERS
+    return CRS_GLOBAL_EQUAL_AREA
+
+
+def get_equal_area_transformer(
+    lat: float, lon: float, inverse: bool = False
+) -> pyproj.Transformer:
+    """
+    Get a PyProj transformer for equal-area projections.
+
+    Creates a transformer between WGS84 (EPSG:4326) and the
+    appropriate equal-area CRS for the given location.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees (used to select CRS).
+    lon : float
+        Longitude in decimal degrees (used to select CRS).
+    inverse : bool, optional
+        If True, creates transformer from equal-area back to WGS84.
+        Default is False (WGS84 to equal-area).
+
+    Returns
+    -------
+    pyproj.Transformer
+        Configured transformer for coordinate conversions.
+
+    Examples
+    --------
+    >>> transformer = get_equal_area_transformer(45.5152, -122.6784)
+    >>> x, y = transformer.transform(-122.6784, 45.5152)  # Note: x=lon, y=lat
+
+    >>> inverse_transformer = get_equal_area_transformer(
+    ...     45.5152, -122.6784, inverse=True
+    ... )
+    """
+    target_crs = get_equal_area_crs(lat, lon)
+    if inverse:
+        return pyproj.Transformer.from_crs(target_crs, CRS_WGS84, always_xy=True)
+    return pyproj.Transformer.from_crs(CRS_WGS84, target_crs, always_xy=True)
+
 
 def resolve_coordinates(location: str | tuple[float, float]) -> tuple[tuple[float, float], str]:
     """
@@ -113,20 +226,9 @@ def calculate_polygon_area(polygon) -> float:
     centroid = polygon.centroid
     lon, lat = centroid.x, centroid.y
 
-    # CONUS bounds: roughly 24°N to 50°N, -125°W to -66°W
-    is_conus = (24.0 <= lat <= 50.0) and (-125.0 <= lon <= -66.0)
-
-    if is_conus:
-        # NAD83 / Conus Albers - optimized for contiguous US (~0.1% accuracy)
-        target_crs = 'EPSG:5070'
-    else:
-        # NSIDC EASE-Grid 2.0 Global - equal-area cylindrical (~1-2% accuracy)
-        target_crs = 'EPSG:6933'
-
-    project = pyproj.Transformer.from_crs(
-        'EPSG:4326', target_crs, always_xy=True
-    ).transform
-    projected_polygon = transform(project, polygon)
+    # Get transformer for appropriate equal-area CRS
+    transformer = get_equal_area_transformer(lat, lon)
+    projected_polygon = transform(transformer.transform, polygon)
     area_sq_m = projected_polygon.area
     return area_sq_m / 1_000_000
 
@@ -135,8 +237,13 @@ def create_circular_geometry(location: tuple[float, float], radius_km: float):
     """
     Create circular polygon from center point and radius.
 
-    Generates a circular buffer around a point by projecting
-    to Web Mercator for accurate distance calculation.
+    Generates a circular buffer around a point using equal-area
+    projections for accurate distance-based buffers:
+    - EPSG:5070 (NAD83 / Conus Albers) for contiguous US locations
+    - EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for other locations
+
+    This replaces the previous Web Mercator (EPSG:3857) projection
+    which distorted distances by ~40% at 45 degrees latitude.
 
     Parameters
     ----------
@@ -155,20 +262,24 @@ def create_circular_geometry(location: tuple[float, float], radius_km: float):
     >>> circle = create_circular_geometry((45.5152, -122.6784), 5.0)
     >>> round(calculate_polygon_area(circle), 1)
     78.5
+
+    Notes
+    -----
+    For US Census applications, EPSG:5070 provides accurate distance
+    calculations (~0.1% accuracy). Web Mercator (EPSG:3857) should
+    never be used for distance-based operations as it exaggerates
+    distances significantly at higher latitudes.
     """
     lat, lon = location
     point = Point(lon, lat)
 
-    project_to_mercator = pyproj.Transformer.from_crs(
-        'EPSG:4326', 'EPSG:3857', always_xy=True
-    ).transform
-    project_to_wgs84 = pyproj.Transformer.from_crs(
-        'EPSG:3857', 'EPSG:4326', always_xy=True
-    ).transform
+    # Get transformers for appropriate equal-area CRS
+    project_to_equal_area = get_equal_area_transformer(lat, lon)
+    project_to_wgs84 = get_equal_area_transformer(lat, lon, inverse=True)
 
-    point_mercator = transform(project_to_mercator, point)
-    buffer_mercator = point_mercator.buffer(radius_km * 1000)
-    return transform(project_to_wgs84, buffer_mercator)
+    point_projected = transform(project_to_equal_area.transform, point)
+    buffer_projected = point_projected.buffer(radius_km * 1000)
+    return transform(project_to_wgs84.transform, buffer_projected)
 
 
 def extract_geometry_from_geojson(polygon: dict) -> Any:

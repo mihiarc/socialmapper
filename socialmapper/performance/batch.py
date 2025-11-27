@@ -177,7 +177,7 @@ class BatchCensusDataFetcher:
         dict
             Fetched data: {geoid: {variable: value, ...}, ...}
         """
-        from .._census import VARIABLE_MAPPING, fetch_census_data
+        from .._census import fetch_census_data
 
         # Group by state for efficient querying
         geoids_by_state = defaultdict(list)

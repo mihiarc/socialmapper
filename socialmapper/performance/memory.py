@@ -6,7 +6,8 @@ including DataFrame optimization, lazy loading, and memory profiling.
 
 import gc
 import logging
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import pandas as pd
 import psutil

@@ -23,9 +23,8 @@ from typing import Any, Literal
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
-from .api_result_types import CensusDataResult, IsochroneResult
+from .api_result_types import CensusDataResult
 from .exceptions import ValidationError
 
 console = Console()
@@ -91,7 +90,7 @@ def _load_demo_data(location: str, data_type: str) -> dict[str, Any]:
             f"Please ensure demo data is properly installed."
         )
 
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         return json.load(f)
 
 
@@ -436,7 +435,7 @@ def _display_quick_start_results(result: dict[str, Any]) -> None:
     result : dict
         Quick start analysis results.
     """
-    console.print(f"[bold green]✓ Analysis Complete![/bold green]\n")
+    console.print("[bold green]✓ Analysis Complete![/bold green]\n")
 
     table = Table(show_header=False, box=None)
     table.add_column("Metric", style="cyan")
@@ -466,7 +465,7 @@ def _display_library_results(result: dict[str, Any]) -> None:
     result : dict
         Library analysis results.
     """
-    console.print(f"[bold green]✓ Library Analysis Complete![/bold green]\n")
+    console.print("[bold green]✓ Library Analysis Complete![/bold green]\n")
 
     table = Table(show_header=False, box=None)
     table.add_column("Metric", style="cyan")
@@ -505,7 +504,7 @@ def _display_food_access_results(result: dict[str, Any]) -> None:
     result : dict
         Food access analysis results.
     """
-    console.print(f"[bold green]✓ Food Access Analysis Complete![/bold green]\n")
+    console.print("[bold green]✓ Food Access Analysis Complete![/bold green]\n")
 
     table = Table(show_header=False, box=None)
     table.add_column("Metric", style="cyan")
