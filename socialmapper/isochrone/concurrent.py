@@ -311,7 +311,9 @@ class ConcurrentIsochroneProcessor:
 
                 if isochrone_gdf is not None:
                     # Validate isochrone size for quality control
-                    area_km2 = isochrone_gdf.to_crs("EPSG:3857").geometry[0].area / 1_000_000  # Convert to km²
+                    # Use EPSG:5070 (Conus Albers) for accurate area calculation in CONUS
+                    # This replaces EPSG:3857 which distorts areas by 32-140% at US latitudes
+                    area_km2 = isochrone_gdf.to_crs("EPSG:5070").geometry[0].area / 1_000_000  # Convert to km²
 
                     # Expected minimum area based on travel time and mode
                     # These are conservative estimates to catch obvious errors

@@ -77,8 +77,12 @@ def calculate_polygon_area(polygon) -> float:
     """
     Calculate the area of a polygon in square kilometers.
 
-    Projects the polygon to Web Mercator (EPSG:3857) for
-    accurate area calculation, then converts to km².
+    Uses equal-area projections for accurate area calculation:
+    - EPSG:5070 (NAD83 / Conus Albers) for contiguous US locations
+    - EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for other locations
+
+    This replaces the previous Web Mercator (EPSG:3857) projection
+    which distorted areas by 32-140% at US latitudes.
 
     Parameters
     ----------
@@ -97,10 +101,30 @@ def calculate_polygon_area(polygon) -> float:
     ...                 (-122.4, 45.6), (-122.5, 45.6)])
     >>> area = calculate_polygon_area(poly)
     >>> round(area, 2)
-    123.45
+    85.39
+
+    Notes
+    -----
+    For US Census applications, EPSG:5070 provides ~0.1% accuracy.
+    Web Mercator (EPSG:3857) should never be used for area calculations
+    as it exaggerates areas significantly at higher latitudes.
     """
+    # Determine appropriate equal-area projection based on location
+    centroid = polygon.centroid
+    lon, lat = centroid.x, centroid.y
+
+    # CONUS bounds: roughly 24°N to 50°N, -125°W to -66°W
+    is_conus = (24.0 <= lat <= 50.0) and (-125.0 <= lon <= -66.0)
+
+    if is_conus:
+        # NAD83 / Conus Albers - optimized for contiguous US (~0.1% accuracy)
+        target_crs = 'EPSG:5070'
+    else:
+        # NSIDC EASE-Grid 2.0 Global - equal-area cylindrical (~1-2% accuracy)
+        target_crs = 'EPSG:6933'
+
     project = pyproj.Transformer.from_crs(
-        'EPSG:4326', 'EPSG:3857', always_xy=True
+        'EPSG:4326', target_crs, always_xy=True
     ).transform
     projected_polygon = transform(project, polygon)
     area_sq_m = projected_polygon.area

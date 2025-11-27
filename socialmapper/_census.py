@@ -196,10 +196,10 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
 
     Notes
     -----
-    Areas are calculated in EPSG:3857 (Web Mercator) projection.
-    Note that Web Mercator distorts areas, especially at higher
-    latitudes. Consider using equal-area projections for precise
-    area calculations.
+    Areas are calculated using equal-area projections:
+    - EPSG:5070 (NAD83 / Conus Albers) for contiguous US locations
+    - EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for other locations
+    This provides accurate area measurements within ~0.1-2%.
     """
     # Get bounds
     bounds = geometry.bounds  # (minx, miny, maxx, maxy)
@@ -235,11 +235,19 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     for bg in block_groups:
         bg_geom = shape(bg["geometry"])
         if geometry.intersects(bg_geom):
-            # Calculate area
+            # Calculate area using equal-area projection
             import pyproj
             from shapely.ops import transform
 
-            project = pyproj.Transformer.from_crs('EPSG:4326', 'EPSG:3857', always_xy=True).transform
+            # Determine appropriate projection based on location
+            centroid = bg_geom.centroid
+            lon, lat = centroid.x, centroid.y
+
+            # CONUS bounds: roughly 24°N to 50°N, -125°W to -66°W
+            is_conus = (24.0 <= lat <= 50.0) and (-125.0 <= lon <= -66.0)
+            target_crs = 'EPSG:5070' if is_conus else 'EPSG:6933'
+
+            project = pyproj.Transformer.from_crs('EPSG:4326', target_crs, always_xy=True).transform
             bg_geom_projected = transform(project, bg_geom)
             area_sq_m = bg_geom_projected.area
             area_sq_km = area_sq_m / 1_000_000

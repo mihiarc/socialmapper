@@ -137,8 +137,9 @@ print(f"Number of isochrones: {len(isochrones)}")
 # Plot the isochrones
 isochrones.plot(alpha=0.5, edgecolor='black')
 
-# Calculate total area covered
-total_area_km2 = isochrones.to_crs('EPSG:3857').area.sum() / 1e6
+# Calculate total area covered using equal-area projection
+# Use EPSG:5070 (Conus Albers) for accurate US area calculation
+total_area_km2 = isochrones.to_crs('EPSG:5070').area.sum() / 1e6
 print(f"Total area covered: {total_area_km2:.2f} km²")
 
 # Export to other formats
