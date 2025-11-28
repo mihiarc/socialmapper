@@ -54,6 +54,8 @@ dependencies = [
     "cryptography>=45.0.7",
     "keyring>=25.6.0",
     "diskcache>=5.6.3",
+    "streamlit>=1.40.0",
+    "streamlit-folium>=0.23.0",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +70,9 @@ dev = [
 [project.urls]
 "Homepage" = "https://github.com/mihiarc/socialmapper"
 "Bug Tracker" = "https://github.com/mihiarc/socialmapper/issues"
+
+[project.scripts]
+socialmapper = "socialmapper.cli:main"
 
 # Use Python API:
 # from socialmapper import SocialMapper, quick_analysis

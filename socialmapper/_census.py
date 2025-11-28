@@ -427,9 +427,9 @@ def fetch_census_data(
     # Census API base URL
     base_url = f"https://api.census.gov/data/{year}/acs/acs5"
 
-    # Get API key using secure storage
-    from .security.utils import get_api_key
-    api_key = get_api_key("census_api", "CENSUS_API_KEY")
+    # Get API key from environment variable
+    import os
+    api_key = os.environ.get("CENSUS_API_KEY")
 
     # Build reverse mapping for human-readable names (computed once)
     from collections import defaultdict

@@ -57,13 +57,27 @@ SocialMapper helps you understand how people connect with important places in th
 - **Calculating Accessibility** - Measure travel distances and identify access patterns
 - **Supporting Multiple Formats** - Export data as CSV, GeoJSON, Parquet, and more
 
-## 🚀 Try It Now - No Setup Required!
+## 🚀 Try It Now - No Coding Required!
+
+### Web Interface (Easiest)
+
+```bash
+# Install and launch the web UI
+pip install socialmapper
+socialmapper
+```
+
+This opens an interactive web interface where you can:
+- Enter any location (address, city, or coordinates)
+- Select analysis type (isochrone, POI discovery, census data)
+- Configure parameters with sliders and dropdowns
+- View results on an interactive map
+- Export data as CSV or GeoJSON
+
+### Python API (For Developers)
 
 ```python
-# Install and run in under 2 minutes - no API keys needed!
-pip install socialmapper
-
-# Run instant demo analysis
+# Run instant demo analysis - no API keys needed!
 from socialmapper import demo
 result = demo.quick_start("Portland, OR")
 
@@ -75,8 +89,6 @@ result = demo.quick_start("Portland, OR")
 ```
 
 **[📖 2-Minute Quick Start Guide](docs/quick-start.md)** | **[💻 Example Script](examples/quick_start.py)**
-
-*Note: Interactive Jupyter notebook available after installation at `examples/notebooks/quick_start.ipynb`*
 
 ### Real-World Example
 

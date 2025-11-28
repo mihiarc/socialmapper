@@ -18,7 +18,7 @@ import pyproj
 from shapely.geometry import Point
 from sklearn.neighbors import BallTree
 
-from .._validation import prevalidate_for_pyproj
+from ..validators import prevalidate_for_pyproj
 
 logger = logging.getLogger(__name__)
 

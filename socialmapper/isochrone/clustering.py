@@ -456,7 +456,7 @@ def create_isochrone_from_poi_with_network(
     """
     try:
         # Import validation utilities
-        from .._validation import validate_coordinates
+        from ..validators import _validate_coordinates_strict
 
         # Validate POI coordinates
         lat = poi.get("lat")
@@ -467,8 +467,8 @@ def create_isochrone_from_poi_with_network(
             return None
 
         try:
-            lat, lon = validate_coordinates(lat, lon)
-        except ValueError as e:
+            lat, lon = _validate_coordinates_strict(lat, lon)
+        except Exception as e:
             logger.error(
                 f"POI {poi.get('id', 'unknown')} has invalid coordinates: lat={lat}, lon={lon} - {e}"
             )
