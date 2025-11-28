@@ -7,45 +7,94 @@ from typing import Any
 import requests
 from shapely.geometry import Polygon
 
+from .poi_categorization import POI_CATEGORY_MAPPING
+
 logger = logging.getLogger(__name__)
 
 
-# POI category to OSM tag mappings
-CATEGORY_MAPPINGS = {
-    # Food & Drink
-    "restaurant": ["amenity=restaurant"],
-    "cafe": ["amenity=cafe"],
-    "bar": ["amenity=bar", "amenity=pub"],
-    "fast_food": ["amenity=fast_food"],
-
-    # Education
-    "school": ["amenity=school"],
-    "university": ["amenity=university", "amenity=college"],
-    "library": ["amenity=library"],
-
-    # Healthcare
-    "hospital": ["amenity=hospital"],
-    "clinic": ["amenity=clinic", "amenity=doctors"],
-    "pharmacy": ["amenity=pharmacy"],
-
-    # Recreation
-    "park": ["leisure=park", "leisure=garden"],
-    "playground": ["leisure=playground"],
-    "sports": ["leisure=sports_centre", "leisure=stadium", "leisure=pitch"],
-
-    # Shopping
-    "grocery": ["shop=supermarket", "shop=convenience"],
-    "supermarket": ["shop=supermarket"],
-    "convenience": ["shop=convenience"],
-
-    # Finance
-    "bank": ["amenity=bank"],
-    "atm": ["amenity=atm"],
-
-    # Transportation
-    "gas_station": ["amenity=fuel"],
-    "parking": ["amenity=parking"],
-    "bus_stop": ["highway=bus_stop"],
+# OSM key mappings for building Overpass queries
+# Maps OSM tag values to their key=value format for Overpass API
+OSM_KEY_MAPPINGS = {
+    # Amenity tags
+    "restaurant": "amenity=restaurant",
+    "cafe": "amenity=cafe",
+    "bar": "amenity=bar",
+    "pub": "amenity=pub",
+    "fast_food": "amenity=fast_food",
+    "food_court": "amenity=food_court",
+    "ice_cream": "amenity=ice_cream",
+    "biergarten": "amenity=biergarten",
+    "nightclub": "amenity=nightclub",
+    "school": "amenity=school",
+    "university": "amenity=university",
+    "college": "amenity=college",
+    "library": "amenity=library",
+    "kindergarten": "amenity=kindergarten",
+    "hospital": "amenity=hospital",
+    "clinic": "amenity=clinic",
+    "doctors": "amenity=doctors",
+    "dentist": "amenity=dentist",
+    "pharmacy": "amenity=pharmacy",
+    "veterinary": "amenity=veterinary",
+    "bank": "amenity=bank",
+    "atm": "amenity=atm",
+    "post_office": "amenity=post_office",
+    "fuel": "amenity=fuel",
+    "parking": "amenity=parking",
+    "cinema": "amenity=cinema",
+    "theatre": "amenity=theatre",
+    "place_of_worship": "amenity=place_of_worship",
+    "community_centre": "amenity=community_centre",
+    "toilets": "amenity=toilets",
+    # Shop tags
+    "supermarket": "shop=supermarket",
+    "convenience": "shop=convenience",
+    "bakery": "shop=bakery",
+    "butcher": "shop=butcher",
+    "clothes": "shop=clothes",
+    "electronics": "shop=electronics",
+    "furniture": "shop=furniture",
+    "hardware": "shop=hardware",
+    "mall": "shop=mall",
+    "department_store": "shop=department_store",
+    "books": "shop=books",
+    "florist": "shop=florist",
+    "optician": "shop=optician",
+    "hairdresser": "shop=hairdresser",
+    # Leisure tags
+    "park": "leisure=park",
+    "playground": "leisure=playground",
+    "sports_centre": "leisure=sports_centre",
+    "stadium": "leisure=stadium",
+    "pitch": "leisure=pitch",
+    "swimming_pool": "leisure=swimming_pool",
+    "fitness_centre": "leisure=fitness_centre",
+    "garden": "leisure=garden",
+    "golf_course": "leisure=golf_course",
+    "marina": "leisure=marina",
+    # Tourism tags
+    "hotel": "tourism=hotel",
+    "motel": "tourism=motel",
+    "hostel": "tourism=hostel",
+    "guest_house": "tourism=guest_house",
+    "museum": "tourism=museum",
+    "gallery": "tourism=gallery",
+    "zoo": "tourism=zoo",
+    "aquarium": "tourism=aquarium",
+    "theme_park": "tourism=theme_park",
+    "attraction": "tourism=attraction",
+    # Office tags
+    "office": "office=yes",
+    "lawyer": "office=lawyer",
+    "insurance": "office=insurance",
+    "estate_agent": "office=estate_agent",
+    # Healthcare tags
+    "healthcare": "healthcare=yes",
+    # Religion tags
+    "church": "building=church",
+    "mosque": "building=mosque",
+    "temple": "building=temple",
+    "synagogue": "building=synagogue",
 }
 
 
@@ -94,13 +143,64 @@ def query_pois(
     return process_poi_results(pois)
 
 
+def _expand_categories_to_osm_tags(categories: list[str] | None) -> list[str]:
+    """
+    Expand category names to OSM tags for Overpass API queries.
+
+    Handles both high-level categories (like 'food_and_drink') from
+    POI_CATEGORY_MAPPING and individual OSM values (like 'restaurant').
+    Only uses tags that have known OSM key mappings to avoid overly
+    large queries.
+
+    Parameters
+    ----------
+    categories : list of str, optional
+        Category names from POI_CATEGORY_MAPPING or individual OSM values.
+
+    Returns
+    -------
+    list of str
+        List of OSM tags in key=value format (e.g., 'amenity=restaurant').
+    """
+    tags = []
+
+    if not categories:
+        # Get common tags from all categories - only known mappings
+        for cat_values in POI_CATEGORY_MAPPING.values():
+            for value in cat_values[:10]:  # Limit to top 10 per category
+                if value in OSM_KEY_MAPPINGS:
+                    tags.append(OSM_KEY_MAPPINGS[value])
+        return list(set(tags))
+
+    for cat in categories:
+        # Check if it's a high-level category (e.g., "food_and_drink")
+        if cat in POI_CATEGORY_MAPPING:
+            # Expand to OSM values that have known key mappings
+            for value in POI_CATEGORY_MAPPING[cat]:
+                if value in OSM_KEY_MAPPINGS:
+                    tags.append(OSM_KEY_MAPPINGS[value])
+        # Check if it's an individual OSM value (e.g., "restaurant")
+        elif cat in OSM_KEY_MAPPINGS:
+            tags.append(OSM_KEY_MAPPINGS[cat])
+        else:
+            # Try as raw OSM tag if it contains =
+            if "=" in cat:
+                tags.append(cat)
+            else:
+                # Try common OSM key for unknown values
+                tags.append(f"amenity={cat}")
+
+    return list(set(tags))
+
+
 def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     """
     Build an Overpass QL query string for POI retrieval.
 
     Constructs a properly formatted Overpass Query Language (QL) string
-    to retrieve POIs within a bounding box. Handles multiple categories
-    by aggregating their associated OSM tags.
+    to retrieve POIs within a bounding box. Handles both high-level
+    categories (e.g., 'food_and_drink') and specific OSM values
+    (e.g., 'restaurant').
 
     Parameters
     ----------
@@ -108,8 +208,10 @@ def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
         Geographic area polygon used to determine bounding box for
         the query.
     categories : list of str, optional
-        POI categories to include in query. Uses predefined category
-        mappings to OSM tags.
+        POI categories to include in query. Supports:
+        - High-level categories: 'food_and_drink', 'healthcare', etc.
+        - Specific OSM values: 'restaurant', 'hospital', etc.
+        - Raw OSM tags: 'amenity=cafe', 'shop=supermarket', etc.
 
     Returns
     -------
@@ -120,7 +222,7 @@ def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     --------
     >>> from shapely.geometry import box
     >>> area = box(-122.4, 47.5, -122.3, 47.6)
-    >>> query = build_overpass_query(area, ['restaurant'])
+    >>> query = build_overpass_query(area, ['food_and_drink'])
     >>> 'amenity=restaurant' in query
     True
     """
@@ -128,24 +230,18 @@ def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     bounds = area.bounds  # (minx, miny, maxx, maxy)
     bbox = f"{bounds[1]},{bounds[0]},{bounds[3]},{bounds[2]}"  # S,W,N,E
 
-    # Determine which OSM tags to query
-    if categories:
-        # Collect all OSM tags for requested categories
-        tags = []
-        for cat in categories:
-            if cat in CATEGORY_MAPPINGS:
-                tags.extend(CATEGORY_MAPPINGS[cat])
-            else:
-                # Try to interpret as raw OSM tag
-                tags.append(cat)
-    else:
-        # Get all common POI tags
-        tags = []
-        for cat_tags in CATEGORY_MAPPINGS.values():
-            tags.extend(cat_tags)
+    # Expand categories to OSM tags
+    tags = _expand_categories_to_osm_tags(categories)
 
-    # Remove duplicates
-    tags = list(set(tags))
+    if not tags:
+        logger.warning("No valid OSM tags found for categories: %s", categories)
+        # Default to common POI types
+        tags = [
+            "amenity=restaurant", "amenity=cafe", "amenity=hospital",
+            "amenity=school", "shop=supermarket", "leisure=park"
+        ]
+
+    logger.debug("Building Overpass query with %d tags for categories: %s", len(tags), categories)
 
     # Build Overpass query
     query_parts = ["[out:json][timeout:25];("]
@@ -336,9 +432,8 @@ def determine_category(tags: dict[str, str]) -> str:
     """
     Determine POI category from OpenStreetMap tags.
 
-    Maps OSM tags to standardized POI categories using predefined
-    category mappings. Falls back to primary tag type if no mapping
-    matches.
+    Maps OSM tags to standardized POI categories using the
+    POI_CATEGORY_MAPPING from poi_categorization module.
 
     Parameters
     ----------
@@ -348,36 +443,34 @@ def determine_category(tags: dict[str, str]) -> str:
     Returns
     -------
     str
-        Standardized category name (e.g., 'restaurant', 'school',
-        'park') or primary tag type. Returns 'other' if no
-        recognizable tags found.
+        Standardized category name (e.g., 'food_and_drink', 'shopping',
+        'healthcare') or 'other' if no match found.
 
     Examples
     --------
     >>> tags = {'amenity': 'restaurant', 'name': 'Pizza Place'}
     >>> determine_category(tags)
-    'restaurant'
+    'food_and_drink'
 
     >>> tags = {'shop': 'supermarket'}
     >>> determine_category(tags)
-    'grocery'
+    'shopping'
     """
-    # Check each category's tags
-    for category, osm_tags in CATEGORY_MAPPINGS.items():
-        for osm_tag in osm_tags:
-            if "=" in osm_tag:
-                key, value = osm_tag.split("=", 1)
-                if tags.get(key) == value:
+    # Check OSM tag values against POI_CATEGORY_MAPPING
+    osm_keys = ["amenity", "shop", "leisure", "tourism", "healthcare", "office"]
+
+    for osm_key in osm_keys:
+        if osm_key in tags:
+            tag_value = tags[osm_key].lower()
+
+            # Check each category's values
+            for category, values in POI_CATEGORY_MAPPING.items():
+                if tag_value in [v.lower() for v in values]:
                     return category
 
-    # Fallback to primary tag
-    if "amenity" in tags:
-        return tags["amenity"]
-    elif "shop" in tags:
-        return tags["shop"]
-    elif "leisure" in tags:
-        return tags["leisure"]
-    elif "tourism" in tags:
-        return tags["tourism"]
-    else:
-        return "other"
+    # If no match, return raw OSM tag value for transparency
+    for osm_key in osm_keys:
+        if osm_key in tags:
+            return tags[osm_key]
+
+    return "other"
