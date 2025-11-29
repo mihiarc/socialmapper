@@ -10,10 +10,6 @@ Complete reference for all SocialMapper API functions, models, exceptions, and u
   - [get_census_blocks()](#get_census_blocks)
   - [get_census_data()](#get_census_data)
   - [create_map()](#create_map)
-- [Analysis Functions](#analysis-functions)
-  - [analyze_multiple_pois()](#analyze_multiple_pois)
-  - [import_poi_csv()](#import_poi_csv)
-  - [generate_report()](#generate_report)
 - [Demo Module](#demo-module)
 - [Performance Module](#performance-module)
 - [Result Types](#result-types)
@@ -971,7 +967,7 @@ class DiscoveredPOI(BaseModel):
 import socialmapper
 
 print(socialmapper.__version__)
-# Output: 0.9.0
+# Output: 1.0.0
 ```
 
 ---
@@ -985,4 +981,4 @@ print(socialmapper.__version__)
 
 ---
 
-**Version**: 0.9.0
+**Version**: 1.0.0
