@@ -43,9 +43,8 @@ class AddressGeocodingEngine:
         providers[AddressProvider.NOMINATIM] = NominatimProvider(self.config)
         providers[AddressProvider.CENSUS] = CensusProvider(self.config)
 
-        # TODO: Add commercial providers based on API keys
-        # if self.config.google_api_key:
-        #     providers[AddressProvider.GOOGLE] = GoogleProvider(self.config)
+        # Commercial providers (Google, Mapbox) can be added in future versions
+        # by extending the AddressProvider enum and implementing provider classes
 
         return providers
 

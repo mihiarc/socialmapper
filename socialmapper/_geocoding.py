@@ -283,15 +283,15 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
             raise NetworkError(
                 "Census Geocoding API",
                 "Request timed out"
-            )
+            ) from e
         elif "connection" in error_str or "network" in error_str:
             logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
             raise NetworkError(
                 "Census Geocoding API",
                 str(e)
-            )
+            ) from e
         else:
             logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
-            raise DataError(f"Failed to get census geography: {e}")
+            raise DataError(f"Failed to get census geography: {e}") from e
 
     return None

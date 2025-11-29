@@ -7,12 +7,11 @@ No Python coding required - just enter a location and analyze.
 import json
 
 import folium
+import geopandas as gpd
 import pandas as pd
 import streamlit as st
 from shapely.geometry import shape
 from streamlit_folium import st_folium
-
-import geopandas as gpd
 
 from socialmapper import (
     create_isochrone,
@@ -20,8 +19,8 @@ from socialmapper import (
     get_census_data,
     get_poi,
 )
-from socialmapper.poi_categorization import POI_CATEGORY_MAPPING
 from socialmapper.exceptions import SocialMapperError
+from socialmapper.poi_categorization import POI_CATEGORY_MAPPING
 
 # Page configuration
 st.set_page_config(
@@ -339,7 +338,7 @@ def export_results(results, analysis_type):
 
 
 def main():
-    """Main application."""
+    """Run the main Streamlit application."""
     init_session_state()
 
     # Header

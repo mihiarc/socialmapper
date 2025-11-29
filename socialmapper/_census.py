@@ -4,6 +4,7 @@ import logging
 import re
 from typing import Any
 
+import requests
 from shapely.geometry import Polygon, shape
 
 from .constants import CENSUS_API_TIMEOUT
@@ -94,7 +95,7 @@ VARIABLE_MAPPING = {
     'poverty_population': 'B17001_002E',
     'bachelors_degree': 'B15003_022E',
     'high_school': 'B15003_017E',
-    'households_with_vehicle': 'B08201_001E',  # Total households (subtract no_vehicle to get with_vehicle)
+    'households_with_vehicle': 'B08201_001E',  # Total households (subtract no_vehicle)
     'households_no_vehicle': 'B08201_002E',  # Households with no vehicle available
     'median_home_value': 'B25077_001E',
     'median_rent': 'B25064_001E',
@@ -203,9 +204,6 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     - EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for other locations
     This provides accurate area measurements within ~0.1-2%.
     """
-    # Get bounds
-    bounds = geometry.bounds  # (minx, miny, maxx, maxy)
-
     # Identify states that might be in this area
     from ._geocoding import get_census_geography
 
@@ -238,7 +236,6 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
         bg_geom = shape(bg["geometry"])
         if geometry.intersects(bg_geom):
             # Calculate area using equal-area projection
-            import pyproj
             from shapely.ops import transform
 
             from .helpers import get_equal_area_transformer
@@ -343,7 +340,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
         return result
 
-    except requests.Timeout:
+    except requests.Timeout as e:
         from .exceptions import NetworkError
         logger.warning(
             f"Request timeout accessing TIGERweb service for state {state_fips}, county {county_fips}"
@@ -351,7 +348,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         raise NetworkError(
             "TIGERweb (Census Geography)",
             "Request timed out"
-        )
+        ) from e
     except requests.RequestException as e:
         from .exceptions import NetworkError
         logger.warning(
@@ -360,11 +357,11 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         raise NetworkError(
             "TIGERweb (Census Geography)",
             str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
         from .exceptions import DataError
-        raise DataError(f"Failed to fetch census block groups: {e}")
+        raise DataError(f"Failed to fetch census block groups: {e}") from e
 
 
 def fetch_census_data(
@@ -531,11 +528,11 @@ def fetch_census_data(
                 if e.response is not None and e.response.status_code == 403:
                     from .exceptions import MissingAPIKeyError
                     logger.error(f"Census API authentication failed for tract {tract_key}")
-                    raise MissingAPIKeyError("Census")
+                    raise MissingAPIKeyError("Census") from e
                 elif e.response is not None and e.response.status_code == 429:
                     from .exceptions import RateLimitError
                     logger.warning(f"Census API rate limit exceeded for tract {tract_key}")
-                    raise RateLimitError("Census API")
+                    raise RateLimitError("Census API") from e
                 else:
                     from .exceptions import InvalidAPIResponseError
                     status = e.response.status_code if e.response else None
@@ -543,19 +540,19 @@ def fetch_census_data(
                         "Census API",
                         status_code=status,
                         details=str(e)
-                    )
-            except requests.Timeout:
+                    ) from e
+            except requests.Timeout as e:
                 from .exceptions import NetworkError
                 logger.warning(f"Census API request timed out for tract {tract_key}")
-                raise NetworkError("Census API", "Request timed out")
+                raise NetworkError("Census API", "Request timed out") from e
             except requests.RequestException as e:
                 from .exceptions import NetworkError
                 logger.warning(f"Network error fetching census data for tract {tract_key}: {e}")
-                raise NetworkError("Census API", str(e))
+                raise NetworkError("Census API", str(e)) from e
             except Exception as e:
                 logger.warning(f"Failed to fetch census data for tract {tract_key}: {e}")
                 from .exceptions import DataError
-                raise DataError(f"Failed to fetch census data: {e}")
+                raise DataError(f"Failed to fetch census data: {e}") from e
 
         # Add small delay between batches to respect rate limits
         if batch_start + batch_size < len(tract_keys):

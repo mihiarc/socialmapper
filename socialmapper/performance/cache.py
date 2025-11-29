@@ -14,7 +14,6 @@ import functools
 import hashlib
 import logging
 import os
-import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -184,7 +183,7 @@ class CacheManager:
         self._census_cache.set(key, value, expire=expire_seconds)
 
     def cache_census_data(self, ttl_hours: int | None = None) -> Callable:
-        """Decorator to cache Census data function results.
+        """Create a decorator to cache Census data function results.
 
         Parameters
         ----------
@@ -270,7 +269,7 @@ class CacheManager:
         self._geocoding_cache.set(key, value, expire=expire_seconds)
 
     def cache_geocoding_result(self, ttl_hours: int | None = None) -> Callable:
-        """Decorator to cache geocoding function results.
+        """Create a decorator to cache geocoding function results.
 
         Parameters
         ----------

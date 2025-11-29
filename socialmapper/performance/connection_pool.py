@@ -131,7 +131,7 @@ class ConnectionPoolManager:
         return self._session
 
     def get(self, url: str, **kwargs) -> requests.Response:
-        """Convenience method for GET requests.
+        """Send a GET request using the connection pool.
 
         Parameters
         ----------
@@ -154,7 +154,7 @@ class ConnectionPoolManager:
         return self._session.get(url, **kwargs)
 
     def post(self, url: str, **kwargs) -> requests.Response:
-        """Convenience method for POST requests.
+        """Send a POST request using the connection pool.
 
         Parameters
         ----------

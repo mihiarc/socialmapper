@@ -182,13 +182,12 @@ def _expand_categories_to_osm_tags(categories: list[str] | None) -> list[str]:
         # Check if it's an individual OSM value (e.g., "restaurant")
         elif cat in OSM_KEY_MAPPINGS:
             tags.append(OSM_KEY_MAPPINGS[cat])
+        # Try as raw OSM tag if it contains =
+        elif "=" in cat:
+            tags.append(cat)
         else:
-            # Try as raw OSM tag if it contains =
-            if "=" in cat:
-                tags.append(cat)
-            else:
-                # Try common OSM key for unknown values
-                tags.append(f"amenity={cat}")
+            # Try common OSM key for unknown values
+            tags.append(f"amenity={cat}")
 
     return list(set(tags))
 

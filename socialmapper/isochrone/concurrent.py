@@ -469,8 +469,8 @@ class ConcurrentIsochroneProcessor:
         all_isochrones = []
         total_pois_to_process = sum(len(cluster.pois) for cluster in successful_clusters)
 
-        # For now, just use ThreadPoolExecutor to avoid pickling issues
-        # TODO: Implement proper ProcessPoolExecutor support with pickleable objects
+        # Use ThreadPoolExecutor (ProcessPoolExecutor requires pickleable objects
+        # which is complex with network graphs and shapely geometries)
         with ThreadPoolExecutor(max_workers=isochrone_workers) as executor:
             # Submit isochrone generation tasks
             future_to_cluster = {

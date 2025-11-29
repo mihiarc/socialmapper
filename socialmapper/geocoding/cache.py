@@ -82,7 +82,6 @@ class AddressCache:
 
         # Use diskcache's built-in expiration support to avoid race conditions
         # The 'expire_time' parameter ensures atomic TTL checking
-        ttl_seconds = self.config.cache_ttl_hours * 3600
         cached_data = self._cache.get(cache_key, default=None, expire_time=True)
 
         if cached_data is None:
