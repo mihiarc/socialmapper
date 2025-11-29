@@ -93,7 +93,7 @@ def main():
     print("\n3. Example with live data:")
     print("   from socialmapper import create_isochrone, get_census_data")
     print('   iso = create_isochrone("Your City, State", travel_time=20)')
-    print('   census = get_census_data(iso, ["population", "median_income"])')
+    print('   census = get_census_data(location=iso, variables=["population", "median_income"])')
 
     print("\n" + "=" * 70)
     print("Demo complete! Time to value: < 2 minutes ⚡")

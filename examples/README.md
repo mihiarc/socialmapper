@@ -1,100 +1,76 @@
 # SocialMapper Examples
 
-Welcome to the SocialMapper examples! This directory contains a comprehensive tutorial series and sample data to help you master SocialMapper.
+This directory contains example scripts demonstrating SocialMapper's capabilities.
 
-## 📚 Quick Start
-
-New to SocialMapper? Start here:
+## Quick Start
 
 ```bash
-# Install SocialMapper
-uv add socialmapper
+# Run the demo (no API key required)
+uv run python examples/demo_quickstart.py
 
-# Run the first tutorial
-uv run python examples/tutorials/01_getting_started.py
+# Run the full quick start example
+uv run python examples/quick_start.py
 ```
 
-## 📁 Directory Structure
+## Available Examples
 
-```
-examples/
-├── tutorials/          # 8 progressive tutorials (START HERE!)
-├── data/              # Sample datasets for testing
-└── README.md          # This file
-```
+| File | Description |
+|------|-------------|
+| `demo_quickstart.py` | Simple demo using pre-loaded data (no API key needed) |
+| `quick_start.py` | Comprehensive example with multiple analysis types |
 
-## 🎓 Tutorials
+## Sample Data
 
-**8 progressive tutorials** covering everything from basics to advanced techniques.
+The `data/` directory contains sample CSV files for testing:
 
-See the [complete tutorial guide](tutorials/README.md) for detailed descriptions.
+- `custom_coordinates.csv` - Simple POI format with lat/lon coordinates
+- `sample_addresses.csv` - Addresses for geocoding examples
+- `trail_heads.csv` - Trail head locations dataset
 
-### Quick Tutorial Overview
-
-1. **Getting Started** - Complete workflow with isochrones, POIs, and demographics
-2. **Travel Modes** - Compare walk, bike, and drive accessibility
-3. **Census Demographics** - Deep dive into demographic analysis
-4. **Custom POIs** - Import and analyze your own locations from CSV
-5. **Combining Analysis** - Build sophisticated multi-step workflows
-6. **Multi-Location** - Batch processing and coverage comparisons
-7. **ZIP Code Analysis** - Work with ZCTA boundaries
-8. **Address Geocoding** - Convert addresses to coordinates
-
-### Run All Tutorials
-
-```bash
-cd examples/tutorials
-uv run python 01_getting_started.py
-uv run python 02_travel_modes.py
-uv run python 03_census_demographics.py
-# ... and so on
-```
-
-## 📊 Sample Data
-
-Example datasets for testing:
-
-- **`data/custom_coordinates.csv`** - Simple POI format example
-- **`data/sample_addresses.csv`** - Addresses for geocoding demos
-
-## 🚀 Common Usage Patterns
+## Usage Patterns
 
 ### Basic Isochrone Analysis
+
 ```python
 from socialmapper import create_isochrone, get_census_blocks, get_census_data
 
-# Create isochrone
+# Create isochrone from coordinates
 iso = create_isochrone(
     location=(35.7796, -78.6382),  # Raleigh, NC
     travel_time=15,
     travel_mode="drive"
 )
 
-# Get demographics
+# Get census block groups in the area
 blocks = get_census_blocks(polygon=iso)
+
+# Get demographic data
 data = get_census_data(
     location=[b['geoid'] for b in blocks[:30]],
     variables=['population', 'median_income']
 )
 ```
 
-### Custom POIs from CSV
+### Demo Mode (No API Key)
+
 ```python
-from socialmapper.api import import_poi_csv
+from socialmapper import demo
 
-# Load your locations
-pois = import_poi_csv("my_locations.csv")
+# List available demo cities
+demo.list_available_demos()
 
-# Analyze each location
-for poi in pois:
-    iso = create_isochrone(
-        location=(poi['lat'], poi['lon']),
-        travel_time=10
-    )
+# Run quick analysis
+result = demo.quick_start("Portland, OR")
+print(f"Found {result['poi_count']} libraries")
+print(f"Population: {result['total_population']:,}")
 ```
 
 ### Multi-Mode Comparison
+
 ```python
+from socialmapper import create_isochrone
+
+location = "Chapel Hill, NC"
 modes = ["drive", "bike", "walk"]
 
 for mode in modes:
@@ -102,45 +78,21 @@ for mode in modes:
     print(f"{mode}: {iso['properties']['area_sq_km']:.2f} km²")
 ```
 
-## 💡 Tips for Learning
+## Tips
 
-1. **Follow the tutorial sequence** - They build progressively
-2. **Start with short travel times** - Use 5-10 minutes for quick testing
-3. **Experiment freely** - Modify locations, parameters, and variables
-4. **Read the code** - Tutorials are heavily commented
-5. **Use coordinates** - More reliable than address geocoding
+- **Start with demo mode** - No API keys needed, instant results
+- **Use short travel times** - 5-10 minutes for quick testing
+- **Sample census blocks** - Limit to first 20-30 for faster API responses
+- **Use coordinates** - More reliable than address geocoding
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
-### Common Issues
+- **Import errors**: Install SocialMapper with `uv add socialmapper`
+- **Slow first run**: Normal - building network caches
+- **Census API errors**: Check your API key is set correctly
 
-- **Import Errors**: Ensure SocialMapper is installed: `uv add socialmapper`
-- **Slow Performance**: Normal on first run (building caches)
-- **Census API Limits**: Sample blocks (first 20-30) for faster testing
-- **Geocoding Failures**: Use coordinates instead of addresses
+## More Resources
 
-### Getting Help
-
-- Check tutorial READMEs for detailed guidance
-- Review error messages - they suggest solutions
-- Open an issue on GitHub for bugs
-
-## 📈 Next Steps
-
-After completing the tutorials:
-
-1. Analyze locations that matter to you
-2. Build custom workflows for your use case
-3. Explore the main SocialMapper documentation
-4. Contribute your own examples!
-
-## 🤝 Contributing
-
-Found an issue or have a new tutorial idea?
-- Open an issue on GitHub
-- Submit a pull request
-- Share your analysis examples
-
----
-
-Happy mapping! 🗺️✨
+- [Quick Start Guide](../docs/quick-start.md)
+- [API Reference](../docs/api-reference.md)
+- [GitHub Issues](https://github.com/mihiarc/socialmapper/issues)
