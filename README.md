@@ -45,7 +45,7 @@ Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper
 
 - **🔧 Core Package** (`socialmapper/`) - Python toolkit for spatial analysis
 - **📚 Documentation** (`docs/`) - Comprehensive guides and reference
-- **🧪 Examples** (`examples/`) - Python usage examples and tutorials
+- **🧪 Examples** (`examples/`) - Python usage examples
 
 ## 🌟 Key Capabilities
 
@@ -102,7 +102,7 @@ result = demo.quick_start("Portland, OR")
 
 - **✅ Comprehensive Testing** - Full test coverage for all API functions
 - **📖 NumPy-Style Docstrings** - Professional documentation across all modules
-- **📚 Enhanced Documentation** - Aligned with actual API, progressive tutorials
+- **📚 Enhanced Documentation** - Aligned with actual API implementation
 - **⚠️ API Simplification** - Replaced pipeline API with direct function calls
 
 ### Breaking Changes
@@ -323,7 +323,7 @@ iso = create_isochrone(location, travel_time=15, travel_mode="walk")
 # Step 2: Find all libraries in the area
 libraries = get_poi(
     location=location,
-    categories=["amenity:library"],
+    categories=["library"],
     travel_time=15
 )
 print(f"Found {len(libraries)} libraries within 15-minute walk")
@@ -412,7 +412,7 @@ except Exception as e:
 try:
     pois = get_poi(
         location=(91, -122),  # Invalid latitude
-        categories=["amenity:library"]
+        categories=["library"]
     )
 except ValueError as e:
     print(f"Validation error: {e}")
@@ -435,7 +435,7 @@ from socialmapper import get_poi, create_isochrone, get_census_blocks
 location = "Fuquay-Varina, North Carolina"
 libraries = get_poi(
     location=location,
-    categories=["amenity:library"],
+    categories=["library"],
     travel_time=15
 )
 
