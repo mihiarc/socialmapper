@@ -36,7 +36,7 @@ Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper
 
 ✅ **Integrated Workflow** - Census + OSM + Isochrones in one toolkit (no other library does this)
 ✅ **Practitioner-Friendly** - 5 core functions cover 90% of accessibility analysis needs
-✅ **Production-Ready** - 255+ tests, NumPy-style docs, modern Python 3.11+
+✅ **Production-Ready** - Comprehensive test suite, NumPy-style docs, modern Python 3.11+
 ✅ **High Performance** - 4-8x faster with concurrent processing and intelligent caching ([see benchmarks](docs/performance.md))
 ✅ **Real-Time Data** - Live OSM queries and latest Census data (2023 ACS)
 ✅ **Purpose-Built** - Designed specifically for accessibility and equity analysis
@@ -100,7 +100,7 @@ result = demo.quick_start("Portland, OR")
 
 ### Production-Ready Quality Improvements
 
-- **✅ Comprehensive Testing** - 255+ passing tests covering all API functions
+- **✅ Comprehensive Testing** - Full test coverage for all API functions
 - **📖 NumPy-Style Docstrings** - Professional documentation across all modules
 - **📚 Enhanced Documentation** - Aligned with actual API, progressive tutorials
 - **⚠️ API Simplification** - Replaced pipeline API with direct function calls
@@ -161,7 +161,7 @@ SocialMapper supports environment variables for configuration. Create a `.env` f
 
 ```bash
 # Copy the example file and customize
-cp env.example .env
+cp .env.example .env
 ```
 
 Key environment variables:
@@ -169,7 +169,7 @@ Key environment variables:
 - `CENSUS_CACHE_ENABLED`: Enable/disable caching (default: true)
 - `CENSUS_RATE_LIMIT`: API rate limit in requests per minute (default: 60)
 
-See `env.example` for all available configuration options.
+See `.env.example` for all available configuration options.
 
 ## Using SocialMapper
 
@@ -218,15 +218,15 @@ from socialmapper import get_poi
 # Find libraries near Chapel Hill, NC
 pois = get_poi(
     location="Chapel Hill, NC",
-    categories=["amenity:library"],  # OpenStreetMap tags
+    categories=["library"],
     limit=10
 )
 
-# Find all POIs within 15-minute travel time
+# Find POIs within 15-minute travel time
 pois = get_poi(
     location="San Francisco, CA",
-    travel_time=15,  # Will find POIs within isochrone
-    categories=["amenity:hospital", "amenity:school"]
+    travel_time=15,
+    categories=["hospital", "school"]
 )
 
 for poi in pois:
@@ -362,8 +362,8 @@ iso1 = create_isochrone("Boston, MA", travel_time=20)
 iso2 = create_isochrone((42.3601, -71.0589), travel_time=20)
 
 # POIs support the same formats
-pois1 = get_poi("Seattle, WA", categories=["amenity:cafe"])
-pois2 = get_poi((47.6062, -122.3321), categories=["shop:supermarket"])
+pois1 = get_poi("Seattle, WA", categories=["cafe"])
+pois2 = get_poi((47.6062, -122.3321), categories=["grocery"])
 ```
 
 ### Travel Modes
@@ -453,21 +453,15 @@ print(f"Covering {len(blocks)} census block groups")
 
 Regardless of which method you use, you'll need to specify POI types and names. Common OpenStreetMap POI combinations:
 
-- Libraries: `poi-type: "amenity"`, `poi-name: "library"`
-- Schools: `poi-type: "amenity"`, `poi-name: "school"`
-- Hospitals: `poi-type: "amenity"`, `poi-name: "hospital"`
-- Parks: `poi-type: "leisure"`, `poi-name: "park"`
-- Supermarkets: `poi-type: "shop"`, `poi-name: "supermarket"`
-- Pharmacies: `poi-type: "amenity"`, `poi-name: "pharmacy"`
+Common category names:
+- `"library"` - Public libraries
+- `"school"` - Schools and educational facilities
+- `"hospital"` - Hospitals and medical centers
+- `"park"` - Parks and green spaces
+- `"grocery"` - Grocery stores and supermarkets
+- `"restaurant"` - Restaurants and dining
 
-Check out the OpenStreetMap Wiki for more on map features: https://wiki.openstreetmap.org/wiki/Map_features
-
-For more specific queries, you can add additional tags in a YAML format:
-```yaml
-# Example tags:
-operator: Chicago Park District
-opening_hours: 24/7
-```
+For the full list of 338+ supported categories, see the API reference.
 
 ### 2. Choose Your Target States
 
@@ -515,10 +509,10 @@ Here are some examples of community mapping projects you could create:
    ```python
    from socialmapper import get_poi, create_isochrone
 
-   # Find grocery stores and supermarkets within walking distance
+   # Find grocery stores within walking distance
    food_access = get_poi(
        "Chicago, Illinois",
-       categories=["shop:supermarket", "shop:grocery"],
+       categories=["grocery"],
        travel_time=20
    )
    print(f"Found {len(food_access)} food stores within 20-minute walk")
@@ -526,12 +520,12 @@ Here are some examples of community mapping projects you could create:
 
 2. **Healthcare Access**: Map hospitals and analyze accessibility patterns.
    ```python
-   from socialmapper import get_poi, get_census_blocks, create_isochrone
+   from socialmapper import get_poi, create_isochrone
 
    # Find hospitals within 30-minute drive
    hospitals = get_poi(
        "Los Angeles, California",
-       categories=["amenity:hospital", "amenity:clinic"],
+       categories=["hospital", "clinic"],
        travel_time=30
    )
 
@@ -550,7 +544,7 @@ Here are some examples of community mapping projects you could create:
    # Find schools within 15-minute walk
    schools = get_poi(
        "Boston, Massachusetts",
-       categories=["amenity:school"],
+       categories=["school"],
        travel_time=15
    )
 
@@ -569,7 +563,7 @@ Here are some examples of community mapping projects you could create:
    # Find parks within 10-minute walk
    parks = get_poi(
        "Miami, Florida",
-       categories=["leisure:park", "leisure:playground"],
+       categories=["park"],
        travel_time=10
    )
 
@@ -579,55 +573,6 @@ Here are some examples of community mapping projects you could create:
        radius_km=5
    )
    ```
-
-## Comparison with Alternatives
-
-### vs. censusdis
-**censusdis** is excellent for Census data access with a Pythonic interface. However, it's Census-only.
-
-**Use SocialMapper when you need:**
-- POI discovery from OpenStreetMap (libraries, hospitals, grocery stores)
-- Travel-time isochrones (walkable/drivable areas)
-- Integrated accessibility analysis (who can reach what)
-
-**Use censusdis when you need:**
-- Deep Census API coverage without spatial analysis
-- Pure demographic data queries
-
-### vs. geosnap
-**geosnap** excels at historical neighborhood analysis and geodemographic clustering.
-
-**Use SocialMapper when you need:**
-- Real-time accessibility analysis with current POI data
-- Simpler API for practitioners (not spatial statistics experts)
-- Production-ready workflows for planning departments
-
-**Use geosnap when you need:**
-- Academic research on neighborhood change over time
-- Advanced spatial clustering and regionalization
-- Geodemographic typologies
-
-### vs. DIY (census + geopandas + OSMnx + overpy)
-**Building your own** stack gives you maximum flexibility.
-
-**Use SocialMapper when you need:**
-- Faster time to results (2 min setup vs. 20+ min)
-- Tested, documented workflows
-- Production-grade reliability (255+ tests)
-- Simplified maintenance (1 dependency vs. 4+)
-
-**Build your own when:**
-- You need custom spatial algorithms
-- You're already deeply familiar with all the tools
-- You have unique requirements SocialMapper doesn't cover
-
-## Learn More
-
-- 📖 **[Documentation](https://mihiarc.github.io/socialmapper)** - Full documentation and tutorials
-- 📊 **[Competitive Analysis](docs/competitive-analysis.md)** - Detailed comparison with alternatives
-- 🎯 **[Examples](https://github.com/mihiarc/socialmapper/tree/main/examples)** - Working code examples
-- 💬 **[Discussions](https://github.com/mihiarc/socialmapper/discussions)** - Ask questions and share ideas
-- 🐛 **[Issues](https://github.com/mihiarc/socialmapper/issues)** - Report bugs or request features
 
 ## Development
 
@@ -653,15 +598,10 @@ uv run pytest
 
 ## Documentation
 
-### POI Discovery
-- **[POI Discovery Overview](docs/features/nearby_poi_discovery.md)** - Comprehensive feature overview and capabilities
-- **[POI Discovery API Reference](docs/api/poi_discovery.md)** - Complete API documentation for POI discovery
-- **[POI Discovery Usage Guide](docs/guides/poi_discovery_guide.md)** - Step-by-step tutorials and examples
-
-### General Documentation
-- [Travel Modes Explained](docs/travel_modes_explained.md) - Detailed explanation of how walking, biking, and driving networks differ
-- [API Reference](https://mihiarc.github.io/socialmapper/) - Full API documentation
+- [Quick Start Guide](docs/quick-start.md) - Get started in 2 minutes
+- [API Reference](docs/api-reference.md) - Complete function documentation
 - [Examples](examples/) - Sample scripts and use cases
+- [Contributing](CONTRIBUTING.md) - How to contribute
 
 ## API Reference
 
@@ -677,7 +617,7 @@ Create a travel-time polygon showing reachable area.
 #### `get_poi(location, categories=None, travel_time=None, limit=100)`
 Find points of interest near a location.
 - **location**: City name string or (lat, lon) tuple
-- **categories**: List of OSM tags like ["amenity:library"] (optional)
+- **categories**: List of category names like ["library", "hospital"] (optional)
 - **travel_time**: Limit to POIs within travel time (optional)
 - **limit**: Maximum POIs to return (default: 100)
 - **Returns**: List of POI dictionaries with name, lat, lon, tags
@@ -691,10 +631,10 @@ Get census block groups for a geographic area.
 
 #### `get_census_data(location, variables, year=2023)`
 Retrieve demographic data from US Census.
-- **location**: Block group IDs list, coordinates, or location dict
-- **variables**: List of census variable codes (e.g., ["B01003_001E"])
+- **location**: GeoJSON polygon, list of GEOIDs, or (lat, lon) tuple
+- **variables**: List of census variable codes (e.g., ["population", "median_income"])
 - **year**: Census year (default: 2023)
-- **Returns**: Dictionary with census data by block group
+- **Returns**: CensusDataResult with data organized by GEOID
 
 #### `create_map(data, column, title=None, save_path=None)`
 Create choropleth map visualization.

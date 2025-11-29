@@ -660,198 +660,19 @@ The map automatically uses:
 
 ---
 
-## Analysis Functions
-
-### analyze_multiple_pois()
-
-Analyze multiple locations and optionally compare them.
-
-```python
-def analyze_multiple_pois(
-    locations: list[str | tuple[float, float]],
-    travel_time: int = 15,
-    travel_mode: str = "drive",
-    variables: list[str] = None,
-    compare: bool = True
-) -> dict[str, Any]
-```
-
-Performs demographic analysis for multiple locations using isochrones and census data, with optional comparison.
-
-#### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `locations` | `list[str or tuple]` | Required | List of locations to analyze (addresses or coordinates) |
-| `travel_time` | `int` | `15` | Travel time in minutes for isochrones |
-| `travel_mode` | `str` | `"drive"` | Mode of transportation (`"drive"`, `"walk"`, `"bike"`) |
-| `variables` | `list[str]` or `None` | `None` | Census variables to analyze. If None, uses `["population"]` |
-| `compare` | `bool` | `True` | Whether to include comparative analysis across locations |
-
-#### Returns
-
-**`dict`** - Analysis results containing:
-- `'locations'`: List of individual location analyses
-- `'comparison'`: Comparative metrics (if compare=True)
-- `'metadata'`: Analysis parameters
-
-Each location analysis includes:
-- `location`: Location name/coordinates
-- `isochrone`: Isochrone GeoJSON
-- `census_data`: Census data for the area
-- `aggregated`: Aggregated statistics (total, mean, min, max)
-- `block_group_count`: Number of block groups
-
-#### Examples
-
-```python
-# Analyze three cities
-results = analyze_multiple_pois(
-    ["Portland, OR", "Seattle, WA", "San Francisco, CA"],
-    travel_time=20,
-    variables=["population", "median_income"]
-)
-
-print(f"Analyzed {len(results['locations'])} locations")
-
-# Access comparison data
-if 'comparison' in results:
-    pop_comparison = results['comparison']['population']
-    print(f"Highest population: {pop_comparison['highest']}")
-    print(f"Rankings:")
-    for rank in pop_comparison['ranked']:
-        print(f"  {rank['location']}: {rank['total']:,} people")
-
-# Access individual location data
-for loc_result in results['locations']:
-    print(f"\n{loc_result['location']}:")
-    print(f"  Population: {loc_result['aggregated']['population']['total']:,}")
-    print(f"  Avg Income: ${loc_result['aggregated']['median_income']['mean']:,.0f}")
-```
-
----
-
-### import_poi_csv()
-
-Import points of interest from a CSV file.
-
-```python
-def import_poi_csv(
-    csv_path: str,
-    name_field: str = "name",
-    lat_field: str = "latitude",
-    lon_field: str = "longitude",
-    type_field: str = "type"
-) -> list[dict[str, Any]]
-```
-
-#### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `csv_path` | `str` | Required | Path to the CSV file to import |
-| `name_field` | `str` | `"name"` | Column name for POI names |
-| `lat_field` | `str` | `"latitude"` | Column name for latitude values |
-| `lon_field` | `str` | `"longitude"` | Column name for longitude values |
-| `type_field` | `str` | `"type"` | Column name for POI type/category |
-
-#### Returns
-
-**`list[dict]`** - POIs in standard SocialMapper format
-
-#### Examples
-
-```python
-# Import POIs from CSV
-pois = import_poi_csv("locations.csv")
-print(f"Imported {len(pois)} POIs")
-
-# Custom field names
-pois = import_poi_csv(
-    "my_data.csv",
-    name_field="facility_name",
-    lat_field="lat",
-    lon_field="lng",
-    type_field="category"
-)
-
-# Use imported POIs with other functions
-for poi in pois:
-    iso = create_isochrone(
-        (poi['lat'], poi['lon']),
-        travel_time=15
-    )
-    # Analyze each POI location
-```
-
----
-
-### generate_report()
-
-Generate a formatted report from analysis results.
-
-```python
-def generate_report(
-    analysis_data: dict[str, Any],
-    format: str = "html",
-    template: str = "default",
-    include_maps: bool = True
-) -> str | bytes
-```
-
-#### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `analysis_data` | `dict` | Required | Analysis results from API functions |
-| `format` | `str` | `"html"` | Output format: `"html"` or `"pdf"` |
-| `template` | `str` | `"default"` | Report template name |
-| `include_maps` | `bool` | `True` | Whether to include map visualizations |
-
-#### Returns
-
-**`str` or `bytes`**:
-- HTML format: Returns HTML string
-- PDF format: Returns PDF bytes
-
-#### Examples
-
-```python
-# Generate HTML report
-iso = create_isochrone("Boston, MA", travel_time=15)
-census = get_census_data(iso, ["population", "median_income"])
-
-report_html = generate_report({
-    "isochrone": iso,
-    "census_data": census
-})
-
-# Save HTML report
-with open('report.html', 'w') as f:
-    f.write(report_html)
-
-# Generate PDF report
-report_pdf = generate_report(
-    analysis_data={
-        "isochrone": iso,
-        "census_data": census
-    },
-    format="pdf",
-    include_maps=True
-)
-
-# Save PDF report
-with open('report.pdf', 'wb') as f:
-    f.write(report_pdf)
-```
-
----
-
 ## Demo Module
 
 The demo module provides sample data and quick-start functions for exploring SocialMapper without API keys.
 
-### Available Functions
+### Available Demo Locations
+
+| Location | Description |
+|----------|-------------|
+| `"Portland, OR"` | Rose City with excellent library coverage |
+| `"Chapel Hill, NC"` | College town with strong community amenities |
+| `"Durham, NC"` | Bull City with vibrant food scene |
+
+### Functions
 
 ```python
 from socialmapper import demo
@@ -859,11 +680,10 @@ from socialmapper import demo
 
 #### demo.list_available_demos()
 
-Display all available demo locations.
+Display all available demo locations in a formatted table.
 
 ```python
 demo.list_available_demos()
-# Shows formatted table of demo cities with descriptions
 ```
 
 #### demo.quick_start()
@@ -872,27 +692,20 @@ Run complete accessibility analysis with cached demo data.
 
 ```python
 result = demo.quick_start(
-    location="Portland, OR",
-    travel_time=15,
-    travel_mode="drive"
+    location="Portland, OR",  # Must be one of the available demo locations
+    travel_time=15,           # 5, 10, 15, 20, or 30 minutes
+    travel_mode="drive"       # "drive", "walk", or "bike"
 )
 
-# Returns:
-# {
-#     "location": "Portland, OR",
-#     "isochrone": {...},
-#     "poi_count": 12,
-#     "pois": [...],
-#     "total_population": 45234,
-#     "median_income": 68500,
-#     "census_blocks": [...],
-#     "area_sq_km": 125.4
-# }
+# Returns dict with:
+# - location, isochrone, poi_count, pois
+# - total_population, median_income
+# - census_blocks, area_sq_km
 ```
 
 #### demo.show_libraries()
 
-Demonstrate library accessibility analysis.
+Analyze library accessibility for a demo location.
 
 ```python
 result = demo.show_libraries("Chapel Hill, NC", travel_time=15)
@@ -902,192 +715,12 @@ print(f"Serving {result['population_served']:,} people")
 
 #### demo.show_food_access()
 
-Demonstrate food access analysis.
+Analyze food access for a demo location.
 
 ```python
 result = demo.show_food_access("Durham, NC", travel_time=15)
 print(f"{result['grocery_count']} grocery stores")
 print(f"{result['restaurant_count']} restaurants")
-```
-
----
-
-## Performance Module
-
-The performance module provides optimization tools for caching, memory management, and configuration.
-
-### Configuration
-
-```python
-from socialmapper.performance import get_performance_config, PerformancePreset
-```
-
-#### get_performance_config()
-
-Get performance configuration with optional overrides.
-
-```python
-def get_performance_config(
-    preset: Literal["fast", "balanced", "memory_efficient"] | PerformancePreset = "balanced",
-    **overrides
-) -> PerformanceConfig
-```
-
-**Preset Options:**
-
-| Preset | Network Cache | Geocoding Cache | Census Cache | Use Case |
-|--------|---------------|----------------|--------------|----------|
-| `fast` | 10GB | 1GB | 500MB | Maximum speed, higher memory |
-| `balanced` | 5GB | 500MB | 250MB | Good balance (default) |
-| `memory_efficient` | 2GB | 100MB | 50MB | Minimal memory, slower |
-
-**Examples:**
-
-```python
-# Use fast preset
-config = get_performance_config(preset='fast')
-
-# Use balanced with custom TTL
-config = get_performance_config(
-    preset='balanced',
-    cache_ttl_hours=24
-)
-
-# Memory efficient for resource-constrained environments
-config = get_performance_config(preset='memory_efficient')
-
-# Custom configuration
-config = get_performance_config(
-    preset='balanced',
-    network_cache_size_gb=8,
-    http_pool_connections=15,
-    batch_size_census=100
-)
-```
-
-### Cache Management
-
-```python
-from socialmapper.performance import CacheManager, get_cache_stats
-```
-
-#### CacheManager
-
-Unified caching system with configurable TTL.
-
-```python
-cache = CacheManager(
-    cache_dir='/var/cache/socialmapper',
-    max_size_gb=10,
-    ttl_hours=168  # 7 days
-)
-
-# Use cache
-result = cache.get('my_key')
-if result is None:
-    result = expensive_operation()
-    cache.set('my_key', result)
-```
-
-#### get_cache_stats()
-
-Get cache statistics.
-
-```python
-stats = get_cache_stats()
-# Returns:
-# {
-#     'hit_rate': 0.85,
-#     'total_size_mb': 1234.5,
-#     'item_count': 456,
-#     'hits': 850,
-#     'misses': 150
-# }
-
-print(f"Cache hit rate: {stats['hit_rate']:.1%}")
-print(f"Total size: {stats['total_size_mb']:.1f} MB")
-```
-
-### Memory Management
-
-```python
-from socialmapper.performance import (
-    get_memory_stats,
-    clear_memory_cache,
-    optimize_dataframe_memory,
-    memory_efficient_iterator
-)
-```
-
-#### get_memory_stats()
-
-Get current memory usage statistics.
-
-```python
-stats = get_memory_stats()
-# Returns:
-# {
-#     'used_gb': 4.5,
-#     'available_gb': 11.5,
-#     'used_percent': 28.1,
-#     'total_gb': 16.0
-# }
-```
-
-#### clear_memory_cache()
-
-Clear in-memory caches to free memory.
-
-```python
-clear_memory_cache()
-```
-
-#### optimize_dataframe_memory()
-
-Reduce DataFrame memory usage.
-
-```python
-import pandas as pd
-
-df = pd.DataFrame(large_dataset)
-optimized_df = optimize_dataframe_memory(df)
-print(f"Memory reduction: {df.memory_usage().sum() / optimized_df.memory_usage().sum():.1f}x")
-```
-
-#### memory_efficient_iterator()
-
-Iterate through large datasets efficiently.
-
-```python
-for chunk in memory_efficient_iterator(large_list, chunk_size=100):
-    process_chunk(chunk)
-```
-
-### Connection Pooling
-
-```python
-from socialmapper.performance import get_http_session, init_connection_pool
-```
-
-#### get_http_session()
-
-Get configured HTTP session with connection pooling.
-
-```python
-session = get_http_session()
-response = session.get('https://api.example.com/data')
-```
-
-#### init_connection_pool()
-
-Initialize connection pool with custom configuration.
-
-```python
-init_connection_pool(
-    pool_connections=20,
-    pool_maxsize=20,
-    timeout=60
-)
 ```
 
 ---
@@ -1345,12 +978,11 @@ print(socialmapper.__version__)
 
 ## Additional Resources
 
-- [Deployment Guide](DEPLOYMENT.md) - Production deployment instructions
-- [Performance Guide](performance.md) - Performance optimization
-- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - More code examples
-- [Census Variables](https://api.census.gov/data/2023/acs/acs5/variables.html) - Complete variable list
+- [Quick Start Guide](quick-start.md) - Get started in 2 minutes
+- [Performance Guide](performance.md) - Performance optimization tips
+- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - Working code examples
+- [Census Variables](https://api.census.gov/data/2023/acs/acs5/variables.html) - Complete Census variable list
 
 ---
 
 **Version**: 0.9.0
-**Last Updated**: 2025-11-05

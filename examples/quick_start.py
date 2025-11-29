@@ -111,9 +111,8 @@ def analyze_all_cities() -> None:
     """
     print_header("All Demo Cities Analysis", "🏙️")
 
-    # Get list of available cities
-    cities = ["Portland, OR", "Chapel Hill, NC", "Durham, NC",
-              "Atlanta, GA", "Boston, MA"]
+    # Get list of available demo cities (only these have pre-loaded data)
+    cities = ["Portland, OR", "Chapel Hill, NC", "Durham, NC"]
 
     print("\nAnalyzing accessibility across demo cities...\n")
 
@@ -153,45 +152,33 @@ def analyze_all_cities() -> None:
 
 def explore_poi_categories(city: str = "Portland, OR") -> None:
     """
-    Explore different POI categories for accessibility analysis.
+    Explore POIs in a demo city.
 
-    Shows how to analyze different types of community resources.
+    Shows the POIs available in demo mode (primarily libraries).
+    Note: Demo mode uses pre-loaded data with library POIs.
     """
-    print_header("POI Category Exploration", "📍")
+    print_header("POI Exploration", "📍")
 
-    categories = ["library", "grocery", "hospital", "school", "park"]
+    print(f"\nAnalyzing POIs in {city}...\n")
 
-    print(f"\nAnalyzing different POI types in {city}...\n")
+    # Demo mode provides pre-loaded POI data (libraries)
+    result = demo.quick_start(
+        city,
+        travel_time=15,
+        travel_mode="walk"
+    )
 
-    for category in categories:
-        # Note: Current demo doesn't support poi_category parameter
-        # Using default POIs for demonstration
-        result = demo.quick_start(
-            city,
-            travel_time=15,
-            travel_mode="walk",
-            display_results=False
-        )
+    count = result.get("poi_count", 0)
+    print(f"📚 Libraries Found: {count} within 15-min walk")
 
-        count = result.get("poi_count", 0)
-        emoji = {
-            "library": "📚",
-            "grocery": "🛒",
-            "hospital": "🏥",
-            "school": "🏫",
-            "park": "🌳"
-        }.get(category, "📍")
-
-        print(f"{emoji} {category.capitalize():<12} Found {count} within 15-min walk")
-
-        # Show closest 3
-        if result.get("pois"):
-            print(f"   Closest 3:")
-            for poi in result["pois"][:3]:
-                name = poi.get("name", "Unknown")
-                dist = poi.get("distance_km", 0)
-                print(f"   • {name[:30]:<30} ({dist:.1f} km)")
-        print()
+    # Show closest 3
+    if result.get("pois"):
+        print(f"\n   Closest libraries:")
+        for poi in result["pois"][:3]:
+            name = poi.get("name", "Unknown")
+            dist = poi.get("distance_km", 0)
+            print(f"   • {name[:30]:<30} ({dist:.1f} km)")
+    print()
 
 
 def save_results_example(city: str = "Portland, OR") -> None:

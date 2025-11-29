@@ -129,7 +129,7 @@ create_map(census_data)
 - **Enhanced error handling** with custom exception hierarchy
 - **Improved caching mechanisms** for performance optimization
 - **Type annotations** throughout codebase for better IDE support
-- **Comprehensive docstrings** following Google style conventions
+- **Comprehensive docstrings** following NumPy style conventions
 
 #### **Performance Optimizations**
 - **Concurrent processing** for POI discovery operations

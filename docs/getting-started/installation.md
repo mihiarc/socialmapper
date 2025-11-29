@@ -87,7 +87,7 @@ Note: The `[minimal]` extra is not currently available. The standard installatio
 
 ### Using uv (Recommended)
 
-According to a memory from a past conversation, you should use 'uv' as the package management tool for installing and managing Python dependencies in this project instead of pip.
+uv is a fast Python package manager that provides reliable dependency resolution.
 
 ```bash
 # Install uv
@@ -130,19 +130,14 @@ uv run python -c "import socialmapper; print(socialmapper.__version__)"
 uv run python -c "from socialmapper import create_isochrone, get_census_data; print('✅ Installation successful!')"
 ```
 
-## Optional: API Keys
+## Optional: Census API Key
 
-While SocialMapper works without API keys, some features are enhanced with them:
+While SocialMapper works without API keys in demo mode, live data requires a Census API key:
 
-### Census Bureau API Key (Recommended)
-- **Benefit**: Faster census data downloads
-- **Get key**: [Census API Registration](https://api.census.gov/data/key_signup.html)
+### Census Bureau API Key (Required for live data)
+- **Benefit**: Access real-time census data for any US location
+- **Get key**: [Census API Registration](https://api.census.gov/data/key_signup.html) (free, instant)
 - **Setup**: `export CENSUS_API_KEY="your_key_here"`
-
-### Google Maps API Key (Optional)
-- **Benefit**: Enhanced geocoding accuracy
-- **Get key**: [Google Cloud Console](https://console.cloud.google.com/)
-- **Setup**: `export GOOGLE_MAPS_API_KEY="your_key_here"`
 
 ## Common Installation Issues
 

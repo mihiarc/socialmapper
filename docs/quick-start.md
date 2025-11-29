@@ -55,10 +55,9 @@ result = demo.quick_start("Chapel Hill, NC")
 
 # Durham - Growing tech hub
 result = demo.quick_start("Durham, NC")
-
-# Atlanta - Major metro
-result = demo.quick_start("Atlanta, GA")
 ```
+
+**Available demo cities:** Portland OR, Chapel Hill NC, Durham NC
 
 ### Explore Specific Use Cases
 
@@ -135,7 +134,7 @@ from socialmapper import create_isochrone, get_poi, get_census_data
 # Now works with ANY location in the US
 isochrone = create_isochrone("Seattle, WA", travel_time=15)
 pois = get_poi("Seattle, WA", categories=["library"])
-census = get_census_data(polygon=isochrone)
+census = get_census_data(location=isochrone, variables=["population"])
 ```
 
 ## Common Questions
@@ -180,10 +179,9 @@ You've successfully run your first SocialMapper analysis! Here's where to go nex
 - Test different travel modes
 - Compare various POI types
 
-### 2. Read the Tutorials
-- [01: Getting Started with Live Data](tutorials/01_getting_started.md)
-- [02: Travel Modes Comparison](tutorials/02_travel_modes.md)
-- [03: Census Demographics](tutorials/03_census_demographics.md)
+### 2. Read the Documentation
+- [API Reference](api-reference.md) - Complete function documentation
+- [Installation Guide](getting-started/installation.md) - Detailed setup instructions
 
 ### 3. Build Something
 - Analyze your own city
@@ -193,10 +191,7 @@ You've successfully run your first SocialMapper analysis! Here's where to go nex
 ### 4. Join the Community
 - [GitHub Discussions](https://github.com/mihiarc/socialmapper/discussions)
 - [Report Issues](https://github.com/mihiarc/socialmapper/issues)
-- [Contribute](contributing.md)
 
 ---
 
 **Remember**: You got from zero to analysis in 2 minutes. With live data, you can analyze any location in the United States with the same simple commands.
-
-Happy mapping! 🗺️
