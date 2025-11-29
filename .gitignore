@@ -160,3 +160,7 @@ streamlit.log
 .kiro/steering/product.md
 .kiro/steering/structure.md
 .kiro/steering/tech.md
+
+# Claude Code development files
+CLAUDE.md
+.claude/
