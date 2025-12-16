@@ -336,15 +336,28 @@ def _query_overpass_with_polygon(query: str) -> overpy.Result:
         try:
             logger.debug(f"Sending polygon query to Overpass API (length: {len(query)} chars)")
             return api.query(query)
-        except Exception as e:
+        except overpy.exception.OverpassTooManyRequests as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Overpass API rate limited after {max_retries} attempts: {e}")
+                raise
+            delay = base_delay * (2 ** attempt)
+            logger.warning(f"Rate limited (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            time.sleep(delay)
+        except overpy.exception.OverpassGatewayTimeout as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Overpass API gateway timeout after {max_retries} attempts: {e}")
+                raise
+            delay = base_delay * (2 ** attempt)
+            logger.warning(f"Gateway timeout (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            time.sleep(delay)
+        except (overpy.exception.OverpassError, ConnectionError, TimeoutError) as e:
             if attempt == max_retries - 1:
                 logger.error(f"Error querying Overpass API after {max_retries} attempts: {e}")
                 logger.debug(f"Query excerpt: {query[:500]}...")  # Log first 500 chars
                 raise
-            else:
-                delay = base_delay * (2 ** attempt)  # Exponential backoff
-                logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
-                time.sleep(delay)
+            delay = base_delay * (2 ** attempt)  # Exponential backoff
+            logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+            time.sleep(delay)
 
 
 def query_pois_in_polygon(

@@ -1,5 +1,6 @@
 """Internal census data utilities for SocialMapper."""
 
+import json
 import logging
 import re
 from typing import Any
@@ -358,10 +359,10 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
             "TIGERweb (Census Geography)",
             str(e)
         ) from e
-    except Exception as e:
-        logger.error(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        logger.error(f"Failed to parse block groups for {state_fips}-{county_fips}: {e}")
         from .exceptions import DataError
-        raise DataError(f"Failed to fetch census block groups: {e}") from e
+        raise DataError(f"Failed to parse census block groups response: {e}") from e
 
 
 def fetch_census_data(
@@ -549,10 +550,10 @@ def fetch_census_data(
                 from .exceptions import NetworkError
                 logger.warning(f"Network error fetching census data for tract {tract_key}: {e}")
                 raise NetworkError("Census API", str(e)) from e
-            except Exception as e:
-                logger.warning(f"Failed to fetch census data for tract {tract_key}: {e}")
+            except (json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.warning(f"Failed to parse census data for tract {tract_key}: {e}")
                 from .exceptions import DataError
-                raise DataError(f"Failed to fetch census data: {e}") from e
+                raise DataError(f"Failed to parse census API response: {e}") from e
 
         # Add small delay between batches to respect rate limits
         if batch_start + batch_size < len(tract_keys):

@@ -15,6 +15,7 @@ from geopy.distance import geodesic
 from shapely.geometry import shape
 
 from .api_result_types import CensusDataResult, MapResult
+from .exceptions import SocialMapperError
 from .helpers import (
     calculate_polygon_area,
     create_circular_geometry,
@@ -953,7 +954,7 @@ def analyze_multiple_pois(
             }
             results["locations"].append(location_result)
 
-        except Exception as e:
+        except (SocialMapperError, ValueError, KeyError, TypeError) as e:
             logger.error(f"Failed to analyze location {loc}: {e}")
             results["locations"].append({
                 "location": (loc if isinstance(loc, str)

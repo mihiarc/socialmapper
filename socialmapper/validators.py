@@ -324,6 +324,6 @@ def prevalidate_for_pyproj(data: list[dict] | list[Point]) -> tuple[bool, list[s
 
         return len(errors) == 0, errors
 
-    except Exception as e:
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
         errors.append(f"Validation error: {e}")
         return False, errors

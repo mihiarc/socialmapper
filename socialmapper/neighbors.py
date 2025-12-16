@@ -253,7 +253,7 @@ def get_counties_from_pois(
                 county_fips = geo_info.get("county_fips")
                 if state_fips and county_fips:
                     counties.add((state_fips, county_fips))
-        except Exception as e:
+        except (ValueError, KeyError, TypeError, OSError, ConnectionError) as e:
             logger.warning(f"Failed to get geography for POI ({lat}, {lon}): {e}")
 
     # Note: include_neighbors and neighbor_distance are accepted but

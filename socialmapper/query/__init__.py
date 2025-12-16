@@ -90,8 +90,14 @@ def load_poi_config(file_path):
         with open(file_path) as f:
             config = yaml.safe_load(f)
         return config
-    except Exception as e:
-        logger.error(f"Error loading configuration: {e}")
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file not found: {e}")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML configuration: {e}")
+        sys.exit(1)
+    except (OSError, PermissionError) as e:
+        logger.error(f"Error reading configuration file: {e}")
         sys.exit(1)
 
 
@@ -226,15 +232,28 @@ def query_overpass(query):
         try:
             logger.info("Sending query to Overpass API...")
             return api.query(query)
-        except Exception as e:
+        except overpy.exception.OverpassTooManyRequests as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Overpass API rate limited after {max_retries} attempts: {e}")
+                raise
+            delay = base_delay * (2 ** attempt)
+            logger.warning(f"Rate limited (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            time.sleep(delay)
+        except overpy.exception.OverpassGatewayTimeout as e:
+            if attempt == max_retries - 1:
+                logger.error(f"Overpass API gateway timeout after {max_retries} attempts: {e}")
+                raise
+            delay = base_delay * (2 ** attempt)
+            logger.warning(f"Gateway timeout (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            time.sleep(delay)
+        except (overpy.exception.OverpassError, ConnectionError, TimeoutError) as e:
             if attempt == max_retries - 1:
                 logger.error(f"Error querying Overpass API after {max_retries} attempts: {e}")
                 logger.debug(f"Query used: {query}")
                 raise
-            else:
-                delay = base_delay * (2 ** attempt)
-                logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
-                time.sleep(delay)
+            delay = base_delay * (2 ** attempt)
+            logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+            time.sleep(delay)
 
 
 def format_results(result, config=None):
@@ -401,8 +420,11 @@ def save_json(data, output_file):
         with output_file.open("w") as f:
             json.dump(data, f, indent=2)
         logger.info(f"Results saved to {output_file}")
-    except Exception as e:
-        logger.error(f"Error saving JSON file: {e}")
+    except (OSError, PermissionError) as e:
+        logger.error(f"Error writing JSON file: {e}")
+        sys.exit(1)
+    except (TypeError, ValueError) as e:
+        logger.error(f"Error serializing data to JSON: {e}")
         sys.exit(1)
 
 

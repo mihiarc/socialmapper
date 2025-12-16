@@ -96,9 +96,13 @@ def _generate_cluster_isochrones_worker(
 
                 isochrones.append(isochrone_gdf)
 
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             logger.error(
-                f"Failed to generate isochrone for POI {poi.get('id', 'unknown')}: {e}"
+                f"Data error generating isochrone for POI {poi.get('id', 'unknown')}: {e}"
+            )
+        except (OSError, ConnectionError) as e:
+            logger.error(
+                f"Network/IO error generating isochrone for POI {poi.get('id', 'unknown')}: {e}"
             )
 
     return isochrones
@@ -182,7 +186,7 @@ class ConcurrentIsochroneProcessor:
                 "memory_available_gb": memory.available / 1024**3,
                 "disk_free_gb": disk.free / 1024**3,
             }
-        except Exception as e:
+        except (OSError, AttributeError, psutil.Error) as e:
             logger.warning(f"Failed to monitor resources: {e}")
             return {}
 
@@ -270,9 +274,12 @@ class ConcurrentIsochroneProcessor:
                 logger.error(f"Failed to download network for cluster {cluster.cluster_id}")
                 return cluster.cluster_id, None
 
-        except Exception as e:
-            logger.error(f"Error downloading network for cluster {cluster.cluster_id}: {e}")
-            # Retry on error if we haven't exceeded retry limit
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Data error downloading network for cluster {cluster.cluster_id}: {e}")
+            return cluster.cluster_id, None
+        except (OSError, ConnectionError) as e:
+            logger.error(f"Network error downloading cluster {cluster.cluster_id}: {e}")
+            # Retry on network error if we haven't exceeded retry limit
             if retry_count < 2:
                 # Exponential backoff on errors
                 wait_time = 2 ** retry_count
@@ -340,9 +347,14 @@ class ConcurrentIsochroneProcessor:
                 else:
                     self._stats.failed_isochrones += 1
 
-            except Exception as e:
+            except (ValueError, KeyError, TypeError) as e:
                 logger.error(
-                    f"Failed to generate isochrone for POI {poi.get('id', 'unknown')}: {e}"
+                    f"Data error generating isochrone for POI {poi.get('id', 'unknown')}: {e}"
+                )
+                self._stats.failed_isochrones += 1
+            except (OSError, ConnectionError) as e:
+                logger.error(
+                    f"Network/IO error generating isochrone for POI {poi.get('id', 'unknown')}: {e}"
                 )
                 self._stats.failed_isochrones += 1
 
@@ -438,9 +450,13 @@ class ConcurrentIsochroneProcessor:
                             self._stats.networks_downloaded += 1
                         else:
                             logger.warning(f"Failed to download network for cluster {cluster_id}")
-                    except Exception as e:
+                    except (ValueError, KeyError, TypeError) as e:
                         logger.error(
-                            f"Network download failed for cluster {cluster.cluster_id}: {e}"
+                            f"Data error in network download for cluster {cluster.cluster_id}: {e}"
+                        )
+                    except (OSError, ConnectionError, TimeoutError) as e:
+                        logger.error(
+                            f"Network error downloading cluster {cluster.cluster_id}: {e}"
                         )
 
                     pbar.update(1)
@@ -498,9 +514,15 @@ class ConcurrentIsochroneProcessor:
                                 "isochrone_generation", processed_pois, total_pois_to_process
                             )
 
-                    except Exception as e:
+                    except (ValueError, KeyError, TypeError) as e:
                         logger.error(
-                            f"Isochrone generation failed for cluster {cluster.cluster_id}: {e}"
+                            f"Data error generating isochrones for cluster {cluster.cluster_id}: {e}"
+                        )
+                        processed_pois += len(cluster.pois)
+                        pbar.update(len(cluster.pois))
+                    except (OSError, ConnectionError, TimeoutError) as e:
+                        logger.error(
+                            f"Network/IO error generating isochrones for cluster {cluster.cluster_id}: {e}"
                         )
                         processed_pois += len(cluster.pois)
                         pbar.update(len(cluster.pois))

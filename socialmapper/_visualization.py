@@ -272,7 +272,7 @@ def add_scale_bar(ax, gdf):
             fontsize=10
         )
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError) as e:
         logger.debug(f"Could not add scale bar: {e}")
 
 

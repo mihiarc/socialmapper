@@ -110,8 +110,11 @@ class AddressGeocodingEngine:
 
                 last_error = result.error_message
 
-            except Exception as e:
-                logger.warning(f"Provider {provider_type.value} failed for {address.address}: {e}")
+            except (ValueError, KeyError, TypeError) as e:
+                logger.warning(f"Provider {provider_type.value} data error for {address.address}: {e}")
+                last_error = str(e)
+            except (OSError, ConnectionError, TimeoutError) as e:
+                logger.warning(f"Provider {provider_type.value} network error for {address.address}: {e}")
                 last_error = str(e)
 
         # All providers failed

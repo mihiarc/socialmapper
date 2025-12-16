@@ -226,20 +226,25 @@ class NominatimProvider(GeocodingProvider):
 
             return geocoding_result
 
-        except Exception as e:
-            error_msg = (
-                f"Nominatim geocoding failed for "
-                f"{address.address}: {e}"
-            )
+        except (ValueError, KeyError, TypeError) as e:
+            error_msg = f"Nominatim geocoding data error for {address.address}: {e}"
             logger.warning(error_msg)
             return GeocodingResult(
                 input_address=address,
                 success=False,
                 quality=AddressQuality.FAILED,
                 error_message=str(e),
-                processing_time_ms=(
-                    (time.time() - start_time) * 1000
-                ),
+                processing_time_ms=((time.time() - start_time) * 1000),
+            )
+        except (OSError, ConnectionError, TimeoutError) as e:
+            error_msg = f"Nominatim geocoding network error for {address.address}: {e}"
+            logger.warning(error_msg)
+            return GeocodingResult(
+                input_address=address,
+                success=False,
+                quality=AddressQuality.FAILED,
+                error_message=str(e),
+                processing_time_ms=((time.time() - start_time) * 1000),
             )
 
     def _determine_quality_from_osm(
@@ -306,7 +311,7 @@ class NominatimProvider(GeocodingProvider):
                     "block_group_geoid"
                 )
 
-        except Exception as e:
+        except (ValueError, KeyError, TypeError, OSError, ConnectionError) as e:
             logger.warning(
                 f"Failed to get geographic context: {e}"
             )
@@ -428,20 +433,25 @@ class CensusProvider(GeocodingProvider):
 
             return geocoding_result
 
-        except Exception as e:
-            error_msg = (
-                f"Census geocoding failed for "
-                f"{address.address}: {e}"
-            )
+        except (ValueError, KeyError, TypeError) as e:
+            error_msg = f"Census geocoding data error for {address.address}: {e}"
             logger.warning(error_msg)
             return GeocodingResult(
                 input_address=address,
                 success=False,
                 quality=AddressQuality.FAILED,
                 error_message=str(e),
-                processing_time_ms=(
-                    (time.time() - start_time) * 1000
-                ),
+                processing_time_ms=((time.time() - start_time) * 1000),
+            )
+        except (OSError, ConnectionError, TimeoutError) as e:
+            error_msg = f"Census geocoding network error for {address.address}: {e}"
+            logger.warning(error_msg)
+            return GeocodingResult(
+                input_address=address,
+                success=False,
+                quality=AddressQuality.FAILED,
+                error_message=str(e),
+                processing_time_ms=((time.time() - start_time) * 1000),
             )
 
     def _add_geographic_context(
@@ -477,7 +487,7 @@ class CensusProvider(GeocodingProvider):
                     "block_group_geoid"
                 )
 
-        except Exception as e:
+        except (ValueError, KeyError, TypeError, OSError, ConnectionError) as e:
             logger.warning(
                 f"Failed to get geographic context: {e}"
             )

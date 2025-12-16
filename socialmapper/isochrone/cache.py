@@ -30,7 +30,7 @@ def _cleanup_cache():
         try:
             _cache.close()
             logger.debug("Closed global network cache")
-        except Exception as e:
+        except (OSError, dc.Timeout) as e:
             logger.warning(f"Error closing cache on exit: {e}")
 
 
@@ -62,7 +62,7 @@ def _validate_cached_network(network: nx.MultiDiGraph) -> bool:
             logger.warning("Cached network missing CRS information")
             return False
         return True
-    except Exception as e:
+    except (AttributeError, TypeError, KeyError) as e:
         logger.warning(f"Network validation failed: {e}")
         return False
 
@@ -263,8 +263,14 @@ def download_and_cache_network(
 
         return graph
 
-    except Exception as e:
-        logger.error(f"Failed to download network for bbox {bbox}: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"Invalid data when downloading network for bbox {bbox}: {e}")
+        return None
+    except nx.NetworkXError as e:
+        logger.error(f"NetworkX error for bbox {bbox}: {e}")
+        return None
+    except (OSError, ConnectionError) as e:
+        logger.error(f"Network/IO error downloading network for bbox {bbox}: {e}")
         return None
 
 

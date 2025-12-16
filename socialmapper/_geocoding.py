@@ -12,7 +12,10 @@ geocode_with_census : US Census geocoder fallback
 get_census_geography : Reverse geocode to census geography IDs
 """
 
+import json
 import logging
+
+import requests
 
 from .constants import (
     CENSUS_GEOCODER_GEOGRAPHIES_URL,
@@ -98,11 +101,14 @@ def geocode_location(address: str) -> tuple[float, float] | None:
             logger.debug(f"Geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
 
-    except Exception as e:
-        if "timeout" in str(e).lower():
-            logger.warning(f"Nominatim geocoding timed out for '{address}'")
-        else:
-            logger.warning(f"Nominatim geocoding failed for '{address}': {e}")
+    except requests.Timeout:
+        logger.warning(f"Nominatim geocoding timed out for '{address}'")
+        # Try fallback before giving up
+    except requests.RequestException as e:
+        logger.warning(f"Nominatim geocoding network error for '{address}': {e}")
+        # Try fallback before giving up
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        logger.warning(f"Nominatim geocoding failed to parse response for '{address}': {e}")
         # Try fallback before giving up
 
     # Fallback to Census geocoder
@@ -181,8 +187,12 @@ def geocode_with_census(address: str) -> tuple[float, float] | None:
             logger.debug(f"Census geocoded '{address}' to ({lat}, {lon})")
             return (lat, lon)
 
-    except Exception as e:
-        logger.error(f"Census geocoding failed for '{address}': {e}")
+    except requests.Timeout:
+        logger.warning(f"Census geocoding timed out for '{address}'")
+    except requests.RequestException as e:
+        logger.warning(f"Census geocoding network error for '{address}': {e}")
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        logger.warning(f"Census geocoding failed to parse response for '{address}': {e}")
 
     return None
 
@@ -275,23 +285,23 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
             f"The location may be outside the US or in a territory without census block data."
         )
 
-    except Exception as e:
-        from .exceptions import DataError, NetworkError
-        error_str = str(e).lower()
-        if "timeout" in error_str:
-            logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
-            raise NetworkError(
-                "Census Geocoding API",
-                "Request timed out"
-            ) from e
-        elif "connection" in error_str or "network" in error_str:
-            logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
-            raise NetworkError(
-                "Census Geocoding API",
-                str(e)
-            ) from e
-        else:
-            logger.error(f"Unexpected error getting census geography for ({lat}, {lon}): {e}")
-            raise DataError(f"Failed to get census geography: {e}") from e
+    except requests.Timeout as e:
+        from .exceptions import NetworkError
+        logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
+        raise NetworkError(
+            "Census Geocoding API",
+            "Request timed out"
+        ) from e
+    except requests.RequestException as e:
+        from .exceptions import NetworkError
+        logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
+        raise NetworkError(
+            "Census Geocoding API",
+            str(e)
+        ) from e
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        from .exceptions import DataError
+        logger.error(f"Failed to parse census geography response for ({lat}, {lon}): {e}")
+        raise DataError(f"Failed to parse census geography response: {e}") from e
 
     return None

@@ -110,7 +110,7 @@ def query_pois_osmnx(
                     point = geom.representative_point()
                     lon = point.x
                     lat = point.y
-                except:
+                except (AttributeError, ValueError, TypeError):
                     logger.warning(f"Could not extract coordinates for POI {idx}, skipping")
                     continue
 
@@ -155,8 +155,12 @@ def query_pois_osmnx(
         logger.info(f"Successfully extracted {len(pois)} POIs")
         return result
 
-    except Exception as e:
-        logger.error(f"Error querying POIs with OSMnx: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"Data error querying POIs with OSMnx: {e}")
+        logger.debug(f"Location: {location_query}, Tags: {poi_tags}")
+        raise
+    except (ox._errors.InsufficientResponseError, ConnectionError, TimeoutError) as e:
+        logger.error(f"Network error querying POIs with OSMnx: {e}")
         logger.debug(f"Location: {location_query}, Tags: {poi_tags}")
 
         # Try alternative approach if the first fails
@@ -186,7 +190,7 @@ def query_pois_osmnx(
                             point = geom.representative_point()
                             lon = point.x
                             lat = point.y
-                        except:
+                        except (AttributeError, ValueError, TypeError):
                             continue
 
                     if isinstance(idx, tuple) and len(idx) >= 2:
@@ -219,7 +223,7 @@ def query_pois_osmnx(
 
                 return {"poi_count": len(pois), "pois": pois}
 
-            except Exception as e2:
+            except (ValueError, KeyError, TypeError, ox._errors.InsufficientResponseError, ConnectionError, TimeoutError) as e2:
                 logger.error(f"Retry also failed: {e2}")
 
         # If all attempts fail, raise the original error
@@ -289,8 +293,11 @@ def query_pois_with_fallback(
         # Try OSMnx first (more reliable with location names)
         return query_pois_osmnx(location, tags, state)
 
-    except Exception as e:
-        logger.error(f"OSMnx query failed: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"OSMnx query data error: {e}")
+        raise
+    except (ox._errors.InsufficientResponseError, ConnectionError, TimeoutError) as e:
+        logger.error(f"OSMnx query network error: {e}")
 
         if use_overpass_fallback:
             logger.info("Falling back to Overpass API...")
@@ -309,7 +316,7 @@ def query_pois_with_fallback(
                 query = build_overpass_query(config)
                 raw_results = query_overpass(query)
                 return format_results(raw_results, config)
-            except Exception as e2:
+            except (ValueError, KeyError, TypeError, ConnectionError, TimeoutError) as e2:
                 logger.error(f"Overpass fallback also failed: {e2}")
                 raise
         else:

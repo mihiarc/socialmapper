@@ -431,7 +431,7 @@ class CacheManager:
                 "status": "active" if cache_stats.get("count", 0) > 0 else "empty",
                 "location": str(self._base_path / "networks"),
             }
-        except Exception as e:
+        except (OSError, KeyError, ValueError, AttributeError) as e:
             logger.error(f"Failed to get network cache stats: {e}")
             return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
 
@@ -455,7 +455,7 @@ class CacheManager:
                 "message": "Network cache cleared successfully",
                 "cleared_size_mb": stats_before.get("size_mb", 0),
             }
-        except Exception as e:
+        except (OSError, KeyError, ValueError, AttributeError) as e:
             logger.error(f"Failed to clear network cache: {e}")
             return {"success": False, "error": str(e)}
 

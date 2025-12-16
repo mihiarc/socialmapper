@@ -92,7 +92,7 @@ class AddressCache:
             result_data = cached_data["result"]
             result_data["input_address"] = address
             return GeocodingResult(**result_data)
-        except Exception as e:
+        except (KeyError, TypeError, ValueError) as e:
             logger.warning(f"Failed to deserialize cached result: {e}")
             # Invalid data - remove from cache
             self._cache.delete(cache_key)

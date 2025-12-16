@@ -393,9 +393,13 @@ def create_isochrones_from_poi_list(
                 )
                 isochrone_gdfs.append(result)
 
-            except Exception as e:
+            except (ValueError, KeyError, TypeError, nx.NetworkXError, ox._errors.InsufficientResponseError) as e:
                 poi_name = poi.get("tags", {}).get("name", poi.get("id", "unknown"))
                 logger.error(f"Error creating isochrone for POI {poi_name}: {e}")
+                continue
+            except OSError as e:
+                poi_name = poi.get("tags", {}).get("name", poi.get("id", "unknown"))
+                logger.error(f"Network/file error creating isochrone for POI {poi_name}: {e}")
                 continue
 
     # Handle file saving and combining

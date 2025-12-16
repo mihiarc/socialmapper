@@ -327,9 +327,14 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
             from .exceptions import NetworkError
             logger.warning(f"Overpass endpoint {endpoint} connection error: {e}")
             last_error = NetworkError("OpenStreetMap Overpass API", str(e))
-        except Exception as e:
-            logger.warning(f"Overpass endpoint {endpoint} failed: {e}")
-            last_error = Exception(str(e))
+        except requests.exceptions.RequestException as e:
+            from .exceptions import NetworkError
+            logger.warning(f"Overpass endpoint {endpoint} request error: {e}")
+            last_error = NetworkError("OpenStreetMap Overpass API", str(e))
+        except (ValueError, KeyError) as e:
+            from .exceptions import DataError
+            logger.warning(f"Overpass endpoint {endpoint} returned invalid data: {e}")
+            last_error = DataError(f"Invalid response from Overpass API: {e}")
 
         # Small delay before trying next endpoint
         time.sleep(0.5)

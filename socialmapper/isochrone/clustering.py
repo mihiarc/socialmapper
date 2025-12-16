@@ -422,8 +422,14 @@ def download_network_for_cluster(
 
         return True
 
-    except Exception as e:
-        logger.error(f"Failed to download network for cluster {cluster.cluster_id}: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"Invalid data when downloading network for cluster {cluster.cluster_id}: {e}")
+        return False
+    except nx.NetworkXError as e:
+        logger.error(f"NetworkX error for cluster {cluster.cluster_id}: {e}")
+        return False
+    except (OSError, ConnectionError) as e:
+        logger.error(f"Network/IO error downloading network for cluster {cluster.cluster_id}: {e}")
         return False
 
 
@@ -468,7 +474,7 @@ def create_isochrone_from_poi_with_network(
 
         try:
             lat, lon = _validate_coordinates_strict(lat, lon)
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.error(
                 f"POI {poi.get('id', 'unknown')} has invalid coordinates: lat={lat}, lon={lon} - {e}"
             )
@@ -610,8 +616,14 @@ def create_isochrone_from_poi_with_network(
 
         return isochrone_gdf
 
-    except Exception as e:
-        logger.error(f"Failed to create isochrone for POI {poi.get('id', 'unknown')}: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"Invalid data when creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
+        return None
+    except nx.NetworkXError as e:
+        logger.error(f"NetworkX error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
+        return None
+    except (OSError, ConnectionError) as e:
+        logger.error(f"Network/IO error creating isochrone for POI {poi.get('id', 'unknown')}: {e}")
         return None
 
 

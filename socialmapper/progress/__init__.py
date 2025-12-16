@@ -114,7 +114,8 @@ class RichProgressWrapper:
         try:
             self.progress_instance.start()
             self.task_id = self.progress_instance.add_task(desc, total=self.total)
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError, OSError):
+            # Graceful degradation when Rich progress bar can't start
             total_msg = f" ({self.total} items)" if self.total else ""
             console.print(f"🔄 {desc}{total_msg}")
             self.progress_instance = None
@@ -167,8 +168,8 @@ class RichProgressWrapper:
         if self.progress_instance:
             try:
                 self.progress_instance.stop()
-            except Exception:
-                pass
+            except (RuntimeError, ValueError, AttributeError, OSError):
+                pass  # Graceful degradation on close
             finally:
                 self.progress_instance = None
                 self.task_id = None
