@@ -25,6 +25,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .api_result_types import CensusDataResult
+from .constants import DEMO_DISPLAY_LIMIT
 from .exceptions import ValidationError
 
 console = Console()
@@ -90,7 +91,7 @@ def _load_demo_data(location: str, data_type: str) -> dict[str, Any]:
             f"Please ensure demo data is properly installed."
         )
 
-    with open(filepath) as f:
+    with filepath.open() as f:
         return json.load(f)
 
 
@@ -111,7 +112,7 @@ def list_available_demos() -> None:
     table.add_column("Description", style="white")
     table.add_column("Available Demos", style="green")
 
-    for loc_key, loc_info in DEMO_LOCATIONS.items():
+    for loc_info in DEMO_LOCATIONS.values():
         demos = "✓ Libraries  ✓ Food Access  ✓ Quick Start"
         table.add_row(
             loc_info["display_name"],
@@ -484,13 +485,13 @@ def _display_library_results(result: dict[str, Any]) -> None:
 
     if result["libraries"]:
         console.print("[bold]Sample Libraries:[/bold]")
-        for lib in result["libraries"][:3]:
+        for lib in result["libraries"][:DEMO_DISPLAY_LIMIT]:
             name = lib.get("name", "Unknown Library")
             distance = lib.get("distance_km", 0)
             console.print(f"  • {name} ({distance:.1f} km)")
 
-        if len(result["libraries"]) > 3:
-            console.print(f"  [dim]... and {len(result['libraries']) - 3} more[/dim]")
+        if len(result["libraries"]) > DEMO_DISPLAY_LIMIT:
+            console.print(f"  [dim]... and {len(result['libraries']) - DEMO_DISPLAY_LIMIT} more[/dim]")
 
     console.print()
 

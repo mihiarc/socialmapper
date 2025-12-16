@@ -866,7 +866,7 @@ def analyze_multiple_pois(
     locations: list[str | tuple[float, float]],
     travel_time: int = 15,
     travel_mode: str = "drive",
-    variables: list[str] = None,
+    variables: list[str] | None = None,
     compare: bool = True
 ) -> dict[str, Any]:
     """
@@ -991,13 +991,11 @@ def _create_comparison_analysis(locations: list[dict], variables: list[str]) -> 
     comparison = {}
 
     for var in variables:
-        var_comparison = []
-        for loc_result in locations:
-            if ("aggregated" in loc_result and var in loc_result["aggregated"]):
-                var_comparison.append({
-                    "location": loc_result["location"],
-                    **loc_result["aggregated"][var]
-                })
+        var_comparison = [
+            {"location": loc_result["location"], **loc_result["aggregated"][var]}
+            for loc_result in locations
+            if "aggregated" in loc_result and var in loc_result["aggregated"]
+        ]
 
         if var_comparison:
             var_comparison.sort(key=lambda x: x.get("total", 0), reverse=True)

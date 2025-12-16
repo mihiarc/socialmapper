@@ -71,47 +71,40 @@ from .exceptions import (
 # Version
 __version__ = "1.0.0"
 
-# Public API - core functions and exceptions
+# Public API - core functions and exceptions (sorted alphabetically)
 __all__ = [
-    # Core functions
-    "create_isochrone",
-    "get_census_blocks",
-    "get_census_data",
-    "create_map",
-    "get_poi",
-    # Demo module for easy onboarding
-    "demo",
-    # Result types
-    "MapResult",
-    "CensusDataResult",
-    "IsochroneResult",
-    "CensusBlock",
-    "DiscoveredPOI",
-    "NearbyPOIResult",
-    "ReportResult",
-    # Request types
-    "MapRequest",
-    "CensusDataRequest",
-    "CensusBlocksRequest",
-    "IsochroneRequest",
-    "POIRequest",
-    # Core exceptions
-    "SocialMapperError",
-    "ValidationError",
     "APIError",
-    "DataError",
     "AnalysisError",
-    # Helpful specific exceptions
-    "MissingAPIKeyError",
+    "CensusBlock",
+    "CensusBlocksRequest",
+    "CensusDataRequest",
+    "CensusDataResult",
+    "ConfigurationError",
+    "DataError",
+    "DataProcessingError",
+    "DiscoveredPOI",
+    "ExternalAPIError",
+    "FileSystemError",
+    "InvalidAPIResponseError",
     "InvalidLocationError",
     "InvalidPOICategoryError",
+    "IsochroneRequest",
+    "IsochroneResult",
+    "MapRequest",
+    "MapResult",
+    "MissingAPIKeyError",
+    "NearbyPOIResult",
     "NetworkError",
+    "POIRequest",
     "RateLimitError",
-    "InvalidAPIResponseError",
-    # Legacy aliases
-    "ConfigurationError",
-    "ExternalAPIError",
-    "DataProcessingError",
-    "FileSystemError",
+    "ReportResult",
+    "SocialMapperError",
+    "ValidationError",
     "VisualizationError",
+    "create_isochrone",
+    "create_map",
+    "demo",
+    "get_census_blocks",
+    "get_census_data",
+    "get_poi",
 ]

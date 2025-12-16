@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class VectorizedDistanceEngine:
     """High-performance vectorized distance calculation engine.
 
-    This engine replaces the legacy O(n×m) nested loop approach with:
+    This engine replaces the legacy O(n*m) nested loop approach with:
     - Bulk coordinate transformations
     - Numba JIT-compiled distance calculations
     - Spatial indexing with BallTree

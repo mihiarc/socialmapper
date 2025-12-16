@@ -119,7 +119,7 @@ class OutputTracker:
         output_dir = Path(output_dir)
         manifest_path = output_dir / "output_manifest.json"
 
-        with open(manifest_path, "w") as f:
+        with manifest_path.open("w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
         logger.info(f"Saved output manifest to {manifest_path}")
@@ -306,7 +306,7 @@ class IOManager:
         removed_count = 0
 
         # Sort each group by creation time and remove old files
-        for _key, files in file_groups.items():
+        for files in file_groups.values():
             sorted_files = sorted(files, key=lambda f: f.created_at, reverse=True)
 
             for f in sorted_files[keep_latest_n:]:

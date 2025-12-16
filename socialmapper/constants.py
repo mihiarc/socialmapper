@@ -48,6 +48,7 @@ MIN_CLUSTER_POINTS = 2  # Minimum points required for clustering
 
 # GeoJSON validation
 MIN_GEOJSON_COORDINATES = 2  # Minimum coordinates for valid GeoJSON
+COORDINATE_PAIR_LENGTH = 2  # Expected length of (lat, lon) coordinate tuples
 
 # Dataset size thresholds (in MB)
 SMALL_DATASET_MB = 10  # Small datasets - use in-memory processing
@@ -81,8 +82,16 @@ CONUS_MAX_LON = -66.0  # Eastern tip of Maine
 # Coordinate Reference Systems (CRS)
 # ==========================================
 CRS_WGS84 = "EPSG:4326"  # Standard lat/lon coordinates
+CRS_WGS84_EPSG = 4326  # WGS84 EPSG code as integer
 CRS_CONUS_ALBERS = "EPSG:5070"  # NAD83 / Conus Albers - optimized for CONUS (~0.1% accuracy)
 CRS_GLOBAL_EQUAL_AREA = "EPSG:6933"  # NSIDC EASE-Grid 2.0 - global equal-area (~1-2% accuracy)
+
+# ==========================================
+# Visualization Constants
+# ==========================================
+SCALE_BAR_ROUND_THRESHOLD = 0.1  # Threshold for rounding scale bar length
+METERS_PER_KM = 1000  # Meters per kilometer
+DEMO_DISPLAY_LIMIT = 3  # Number of items to show before "and X more"
 
 # ==========================================
 # API Base URLs

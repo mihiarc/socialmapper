@@ -9,6 +9,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Patch
 
+from .constants import (
+    CRS_WGS84_EPSG,
+    METERS_PER_KM,
+    SCALE_BAR_ROUND_THRESHOLD,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -229,7 +235,7 @@ def add_scale_bar(ax, gdf):
         # Round to nice number
         if scale_length > 1:
             scale_length = round(scale_length)
-        elif scale_length > 0.1:
+        elif scale_length > SCALE_BAR_ROUND_THRESHOLD:
             scale_length = round(scale_length, 1)
         else:
             scale_length = round(scale_length, 2)
@@ -245,17 +251,17 @@ def add_scale_bar(ax, gdf):
         ax.plot([x_end, x_end], [y - scale_length*0.01, y + scale_length*0.01], 'k-', linewidth=3)
 
         # Determine units and label
-        if gdf.crs and gdf.crs.to_epsg() == 4326:
+        if gdf.crs and gdf.crs.to_epsg() == CRS_WGS84_EPSG:
             # Degrees - convert to km
             # Rough approximation at middle latitude
             mid_lat = (bounds[1] + bounds[3]) / 2
             km_per_degree = 111 * np.cos(np.radians(mid_lat))
             distance_km = scale_length * km_per_degree
 
-            label = f"{distance_km:.0f} km" if distance_km >= 1 else f"{distance_km*1000:.0f} m"
+            label = f"{distance_km:.0f} km" if distance_km >= 1 else f"{distance_km*METERS_PER_KM:.0f} m"
         # Assume meters
-        elif scale_length >= 1000:
-            label = f"{scale_length/1000:.0f} km"
+        elif scale_length >= METERS_PER_KM:
+            label = f"{scale_length/METERS_PER_KM:.0f} km"
         else:
             label = f"{scale_length:.0f} m"
 
@@ -273,7 +279,7 @@ def add_scale_bar(ax, gdf):
         logger.debug(f"Could not add scale bar: {e}")
 
 
-def create_simple_map(data: list, title: str = None) -> bytes:
+def create_simple_map(data: list, title: str | None = None) -> bytes:
     """
     Create a simple scatter plot map from a list of point locations.
 

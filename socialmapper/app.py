@@ -277,16 +277,15 @@ def display_results_summary(results, analysis_type):
         else:
             st.info("No POIs found in this area.")
 
-    elif analysis_type == "Census Data":
-        if results and results.get("gdf") is not None:
-            gdf = results["gdf"]
-            st.metric("Census Blocks", len(gdf))
+    elif analysis_type == "Census Data" and results and results.get("gdf") is not None:
+        gdf = results["gdf"]
+        st.metric("Census Blocks", len(gdf))
 
-            # Show data preview
-            st.write("**Data Preview:**")
-            # Display non-geometry columns
-            display_cols = [c for c in gdf.columns if c != "geometry"]
-            st.dataframe(gdf[display_cols].head(10), use_container_width=True)
+        # Show data preview
+        st.write("**Data Preview:**")
+        # Display non-geometry columns
+        display_cols = [c for c in gdf.columns if c != "geometry"]
+        st.dataframe(gdf[display_cols].head(10), use_container_width=True)
 
 
 def export_results(results, analysis_type):

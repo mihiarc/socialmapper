@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point
 
+from socialmapper.constants import MIN_GEOJSON_COORDINATES
 from socialmapper.progress import get_progress_bar
 
 # Import the high-performance engine
@@ -201,7 +202,7 @@ def add_travel_distances(
             poi_points.append(Point(poi["geometry"].x, poi["geometry"].y))
         elif "coordinates" in poi:
             coords = poi["coordinates"]
-            if isinstance(coords, list) and len(coords) >= 2:
+            if isinstance(coords, list) and len(coords) >= MIN_GEOJSON_COORDINATES:
                 poi_points.append(Point(coords[0], coords[1]))
         elif "properties" in poi and isinstance(poi["properties"], dict):
             props = poi["properties"]

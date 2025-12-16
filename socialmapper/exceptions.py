@@ -37,10 +37,7 @@ class SocialMapperError(Exception):
             Additional guidance on how to fix the issue.
         """
         self.help_text = help_text
-        if help_text:
-            full_message = f"{message}\n\n{help_text}"
-        else:
-            full_message = message
+        full_message = f"{message}\n\n{help_text}" if help_text else message
         super().__init__(full_message)
 
 
@@ -204,8 +201,7 @@ class InvalidLocationError(ValidationError):
 
         if suggestions:
             help_lines.append("\nDid you mean one of these?")
-            for suggestion in suggestions[:5]:
-                help_lines.append(f"  - {suggestion}")
+            help_lines.extend(f"  - {suggestion}" for suggestion in suggestions[:5])
 
         help_text = "\n".join(help_lines)
         super().__init__(message, help_text)
@@ -235,8 +231,7 @@ class InvalidPOICategoryError(ValidationError):
             "Valid POI categories:",
         ]
 
-        for cat in sorted(valid_categories):
-            help_lines.append(f"  - {cat}")
+        help_lines.extend(f"  - {cat}" for cat in sorted(valid_categories))
 
         help_lines.append(
             "\nExample: get_poi('Portland, OR', category='food_and_drink')"

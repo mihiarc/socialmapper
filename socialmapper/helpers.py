@@ -16,6 +16,7 @@ from .constants import (
     CONUS_MAX_LON,
     CONUS_MIN_LAT,
     CONUS_MIN_LON,
+    COORDINATE_PAIR_LENGTH,
     CRS_CONUS_ALBERS,
     CRS_GLOBAL_EQUAL_AREA,
     CRS_WGS84,
@@ -173,7 +174,7 @@ def resolve_coordinates(location: str | tuple[float, float]) -> tuple[tuple[floa
             raise ValueError(f"Could not geocode location: {location}")
         lat, lon = coords
         location_name = location
-    elif isinstance(location, (tuple, list)) and len(location) == 2:
+    elif isinstance(location, tuple | list) and len(location) == COORDINATE_PAIR_LENGTH:
         lat, lon = location
         if not validate_coordinates(lat, lon):
             raise ValidationError(f"Invalid coordinates: {location}")
