@@ -26,7 +26,11 @@ import diskcache as dc
 import geopandas as gpd
 import psutil
 
-from ..constants import HIGH_CPU_USAGE_THRESHOLD, HIGH_MEMORY_USAGE_THRESHOLD
+from ..constants import (
+    HIGH_CPU_USAGE_THRESHOLD,
+    HIGH_MEMORY_USAGE_THRESHOLD,
+    NETWORK_MAX_RETRIES,
+)
 from ..progress import get_progress_bar
 from .cache import download_and_cache_network, get_cache, get_cache_stats
 from .clustering import (
@@ -258,7 +262,7 @@ class ConcurrentIsochroneProcessor:
                         f"{len(network.nodes)} nodes for {travel_time_minutes} min travel"
                     )
                     # Retry with larger buffer if this is the first attempt
-                    if retry_count < 2:
+                    if retry_count < NETWORK_MAX_RETRIES:
                         # Exponential backoff: 1s, 2s, 4s...
                         wait_time = 2 ** retry_count
                         logger.info(f"Retrying network download with larger buffer after {wait_time}s (attempt {retry_count + 1})")
@@ -280,7 +284,7 @@ class ConcurrentIsochroneProcessor:
         except (OSError, ConnectionError) as e:
             logger.error(f"Network error downloading cluster {cluster.cluster_id}: {e}")
             # Retry on network error if we haven't exceeded retry limit
-            if retry_count < 2:
+            if retry_count < NETWORK_MAX_RETRIES:
                 # Exponential backoff on errors
                 wait_time = 2 ** retry_count
                 logger.info(f"Retrying after error with {wait_time}s backoff (attempt {retry_count + 1})")

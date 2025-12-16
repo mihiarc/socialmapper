@@ -111,4 +111,23 @@ USER_AGENT = "SocialMapper/2.0 (https://github.com/socialmapper)"
 # ==========================================
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_BACKOFF = 0.5  # seconds
+DEFAULT_RETRY_BACKOFF_EXPONENTIAL = 2.0  # base delay for exponential backoff
 RETRY_STATUS_CODES = [429, 500, 502, 503, 504]
+NETWORK_MAX_RETRIES = 2  # Max retries for network downloads (isochrone)
+
+# ==========================================
+# Batch Processing
+# ==========================================
+CENSUS_BATCH_SIZE = 10  # Number of tracts to process per batch
+CENSUS_BATCH_DELAY = 0.1  # Delay between batches in seconds
+
+# ==========================================
+# Overpass API Configuration
+# ==========================================
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+]
+OVERPASS_PRIMARY_ENDPOINT = OVERPASS_ENDPOINTS[0]
+OVERPASS_TIMEOUT = 30  # Timeout for individual Overpass requests (not OSMnx)

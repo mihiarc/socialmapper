@@ -8,7 +8,7 @@ from typing import Any
 import requests
 from shapely.geometry import Polygon, shape
 
-from .constants import CENSUS_API_TIMEOUT
+from .constants import CENSUS_API_TIMEOUT, CENSUS_BATCH_SIZE
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
@@ -455,10 +455,9 @@ def fetch_census_data(
 
     # Process tracts in batches to respect rate limits
     tract_keys = list(geoids_by_tract.keys())
-    batch_size = 10  # Process 10 tracts per batch, with delay between batches
 
-    for batch_start in range(0, len(tract_keys), batch_size):
-        batch_tracts = tract_keys[batch_start:batch_start + batch_size]
+    for batch_start in range(0, len(tract_keys), CENSUS_BATCH_SIZE):
+        batch_tracts = tract_keys[batch_start:batch_start + CENSUS_BATCH_SIZE]
 
         for tract_key in batch_tracts:
             state = tract_key[:2]
@@ -556,9 +555,11 @@ def fetch_census_data(
                 raise DataError(f"Failed to parse census API response: {e}") from e
 
         # Add small delay between batches to respect rate limits
-        if batch_start + batch_size < len(tract_keys):
+        if batch_start + CENSUS_BATCH_SIZE < len(tract_keys):
             import time
-            time.sleep(0.1)  # 100ms delay between batches
+
+            from .constants import CENSUS_BATCH_DELAY
+            time.sleep(CENSUS_BATCH_DELAY)
 
     logger.info(
         f"Fetched census data for {len(result)}/{len(requested_geoids)} GEOIDs "

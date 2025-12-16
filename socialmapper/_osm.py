@@ -7,6 +7,7 @@ from typing import Any
 import requests
 from shapely.geometry import Polygon
 
+from .constants import OVERPASS_ENDPOINTS, OVERPASS_TIMEOUT
 from .poi_categorization import POI_CATEGORY_MAPPING
 
 logger = logging.getLogger(__name__)
@@ -283,21 +284,14 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
     >>> isinstance(results, list)
     True
     """
-    # Try multiple Overpass endpoints
-    endpoints = [
-        "https://overpass-api.de/api/interpreter",
-        "https://overpass.kumi.systems/api/interpreter",
-        "https://overpass.openstreetmap.ru/api/interpreter"
-    ]
-
     last_error = None
 
-    for endpoint in endpoints:
+    for endpoint in OVERPASS_ENDPOINTS:
         try:
             response = requests.post(
                 endpoint,
                 data={"data": query},
-                timeout=30
+                timeout=OVERPASS_TIMEOUT
             )
 
             if response.status_code == 200:

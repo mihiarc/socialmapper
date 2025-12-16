@@ -43,6 +43,12 @@ import logging
 import overpy
 import yaml
 
+from ..constants import (
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_BACKOFF_EXPONENTIAL,
+    OVERPASS_PRIMARY_ENDPOINT,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -224,35 +230,33 @@ def query_overpass(query):
     """
     import time
 
-    api = overpy.Overpass(url="https://overpass-api.de/api/interpreter")
-    max_retries = 3
-    base_delay = 2.0
+    api = overpy.Overpass(url=OVERPASS_PRIMARY_ENDPOINT)
 
-    for attempt in range(max_retries):
+    for attempt in range(DEFAULT_MAX_RETRIES):
         try:
             logger.info("Sending query to Overpass API...")
             return api.query(query)
         except overpy.exception.OverpassTooManyRequests as e:
-            if attempt == max_retries - 1:
-                logger.error(f"Overpass API rate limited after {max_retries} attempts: {e}")
+            if attempt == DEFAULT_MAX_RETRIES - 1:
+                logger.error(f"Overpass API rate limited after {DEFAULT_MAX_RETRIES} attempts: {e}")
                 raise
-            delay = base_delay * (2 ** attempt)
-            logger.warning(f"Rate limited (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            delay = DEFAULT_RETRY_BACKOFF_EXPONENTIAL * (2 ** attempt)
+            logger.warning(f"Rate limited (attempt {attempt + 1}/{DEFAULT_MAX_RETRIES}), retrying in {delay}s")
             time.sleep(delay)
         except overpy.exception.OverpassGatewayTimeout as e:
-            if attempt == max_retries - 1:
-                logger.error(f"Overpass API gateway timeout after {max_retries} attempts: {e}")
+            if attempt == DEFAULT_MAX_RETRIES - 1:
+                logger.error(f"Overpass API gateway timeout after {DEFAULT_MAX_RETRIES} attempts: {e}")
                 raise
-            delay = base_delay * (2 ** attempt)
-            logger.warning(f"Gateway timeout (attempt {attempt + 1}/{max_retries}), retrying in {delay}s")
+            delay = DEFAULT_RETRY_BACKOFF_EXPONENTIAL * (2 ** attempt)
+            logger.warning(f"Gateway timeout (attempt {attempt + 1}/{DEFAULT_MAX_RETRIES}), retrying in {delay}s")
             time.sleep(delay)
         except (overpy.exception.OverpassError, ConnectionError, TimeoutError) as e:
-            if attempt == max_retries - 1:
-                logger.error(f"Error querying Overpass API after {max_retries} attempts: {e}")
+            if attempt == DEFAULT_MAX_RETRIES - 1:
+                logger.error(f"Error querying Overpass API after {DEFAULT_MAX_RETRIES} attempts: {e}")
                 logger.debug(f"Query used: {query}")
                 raise
-            delay = base_delay * (2 ** attempt)
-            logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+            delay = DEFAULT_RETRY_BACKOFF_EXPONENTIAL * (2 ** attempt)
+            logger.warning(f"Overpass API query failed (attempt {attempt + 1}/{DEFAULT_MAX_RETRIES}), retrying in {delay}s: {e}")
             time.sleep(delay)
 
 
