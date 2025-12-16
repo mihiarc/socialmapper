@@ -131,3 +131,63 @@ OVERPASS_ENDPOINTS = [
 ]
 OVERPASS_PRIMARY_ENDPOINT = OVERPASS_ENDPOINTS[0]
 OVERPASS_TIMEOUT = 30  # Timeout for individual Overpass requests (not OSMnx)
+
+# ==========================================
+# HTTP Status Codes
+# ==========================================
+HTTP_OK = 200
+HTTP_BAD_REQUEST = 400
+HTTP_FORBIDDEN = 403
+HTTP_NOT_FOUND = 404
+HTTP_RATE_LIMITED = 429
+HTTP_SERVER_ERROR = 500
+
+# ==========================================
+# Network Validation Thresholds
+# ==========================================
+MIN_NETWORK_NODES = 100  # Minimum nodes for a valid network graph
+MIN_TRAVEL_TIME_FOR_NETWORK_VALIDATION = 15  # Minutes - validate networks for longer trips
+MIN_ISOCHRONE_AREA_KM2 = 100  # Minimum expected isochrone area in km²
+
+# ==========================================
+# Tutorial Configuration
+# ==========================================
+TUTORIAL_MAX_TRAVEL_TIME = 60  # Maximum travel time for tutorial examples
+
+# ==========================================
+# String/Format Validation
+# ==========================================
+US_STATE_ABBREV_LENGTH = 2  # Length of US state abbreviations (e.g., "CA", "NY")
+MIN_INDEX_TUPLE_ELEMENTS = 2  # Minimum elements in OSMnx multi-index tuples
+
+# ==========================================
+# Processing Thresholds
+# ==========================================
+MIN_CLUSTERING_POI_COUNT = 5  # Minimum POIs to enable clustering
+MIN_CONCURRENT_POI_COUNT = 3  # Minimum POIs to enable concurrent processing
+MIN_POLYGON_POINTS = 3  # Minimum points to create a polygon
+
+# ==========================================
+# Geographic Boundaries
+# ==========================================
+US_CANADA_BORDER_LAT = 49.0  # 49th parallel - US-Canada border
+
+# ==========================================
+# Speed Limits (km/h)
+# ==========================================
+MAX_WALKING_SPEED_KPH = 7.0  # Maximum realistic walking speed
+NORMAL_WALKING_SPEED_KPH = 5.0  # Normal walking speed
+MAX_CYCLING_SPEED_KPH = 30.0  # Maximum realistic cycling speed
+NORMAL_CYCLING_SPEED_KPH = 15.0  # Normal cycling speed
+
+# ==========================================
+# Cluster Analysis
+# ==========================================
+RURAL_CLUSTER_SPAN_KM = 50  # Cluster span threshold for rural areas
+SUBURBAN_CLUSTER_SPAN_KM = 20  # Cluster span threshold for suburban areas
+
+# ==========================================
+# Efficiency Ratings
+# ==========================================
+EFFICIENCY_EXCELLENT_THRESHOLD = 50  # Time savings % for "Excellent" rating
+EFFICIENCY_GOOD_THRESHOLD = 25  # Time savings % for "Good" rating

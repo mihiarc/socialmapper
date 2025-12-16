@@ -30,6 +30,7 @@ from shapely.geometry import Point
 # Import the new progress bar utility
 from socialmapper.progress import get_progress_bar
 
+from ..constants import MIN_CLUSTERING_POI_COUNT, MIN_CONCURRENT_POI_COUNT
 from .cache import (
     clear_cache,
     download_and_cache_network,
@@ -286,7 +287,7 @@ def create_isochrones_from_poi_list(
     # Auto-decide optimization strategies
     if use_clustering is None:
         # Use clustering for datasets with 5+ POIs
-        use_clustering = len(pois) >= 5
+        use_clustering = len(pois) >= MIN_CLUSTERING_POI_COUNT
         if use_clustering:
             # Quick benchmark to verify clustering benefit
             benchmark = benchmark_clustering_performance(
@@ -301,7 +302,7 @@ def create_isochrones_from_poi_list(
 
     if use_concurrent is None:
         # Use concurrent processing for datasets with 3+ POIs
-        use_concurrent = len(pois) >= 3
+        use_concurrent = len(pois) >= MIN_CONCURRENT_POI_COUNT
         if use_concurrent:
             logger.info("Auto-enabling concurrent processing for improved performance")
 
@@ -415,7 +416,7 @@ def create_isochrones_from_poi_list(
     # Save individual files if requested
     isochrone_files = []
     if save_individual_files:
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         for isochrone_gdf in isochrone_gdfs:
             poi_name = isochrone_gdf["poi_name"].iloc[0].lower().replace(" ", "_")

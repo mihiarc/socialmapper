@@ -11,6 +11,8 @@ import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
 
+from ..constants import MIN_INDEX_TUPLE_ELEMENTS
+
 logger = logging.getLogger(__name__)
 
 # Configure OSMnx settings for better reliability
@@ -68,11 +70,8 @@ def query_pois_osmnx(
     Found 12 hospitals
     """
     # Format location string for OSMnx
-    if state and ", " not in location:
-        # Add state to location if not already present
-        location_query = f"{location}, {state}"
-    else:
-        location_query = location
+    # Add state to location if not already present
+    location_query = f"{location}, {state}" if state and ", " not in location else location
 
     logger.info(f"Querying POIs in '{location_query}' with tags: {poi_tags}")
 
@@ -95,10 +94,7 @@ def query_pois_osmnx(
             geom = row.geometry
 
             # Handle different geometry types
-            if hasattr(geom, 'centroid'):
-                centroid = geom.centroid
-            else:
-                centroid = geom
+            centroid = geom.centroid if hasattr(geom, 'centroid') else geom
 
             # Extract coordinates
             if isinstance(centroid, Point):
@@ -115,7 +111,7 @@ def query_pois_osmnx(
                     continue
 
             # Extract OSM ID from the index (OSMnx uses multi-index with element_type and osmid)
-            if isinstance(idx, tuple) and len(idx) >= 2:
+            if isinstance(idx, tuple) and len(idx) >= MIN_INDEX_TUPLE_ELEMENTS:
                 element_type = idx[0]  # 'node', 'way', or 'relation'
                 osmid = idx[1]
             else:
@@ -177,10 +173,7 @@ def query_pois_osmnx(
                 pois = []
                 for idx, row in gdf.iterrows():
                     geom = row.geometry
-                    if hasattr(geom, 'centroid'):
-                        centroid = geom.centroid
-                    else:
-                        centroid = geom
+                    centroid = geom.centroid if hasattr(geom, 'centroid') else geom
 
                     if isinstance(centroid, Point):
                         lon = centroid.x
@@ -193,7 +186,7 @@ def query_pois_osmnx(
                         except (AttributeError, ValueError, TypeError):
                             continue
 
-                    if isinstance(idx, tuple) and len(idx) >= 2:
+                    if isinstance(idx, tuple) and len(idx) >= MIN_INDEX_TUPLE_ELEMENTS:
                         element_type = idx[0]
                         osmid = idx[1]
                     else:

@@ -7,6 +7,7 @@ import sys
 from contextlib import contextmanager
 from typing import Any
 
+from .constants import TUTORIAL_MAX_TRAVEL_TIME
 from .exceptions import (
     APIError,
     DataError,
@@ -217,7 +218,7 @@ def validate_tutorial_config(config: dict[str, Any]) -> None:
     # Validate travel time if provided
     if "travel_time" in config:
         travel_time = config["travel_time"]
-        if not isinstance(travel_time, int) or travel_time < 1 or travel_time > 60:
+        if not isinstance(travel_time, int) or travel_time < 1 or travel_time > TUTORIAL_MAX_TRAVEL_TIME:
             raise ConfigurationError(
                 "Invalid travel time",
                 field="travel_time",

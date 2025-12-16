@@ -3,8 +3,8 @@
 
 import argparse
 import json
-import os
 import sys
+from pathlib import Path
 from typing import Any, Optional
 
 # Export OSMnx query functions
@@ -47,6 +47,7 @@ from ..constants import (
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_BACKOFF_EXPONENTIAL,
     OVERPASS_PRIMARY_ENDPOINT,
+    US_STATE_ABBREV_LENGTH,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ def create_poi_config(geocode_area, state, city, poi_type, poi_name, additional_
 def load_poi_config(file_path):
     """Load POI configuration from YAML file."""
     try:
-        with open(file_path) as f:
+        with Path(file_path).open() as f:
             config = yaml.safe_load(f)
         return config
     except FileNotFoundError as e:
@@ -142,7 +143,7 @@ def build_overpass_query(poi_config):
 
             # Build a geocode query that's more specific
             # First get the state area
-            if len(state_abbrev) == 2 and state_abbrev.isupper():
+            if len(state_abbrev) == US_STATE_ABBREV_LENGTH and state_abbrev.isupper():
                 # US state - use ISO code
                 query += f'area["ISO3166-2"="US-{state_abbrev}"]->.state;\n'
             else:
@@ -419,9 +420,10 @@ def save_json(data, output_file):
     """Save data to a JSON file."""
     try:
         # Create output directory if it doesn't exist
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with output_file.open("w") as f:
+        with output_path.open("w") as f:
             json.dump(data, f, indent=2)
         logger.info(f"Results saved to {output_file}")
     except (OSError, PermissionError) as e:

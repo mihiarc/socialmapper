@@ -7,7 +7,13 @@ from typing import Any
 import requests
 from shapely.geometry import Polygon
 
-from .constants import OVERPASS_ENDPOINTS, OVERPASS_TIMEOUT
+from .constants import (
+    HTTP_OK,
+    HTTP_RATE_LIMITED,
+    HTTP_SERVER_ERROR,
+    OVERPASS_ENDPOINTS,
+    OVERPASS_TIMEOUT,
+)
 from .poi_categorization import POI_CATEGORY_MAPPING
 
 logger = logging.getLogger(__name__)
@@ -168,18 +174,22 @@ def _expand_categories_to_osm_tags(categories: list[str] | None) -> list[str]:
     if not categories:
         # Get common tags from all categories - only known mappings
         for cat_values in POI_CATEGORY_MAPPING.values():
-            for value in cat_values[:10]:  # Limit to top 10 per category
-                if value in OSM_KEY_MAPPINGS:
-                    tags.append(OSM_KEY_MAPPINGS[value])
+            tags.extend(
+                OSM_KEY_MAPPINGS[value]
+                for value in cat_values[:10]  # Limit to top 10 per category
+                if value in OSM_KEY_MAPPINGS
+            )
         return list(set(tags))
 
     for cat in categories:
         # Check if it's a high-level category (e.g., "food_and_drink")
         if cat in POI_CATEGORY_MAPPING:
             # Expand to OSM values that have known key mappings
-            for value in POI_CATEGORY_MAPPING[cat]:
-                if value in OSM_KEY_MAPPINGS:
-                    tags.append(OSM_KEY_MAPPINGS[value])
+            tags.extend(
+                OSM_KEY_MAPPINGS[value]
+                for value in POI_CATEGORY_MAPPING[cat]
+                if value in OSM_KEY_MAPPINGS
+            )
         # Check if it's an individual OSM value (e.g., "restaurant")
         elif cat in OSM_KEY_MAPPINGS:
             tags.append(OSM_KEY_MAPPINGS[cat])
@@ -294,16 +304,16 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
                 timeout=OVERPASS_TIMEOUT
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTP_OK:
                 data = response.json()
                 elements = data.get("elements", [])
                 logger.info(f"Overpass query returned {len(elements)} elements")
                 return elements
-            elif response.status_code == 429:
+            elif response.status_code == HTTP_RATE_LIMITED:
                 from .exceptions import RateLimitError
                 logger.warning(f"Overpass endpoint {endpoint} returned rate limit")
                 last_error = RateLimitError("OpenStreetMap Overpass API")
-            elif response.status_code >= 500:
+            elif response.status_code >= HTTP_SERVER_ERROR:
                 from .exceptions import InvalidAPIResponseError
                 logger.warning(f"Overpass endpoint {endpoint} returned server error {response.status_code}")
                 last_error = InvalidAPIResponseError(

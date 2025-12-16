@@ -13,6 +13,7 @@ from .constants import (
     MAX_LATITUDE,
     MAX_LONGITUDE,
     MAX_TRAVEL_TIME,
+    MIN_GEOJSON_COORDINATES,
     MIN_LATITUDE,
     MIN_LONGITUDE,
     MIN_TRAVEL_TIME,
@@ -242,11 +243,11 @@ def validate_poi_data(pois: list[dict]) -> list[dict]:
             elif "latitude" in poi and "longitude" in poi:
                 lat, lon = poi["latitude"], poi["longitude"]
             elif "coordinates" in poi and isinstance(poi["coordinates"], list):
-                if len(poi["coordinates"]) >= 2:
+                if len(poi["coordinates"]) >= MIN_GEOJSON_COORDINATES:
                     lon, lat = poi["coordinates"][0], poi["coordinates"][1]
             elif "geometry" in poi and isinstance(poi["geometry"], dict):
                 coords = poi["geometry"].get("coordinates", [])
-                if isinstance(coords, list) and len(coords) >= 2:
+                if isinstance(coords, list) and len(coords) >= MIN_GEOJSON_COORDINATES:
                     lon, lat = coords[0], coords[1]
 
             if lat is not None and lon is not None:
@@ -301,7 +302,7 @@ def prevalidate_for_pyproj(data: list[dict] | list[Point]) -> tuple[bool, list[s
             return False, errors
 
         if isinstance(data, list):
-            if not isinstance(data[0], (dict, Point)):
+            if not isinstance(data[0], dict | Point):
                 errors.append(f"Unsupported data type in list: {type(data[0])}")
                 return False, errors
 

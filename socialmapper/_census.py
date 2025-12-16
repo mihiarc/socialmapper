@@ -8,7 +8,12 @@ from typing import Any
 import requests
 from shapely.geometry import Polygon, shape
 
-from .constants import CENSUS_API_TIMEOUT, CENSUS_BATCH_SIZE
+from .constants import (
+    CENSUS_API_TIMEOUT,
+    CENSUS_BATCH_SIZE,
+    HTTP_FORBIDDEN,
+    HTTP_RATE_LIMITED,
+)
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
@@ -467,7 +472,7 @@ def fetch_census_data(
 
             # Use wildcard to fetch ALL block groups in this tract at once
             params = {
-                "get": ",".join(["NAME"] + variables),
+                "get": ",".join(["NAME", *variables]),
                 "for": "block group:*",  # Wildcard: get all block groups in tract
                 "in": f"state:{state} county:{county} tract:{tract}"
             }
@@ -525,11 +530,11 @@ def fetch_census_data(
                         result[row_geoid] = geoid_data
 
             except requests.HTTPError as e:
-                if e.response is not None and e.response.status_code == 403:
+                if e.response is not None and e.response.status_code == HTTP_FORBIDDEN:
                     from .exceptions import MissingAPIKeyError
                     logger.error(f"Census API authentication failed for tract {tract_key}")
                     raise MissingAPIKeyError("Census") from e
-                elif e.response is not None and e.response.status_code == 429:
+                elif e.response is not None and e.response.status_code == HTTP_RATE_LIMITED:
                     from .exceptions import RateLimitError
                     logger.warning(f"Census API rate limit exceeded for tract {tract_key}")
                     raise RateLimitError("Census API") from e

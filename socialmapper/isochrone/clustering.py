@@ -25,6 +25,17 @@ import osmnx as ox
 from shapely.geometry import Point
 from sklearn.cluster import DBSCAN
 
+from ..constants import (
+    EFFICIENCY_EXCELLENT_THRESHOLD,
+    EFFICIENCY_GOOD_THRESHOLD,
+    MAX_CYCLING_SPEED_KPH,
+    MAX_WALKING_SPEED_KPH,
+    MIN_POLYGON_POINTS,
+    NORMAL_CYCLING_SPEED_KPH,
+    NORMAL_WALKING_SPEED_KPH,
+    RURAL_CLUSTER_SPAN_KM,
+    SUBURBAN_CLUSTER_SPAN_KM,
+)
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
 logger = logging.getLogger(__name__)
@@ -243,9 +254,9 @@ class OptimizedPOICluster:
 
         # If cluster span is large, it's likely rural - increase buffer
         rural_multiplier = 1.0
-        if cluster_span_km > 50:  # Large cluster span suggests rural area
+        if cluster_span_km > RURAL_CLUSTER_SPAN_KM:  # Large cluster span suggests rural area
             rural_multiplier = 2.0
-        elif cluster_span_km > 20:
+        elif cluster_span_km > SUBURBAN_CLUSTER_SPAN_KM:
             rural_multiplier = 1.5
 
         # Final buffer calculation
@@ -388,14 +399,14 @@ def download_network_for_cluster(
         if travel_mode == TravelMode.WALK:
             # For walking, ensure speeds don't exceed reasonable walking speeds
             for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 7.0:
-                    data["speed_kph"] = 5.0  # Set to normal walking speed
+                if "speed_kph" in data and data["speed_kph"] > MAX_WALKING_SPEED_KPH:
+                    data["speed_kph"] = NORMAL_WALKING_SPEED_KPH
                     data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
         elif travel_mode == TravelMode.BIKE:
             # For biking, cap speeds to reasonable cycling speeds
             for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 30.0:
-                    data["speed_kph"] = 15.0  # Set to normal cycling speed
+                if "speed_kph" in data and data["speed_kph"] > MAX_CYCLING_SPEED_KPH:
+                    data["speed_kph"] = NORMAL_CYCLING_SPEED_KPH
                     data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
 
         graph = ox.project_graph(graph)
@@ -518,7 +529,7 @@ def create_isochrone_from_poi_with_network(
 
         # Calculate actual distances along shortest paths
         distances_m = []
-        for target_node in paths_by_time.keys():
+        for target_node in paths_by_time:
             if target_node != poi_node:
                 try:
                     # Get shortest path (sequence of nodes)
@@ -534,14 +545,13 @@ def create_isochrone_from_poi_with_network(
                     for i in range(len(path) - 1):
                         # Get edge data between consecutive nodes
                         edge_data = network.get_edge_data(path[i], path[i+1])
-                        if edge_data:
-                            # Handle multi-edges by taking the shortest length
-                            if isinstance(edge_data, dict):
-                                # If multiple edges exist, get the minimum length
-                                min_length = min(
-                                    e.get("length", 0) for e in edge_data.values()
-                                )
-                                total_distance += min_length
+                        # Handle multi-edges by taking the shortest length
+                        if edge_data and isinstance(edge_data, dict):
+                            # If multiple edges exist, get the minimum length
+                            min_length = min(
+                                e.get("length", 0) for e in edge_data.values()
+                            )
+                            total_distance += min_length
 
                     if total_distance > 0:
                         distances_m.append(total_distance)
@@ -575,7 +585,7 @@ def create_isochrone_from_poi_with_network(
         # Create isochrone polygon from reachable nodes
         node_points = [Point((data["x"], data["y"])) for node, data in subgraph.nodes(data=True)]
 
-        if len(node_points) < 3:
+        if len(node_points) < MIN_POLYGON_POINTS:
             logger.warning(
                 f"Insufficient nodes ({len(node_points)}) to create polygon for POI {poi.get('id', 'unknown')}"
             )
@@ -681,9 +691,9 @@ def benchmark_clustering_performance(
             "optimal_radius_km": max_cluster_radius_km,
             "efficiency_rating": (
                 "Excellent"
-                if metrics.estimated_time_savings_percent > 50
+                if metrics.estimated_time_savings_percent > EFFICIENCY_EXCELLENT_THRESHOLD
                 else "Good"
-                if metrics.estimated_time_savings_percent > 25
+                if metrics.estimated_time_savings_percent > EFFICIENCY_GOOD_THRESHOLD
                 else "Fair"
             ),
         },

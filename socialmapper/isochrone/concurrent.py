@@ -29,6 +29,9 @@ import psutil
 from ..constants import (
     HIGH_CPU_USAGE_THRESHOLD,
     HIGH_MEMORY_USAGE_THRESHOLD,
+    MIN_ISOCHRONE_AREA_KM2,
+    MIN_NETWORK_NODES,
+    MIN_TRAVEL_TIME_FOR_NETWORK_VALIDATION,
     NETWORK_MAX_RETRIES,
 )
 from ..progress import get_progress_bar
@@ -92,7 +95,7 @@ def _generate_cluster_isochrones_worker(
                 # Expected minimum area based on travel time (very rough estimate)
                 min_expected_area = (travel_time_minutes / 30) * 100
 
-                if area_km2 < min_expected_area and area_km2 < 100:
+                if area_km2 < min_expected_area and area_km2 < MIN_ISOCHRONE_AREA_KM2:
                     logger.warning(
                         f"Suspiciously small isochrone for POI {poi.get('id', 'unknown')}: "
                         f"{area_km2:.1f} km² (expected > {min_expected_area:.0f} km²)"
@@ -256,7 +259,7 @@ class ConcurrentIsochroneProcessor:
 
             if network is not None:
                 # Validate network size for rural areas
-                if len(network.nodes) < 100 and travel_time_minutes >= 15:
+                if len(network.nodes) < MIN_NETWORK_NODES and travel_time_minutes >= MIN_TRAVEL_TIME_FOR_NETWORK_VALIDATION:
                     logger.warning(
                         f"Small network for cluster {cluster.cluster_id}: "
                         f"{len(network.nodes)} nodes for {travel_time_minutes} min travel"

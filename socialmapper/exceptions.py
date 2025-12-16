@@ -5,6 +5,8 @@ toward solutions. All exceptions inherit from SocialMapperError for
 easy catching.
 """
 
+from .constants import HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_SERVER_ERROR
+
 
 class SocialMapperError(Exception):
     """
@@ -370,15 +372,15 @@ class InvalidAPIResponseError(APIError):
 
         help_lines = []
 
-        if status_code == 403:
+        if status_code == HTTP_FORBIDDEN:
             help_lines.append("This usually means:")
             help_lines.append("- Invalid or missing API key")
             help_lines.append("- API key lacks required permissions")
-        elif status_code == 404:
+        elif status_code == HTTP_NOT_FOUND:
             help_lines.append("This usually means:")
             help_lines.append("- Resource not found")
             help_lines.append("- Check location or identifier")
-        elif status_code and status_code >= 500:
+        elif status_code and status_code >= HTTP_SERVER_ERROR:
             help_lines.append("This is a server error:")
             help_lines.append("- The service is having issues")
             help_lines.append("- Try again later")

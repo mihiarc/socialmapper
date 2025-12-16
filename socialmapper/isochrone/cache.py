@@ -15,6 +15,13 @@ import diskcache as dc
 import networkx as nx
 import osmnx as ox
 
+from ..constants import (
+    MAX_CYCLING_SPEED_KPH,
+    MAX_WALKING_SPEED_KPH,
+    NORMAL_CYCLING_SPEED_KPH,
+    NORMAL_WALKING_SPEED_KPH,
+    US_CANADA_BORDER_LAT,
+)
 from .travel_modes import TravelMode, get_default_speed, get_highway_speeds, get_network_type
 
 logger = logging.getLogger(__name__)
@@ -212,11 +219,11 @@ def download_and_cache_network(
         if restrict_to_country == "US":
             # Simple latitude-based filter for US-Canada border (49th parallel)
             edges_to_remove = []
-            for u, v, key, data in graph.edges(keys=True, data=True):
+            for u, v, key, _data in graph.edges(keys=True, data=True):
                 u_data = graph.nodes[u]
                 v_data = graph.nodes[v]
                 # Check if either node is north of 49°N (in Canada)
-                if u_data.get('y', 0) > 49.0 or v_data.get('y', 0) > 49.0:
+                if u_data.get('y', 0) > US_CANADA_BORDER_LAT or v_data.get('y', 0) > US_CANADA_BORDER_LAT:
                     edges_to_remove.append((u, v, key))
 
             # Remove cross-border edges and isolated nodes
@@ -237,13 +244,13 @@ def download_and_cache_network(
         # Apply mode-specific speed adjustments
         if travel_mode == TravelMode.WALK:
             for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 7.0:
-                    data["speed_kph"] = 5.0  # Normal walking speed
+                if "speed_kph" in data and data["speed_kph"] > MAX_WALKING_SPEED_KPH:
+                    data["speed_kph"] = NORMAL_WALKING_SPEED_KPH
                     data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
         elif travel_mode == TravelMode.BIKE:
             for _u, _v, data in graph.edges(data=True):
-                if "speed_kph" in data and data["speed_kph"] > 30.0:
-                    data["speed_kph"] = 15.0  # Normal cycling speed
+                if "speed_kph" in data and data["speed_kph"] > MAX_CYCLING_SPEED_KPH:
+                    data["speed_kph"] = NORMAL_CYCLING_SPEED_KPH
                     data["travel_time"] = data["length"] / (data["speed_kph"] * 1000 / 3600)
 
         graph = ox.project_graph(graph)

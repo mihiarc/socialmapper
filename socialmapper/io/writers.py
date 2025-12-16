@@ -20,11 +20,7 @@ def write_csv(
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    if isinstance(data, dict):
-        # Convert dict to DataFrame
-        df = pd.DataFrame(data)
-    else:
-        df = data
+    df = pd.DataFrame(data) if isinstance(data, dict) else data
 
     df.to_csv(filepath, index=False)
     logger.info(f"Wrote CSV to {filepath} ({len(df)} rows)")
@@ -64,7 +60,7 @@ def write_geojson(
         logger.info(f"Wrote GeoJSON to {filepath} ({len(data)} features)")
     else:
         # Assume it's already a GeoJSON dict
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(data, f, indent=2)
         logger.info(f"Wrote GeoJSON to {filepath}")
 
@@ -76,7 +72,7 @@ def write_json(
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(filepath, "w") as f:
+    with filepath.open("w") as f:
         json.dump(data, f, indent=2)
 
     logger.info(f"Wrote JSON to {filepath}")
@@ -111,7 +107,7 @@ def write_html(content: str, filepath: Path, metadata: dict[str, Any] | None = N
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(filepath, "w", encoding="utf-8") as f:
+    with filepath.open("w", encoding="utf-8") as f:
         f.write(content)
 
     logger.info(f"Wrote HTML to {filepath}")

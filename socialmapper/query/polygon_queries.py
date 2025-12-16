@@ -159,8 +159,7 @@ def _build_category_tag_filters(categories: list[str] | None = None) -> list[dic
 
     # Create tag filters
     for osm_key, values in osm_key_to_values.items():
-        for value in values:
-            tag_filters.append({osm_key: value})
+        tag_filters.extend({osm_key: value} for value in values)
 
     return tag_filters
 

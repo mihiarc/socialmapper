@@ -70,14 +70,14 @@ def generate_choropleth_map(
     data = gdf[column].values
 
     # Handle missing data
-    valid_data = data[~np.isnan(data)] if isinstance(data[0], (int, float)) else data
+    valid_data = data[~np.isnan(data)] if isinstance(data[0], int | float) else data
 
     if len(valid_data) == 0:
         logger.warning(f"No valid data in column '{column}'")
         # Plot with single color
         gdf.plot(ax=ax, color='lightgray', edgecolor='black', linewidth=0.5)
     # Determine color scheme based on data
-    elif isinstance(valid_data[0], (int, float)):
+    elif isinstance(valid_data[0], int | float):
         # Numeric data - use gradient
         vmin, vmax = valid_data.min(), valid_data.max()
 
@@ -180,11 +180,11 @@ def add_north_arrow(ax):
         'N',
         xy=(x, y),
         xytext=(x, y - arrow_length),
-        arrowprops=dict(
-            arrowstyle='->,head_width=0.3,head_length=0.3',
-            lw=2,
-            color='black'
-        ),
+        arrowprops={
+            "arrowstyle": '->,head_width=0.3,head_length=0.3',
+            "lw": 2,
+            "color": 'black'
+        },
         ha='center',
         va='bottom',
         fontsize=14,
@@ -252,10 +252,7 @@ def add_scale_bar(ax, gdf):
             km_per_degree = 111 * np.cos(np.radians(mid_lat))
             distance_km = scale_length * km_per_degree
 
-            if distance_km >= 1:
-                label = f"{distance_km:.0f} km"
-            else:
-                label = f"{distance_km*1000:.0f} m"
+            label = f"{distance_km:.0f} km" if distance_km >= 1 else f"{distance_km*1000:.0f} m"
         # Assume meters
         elif scale_length >= 1000:
             label = f"{scale_length/1000:.0f} km"

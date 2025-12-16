@@ -33,7 +33,7 @@ def read_poi_data(filepath: Path | str) -> dict[str, Any]:
 
 def read_poi_json(filepath: Path) -> dict[str, Any]:
     """Read POI data from JSON file."""
-    with open(filepath) as f:
+    with filepath.open() as f:
         data = json.load(f)
 
     # Ensure proper structure
@@ -52,7 +52,7 @@ def read_poi_csv(filepath: Path) -> dict[str, Any]:
     """Read POI data from CSV file."""
     pois = []
 
-    with open(filepath, newline="", encoding="utf-8") as f:
+    with filepath.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
         for i, row in enumerate(reader):
