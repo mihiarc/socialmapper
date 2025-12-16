@@ -5,6 +5,7 @@ HTTP requests to Census API, Overpass API, and other services.
 """
 
 import logging
+import threading
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -14,8 +15,9 @@ from .config import PerformanceConfig
 
 logger = logging.getLogger(__name__)
 
-# Global session instance
+# Global session instance with thread-safe initialization
 _http_session: requests.Session | None = None
+_http_session_lock = threading.Lock()
 
 
 class ConnectionPoolManager:
@@ -214,6 +216,8 @@ class ConnectionPoolManager:
 def init_connection_pool(config: PerformanceConfig | None = None) -> ConnectionPoolManager:
     """Initialize global connection pool.
 
+    Thread-safe initialization of the global HTTP session.
+
     Parameters
     ----------
     config : PerformanceConfig, optional
@@ -233,7 +237,9 @@ def init_connection_pool(config: PerformanceConfig | None = None) -> ConnectionP
     global _http_session
 
     pool = ConnectionPoolManager(config)
-    _http_session = pool.get_session()
+
+    with _http_session_lock:
+        _http_session = pool.get_session()
 
     return pool
 
@@ -243,6 +249,8 @@ def get_http_session() -> requests.Session:
 
     Creates a global session on first call. Subsequent calls
     return the same session instance for connection reuse.
+
+    Thread-safe using double-checked locking pattern for efficiency.
 
     Returns
     -------
@@ -257,9 +265,16 @@ def get_http_session() -> requests.Session:
     """
     global _http_session
 
-    if _http_session is None:
-        pool = init_connection_pool()
-        _http_session = pool.get_session()
+    # Fast path: session already exists (no lock needed)
+    if _http_session is not None:
+        return _http_session
+
+    # Slow path: need to create session (with lock)
+    with _http_session_lock:
+        # Double-check after acquiring lock
+        if _http_session is None:
+            pool = ConnectionPoolManager()
+            _http_session = pool.get_session()
 
     return _http_session
 
@@ -267,6 +282,7 @@ def get_http_session() -> requests.Session:
 def reset_connection_pool():
     """Reset global connection pool.
 
+    Thread-safe reset of the global HTTP session.
     Useful for testing or when connection pool needs to be
     reconfigured with different settings.
 
@@ -278,7 +294,8 @@ def reset_connection_pool():
     """
     global _http_session
 
-    if _http_session is not None:
-        _http_session.close()
-        _http_session = None
-        logger.info("Reset global connection pool")
+    with _http_session_lock:
+        if _http_session is not None:
+            _http_session.close()
+            _http_session = None
+            logger.info("Reset global connection pool")
