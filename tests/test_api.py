@@ -128,8 +128,8 @@ class TestGetCensusData:
     @pytest.mark.slow
     def test_get_census_data_with_geoids(self, census_api_key):
         """Test fetching census data with GEOID list."""
-        # Using a known Oregon GEOID
-        geoids = ["410510023001"]  # Multnomah County, OR
+        # Using a known Oregon GEOID (Multnomah County, tract 000101, block group 1)
+        geoids = ["410510001011"]  # Multnomah County, OR
         result = get_census_data(geoids, variables=["population"])
 
         assert result.location_type == "geoids"
@@ -149,7 +149,7 @@ class TestGetCensusData:
     @pytest.mark.slow
     def test_get_census_data_multiple_variables(self, census_api_key):
         """Test fetching multiple census variables."""
-        geoids = ["410510023001"]
+        geoids = ["410510001011"]
         result = get_census_data(
             geoids,
             variables=["population", "median_income"]
@@ -161,7 +161,7 @@ class TestGetCensusData:
     @pytest.mark.slow
     def test_get_census_data_with_year(self, census_api_key):
         """Test fetching census data for specific year."""
-        geoids = ["410510023001"]
+        geoids = ["410510001011"]
         result = get_census_data(geoids, variables=["population"], year=2022)
 
         assert result.query_info["year"] == 2022
