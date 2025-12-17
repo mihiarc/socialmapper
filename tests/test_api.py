@@ -253,14 +253,14 @@ class TestGetPOI:
         """Test POI retrieval with category filter."""
         pois = get_poi(
             portland_coords,
-            categories=["restaurant"],
+            categories=["food_and_drink"],
             limit=20
         )
 
         assert isinstance(pois, list)
-        # All returned POIs should be restaurants
+        # All returned POIs should be food_and_drink category
         for poi in pois:
-            assert poi.get("category") == "restaurant" or "restaurant" in str(poi)
+            assert poi.get("category") == "food_and_drink" or "food" in str(poi).lower()
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -370,11 +370,9 @@ class TestErrorHandling:
         """Verify all errors can be caught with base exception."""
         # This is a structural test - errors should inherit from SocialMapperError
         from socialmapper import (
-            APIError,
             AnalysisError,
+            APIError,
             DataError,
-            SocialMapperError,
-            ValidationError,
         )
 
         assert issubclass(ValidationError, SocialMapperError)
