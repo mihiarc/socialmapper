@@ -166,9 +166,9 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     Fetch census block groups that intersect with a geometry.
 
     Identifies all census block groups that spatially intersect with
-    the provided polygon geometry. This function determines the relevant
-    state and county from the geometry's centroid, fetches block group
-    boundaries, and filters for intersection.
+    the provided polygon geometry. This function samples multiple points
+    around the geometry to identify ALL counties that may contain block
+    groups, fetches boundaries from each county, and filters for intersection.
 
     Parameters
     ----------
@@ -209,15 +209,52 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     - EPSG:5070 (NAD83 / Conus Albers) for contiguous US locations
     - EPSG:6933 (NSIDC EASE-Grid 2.0 Global) for other locations
     This provides accurate area measurements within ~0.1-2%.
+
+    This function samples the centroid plus points around the boundary
+    to ensure coverage when the geometry spans multiple counties.
     """
-    # Identify states that might be in this area
     from ._geocoding import get_census_geography
 
-    # Sample the centroid to get state/county
-    centroid = geometry.centroid
-    geo_info = get_census_geography(centroid.y, centroid.x)
+    # Sample multiple points to identify ALL counties that intersect the geometry
+    # This handles isochrones that span multiple counties
+    sample_points = []
 
-    if not geo_info:
+    # Always include centroid
+    centroid = geometry.centroid
+    sample_points.append((centroid.y, centroid.x))
+
+    # Sample points around the boundary
+    try:
+        boundary = geometry.exterior
+        # Sample at regular intervals along the boundary (8 points)
+        for i in range(8):
+            fraction = i / 8
+            point = boundary.interpolate(fraction, normalized=True)
+            sample_points.append((point.y, point.x))
+
+        # Also sample from bounding box corners
+        minx, miny, maxx, maxy = geometry.bounds
+        sample_points.extend([
+            (miny, minx),  # SW corner
+            (miny, maxx),  # SE corner
+            (maxy, minx),  # NW corner
+            (maxy, maxx),  # NE corner
+        ])
+    except Exception as e:
+        logger.warning(f"Could not sample boundary points: {e}")
+
+    # Collect unique state/county combinations
+    counties: set[tuple[str, str]] = set()
+    for lat, lon in sample_points:
+        try:
+            geo_info = get_census_geography(lat, lon)
+            if geo_info:
+                counties.add((geo_info["state_fips"], geo_info["county_fips"]))
+        except Exception as e:
+            logger.debug(f"Could not get geography for ({lat:.4f}, {lon:.4f}): {e}")
+            continue
+
+    if not counties:
         logger.warning(
             f"Could not identify census geography for area at ({centroid.y:.4f}, {centroid.x:.4f}). "
             f"Possible reasons: "
@@ -228,17 +265,28 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
         )
         return []
 
-    state_fips = geo_info["state_fips"]
-    county_fips = geo_info["county_fips"]
+    logger.info(f"Identified {len(counties)} counties for census block query: {counties}")
 
-    logger.debug(f"Identified census geography: State={state_fips}, County={county_fips}")
+    # Fetch block groups from ALL identified counties
+    all_block_groups = []
+    for state_fips, county_fips in counties:
+        try:
+            block_groups = fetch_tiger_block_groups(state_fips, county_fips)
+            all_block_groups.extend(block_groups)
+            logger.debug(f"Fetched {len(block_groups)} block groups from {state_fips}-{county_fips}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
+            continue
 
-    # Fetch block groups for the county
-    block_groups = fetch_tiger_block_groups(state_fips, county_fips)
-
-    # Filter to those that intersect the geometry
+    # Filter to those that intersect the geometry (with deduplication)
+    seen_geoids: set[str] = set()
     result = []
-    for bg in block_groups:
+    for bg in all_block_groups:
+        geoid = bg.get("geoid", "")
+        if geoid in seen_geoids:
+            continue
+        seen_geoids.add(geoid)
+
         bg_geom = shape(bg["geometry"])
         if geometry.intersects(bg_geom):
             # Calculate area using equal-area projection
@@ -247,8 +295,8 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             from .helpers import get_equal_area_transformer
 
             # Determine appropriate projection based on location
-            centroid = bg_geom.centroid
-            lon, lat = centroid.x, centroid.y
+            bg_centroid = bg_geom.centroid
+            lon, lat = bg_centroid.x, bg_centroid.y
 
             # Use helper to get appropriate equal-area transformer
             transformer = get_equal_area_transformer(lat, lon)
@@ -259,7 +307,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             bg["area_sq_km"] = area_sq_km
             result.append(bg)
 
-    logger.info(f"Found {len(result)} block groups in area")
+    logger.info(f"Found {len(result)} block groups in area (from {len(counties)} counties)")
     return result
 
 
