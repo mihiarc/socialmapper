@@ -161,6 +161,9 @@ streamlit.log
 .kiro/steering/structure.md
 .kiro/steering/tech.md
 
+# Benchmark results
+tests/benchmarks/results/
+
 # Claude Code development files
 CLAUDE.md
 .claude/

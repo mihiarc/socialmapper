@@ -11,12 +11,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Fixed `__version__` attribute** - Package now correctly reports version 1.1.1 (was incorrectly showing 1.0.0 in v1.1.0)
 
+### 📊 Performance Benchmarks
+
+Added comprehensive benchmark tests comparing v1.0 (NetworkX) vs v1.1 (Valhalla) isochrone generation.
+
+#### Key Finding: **90x Average Speedup**
+
+| Metric | NetworkX (v1.0) | Valhalla (v1.1) | Improvement |
+|--------|-----------------|-----------------|-------------|
+| Average Time | 106.5s | 1.18s | **90x faster** |
+| Min Time | 1.4s | 0.47s | 3x faster |
+| Max Time | 360.4s | 3.49s | **103x faster** |
+| Success Rate | 100% | 100% | Equal |
+
+#### Practical Impact
+- Batch processing 100 locations: **3+ hours → ~2 minutes**
+- Consistent sub-2-second response times enable interactive applications
+- For 15-minute isochrones: **~800x speedup** (10-17 min → ~1 second)
+
+#### Benchmark Test Suite
+- New `tests/benchmarks/` directory with comprehensive test infrastructure
+- `BenchmarkRunner` class for reproducible performance testing
+- JSON and CSV export for analysis
+- Run benchmarks: `uv run pytest tests/benchmarks/ -v -s`
+
+See `docs/BENCHMARK_REPORT_v1.0_vs_v1.1.md` for detailed analysis.
+
 ## [1.1.0] - 2025-01-24
 
 ### ✨ Features
 
 #### **Fast Isochrone Generation with Routing APIs**
-- **New routing backends** for 10-100x faster isochrone generation
+- **New routing backends** for up to 90x faster isochrone generation (benchmarked)
 - **routingpy integration** providing unified access to multiple routing engines:
   - **Valhalla** (default) - Free public API, no key required
   - **OSRM** - Open Source Routing Machine
