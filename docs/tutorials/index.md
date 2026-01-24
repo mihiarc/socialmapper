@@ -46,7 +46,7 @@ from socialmapper import (
 ```python
 # What's reachable in 15 minutes?
 isochrone = create_isochrone("Seattle, WA", travel_time=15)
-pois = get_poi("Seattle, WA", categories=["hospital"], travel_time=15)
+pois = get_poi("Seattle, WA", categories=["healthcare"], travel_time=15)
 ```
 
 **Demographic Analysis**

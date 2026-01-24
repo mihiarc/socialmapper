@@ -40,7 +40,7 @@ study_location = "Detroit, MI"
 # Find all grocery stores and supermarkets
 grocery_stores = get_poi(
     location=study_location,
-    categories=["grocery", "supermarket"],
+    categories=["shopping"],
     limit=200  # Get more to ensure coverage
 )
 
@@ -375,7 +375,7 @@ def analyze_food_access(location: str, walk_time: int = 15) -> dict:
     print("\n[1/7] Finding grocery stores...")
     groceries = get_poi(
         location=location,
-        categories=["grocery", "supermarket"],
+        categories=["shopping"],
         limit=200
     )
     print(f"      Found {len(groceries)} stores")

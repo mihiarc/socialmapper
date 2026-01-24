@@ -228,20 +228,20 @@ print(gdf)
 
 ### Example 1: Hospital Accessibility
 
-Determine what areas are within 10 minutes of a hospital:
+Determine what areas are within 10 minutes of a healthcare facility:
 
 ```python
 from socialmapper import create_isochrone, get_poi
 
-# Find a hospital
-hospitals = get_poi("San Francisco, CA", categories=["hospital"], limit=1)
-hospital = hospitals[0]
+# Find a healthcare facility
+healthcare = get_poi("San Francisco, CA", categories=["healthcare"], limit=1)
+facility = healthcare[0]
 
-print(f"Analyzing access to: {hospital['name']}")
+print(f"Analyzing access to: {facility['name']}")
 
-# Create driving isochrone from hospital location
+# Create driving isochrone from facility location
 isochrone = create_isochrone(
-    location=(hospital['lat'], hospital['lon']),
+    location=(facility['lat'], facility['lon']),
     travel_time=10,
     travel_mode="drive"
 )
@@ -269,19 +269,19 @@ for name, coords in locations.items():
 
 ### Example 3: Equity Analysis Setup
 
-Find areas that lack walkable access to grocery stores:
+Find areas that lack walkable access to stores:
 
 ```python
 from socialmapper import create_isochrone, get_poi, get_census_blocks
 
-# Get grocery stores in an area
-groceries = get_poi("Atlanta, GA", categories=["grocery"], limit=50)
+# Get shopping locations in an area
+shopping = get_poi("Atlanta, GA", categories=["shopping"], limit=50)
 
-print(f"Found {len(groceries)} grocery stores")
+print(f"Found {len(shopping)} shopping locations")
 
-# For each grocery store, create walking isochrone
+# For each store, create walking isochrone
 # This shows areas WITH access
-for store in groceries[:3]:
+for store in shopping[:3]:
     iso = create_isochrone(
         location=(store['lat'], store['lon']),
         travel_time=15,

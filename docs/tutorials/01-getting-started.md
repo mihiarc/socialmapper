@@ -108,15 +108,15 @@ isochrone = create_isochrone(
 print(f"Area reachable in 15 min: {isochrone['properties']['area_sq_km']:.1f} km²")
 
 # Step 2: Find points of interest
-coffee_shops = get_poi(
+food_places = get_poi(
     location="Seattle, WA",
-    categories=["cafe"],
+    categories=["food_and_drink"],
     limit=10
 )
 
-print(f"Found {len(coffee_shops)} coffee shops nearby")
-for shop in coffee_shops[:3]:
-    print(f"  - {shop['name']}: {shop['distance_km']:.2f} km")
+print(f"Found {len(food_places)} food & drink places nearby")
+for place in food_places[:3]:
+    print(f"  - {place['name']}: {place['distance_km']:.2f} km")
 
 # Step 3: Get census demographics
 census_result = get_census_data(

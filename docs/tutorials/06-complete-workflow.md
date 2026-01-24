@@ -53,7 +53,7 @@ print(f"Area Coverage: {walk_isochrone['properties']['area_sq_km']:.2f} km²")
 # Query for public libraries
 libraries = get_poi(
     location=location,
-    categories=["library"],
+    categories=["education"],
     travel_time=20,  # Within 20-min walk
     limit=50
 )
@@ -268,7 +268,7 @@ def analyze_library_access(location: str, travel_time: int = 20):
     print("\n[2/6] Finding libraries...")
     libraries = get_poi(
         location=location,
-        categories=["library"],
+        categories=["education"],
         travel_time=travel_time,
         limit=50
     )
@@ -397,7 +397,7 @@ modes = ["walk", "bike", "drive"]
 
 for mode in modes:
     iso = create_isochrone(location, travel_time=15, travel_mode=mode)
-    libraries = get_poi(location, categories=["library"], travel_time=15, limit=100)
+    libraries = get_poi(location, categories=["education"], travel_time=15, limit=100)
     blocks = get_census_blocks(polygon=iso)
 
     geoids = [b['geoid'] for b in blocks]
