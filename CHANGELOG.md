@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-01-24
+
+### ✨ Features
+
+#### **Fast Isochrone Generation with Routing APIs**
+- **New routing backends** for 10-100x faster isochrone generation
+- **routingpy integration** providing unified access to multiple routing engines:
+  - **Valhalla** (default) - Free public API, no key required
+  - **OSRM** - Open Source Routing Machine
+  - **OpenRouteService** - Requires free API key
+  - **GraphHopper** - Free tier available
+- **Backend selection** via `backend` parameter or `SOCIALMAPPER_ROUTING_BACKEND` env var
+- **Automatic fallback** to NetworkX when external APIs unavailable
+
+```python
+# Use fast Valhalla backend (default)
+iso = create_isochrone("Seattle, WA", travel_time=15, backend="valhalla")
+
+# Or explicitly use offline NetworkX
+iso = create_isochrone("Seattle, WA", travel_time=15, backend="networkx")
+```
+
+#### **Comprehensive Tutorials**
+- **7-part tutorial series** from beginner to advanced:
+  1. Getting Started - Installation and first analysis
+  2. Isochrone Analysis - Travel-time areas and routing
+  3. Points of Interest - Finding and analyzing POIs
+  4. Census Data - Demographics and population
+  5. Mapping & Visualization - Creating choropleth maps
+  6. Complete Workflow - End-to-end analysis
+  7. Food Desert Case Study - Real-world equity analysis
+
+#### **Google Colab Notebooks**
+- **7 Jupyter notebooks** matching tutorials, ready for Google Colab
+- **One-click launch** with Colab badges
+- **Demo mode** for running without API keys
+- **Interactive examples** with visualizations
+
+### 🐛 Bug Fixes
+
+- **Fixed multi-county census block selection** for large isochrones spanning county boundaries
+- **Fixed POI category validation** - tutorials now use correct high-level categories
+
+### 📚 Documentation
+
+- **New tutorials directory** at `docs/tutorials/`
+- **New notebooks directory** at `docs/notebooks/`
+- **POI category reference table** documenting valid categories
+- **Routing backend documentation** with configuration options
+
+### 🔧 Technical
+
+- **New optional dependency**: `pip install socialmapper[routing]` for fast backends
+- **Environment variables**:
+  - `SOCIALMAPPER_ROUTING_BACKEND` - Default backend selection
+  - `VALHALLA_URL` - Custom Valhalla endpoint
+  - `ORS_API_KEY` - OpenRouteService API key
+
+---
+
 ## [1.0.0] - 2025-01-22
 
 ### ⚠️ Breaking Changes
