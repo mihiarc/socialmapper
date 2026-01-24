@@ -17,7 +17,6 @@ from shapely.geometry import shape
 from .api_result_types import CensusDataResult, MapResult
 from .exceptions import SocialMapperError
 from .helpers import (
-    calculate_polygon_area,
     create_circular_geometry,
     extract_geometry_from_geojson,
     resolve_coordinates,
@@ -30,7 +29,8 @@ logger = logging.getLogger(__name__)
 def create_isochrone(
     location: str | tuple[float, float],
     travel_time: int = 15,
-    travel_mode: str = "drive"
+    travel_mode: str = "drive",
+    backend: str = "auto",
 ) -> dict[str, Any]:
     """
     Create a travel-time polygon (isochrone) from a location.
@@ -48,6 +48,17 @@ def create_isochrone(
         Default is 15.
     travel_mode : {'drive', 'walk', 'bike'}, optional
         Mode of transportation. Default is 'drive'.
+    backend : str, optional
+        Isochrone generation backend. Options:
+        - 'auto': Automatically select best available (default)
+        - 'valhalla': Use Valhalla API (fast, free)
+        - 'ors': Use OpenRouteService (requires ORS_API_KEY)
+        - 'osrm': Use Mapbox OSRM (requires MAPBOX_API_KEY)
+        - 'graphhopper': Use GraphHopper (requires GRAPHHOPPER_API_KEY)
+        - 'networkx': Use local NetworkX/OSMnx (slower but offline)
+
+        Can also be set via SOCIALMAPPER_ROUTING_BACKEND environment
+        variable.
 
     Returns
     -------
@@ -56,7 +67,7 @@ def create_isochrone(
         - 'type': Always "Feature"
         - 'geometry': GeoJSON polygon of the isochrone
         - 'properties': Dict with location, travel_time,
-          travel_mode, and area_sq_km
+          travel_mode, area_sq_km, and backend
 
     Raises
     ------
@@ -73,9 +84,15 @@ def create_isochrone(
     >>> iso = create_isochrone((45.5152, -122.6784), travel_time=15)
     >>> iso['properties']['travel_mode']
     'drive'
+
+    >>> # Use fast Valhalla backend explicitly
+    >>> iso = create_isochrone("Raleigh, NC", backend="valhalla")
+    >>> iso['properties']['backend']
+    'valhalla'
+
+    >>> # Use offline NetworkX backend
+    >>> iso = create_isochrone((35.7796, -78.6382), backend="networkx")
     """
-    from .isochrone import create_isochrone_from_poi
-    from .isochrone.travel_modes import TravelMode
     from .validators import validate_travel_mode, validate_travel_time
 
     # Validate parameters
@@ -86,43 +103,77 @@ def create_isochrone(
     coords, location_name = resolve_coordinates(location)
     lat, lon = coords
 
-    # Map travel mode string to TravelMode enum
-    mode_map = {
-        "drive": TravelMode.DRIVE,
-        "walk": TravelMode.WALK,
-        "bike": TravelMode.BIKE
-    }
-    travel_mode_enum = mode_map.get(travel_mode, TravelMode.DRIVE)
-
-    # Create POI dict for isochrone generation
-    poi = {
-        "lat": lat,
-        "lon": lon,
-        "tags": {"name": location_name},
-        "id": "api_location"
-    }
-
-    # Generate isochrone using OSMnx-based system
-    isochrone_gdf = create_isochrone_from_poi(
-        poi=poi,
-        travel_time_limit=travel_time,
-        save_file=False,
-        travel_mode=travel_mode_enum
+    # Use the backend system for isochrone generation
+    return _create_isochrone_with_backend(
+        lat=lat,
+        lon=lon,
+        location_name=location_name,
+        travel_time=travel_time,
+        travel_mode=travel_mode,
+        backend=backend,
     )
 
-    # Extract polygon from GeoDataFrame
-    polygon = isochrone_gdf.geometry.iloc[0]
-    area_sq_km = calculate_polygon_area(polygon)
+
+def _create_isochrone_with_backend(
+    lat: float,
+    lon: float,
+    location_name: str,
+    travel_time: int,
+    travel_mode: str,
+    backend: str,
+) -> dict[str, Any]:
+    """Create isochrone using the specified backend.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude of the center point.
+    lon : float
+        Longitude of the center point.
+    location_name : str
+        Human-readable location name for metadata.
+    travel_time : int
+        Travel time in minutes.
+    travel_mode : str
+        Mode of transportation.
+    backend : str
+        Backend name ('auto', 'valhalla', 'networkx', etc.).
+
+    Returns
+    -------
+    dict
+        GeoJSON Feature dict.
+    """
+    from .isochrone.backends import get_backend
+
+    # Get the backend (auto-selects if backend="auto")
+    backend_instance = get_backend(backend)
+
+    # Generate the isochrone
+    result = backend_instance.create_isochrone(
+        lat=lat,
+        lon=lon,
+        travel_time=travel_time,
+        travel_mode=travel_mode,
+    )
+
+    # Build GeoJSON Feature response
+    properties = {
+        "location": location_name,
+        "travel_time": result.travel_time,
+        "travel_mode": result.travel_mode,
+        "area_sq_km": result.area_sq_km,
+        "backend": result.backend,
+    }
+
+    # Include backend-specific metadata if available
+    if result.metadata:
+        properties["metadata"] = result.metadata
 
     return {
         "type": "Feature",
-        "geometry": polygon.__geo_interface__,
-        "properties": {
-            "location": location_name,
-            "travel_time": travel_time,
-            "travel_mode": travel_mode,
-            "area_sq_km": area_sq_km
-        }
+        "geometry": result.geometry,
+        "properties": properties,
     }
 
 
