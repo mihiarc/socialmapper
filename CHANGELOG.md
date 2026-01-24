@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-01-22
+
+### ⚠️ Breaking Changes
+
+**Removed Streamlit Web Interface and CLI**
+
+SocialMapper is now a pure Python library focused on the API. The Streamlit web interface and CLI entry point have been removed to simplify the package and reduce dependencies.
+
+**Removed:**
+- `socialmapper` CLI command
+- `socialmapper/app.py` (Streamlit web interface)
+- `socialmapper/cli.py` (CLI entry point)
+- `streamlit` and `streamlit-folium` dependencies
+
+**Migration:**
+- Use the Python API directly instead of the web interface
+- All 5 core functions remain unchanged: `create_isochrone`, `get_poi`, `get_census_blocks`, `get_census_data`, `create_map`
+
+### ✨ Features
+
+- **API-Only Focus** - Cleaner, lighter package focused on the Python API
+- **Reduced Dependencies** - Removed Streamlit and related packages
+- **Simplified Installation** - Faster installs with fewer dependencies
+
+### 📚 Documentation
+
+- Updated all documentation to reflect API-only usage
+- Removed references to CLI and web interface
+- Simplified security guide to match actual implementation
+
+---
+
 ## [0.9.0] - 2025-10-08
 
 ### ⚠️ Breaking Changes

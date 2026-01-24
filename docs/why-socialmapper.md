@@ -27,7 +27,7 @@ from socialmapper import create_isochrone, get_poi, get_census_data
 walkable = create_isochrone("Portland, OR", travel_time=15, travel_mode="walk")
 
 # Find all libraries in that area
-libraries = get_poi("Portland, OR", categories=["amenity:library"], travel_time=15)
+libraries = get_poi("Portland, OR", categories=["education"], travel_time=15)
 
 # Get demographics for the walkable area
 demographics = get_census_data(location="Portland, OR", variables=["B01003_001E"])
@@ -212,7 +212,7 @@ location = "Chapel Hill, NC"
 walkable = create_isochrone(location, travel_time=15, travel_mode="walk")
 
 # Find all libraries in the area
-libraries = get_poi(location, categories=["amenity:library"], travel_time=15)
+libraries = get_poi(location, categories=["education"], travel_time=15)
 print(f"Found {len(libraries)} libraries")
 
 # Get census blocks in the walkable area

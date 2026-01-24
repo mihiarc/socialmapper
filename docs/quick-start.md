@@ -22,9 +22,9 @@ demo.list_available_demos()
 result = demo.quick_start("Portland, OR")
 
 # That's it! You've analyzed:
-# ✓ 15-minute walk from downtown Portland
-# ✓ Found 8 libraries
-# ✓ Reached 45,000+ people
+# ✓ 15-minute drive from downtown Portland
+# ✓ Found 4 libraries
+# ✓ Reached 29,000+ people
 # ✓ Analyzed demographics
 ```
 
@@ -63,10 +63,10 @@ result = demo.quick_start("Durham, NC")
 
 ```python
 # Library accessibility analysis
-demo.show_libraries("Portland, OR", travel_time=10)
+demo.show_libraries("Portland, OR", travel_time=15)
 
-# Food desert analysis
-demo.show_food_access("Chapel Hill, NC", travel_mode="walk")
+# Food access analysis
+demo.show_food_access("Durham, NC")
 ```
 
 ## Customize Your Analysis
@@ -95,14 +95,13 @@ The demo returns a dictionary with:
 ```python
 {
     "location": "Portland, OR",
-    "travel_time": 15,
-    "travel_mode": "walk",
-    "area_sq_km": 7.2,
-    "poi_count": 8,
-    "pois": [...],  # List of POIs with names and distances
-    "total_population": 45678,
-    "median_income": 68234,
-    "demographics": {...}  # Detailed demographic breakdown
+    "area_sq_km": 125.4,
+    "poi_count": 4,
+    "pois": [...],           # List of POIs with names and distances
+    "total_population": 29118,
+    "median_income": 74746,
+    "census_blocks": [...],  # Census block group data
+    "isochrone": {...}       # GeoJSON travel-time polygon
 }
 ```
 
@@ -133,7 +132,7 @@ from socialmapper import create_isochrone, get_poi, get_census_data
 
 # Now works with ANY location in the US
 isochrone = create_isochrone("Seattle, WA", travel_time=15)
-pois = get_poi("Seattle, WA", categories=["library"])
+pois = get_poi("Seattle, WA", categories=["education"])
 census = get_census_data(location=isochrone, variables=["population"])
 ```
 

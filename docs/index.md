@@ -111,7 +111,7 @@ print(f"Population within 15 minutes: {total_pop:,}")
 ## Why SocialMapper?
 
 - **Free and Open Source** - No licensing fees or restrictions
-- **Easy to Use** - Simple Python API and command line interface
+- **Easy to Use** - Simple 5-function Python API
 - **Reliable Data** - Uses OpenStreetMap and US Census Bureau
 - **Fast** - Optimized caching and efficient algorithms ([see performance guide](performance.md))
 - **Flexible** - Analyze any location type at any scale

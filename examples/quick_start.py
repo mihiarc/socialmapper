@@ -248,10 +248,11 @@ print(f"Found {result['poi_count']} libraries")""")
 # Works with ANY location in the US!
 isochrone = create_isochrone("Seattle, WA", travel_time=15)
 pois = get_poi("Seattle, WA", categories=["library"])
-census = get_census_data(polygon=isochrone)
+census = get_census_data(location=isochrone, variables=["population"])
 
 print(f"Found {len(pois)} libraries")
-print(f"Population: {census.total_population:,}")""")
+total_pop = sum(d.get('population', 0) for d in census.data.values())
+print(f"Population: {total_pop:,}")""")
 
     print("\n\n📋 Key differences:")
     print("  ✓ Demo: Pre-computed data, 5 cities, instant results")
@@ -334,7 +335,7 @@ Examples:
 
         print("\n✨ Success! You've completed your first SocialMapper analysis.")
         print("   Ready for more? Try: python quick_start.py --full")
-        print("   Or check out the tutorials in examples/tutorials/")
+        print("   Documentation: https://github.com/mihiarc/socialmapper")
 
     except KeyboardInterrupt:
         print("\n\n👋 Analysis cancelled by user")

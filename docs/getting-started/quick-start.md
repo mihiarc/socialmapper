@@ -30,22 +30,22 @@ from socialmapper import (
     get_census_data
 )
 
-# 1. Find libraries in the area
-print("Finding libraries in Raleigh...")
-libraries = get_poi(
+# 1. Find education facilities in the area
+print("Finding education facilities in Raleigh...")
+edu_pois = get_poi(
     location=(35.7796, -78.6382),  # Downtown Raleigh, NC
-    categories=["library"],
+    categories=["education"],
     limit=10
 )
-print(f"Found {len(libraries)} libraries")
+print(f"Found {len(edu_pois)} education facilities")
 
-# 2. Create a 15-minute driving isochrone for the first library
-print("\nAnalyzing first library...")
-library = libraries[0]
-print(f"Library: {library['name']}")
+# 2. Create a 15-minute driving isochrone for the first POI
+print("\nAnalyzing first education facility...")
+poi = edu_pois[0]
+print(f"Facility: {poi['name']}")
 
 isochrone = create_isochrone(
-    location=(library['lat'], library['lon']),
+    location=(poi['lat'], poi['lon']),
     travel_time=15,
     travel_mode="drive"
 )
@@ -64,11 +64,10 @@ demographics = get_census_data(
 )
 
 # 5. Calculate totals
-total_pop = sum(d.get('population', 0) for d in demographics.values())
-avg_income = sum(
-    d.get('median_income', 0) for d in demographics.values()
-    if d.get('median_income', 0) > 0
-) / len([d for d in demographics.values() if d.get('median_income', 0) > 0])
+total_pop = sum(d.get('population', 0) for d in demographics.data.values())
+incomes = [d.get('median_income', 0) for d in demographics.data.values()
+           if d.get('median_income', 0) > 0]
+avg_income = sum(incomes) / len(incomes) if incomes else 0
 
 print(f"\n📊 Results:")
 print(f"Population within 15 minutes: {total_pop:,}")
@@ -94,21 +93,21 @@ Each function returns simple Python data structures (dicts, lists) that are easy
 
 ## Try Different Analyses
 
-### Find Restaurants
+### Find Food and Drink Places
 
 ```python
 from socialmapper import get_poi
 
-# Find restaurants within 5km
-restaurants = get_poi(
+# Find food and drink within 5km
+pois = get_poi(
     location=(35.7796, -78.6382),  # Raleigh, NC
-    categories=["restaurant", "cafe"],
+    categories=["food_and_drink"],
     limit=50
 )
 
-print(f"Found {len(restaurants)} restaurants")
-for r in restaurants[:5]:
-    print(f"  {r['name']}: {r['distance_km']:.2f} km away")
+print(f"Found {len(pois)} food and drink places")
+for poi in pois[:5]:
+    print(f"  {poi['name']}: {poi['distance_km']:.2f} km away")
 ```
 
 ### Analyze Walking Distance
@@ -126,9 +125,9 @@ iso = create_isochrone(
 # Get population data
 blocks = get_census_blocks(polygon=iso)
 geoids = [b['geoid'] for b in blocks]
-data = get_census_data(geoids, ["population"])
+data = get_census_data(location=geoids, variables=["population"])
 
-total = sum(d.get('population', 0) for d in data.values())
+total = sum(d.get('population', 0) for d in data.data.values())
 print(f"Population within 10-min walk: {total:,}")
 ```
 
@@ -147,9 +146,9 @@ for name, coords in locations.items():
     iso = create_isochrone(coords, travel_time=15)
     blocks = get_census_blocks(polygon=iso)
     geoids = [b['geoid'] for b in blocks]
-    data = get_census_data(geoids, ["population"])
+    data = get_census_data(location=geoids, variables=["population"])
 
-    pop = sum(d.get('population', 0) for d in data.values())
+    pop = sum(d.get('population', 0) for d in data.data.values())
     print(f"{name}: {pop:,} people within 15 minutes")
 ```
 
@@ -169,12 +168,12 @@ iso = create_isochrone((35.7796, -78.6382), travel_time=15)
 # Get census data
 blocks = get_census_blocks(polygon=iso)
 geoids = [b['geoid'] for b in blocks]
-census_data = get_census_data(geoids, ["population"])
+census_data = get_census_data(location=geoids, variables=["population"])
 
 # Add population to blocks
 for block in blocks:
     geoid = block['geoid']
-    block['population'] = census_data.get(geoid, {}).get('population', 0)
+    block['population'] = census_data.data.get(geoid, {}).get('population', 0)
 
 # Create map
 create_map(
@@ -201,8 +200,8 @@ if len(blocks) > 50:
     sample_blocks = blocks[:50]
     geoids = [b['geoid'] for b in sample_blocks]
 
-    data = get_census_data(geoids, ["population"])
-    sample_pop = sum(d.get('population', 0) for d in data.values())
+    data = get_census_data(location=geoids, variables=["population"])
+    sample_pop = sum(d.get('population', 0) for d in data.data.values())
 
     # Estimate total
     estimated_total = int(sample_pop * len(blocks) / len(sample_blocks))

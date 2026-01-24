@@ -634,7 +634,7 @@ graph LR
 ```python
 # Analyze library accessibility in Portland
 iso = create_isochrone("Portland, OR", travel_time=15, travel_mode="walk")
-libraries = get_poi(iso, categories=["library"], limit=50)
+libraries = get_poi(iso, categories=["education"], limit=50)
 census = get_census_data(iso, variables=["population", "median_income"])
 map_result = create_map(census.data, "population", title="Population Coverage")
 ```

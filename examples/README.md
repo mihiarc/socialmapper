@@ -18,6 +18,7 @@ uv run python examples/quick_start.py
 |------|-------------|
 | `demo_quickstart.py` | Simple demo using pre-loaded data (no API key needed) |
 | `quick_start.py` | Comprehensive example with multiple analysis types |
+| `live_api_example.py` | Real API calls with Census key (requires CENSUS_API_KEY) |
 
 ## Sample Data
 

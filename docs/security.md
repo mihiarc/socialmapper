@@ -2,255 +2,124 @@
 
 ## Overview
 
-SocialMapper now includes secure API key management to protect your credentials. This guide covers how to securely store and use API keys with SocialMapper.
+SocialMapper uses API keys to access external data sources. This guide covers how to securely configure and use API keys.
 
-## Quick Start
+## API Key Configuration
 
-### 1. Install Security Dependencies
+### Census API Key
 
-```bash
-# Install with security features
-pip install socialmapper[security]
+The Census API key is required for live demographic data. Get a free key at: https://api.census.gov/data/key_signup.html
 
-# Or install individual dependencies
-pip install keyring cryptography
-```
-
-### 2. Store Your API Keys Securely
+#### Option 1: Environment Variable (Recommended)
 
 ```bash
-# Store Census API key (recommended method)
-python -m socialmapper.security.cli set census_api YOUR_API_KEY
+# Set in your shell
+export CENSUS_API_KEY="your_api_key_here"
 
-# Verify key is stored
-python -m socialmapper.security.cli get census_api
-
-# List all stored keys
-python -m socialmapper.security.cli list
+# Or add to your shell profile (~/.bashrc, ~/.zshrc)
+echo 'export CENSUS_API_KEY="your_api_key_here"' >> ~/.zshrc
 ```
 
-### 3. Use Keys in Your Code
+#### Option 2: .env File
 
-```python
-from socialmapper import SocialMapper
-
-# Keys are automatically loaded from secure storage
-mapper = SocialMapper()  # No need to pass API key
-
-# Or explicitly get a key
-from socialmapper.security.utils import get_api_key
-api_key = get_api_key("census_api")
-```
-
-## Storage Backends
-
-SocialMapper supports multiple secure storage backends, automatically selecting the most secure available option:
-
-### 1. System Keyring (Recommended)
-- **Windows**: Windows Credential Vault
-- **macOS**: Keychain
-- **Linux**: Secret Service API (GNOME Keyring, KWallet)
-
-```python
-from socialmapper.security import SecureKeyManager, KeyStorage
-
-manager = SecureKeyManager()
-manager.set_key("census_api", "your_key", KeyStorage.KEYRING)
-```
-
-### 2. Encrypted File Storage
-Keys are encrypted using Fernet symmetric encryption and stored in `~/.socialmapper/keys.enc`
-
-```python
-manager.set_key("census_api", "your_key", KeyStorage.ENCRYPTED_FILE)
-```
-
-### 3. Environment Variables (Fallback)
-For backward compatibility, environment variables are still supported as a fallback:
+Create a `.env` file in your project directory:
 
 ```bash
-export CENSUS_API_KEY="your_api_key"
+# .env
+CENSUS_API_KEY=your_api_key_here
 ```
 
-## Migration from Environment Variables
+SocialMapper automatically loads `.env` files using python-dotenv.
 
-If you have existing API keys in environment variables, migrate them to secure storage:
-
-```bash
-# Automatic migration
-python -m socialmapper.security.cli migrate
-
-# Manual migration
-python -c "from socialmapper.security.utils import migrate_from_env; migrate_from_env()"
-```
-
-## Python API
-
-### Basic Usage
+#### Option 3: Set in Code (Not Recommended for Production)
 
 ```python
-from socialmapper.security import SecureKeyManager
+import os
+os.environ['CENSUS_API_KEY'] = 'your_api_key_here'
 
-# Create key manager
-manager = SecureKeyManager()
-
-# Store a key
-manager.set_key("census_api", "your_api_key")
-
-# Retrieve a key
-api_key = manager.get_key("census_api")
-
-# Delete a key
-manager.delete_key("census_api")
-
-# Validate key format
-is_valid = manager.validate_key("census_api", "test_key")
+from socialmapper import get_census_data
+# Now census functions will work
 ```
 
-### Advanced Usage
+## Demo Mode (No API Key Required)
+
+You can explore SocialMapper without any API keys using demo mode:
 
 ```python
-# Use temporary keys
-with manager.temporary_key("census_api", "temporary_key"):
-    # Temporary key is active here
-    api_key = manager.get_key("census_api")
-# Original key is restored
+from socialmapper import demo
 
-# List all keys
-keys = manager.list_keys()
-# {'keyring': ['census_api'], 'environment': ['MAPBOX_TOKEN']}
+# List available demo cities
+demo.list_available_demos()
 
-# Custom storage configuration
-manager = SecureKeyManager(
-    app_name="my_app",
-    config_path="~/my_app/keys.enc",
-    storage_preference=[KeyStorage.ENCRYPTED_FILE, KeyStorage.ENVIRONMENT]
-)
-```
-
-## Command-Line Interface
-
-```bash
-# Store a key
-python -m socialmapper.security.cli set census_api YOUR_KEY
-
-# Store with specific backend
-python -m socialmapper.security.cli set census_api YOUR_KEY --storage keyring
-
-# Get a key (masked by default)
-python -m socialmapper.security.cli get census_api
-
-# Show full key value
-python -m socialmapper.security.cli get census_api --show
-
-# Delete a key
-python -m socialmapper.security.cli delete census_api
-
-# Delete from all backends
-python -m socialmapper.security.cli delete census_api --all
-
-# Validate a key
-python -m socialmapper.security.cli validate census_api
-
-# List all keys
-python -m socialmapper.security.cli list
-
-# Migrate from environment
-python -m socialmapper.security.cli migrate
+# Run analysis with pre-cached data
+result = demo.quick_start("Portland, OR")
 ```
 
 ## Security Best Practices
 
-### 1. Never Commit Keys
-Add to `.gitignore`:
+### 1. Never Commit Keys to Version Control
+
+Add to your `.gitignore`:
+
 ```
 .env
-*.key
-*.enc
-~/.socialmapper/
+.env.local
+.env.*.local
 ```
 
-### 2. Use Different Keys for Different Environments
+### 2. Use Environment Variables in Production
+
+Environment variables are the most secure way to manage API keys:
+
 ```python
-# Development
-manager.set_key("census_api_dev", dev_key)
+import os
 
-# Production
-manager.set_key("census_api_prod", prod_key)
+# Check if key is configured
+if not os.environ.get("CENSUS_API_KEY"):
+    print("Warning: CENSUS_API_KEY not set")
 ```
 
-### 3. Rotate Keys Regularly
+### 3. Validate API Keys
+
+Test your configuration before running analysis:
+
 ```python
-# Store new key
-manager.set_key("census_api", new_key)
+from socialmapper import get_census_data
 
-# Validate new key works
-if validate_api_key("census_api", new_key):
-    # Remove old key
-    manager.delete_key("census_api_old")
+try:
+    # Test with a simple query
+    data = get_census_data(
+        location=(35.7796, -78.6382),
+        variables=["population"]
+    )
+    print("API key is working!")
+except Exception as e:
+    print(f"API key error: {e}")
 ```
 
-### 4. Restrict File Permissions
-Encrypted key files are automatically created with restricted permissions (600), but verify:
-```bash
-ls -la ~/.socialmapper/
-# Should show: -rw------- for .master.key and keys.enc
-```
+### 4. Rate Limiting
 
-### 5. Use Context Managers for Temporary Access
-```python
-# Keys are only available within context
-with manager.temporary_key("api_key", sensitive_value):
-    perform_api_call()
-# Key is automatically cleaned up
-```
+SocialMapper respects API rate limits:
 
-## Troubleshooting
+- **Census API**: 500 requests per day (free tier)
+- **Nominatim**: 1 request per second
+- **Overpass API**: Reasonable use policy
 
-### Keyring Not Available
-If keyring is not available on your system:
-```bash
-# Linux: Install system keyring
-sudo apt-get install gnome-keyring  # Debian/Ubuntu
-sudo yum install gnome-keyring      # RHEL/CentOS
+The library includes automatic caching to minimize API calls.
 
-# Or use encrypted file storage instead
-python -m socialmapper.security.cli set census_api YOUR_KEY --storage encrypted
-```
+## Environment Variables Reference
 
-### Permission Denied Errors
-```bash
-# Fix permissions on key files
-chmod 600 ~/.socialmapper/.master.key
-chmod 600 ~/.socialmapper/keys.enc
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `CENSUS_API_KEY` | US Census Bureau API key | For live data |
+| `SOCIALMAPPER_CACHE_DIR` | Custom cache directory | No |
 
-### Lost Master Key
-If you lose the master key for encrypted storage:
-```bash
-# Remove encrypted files
-rm -rf ~/.socialmapper/
+## Getting Your Census API Key
 
-# Re-initialize and re-add keys
-python -m socialmapper.security.cli set census_api YOUR_KEY
-```
-
-## Environment Variable Compatibility
-
-For backward compatibility, the following environment variables are still checked as fallbacks:
-- `CENSUS_API_KEY` - US Census Bureau API key
-- `MAPBOX_TOKEN` - Mapbox access token
-- `GOOGLE_MAPS_API_KEY` - Google Maps API key
-
-However, we strongly recommend migrating to secure storage.
-
-## Security Considerations
-
-1. **Keyring Security**: System keyrings are generally secure but depend on OS implementation
-2. **Encrypted Files**: Use Fernet (AES-128) encryption with PBKDF2 key derivation
-3. **Master Key**: Stored separately from encrypted data with restricted permissions
-4. **Memory Safety**: Keys are not logged or included in error messages
-5. **Process Safety**: Keys in environment variables can be visible in process listings
+1. Visit https://api.census.gov/data/key_signup.html
+2. Fill out the form with your email
+3. Check your email for the API key (instant)
+4. Set the environment variable as shown above
 
 ## Support
 
@@ -258,4 +127,4 @@ For security issues or questions:
 - Open an issue: https://github.com/mihiarc/socialmapper/issues
 - Security vulnerabilities: Contact maintainers directly
 
-Remember: **Never share your API keys publicly or commit them to version control!**
+**Remember: Never share your API keys publicly or commit them to version control!**

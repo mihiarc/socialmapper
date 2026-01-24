@@ -15,10 +15,10 @@ Create your first community analysis in minutes.
 ### I'm New to Programming
 
 **Start here if you're new to Python:**
-    
+
 1. Follow the **[Installation Guide](installation.md)** for setup help
 2. Try the **[Quick Start Guide](quick-start.md)** for your first analysis
-3. Use the command line interface - no coding required!
+3. Use the **demo module** to explore without API keys
 4. Explore the **[examples](https://github.com/mihiarc/socialmapper/tree/main/examples)**
 
 ### I'm a Python Developer

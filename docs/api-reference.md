@@ -132,29 +132,20 @@ Retrieves POIs from OpenStreetMap within a specified area, either defined by tra
 
 #### Available POI Categories
 
-**Food & Drink:**
-- `"restaurant"`, `"cafe"`, `"bar"`, `"fast_food"`, `"pub"`
+Use these high-level category names:
 
-**Education:**
-- `"school"`, `"university"`, `"college"`, `"library"`, `"kindergarten"`
-
-**Healthcare:**
-- `"hospital"`, `"clinic"`, `"pharmacy"`, `"doctors"`, `"dentist"`
-
-**Recreation:**
-- `"park"`, `"playground"`, `"sports_centre"`, `"swimming_pool"`, `"theatre"`, `"cinema"`
-
-**Shopping:**
-- `"grocery"`, `"supermarket"`, `"convenience"`, `"shopping_mall"`, `"department_store"`
-
-**Finance:**
-- `"bank"`, `"atm"`
-
-**Transportation:**
-- `"bus_station"`, `"subway_entrance"`, `"parking"`, `"fuel"`
-
-**Public Services:**
-- `"police"`, `"fire_station"`, `"post_office"`, `"townhall"`
+| Category | Includes |
+|----------|----------|
+| `"food_and_drink"` | Restaurants, cafes, bars, bakeries, fast food |
+| `"education"` | Schools, universities, libraries, kindergartens |
+| `"healthcare"` | Hospitals, clinics, pharmacies, doctors, dentists |
+| `"recreation"` | Parks, playgrounds, sports centres, theatres, cinemas |
+| `"shopping"` | Supermarkets, malls, convenience stores, retail |
+| `"services"` | Banks, ATMs, post offices, salons |
+| `"transportation"` | Bus stations, parking, fuel stations |
+| `"accommodation"` | Hotels, hostels, motels |
+| `"religious"` | Churches, mosques, temples |
+| `"utilities"` | Police, fire stations, government offices |
 
 #### Returns
 
@@ -175,26 +166,26 @@ Retrieves POIs from OpenStreetMap within a specified area, either defined by tra
 #### Examples
 
 ```python
-# Find restaurants within 5km radius (default)
+# Find food and drink POIs within 5km radius (default)
 pois = get_poi(
     location="Seattle, WA",
-    categories=["restaurant", "cafe"]
+    categories=["food_and_drink"]
 )
-print(f"Found {len(pois)} restaurants and cafes")
-# Output: Found 75 restaurants and cafes
+print(f"Found {len(pois)} food and drink places")
+# Output: Found 75 food and drink places
 
 # POIs within 15-minute drive
 pois = get_poi(
     location=(47.6062, -122.3321),
     travel_time=15,
-    categories=["hospital", "clinic"]
+    categories=["healthcare"]
 )
 print(f"Healthcare facilities: {len(pois)}")
 for poi in pois[:3]:
     print(f"  {poi['name']}: {poi['distance_km']:.2f} km away")
 # Output: Healthcare facilities: 12
 #   Seattle Medical Center: 0.54 km away
-#   Harbor view Medical: 1.23 km away
+#   Harborview Medical: 1.23 km away
 
 # All POIs within radius (no category filter)
 pois = get_poi(
