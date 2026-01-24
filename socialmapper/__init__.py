@@ -69,7 +69,7 @@ from .exceptions import (
 )
 
 # Version
-__version__ = "1.0.0"
+__version__ = "1.1.1"
 
 # Public API - core functions and exceptions (sorted alphabetically)
 __all__ = [
