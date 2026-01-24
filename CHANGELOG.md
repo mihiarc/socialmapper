@@ -5,11 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.1] - 2025-01-24
-
-### 🐛 Bug Fixes
-
-- **Fixed `__version__` attribute** - Package now correctly reports version 1.1.1 (was incorrectly showing 1.0.0 in v1.1.0)
+## [1.1.2] - 2025-01-24
 
 ### 📊 Performance Benchmarks
 
@@ -36,6 +32,12 @@ Added comprehensive benchmark tests comparing v1.0 (NetworkX) vs v1.1 (Valhalla)
 - Run benchmarks: `uv run pytest tests/benchmarks/ -v -s`
 
 See `docs/BENCHMARK_REPORT_v1.0_vs_v1.1.md` for detailed analysis.
+
+## [1.1.1] - 2025-01-24
+
+### 🐛 Bug Fixes
+
+- **Fixed `__version__` attribute** - Package now correctly reports version 1.1.1 (was incorrectly showing 1.0.0 in v1.1.0)
 
 ## [1.1.0] - 2025-01-24
 
