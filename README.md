@@ -45,7 +45,7 @@ Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper
 
 - **🔧 Core Package** (`socialmapper/`) - Python toolkit for spatial analysis
 - **📚 Documentation** (`docs/`) - Comprehensive guides and reference
-- **🧪 Examples** (`examples/`) - Python usage examples
+- **🧪 Tests** (`tests/`) - Comprehensive test suite
 
 ## 🌟 Key Capabilities
 
@@ -62,52 +62,23 @@ SocialMapper helps you understand how people connect with important places in th
 ### Quick Start
 
 ```python
-# Run instant demo analysis - no API keys needed!
-from socialmapper import demo
-result = demo.quick_start("Portland, OR")
+from socialmapper import create_isochrone, get_poi
 
-# You just analyzed:
-# ✓ 15-minute walk from downtown Portland
-# ✓ Found 8 libraries within reach
-# ✓ Analyzed 45,000+ people's demographics
-# ✓ No API keys or setup required!
+# Find libraries within a 15-minute walk of Portland, OR
+libraries = get_poi("Portland, OR", categories=["library"], travel_time=15)
+print(f"Found {len(libraries)} libraries")
+
+# Create a 15-minute walk polygon
+iso = create_isochrone("Portland, OR", travel_time=15, travel_mode="walk")
 ```
 
-**[📖 2-Minute Quick Start Guide](docs/quick-start.md)** | **[💻 Example Script](examples/quick_start.py)**
+**[📖 Quick Start Guide](docs/quick-start.md)**
 
 ### Real-World Example
 
 **Total Population Within 15-Minute Walk of Libraries in Fuquay-Varina, NC**
 
 ![Total Population Map](https://raw.githubusercontent.com/mihiarc/socialmapper/main/docs/assets/images/example-map.png)
-
-## What's New in v0.9.0 🎉
-
-### Production-Ready Quality Improvements
-
-- **✅ Comprehensive Testing** - Full test coverage for all API functions
-- **📖 NumPy-Style Docstrings** - Professional documentation across all modules
-- **📚 Enhanced Documentation** - Aligned with actual API implementation
-- **⚠️ API Simplification** - Replaced pipeline API with direct function calls
-
-### Breaking Changes
-
-**Old (0.8.0):** `SocialMapper()` client with pipeline methods
-**New (0.9.0):** Direct imports of 5 core functions
-
-```python
-from socialmapper import create_isochrone, get_census_data, create_map
-```
-
-### Core Functions
-
-- `create_isochrone` - Generate travel-time polygons
-- `get_poi` - Find points of interest near locations
-- `get_census_blocks` - Fetch census block groups for an area
-- `get_census_data` - Get demographic data from US Census
-- `create_map` - Generate choropleth map visualizations
-
-📚 **[Full Documentation](https://mihiarc.github.io/socialmapper)** | 🐛 **[Report Issues](https://github.com/mihiarc/socialmapper/issues)**
 
 ## Features
 
@@ -127,7 +98,7 @@ from socialmapper import create_isochrone, get_census_data, create_map
 pip install socialmapper
 ```
 
-That's it! You can start analyzing immediately with demo mode - no API keys required.
+That's it! You can start analyzing immediately.
 
 **Requirements:** Python 3.11 or higher (3.11, 3.12, or 3.13)
 
@@ -157,26 +128,6 @@ Key environment variables:
 See `.env.example` for all available configuration options.
 
 ## Using SocialMapper
-
-### Quick Start - Demo Mode (No API Key Required)
-
-Start exploring SocialMapper's capabilities instantly with demo mode:
-
-```python
-from socialmapper import demo
-
-# List available demo cities
-demo.list_available_demos()
-
-# Run complete analysis
-result = demo.quick_start("Portland, OR")
-
-# Try specialized analyses
-demo.show_libraries("Chapel Hill, NC")
-demo.show_food_access("Durham, NC")
-```
-
-### Full API - Live Data (Requires Census API Key)
 
 SocialMapper provides 5 core functions for spatial analysis:
 
@@ -277,16 +228,6 @@ map_image = create_map(
     save_path="population_map.png"
 )
 ```
-
-### Transitioning from Demo to Live Data
-
-Once you're comfortable with demo mode, getting live data is simple:
-
-1. **Get your free Census API key**: https://api.census.gov/data/key_signup.html
-2. **Set the environment variable**: `export CENSUS_API_KEY=your_key_here`
-3. **Use the same functions with any US location**
-
-The API is nearly identical - you already know how to use it from the demos!
 
 ### Complete Example: Analyzing Library Access
 
@@ -585,7 +526,6 @@ uv run pytest
 
 - [Quick Start Guide](docs/quick-start.md) - Get started in 2 minutes
 - [API Reference](docs/api-reference.md) - Complete function documentation
-- [Examples](examples/) - Sample scripts and use cases
 - [Contributing](CONTRIBUTING.md) - How to contribute
 
 ## API Reference
