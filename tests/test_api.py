@@ -9,11 +9,14 @@ import pytest
 from socialmapper import (
     SocialMapperError,
     ValidationError,
+    analyze_multiple_pois,
     create_isochrone,
     create_map,
+    generate_report,
     get_census_blocks,
     get_census_data,
     get_poi,
+    import_poi_csv,
 )
 
 
@@ -478,6 +481,209 @@ class TestAPIIntegration:
         # 4. Get POIs in area
         pois = get_poi(portland_coords, travel_time=15, limit=20)
         assert isinstance(pois, list)
+
+
+class TestImportPOICSV:
+    """Test import_poi_csv function."""
+
+    def test_import_csv_basic(self, tmp_path):
+        """Test importing a CSV with standard column names."""
+        csv_file = tmp_path / "pois.csv"
+        csv_file.write_text(
+            "name,latitude,longitude,type\n"
+            "Library,45.5,-122.6,library\n"
+            "Cafe,45.51,-122.61,cafe\n"
+        )
+
+        pois = import_poi_csv(str(csv_file))
+
+        assert len(pois) == 2
+        assert pois[0]["name"] == "Library"
+        assert pois[0]["lat"] == 45.5
+        assert pois[0]["lon"] == -122.6
+        assert pois[0]["category"] == "library"
+        assert pois[1]["name"] == "Cafe"
+        assert pois[1]["category"] == "cafe"
+
+    def test_import_csv_custom_fields(self, tmp_path):
+        """Test importing a CSV with custom column names."""
+        csv_file = tmp_path / "custom.csv"
+        csv_file.write_text(
+            "loc_name,lat,lng,category\n"
+            "Park,45.52,-122.62,park\n"
+        )
+
+        pois = import_poi_csv(
+            str(csv_file),
+            name_field="loc_name",
+            lat_field="lat",
+            lon_field="lng",
+            type_field="category",
+        )
+
+        assert len(pois) == 1
+        assert pois[0]["name"] == "Park"
+        assert pois[0]["lat"] == 45.52
+        assert pois[0]["lon"] == -122.62
+        assert pois[0]["category"] == "park"
+
+    def test_import_csv_missing_type_field(self, tmp_path):
+        """Test that missing type column defaults category to 'unknown'."""
+        csv_file = tmp_path / "no_type.csv"
+        csv_file.write_text(
+            "name,latitude,longitude\n"
+            "School,45.53,-122.63\n"
+        )
+
+        pois = import_poi_csv(str(csv_file))
+
+        assert len(pois) == 1
+        assert pois[0]["category"] == "unknown"
+
+    def test_import_csv_file_not_found(self):
+        """Test that a non-existent file raises FileNotFoundError."""
+        with pytest.raises(FileNotFoundError):
+            import_poi_csv("/nonexistent/path/to/file.csv")
+
+    def test_import_csv_missing_required_columns(self, tmp_path):
+        """Test that a CSV missing required columns raises ValueError."""
+        csv_file = tmp_path / "bad.csv"
+        csv_file.write_text(
+            "name,longitude\n"
+            "Test,-122.6\n"
+        )
+
+        with pytest.raises(ValueError, match="Missing required columns"):
+            import_poi_csv(str(csv_file))
+
+
+class TestGenerateReport:
+    """Test generate_report function."""
+
+    def test_generate_report_html_basic(self):
+        """Test generating an HTML report from empty data."""
+        html = generate_report({})
+
+        assert isinstance(html, str)
+        assert "<html>" in html
+        assert "</html>" in html
+
+    def test_generate_report_html_with_metadata(self):
+        """Test that metadata key/value pairs appear in HTML output."""
+        data = {
+            "metadata": {
+                "travel_time": 15,
+                "travel_mode": "drive",
+            }
+        }
+        html = generate_report(data)
+
+        assert "travel_time" in html
+        assert "15" in html
+        assert "travel_mode" in html
+        assert "drive" in html
+
+    def test_generate_report_html_with_locations(self):
+        """Test that locations with aggregated stats appear in HTML output."""
+        data = {
+            "locations": [
+                {
+                    "location": "Portland, OR",
+                    "aggregated": {
+                        "population": {"total": 50000, "mean": 1250.5}
+                    },
+                },
+            ]
+        }
+        html = generate_report(data)
+
+        assert "Portland, OR" in html
+        assert "<table" in html
+        assert "population" in html
+
+    def test_generate_report_html_with_comparison(self):
+        """Test that comparison data with highest/lowest appears in HTML."""
+        data = {
+            "comparison": {
+                "population": {
+                    "highest": "Portland, OR",
+                    "lowest": "Bend, OR",
+                }
+            }
+        }
+        html = generate_report(data)
+
+        assert "Highest" in html
+        assert "Portland, OR" in html
+        assert "Lowest" in html
+        assert "Bend, OR" in html
+
+    def test_generate_report_pdf_raises(self):
+        """Test that PDF format raises NotImplementedError."""
+        with pytest.raises(NotImplementedError):
+            generate_report({}, format="pdf")
+
+    def test_generate_report_invalid_format(self):
+        """Test that an unsupported format raises ValueError."""
+        with pytest.raises(ValueError, match="Report format must be one of"):
+            generate_report({}, format="docx")
+
+
+class TestAnalyzeMultiplePOIs:
+    """Test analyze_multiple_pois function with real API calls."""
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_analyze_single_location(self):
+        """Test analysis with a single location returns one entry, no comparison."""
+        results = analyze_multiple_pois(
+            ["Portland, OR"],
+            travel_time=10,
+        )
+
+        assert len(results["locations"]) == 1
+        assert "comparison" not in results
+        assert results["metadata"]["travel_time"] == 10
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_analyze_multiple_locations(self):
+        """Test analysis with two locations returns comparison data."""
+        results = analyze_multiple_pois(
+            ["Portland, OR", "Seattle, WA"],
+            travel_time=10,
+            variables=["population"],
+        )
+
+        assert len(results["locations"]) == 2
+        assert "comparison" in results
+        assert "population" in results["comparison"]
+        assert "highest" in results["comparison"]["population"]
+        assert "lowest" in results["comparison"]["population"]
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_analyze_default_variables(self):
+        """Test that default variables is ['population'] when none specified."""
+        results = analyze_multiple_pois(
+            ["Portland, OR"],
+            travel_time=10,
+        )
+
+        assert results["metadata"]["variables"] == ["population"]
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_analyze_compare_false(self):
+        """Test that compare=False omits comparison even with multiple locations."""
+        results = analyze_multiple_pois(
+            ["Portland, OR", "Seattle, WA"],
+            travel_time=10,
+            compare=False,
+        )
+
+        assert len(results["locations"]) == 2
+        assert "comparison" not in results
 
 
 class TestErrorHandling:

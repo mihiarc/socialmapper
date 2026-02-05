@@ -167,6 +167,12 @@ class TestInvalidPOICategoryError:
         assert isinstance(error, ValidationError)
         assert isinstance(error, SocialMapperError)
 
+    def test_valid_categories_attribute(self):
+        """Test that valid_categories attribute is accessible on the exception."""
+        valid = ["restaurant", "cafe", "library"]
+        error = InvalidPOICategoryError("bad_category", valid_categories=valid)
+        assert error.valid_categories == valid
+
 
 class TestNetworkError:
     """Test NetworkError."""
