@@ -17,6 +17,7 @@ from .constants import (
     HTTP_FORBIDDEN,
     HTTP_RATE_LIMITED,
 )
+from .performance.bounded_cache import BoundedCache
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
@@ -38,12 +39,9 @@ def _get_cache_manager():
     return _cache_manager
 
 
-# In-memory caches for expensive API calls
-_tiger_block_group_cache: dict[str, list[dict[str, Any]]] = {}
-_tiger_cache_lock = threading.Lock()
-
-_block_groups_for_area_cache: dict[str, list[dict[str, Any]]] = {}
-_area_cache_lock = threading.Lock()
+# In-memory caches for expensive API calls (bounded LRU)
+_tiger_block_group_cache: BoundedCache = BoundedCache(maxsize=256)
+_block_groups_for_area_cache: BoundedCache = BoundedCache(maxsize=128)
 
 
 def _geometry_cache_key(geometry: Polygon) -> str:
@@ -247,11 +245,10 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     """
     # Check area-level cache first
     cache_key = _geometry_cache_key(geometry)
-    with _area_cache_lock:
-        if cache_key in _block_groups_for_area_cache:
-            cached = _block_groups_for_area_cache[cache_key]
-            logger.debug(f"Cache hit for block groups area query ({len(cached)} block groups)")
-            return cached
+    cached = _block_groups_for_area_cache.get(cache_key)
+    if cached is not None:
+        logger.debug(f"Cache hit for block groups area query ({len(cached)} block groups)")
+        return cached
 
     from ._geocoding import get_census_geography
 
@@ -359,8 +356,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     logger.info(f"Found {len(result)} block groups in area (from {len(counties)} counties)")
 
     # Cache the result
-    with _area_cache_lock:
-        _block_groups_for_area_cache[cache_key] = result
+    _block_groups_for_area_cache.set(cache_key, result)
 
     return result
 
@@ -413,11 +409,10 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
 
     # Check cache first
     tiger_cache_key = f"{validated_state}:{validated_county}"
-    with _tiger_cache_lock:
-        if tiger_cache_key in _tiger_block_group_cache:
-            cached = _tiger_block_group_cache[tiger_cache_key]
-            logger.debug(f"Cache hit for TIGER block groups {state_fips}-{county_fips} ({len(cached)} groups)")
-            return cached
+    cached = _tiger_block_group_cache.get(tiger_cache_key)
+    if cached is not None:
+        logger.debug(f"Cache hit for TIGER block groups {state_fips}-{county_fips} ({len(cached)} groups)")
+        return cached
 
     try:
         # Use TIGERweb Tracts_Blocks query service (efficient, no large downloads)
@@ -460,8 +455,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
 
         # Cache the result
-        with _tiger_cache_lock:
-            _tiger_block_group_cache[tiger_cache_key] = result
+        _tiger_block_group_cache.set(tiger_cache_key, result)
 
         return result
 

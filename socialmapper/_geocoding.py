@@ -14,7 +14,6 @@ get_census_geography : Reverse geocode to census geography IDs
 
 import json
 import logging
-import threading
 
 import requests
 
@@ -25,13 +24,13 @@ from .constants import (
     NOMINATIM_API_URL,
     USER_AGENT,
 )
+from .performance.bounded_cache import BoundedCache
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
 
-# In-memory cache for census geography lookups, keyed by rounded coords
-_geocoding_cache: dict[tuple[float, float], dict[str, str] | None] = {}
-_geocoding_cache_lock = threading.Lock()
+# In-memory cache for census geography lookups, keyed by rounded coords (bounded LRU)
+_geocoding_cache: BoundedCache = BoundedCache(maxsize=1024)
 
 
 def geocode_location(address: str) -> tuple[float, float] | None:
@@ -244,12 +243,12 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     Only works for coordinates within the United States and territories.
     """
     # Check cache first (round to 4 decimal places ~11m precision)
-    cache_key = (round(lat, 4), round(lon, 4))
-    with _geocoding_cache_lock:
-        if cache_key in _geocoding_cache:
-            cached = _geocoding_cache[cache_key]
-            logger.debug(f"Cache hit for census geography ({lat:.4f}, {lon:.4f})")
-            return cached
+    cache_key = f"{round(lat, 4)}:{round(lon, 4)}"
+    cached = _geocoding_cache.get(cache_key)
+    if cached is not None:
+        logger.debug(f"Cache hit for census geography ({lat:.4f}, {lon:.4f})")
+        # Sentinel empty dict means "no result" (distinguish from never-cached)
+        return cached if cached != {} else None
 
     from .constants import DEFAULT_HTTP_TIMEOUT
 
@@ -293,8 +292,7 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
                 }
 
                 # Cache the result
-                with _geocoding_cache_lock:
-                    _geocoding_cache[cache_key] = result
+                _geocoding_cache.set(cache_key, result)
 
                 return result
 
@@ -323,8 +321,7 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
         logger.error(f"Failed to parse census geography response for ({lat}, {lon}): {e}")
         raise DataError(f"Failed to parse census geography response: {e}") from e
 
-    # Cache the negative result
-    with _geocoding_cache_lock:
-        _geocoding_cache[cache_key] = None
+    # Cache the negative result (empty dict as sentinel)
+    _geocoding_cache.set(cache_key, {})
 
     return None
