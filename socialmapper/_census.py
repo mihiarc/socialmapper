@@ -21,6 +21,23 @@ from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
 
+# Lazy disk cache for Census API responses
+_cache_manager = None
+_cache_manager_lock = threading.Lock()
+
+
+def _get_cache_manager():
+    """Get or create the CacheManager singleton (thread-safe, lazy)."""
+    global _cache_manager
+    if _cache_manager is not None:
+        return _cache_manager
+    with _cache_manager_lock:
+        if _cache_manager is None:
+            from .performance.cache import CacheManager
+            _cache_manager = CacheManager()
+    return _cache_manager
+
+
 # In-memory caches for expensive API calls
 _tiger_block_group_cache: dict[str, list[dict[str, Any]]] = {}
 _tiger_cache_lock = threading.Lock()
@@ -572,6 +589,18 @@ def fetch_census_data(
             tract = tract_key[5:11]
             target_geoids = geoids_by_tract[tract_key]
 
+            # Check disk cache for this tract's data
+            sorted_vars = ",".join(sorted(variables))
+            cache_key = f"census:{year}:{state}:{county}:{tract}:{sorted_vars}"
+            cache = _get_cache_manager()
+            cached_tract_data = cache.get_census(cache_key)
+            if cached_tract_data is not None:
+                for row_geoid, geoid_data in cached_tract_data.items():
+                    if row_geoid in target_geoids:
+                        result[row_geoid] = geoid_data
+                logger.debug(f"Disk cache hit for census tract {tract_key}")
+                continue
+
             # Use wildcard to fetch ALL block groups in this tract at once
             params = {
                 "get": ",".join(["NAME", *variables]),
@@ -593,6 +622,7 @@ def fetch_census_data(
                     continue
 
                 data = response.json()
+                tract_results = {}  # All block groups in this tract for caching
                 if len(data) > 1:  # First row is headers
                     headers = data[0]
 
@@ -614,10 +644,6 @@ def fetch_census_data(
                             # Fallback: construct from known tract + block group position
                             row_geoid = f"{tract_key}{row[-1]}"
 
-                        # Only include if this GEOID was in our request
-                        if row_geoid not in target_geoids:
-                            continue
-
                         # Build result dict for this GEOID
                         geoid_data = {}
                         for j, header in enumerate(headers):
@@ -633,7 +659,15 @@ def fetch_census_data(
                                 for alias in reverse_mapping[var_code]:
                                     geoid_data[alias] = value
 
-                        result[row_geoid] = geoid_data
+                        tract_results[row_geoid] = geoid_data
+
+                        # Only include if this GEOID was in our request
+                        if row_geoid in target_geoids:
+                            result[row_geoid] = geoid_data
+
+                # Cache all block groups for this tract
+                if tract_results:
+                    cache.set_census(cache_key, tract_results)
 
             except requests.HTTPError as e:
                 if e.response is not None and e.response.status_code == HTTP_FORBIDDEN:
