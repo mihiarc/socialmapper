@@ -5,11 +5,9 @@ across the SocialMapper API, including coordinate resolution, geometry
 calculations, and data format conversions.
 """
 
-from typing import Any
+from __future__ import annotations
 
-import pyproj
-from shapely.geometry import Point, shape
-from shapely.ops import transform
+from typing import Any
 
 from .constants import (
     CONUS_MAX_LAT,
@@ -120,6 +118,8 @@ def get_equal_area_transformer(
     ...     45.5152, -122.6784, inverse=True
     ... )
     """
+    import pyproj
+
     target_crs = get_equal_area_crs(lat, lon)
     if inverse:
         return pyproj.Transformer.from_crs(target_crs, CRS_WGS84, always_xy=True)
@@ -223,6 +223,8 @@ def calculate_polygon_area(polygon) -> float:
     Web Mercator (EPSG:3857) should never be used for area calculations
     as it exaggerates areas significantly at higher latitudes.
     """
+    from shapely.ops import transform
+
     # Determine appropriate equal-area projection based on location
     centroid = polygon.centroid
     lon, lat = centroid.x, centroid.y
@@ -271,6 +273,9 @@ def create_circular_geometry(location: tuple[float, float], radius_km: float):
     never be used for distance-based operations as it exaggerates
     distances significantly at higher latitudes.
     """
+    from shapely.geometry import Point
+    from shapely.ops import transform
+
     lat, lon = location
     point = Point(lon, lat)
 
@@ -316,6 +321,8 @@ def extract_geometry_from_geojson(polygon: dict) -> Any:
     >>> geom.geom_type
     'Polygon'
     """
+    from shapely.geometry import shape
+
     if "geometry" in polygon:
         return shape(polygon["geometry"])
     else:

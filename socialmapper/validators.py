@@ -5,9 +5,13 @@ including coordinate validation, travel parameter validation,
 and POI data validation.
 """
 
-import logging
+from __future__ import annotations
 
-from shapely.geometry import Point
+import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shapely.geometry import Point
 
 from .constants import (
     MAX_LATITUDE,
@@ -295,6 +299,8 @@ def prevalidate_for_pyproj(data: list[dict] | list[Point]) -> tuple[bool, list[s
     True
     """
     errors = []
+
+    from shapely.geometry import Point
 
     try:
         if not data:

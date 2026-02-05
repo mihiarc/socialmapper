@@ -4,17 +4,18 @@ This is a refactored version of the original api.py that follows SOLID principle
 more closely by separating concerns, extracting validators, and using helper functions.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
-from typing import Any
-
-import geopandas as gpd
-import pandas as pd
-from geopy.distance import geodesic
-from shapely.geometry import shape
+from typing import TYPE_CHECKING, Any
 
 from .api_result_types import CensusDataResult, MapResult
+
+if TYPE_CHECKING:
+    import geopandas as gpd
+    import pandas as pd
 from .exceptions import SocialMapperError
 from .helpers import (
     create_circular_geometry,
@@ -563,6 +564,10 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
     ValueError
         If data format is invalid or missing required fields.
     """
+    import geopandas as gpd
+    import pandas as pd
+    from shapely.geometry import shape
+
     if isinstance(data, list):
         geometries = []
         attributes = []
@@ -648,6 +653,9 @@ def _create_image_map(
     MapResult
         Structured result with image_data or file_path populated.
     """
+    import geopandas as gpd
+    from shapely.geometry import shape
+
     from ._visualization import generate_choropleth_map
 
     # Convert overlay_boundary dict to GeoDataFrame if needed
@@ -903,6 +911,8 @@ def _create_search_area(coords: tuple[float, float], travel_time: int | None):
     Polygon
         Shapely polygon defining search area.
     """
+    from shapely.geometry import shape
+
     lat, lon = coords
 
     if travel_time:
@@ -984,6 +994,8 @@ def _calculate_poi_distances(
     None
         Updates pois in-place with 'distance_km' field.
     """
+    from geopy.distance import geodesic
+
     for poi in pois:
         poi_coords = (poi["lat"], poi["lon"])
         try:
