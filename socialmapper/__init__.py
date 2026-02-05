@@ -1,28 +1,21 @@
 """SocialMapper: Simple spatial analysis API.
 
-Five core functions for all your spatial analysis needs:
+Core functions for all your spatial analysis needs:
 - create_isochrone: Generate travel-time polygons
 - get_census_blocks: Fetch census block groups for an area
 - get_census_data: Get demographic data from US Census
 - create_map: Generate choropleth map visualizations
 - get_poi: Find points of interest near locations
-
-New to SocialMapper? Try the demo module first:
-    >>> from socialmapper import demo
-    >>> demo.quick_start("Portland, OR")
+- analyze_multiple_pois: Compare demographics across locations
+- generate_report: Create analysis reports
+- import_poi_csv: Import POIs from CSV files
 """
 
-# Load environment variables from .env file if available
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
-
-# Import the 5 core API functions
-# Import demo module for easy onboarding
-from . import demo
+# Import core API functions
 from .api import (
+    analyze_multiple_pois,
+    generate_report,
+    import_poi_csv,
     create_isochrone,
     create_map,
     get_census_blocks,
@@ -101,10 +94,12 @@ __all__ = [
     "SocialMapperError",
     "ValidationError",
     "VisualizationError",
+    "analyze_multiple_pois",
     "create_isochrone",
     "create_map",
-    "demo",
+    "generate_report",
     "get_census_blocks",
     "get_census_data",
     "get_poi",
+    "import_poi_csv",
 ]

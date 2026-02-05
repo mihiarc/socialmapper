@@ -1057,8 +1057,10 @@ def analyze_multiple_pois(
         }
     }
 
-    # Analyze each location
-    for loc in locations:
+    # Analyze each location in parallel
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _analyze_single_location(loc):
         try:
             iso = create_isochrone(loc, travel_time, travel_mode)
             census_result = get_census_data(iso, variables)
@@ -1078,7 +1080,7 @@ def analyze_multiple_pois(
                         "count": len(values)
                     }
 
-            location_result = {
+            return {
                 "location": (loc if isinstance(loc, str)
                              else f"{loc[0]:.4f}, {loc[1]:.4f}"),
                 "isochrone": iso,
@@ -1086,15 +1088,35 @@ def analyze_multiple_pois(
                 "aggregated": aggregated,
                 "block_group_count": len(census_result.data)
             }
-            results["locations"].append(location_result)
 
         except (SocialMapperError, ValueError, KeyError, TypeError) as e:
             logger.error(f"Failed to analyze location {loc}: {e}")
-            results["locations"].append({
+            return {
                 "location": (loc if isinstance(loc, str)
                              else f"{loc[0]:.4f}, {loc[1]:.4f}"),
                 "error": str(e)
-            })
+            }
+
+    max_workers = min(4, len(locations))
+    if max_workers > 1:
+        # Parallel execution for multiple locations
+        future_to_idx = {}
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for idx, loc in enumerate(locations):
+                future = executor.submit(_analyze_single_location, loc)
+                future_to_idx[future] = idx
+
+            # Collect results in original order
+            indexed_results = {}
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                indexed_results[idx] = future.result()
+
+        for idx in range(len(locations)):
+            results["locations"].append(indexed_results[idx])
+    else:
+        # Single location - no need for thread pool
+        results["locations"].append(_analyze_single_location(locations[0]))
 
     # Add comparison if requested and multiple locations
     if compare and len(results["locations"]) > 1:

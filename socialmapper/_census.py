@@ -1,8 +1,11 @@
 """Internal census data utilities for SocialMapper."""
 
+import hashlib
 import json
 import logging
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import requests
@@ -17,6 +20,18 @@ from .constants import (
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
+
+# In-memory caches for expensive API calls
+_tiger_block_group_cache: dict[str, list[dict[str, Any]]] = {}
+_tiger_cache_lock = threading.Lock()
+
+_block_groups_for_area_cache: dict[str, list[dict[str, Any]]] = {}
+_area_cache_lock = threading.Lock()
+
+
+def _geometry_cache_key(geometry: Polygon) -> str:
+    """Generate a stable cache key from polygon WKT hash."""
+    return hashlib.md5(geometry.wkt.encode()).hexdigest()
 
 
 def validate_fips_code(fips_code: str, expected_length: int, code_type: str = "FIPS") -> str:
@@ -213,6 +228,14 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     This function samples the centroid plus points around the boundary
     to ensure coverage when the geometry spans multiple counties.
     """
+    # Check area-level cache first
+    cache_key = _geometry_cache_key(geometry)
+    with _area_cache_lock:
+        if cache_key in _block_groups_for_area_cache:
+            cached = _block_groups_for_area_cache[cache_key]
+            logger.debug(f"Cache hit for block groups area query ({len(cached)} block groups)")
+            return cached
+
     from ._geocoding import get_census_geography
 
     # Sample multiple points to identify ALL counties that intersect the geometry
@@ -243,16 +266,25 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     except Exception as e:
         logger.warning(f"Could not sample boundary points: {e}")
 
-    # Collect unique state/county combinations
+    # Collect unique state/county combinations using parallel geocoding
     counties: set[tuple[str, str]] = set()
-    for lat, lon in sample_points:
+
+    def _geocode_point(point: tuple[float, float]) -> tuple[str, str] | None:
+        lat, lon = point
         try:
             geo_info = get_census_geography(lat, lon)
             if geo_info:
-                counties.add((geo_info["state_fips"], geo_info["county_fips"]))
+                return (geo_info["state_fips"], geo_info["county_fips"])
         except Exception as e:
             logger.debug(f"Could not get geography for ({lat:.4f}, {lon:.4f}): {e}")
-            continue
+        return None
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {executor.submit(_geocode_point, pt): pt for pt in sample_points}
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                counties.add(result)
 
     if not counties:
         logger.warning(
@@ -308,6 +340,11 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             result.append(bg)
 
     logger.info(f"Found {len(result)} block groups in area (from {len(counties)} counties)")
+
+    # Cache the result
+    with _area_cache_lock:
+        _block_groups_for_area_cache[cache_key] = result
+
     return result
 
 
@@ -357,6 +394,14 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
     validated_state = validate_fips_code(state_fips, 2, "State")
     validated_county = validate_fips_code(county_fips, 3, "County")
 
+    # Check cache first
+    tiger_cache_key = f"{validated_state}:{validated_county}"
+    with _tiger_cache_lock:
+        if tiger_cache_key in _tiger_block_group_cache:
+            cached = _tiger_block_group_cache[tiger_cache_key]
+            logger.debug(f"Cache hit for TIGER block groups {state_fips}-{county_fips} ({len(cached)} groups)")
+            return cached
+
     try:
         # Use TIGERweb Tracts_Blocks query service (efficient, no large downloads)
         url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
@@ -372,6 +417,10 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         session = get_http_session()
         response = session.get(url, params=params, timeout=CENSUS_API_TIMEOUT)
         response.raise_for_status()
+
+        if response.status_code == 204 or not response.content:
+            logger.warning(f"Empty TIGERweb response for {state_fips}-{county_fips}")
+            return []
 
         data = response.json()
         features = data.get("features", [])
@@ -392,6 +441,11 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
                 })
 
         logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
+
+        # Cache the result
+        with _tiger_cache_lock:
+            _tiger_block_group_cache[tiger_cache_key] = result
+
         return result
 
     except requests.Timeout as e:
@@ -533,6 +587,10 @@ def fetch_census_data(
                 response = session.get(base_url, params=params, timeout=CENSUS_API_TIMEOUT)
                 response.raise_for_status()
                 total_api_calls += 1
+
+                if response.status_code == 204 or not response.content:
+                    logger.warning(f"Empty Census API response for tract {tract_key}")
+                    continue
 
                 data = response.json()
                 if len(data) > 1:  # First row is headers

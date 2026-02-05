@@ -14,6 +14,7 @@ get_census_geography : Reverse geocode to census geography IDs
 
 import json
 import logging
+import threading
 
 import requests
 
@@ -27,6 +28,10 @@ from .constants import (
 from .performance.connection_pool import get_http_session
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache for census geography lookups, keyed by rounded coords
+_geocoding_cache: dict[tuple[float, float], dict[str, str] | None] = {}
+_geocoding_cache_lock = threading.Lock()
 
 
 def geocode_location(address: str) -> tuple[float, float] | None:
@@ -238,6 +243,14 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     Uses the 2020 Census block boundaries for geographic matching.
     Only works for coordinates within the United States and territories.
     """
+    # Check cache first (round to 4 decimal places ~11m precision)
+    cache_key = (round(lat, 4), round(lon, 4))
+    with _geocoding_cache_lock:
+        if cache_key in _geocoding_cache:
+            cached = _geocoding_cache[cache_key]
+            logger.debug(f"Cache hit for census geography ({lat:.4f}, {lon:.4f})")
+            return cached
+
     from .constants import DEFAULT_HTTP_TIMEOUT
 
     session = get_http_session()
@@ -271,13 +284,19 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
                 # Create GEOID (state + county + tract + block group)
                 geoid = f"{state_fips}{county_fips}{tract}{block_group}"
 
-                return {
+                result = {
                     "state_fips": state_fips,
                     "county_fips": county_fips,
                     "tract": tract,
                     "block_group": block_group,
                     "geoid": geoid
                 }
+
+                # Cache the result
+                with _geocoding_cache_lock:
+                    _geocoding_cache[cache_key] = result
+
+                return result
 
         # No geography data returned
         logger.warning(
@@ -303,5 +322,9 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
         from .exceptions import DataError
         logger.error(f"Failed to parse census geography response for ({lat}, {lon}): {e}")
         raise DataError(f"Failed to parse census geography response: {e}") from e
+
+    # Cache the negative result
+    with _geocoding_cache_lock:
+        _geocoding_cache[cache_key] = None
 
     return None

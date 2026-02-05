@@ -91,7 +91,6 @@ CRS_GLOBAL_EQUAL_AREA = "EPSG:6933"  # NSIDC EASE-Grid 2.0 - global equal-area (
 # ==========================================
 SCALE_BAR_ROUND_THRESHOLD = 0.1  # Threshold for rounding scale bar length
 METERS_PER_KM = 1000  # Meters per kilometer
-DEMO_DISPLAY_LIMIT = 3  # Number of items to show before "and X more"
 
 # Choropleth map defaults
 DEFAULT_BASEMAP = "CartoDB.Voyager"  # Clean, light basemap for choropleths

@@ -225,6 +225,7 @@ class InvalidPOICategoryError(ValidationError):
         valid_categories : list of str
             List of valid category names.
         """
+        self.valid_categories = valid_categories
         message = f"Invalid POI category: '{category}'"
 
         help_lines = [

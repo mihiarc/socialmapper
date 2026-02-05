@@ -8,7 +8,7 @@ Click any badge below to open the notebook in Google Colab:
 
 | Notebook | Description | Open in Colab |
 |----------|-------------|---------------|
-| **01-Getting Started** | Installation, first analysis, demo mode | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mihiarc/socialmapper/blob/main/docs/notebooks/01-getting-started.ipynb) |
+| **01-Getting Started** | Installation, first analysis | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mihiarc/socialmapper/blob/main/docs/notebooks/01-getting-started.ipynb) |
 | **02-Isochrone Analysis** | Travel-time areas, routing backends | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mihiarc/socialmapper/blob/main/docs/notebooks/02-isochrone-analysis.ipynb) |
 | **03-Points of Interest** | POI queries, categories, filters | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mihiarc/socialmapper/blob/main/docs/notebooks/03-points-of-interest.ipynb) |
 | **04-Census Data** | Block groups, demographics, aggregation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mihiarc/socialmapper/blob/main/docs/notebooks/04-census-data.ipynb) |
@@ -39,21 +39,16 @@ pip install jupyter socialmapper[routing]
 jupyter notebook
 ```
 
-## Demo Mode
+## API Keys
 
-All notebooks use demo mode by default, which doesn't require API keys:
-
-```python
-import os
-os.environ["SOCIALMAPPER_DEMO_MODE"] = "true"
-```
-
-For production use with real data, set your API keys:
+For full functionality, set your API keys:
 
 ```python
 os.environ["CENSUS_API_KEY"] = "your-key"
 os.environ["ORS_API_KEY"] = "your-key"  # Optional
 ```
+
+Get a free Census API key at: https://api.census.gov/data/key_signup.html
 
 ## Requirements
 
