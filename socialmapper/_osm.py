@@ -14,6 +14,7 @@ from .constants import (
     OVERPASS_ENDPOINTS,
     OVERPASS_TIMEOUT,
 )
+from .performance.connection_pool import get_http_session
 from .poi_categorization import POI_CATEGORY_MAPPING
 
 logger = logging.getLogger(__name__)
@@ -298,7 +299,8 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
 
     for endpoint in OVERPASS_ENDPOINTS:
         try:
-            response = requests.post(
+            session = get_http_session()
+            response = session.post(
                 endpoint,
                 data={"data": query},
                 timeout=OVERPASS_TIMEOUT
