@@ -93,6 +93,36 @@ SCALE_BAR_ROUND_THRESHOLD = 0.1  # Threshold for rounding scale bar length
 METERS_PER_KM = 1000  # Meters per kilometer
 DEMO_DISPLAY_LIMIT = 3  # Number of items to show before "and X more"
 
+# Choropleth map defaults
+DEFAULT_BASEMAP = "CartoDB.Voyager"  # Clean, light basemap for choropleths
+DEFAULT_CHOROPLETH_CMAP = "YlGnBu"  # Blue-green gradient for sequential data
+DEFAULT_DIVERGING_CMAP = "RdBu_r"  # Red-blue for diverging data
+DEFAULT_CATEGORICAL_CMAP = "Set3"  # Distinct colors for categorical data
+MAP_FIGURE_SIZE = (14, 12)  # Width, height in inches
+MAP_DPI = 150  # Output resolution
+CHOROPLETH_EDGE_COLOR = "white"  # Subtle boundary lines
+CHOROPLETH_EDGE_WIDTH = 0.6  # Line width for polygon edges
+CHOROPLETH_ALPHA = 0.85  # Transparency for choropleth layer
+BASEMAP_ALPHA = 0.5  # Transparency for basemap (so choropleth shows through)
+
+# Overlay styling
+OVERLAY_BOUNDARY_COLOR = "#e74c3c"  # Red for boundary overlays (e.g., isochrones)
+OVERLAY_BOUNDARY_WIDTH = 3  # Line width for overlay boundaries
+OVERLAY_BOUNDARY_STYLE = "--"  # Dashed line style
+OVERLAY_POINT_COLOR = "#e74c3c"  # Red for point markers
+OVERLAY_POINT_SIZE = 150  # Marker size for overlay points
+OVERLAY_POINT_EDGE_COLOR = "white"  # White edge around markers
+OVERLAY_POINT_EDGE_WIDTH = 2  # Edge width for markers
+
+# Stats box styling
+STATS_BOX_ALPHA = 0.95  # Background opacity
+STATS_BOX_FONTSIZE = 11  # Font size for stats text
+STATS_BOX_FONT_FAMILY = "monospace"  # Font family for alignment
+
+# Web Mercator CRS for basemap compatibility
+CRS_WEB_MERCATOR = "EPSG:3857"
+CRS_WEB_MERCATOR_EPSG = 3857
+
 # ==========================================
 # API Base URLs
 # ==========================================

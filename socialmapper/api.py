@@ -390,7 +390,13 @@ def create_map(
     column: str,
     title: str | None = None,
     save_path: str | None = None,
-    export_format: str = "png"
+    export_format: str = "png",
+    basemap: str | None = "CartoDB.Voyager",
+    cmap: str | None = None,
+    overlay_boundary: dict | gpd.GeoDataFrame | None = None,
+    overlay_points: list[dict] | None = None,
+    show_stats: bool = False,
+    stats_dict: dict | None = None,
 ) -> MapResult:
     """
     Create a choropleth map visualization.
@@ -416,6 +422,34 @@ def create_map(
         include the absolute path. Default is None.
     export_format : {'png', 'pdf', 'svg', 'geojson', 'shapefile'}, optional
         Output format for the map. Default is 'png'.
+    basemap : str, optional
+        Basemap provider name for image formats. Options include:
+        - 'CartoDB.Voyager' (default): Clean, light basemap
+        - 'CartoDB.Positron': Minimal, grayscale basemap
+        - 'CartoDB.DarkMatter': Dark theme basemap
+        - None: No basemap (plain white background)
+    cmap : str, optional
+        Matplotlib colormap name. If None, auto-selects based on data:
+        - Sequential numeric: 'YlGnBu'
+        - Diverging numeric: 'RdBu_r'
+        - Categorical: 'Set3'
+    overlay_boundary : dict or GeoDataFrame, optional
+        Boundary geometry to overlay (e.g., isochrone). Can be:
+        - GeoJSON dict (Feature or geometry)
+        - GeoDataFrame with boundary geometry
+        Displayed as dashed red line on image formats.
+    overlay_points : list of dict, optional
+        List of point markers to overlay. Each dict must have:
+        - 'lat': Latitude
+        - 'lon': Longitude
+        - 'name' (optional): Label for the point
+        Only applies to image formats (png, pdf, svg).
+    show_stats : bool, optional
+        Whether to display a statistics box. Default is False.
+        Only applies to image formats.
+    stats_dict : dict, optional
+        Custom statistics to display. If None and show_stats is True,
+        basic statistics are calculated from the data column.
 
     Returns
     -------
@@ -451,6 +485,17 @@ def create_map(
     >>> len(map_result.image_data)
     45231
 
+    >>> # Create map with basemap and overlays
+    >>> iso = create_isochrone("Portland, OR", travel_time=15)
+    >>> map_result = create_map(
+    ...     blocks, "population",
+    ...     title="Population within 15-min drive",
+    ...     basemap="CartoDB.Positron",
+    ...     overlay_boundary=iso,
+    ...     overlay_points=[{'lat': 45.5, 'lon': -122.6, 'name': 'Origin'}],
+    ...     show_stats=True
+    ... )
+
     >>> # Create GeoJSON map
     >>> map_result = create_map(blocks, "population",
     ...                        export_format="geojson")
@@ -484,7 +529,12 @@ def create_map(
 
     # Generate map based on format
     if export_format in ["png", "pdf", "svg"]:
-        return _create_image_map(gdf, column, title, save_path, export_format, metadata)
+        return _create_image_map(
+            gdf, column, title, save_path, export_format, metadata,
+            basemap=basemap, cmap=cmap, overlay_boundary=overlay_boundary,
+            overlay_points=overlay_points, show_stats=show_stats,
+            stats_dict=stats_dict
+        )
     elif export_format == "geojson":
         return _create_geojson_export(gdf, save_path, metadata)
     elif export_format == "shapefile":
@@ -552,7 +602,13 @@ def _create_image_map(
     title: str | None,
     save_path: str | None,
     export_format: str,
-    metadata: dict[str, Any]
+    metadata: dict[str, Any],
+    basemap: str | None = "CartoDB.Voyager",
+    cmap: str | None = None,
+    overlay_boundary: dict | gpd.GeoDataFrame | None = None,
+    overlay_points: list[dict] | None = None,
+    show_stats: bool = False,
+    stats_dict: dict | None = None,
 ) -> MapResult:
     """
     Generate image-format choropleth map.
@@ -574,6 +630,18 @@ def _create_image_map(
         Image format (png, pdf, svg).
     metadata : dict
         Metadata about the map.
+    basemap : str, optional
+        Basemap provider name. Default is 'CartoDB.Voyager'.
+    cmap : str, optional
+        Matplotlib colormap name.
+    overlay_boundary : dict or GeoDataFrame, optional
+        Boundary geometry to overlay.
+    overlay_points : list of dict, optional
+        Point markers to overlay.
+    show_stats : bool, optional
+        Whether to display statistics box.
+    stats_dict : dict, optional
+        Custom statistics to display.
 
     Returns
     -------
@@ -582,8 +650,23 @@ def _create_image_map(
     """
     from ._visualization import generate_choropleth_map
 
+    # Convert overlay_boundary dict to GeoDataFrame if needed
+    overlay_boundary_gdf = None
+    if overlay_boundary is not None:
+        if isinstance(overlay_boundary, gpd.GeoDataFrame):
+            overlay_boundary_gdf = overlay_boundary
+        elif isinstance(overlay_boundary, dict):
+            # Convert GeoJSON dict to GeoDataFrame
+            geom = shape(overlay_boundary.get('geometry', overlay_boundary))
+            overlay_boundary_gdf = gpd.GeoDataFrame(
+                {'geometry': [geom]}, crs="EPSG:4326"
+            )
+
     image_data = generate_choropleth_map(
-        gdf, column, title, save_path, format=export_format
+        gdf, column, title, save_path, format=export_format,
+        basemap=basemap, cmap=cmap, overlay_boundary=overlay_boundary_gdf,
+        overlay_points=overlay_points, show_stats=show_stats,
+        stats_dict=stats_dict
     )
 
     # If saved to file, image_data will be None

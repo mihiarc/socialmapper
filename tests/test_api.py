@@ -228,6 +228,123 @@ class TestCreateMap:
         with pytest.raises(ValueError, match="Export format must be one of"):
             create_map(data, column="value", export_format="jpeg")
 
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_basemap(self, sample_census_block):
+        """Test creating map with different basemap providers."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        # Test with default basemap (CartoDB.Voyager)
+        result = create_map(data, column="population")
+        assert result.format == "png"
+        assert result.image_data is not None
+
+        # Test with Positron basemap
+        result = create_map(data, column="population", basemap="CartoDB.Positron")
+        assert result.image_data is not None
+
+        # Test with no basemap
+        result = create_map(data, column="population", basemap=None)
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_custom_cmap(self, sample_census_block):
+        """Test creating map with custom colormap."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        result = create_map(data, column="population", cmap="viridis")
+        assert result.format == "png"
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_stats_box(self, sample_census_block):
+        """Test creating map with statistics box."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        result = create_map(data, column="population", show_stats=True)
+        assert result.format == "png"
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_custom_stats(self, sample_census_block):
+        """Test creating map with custom statistics dictionary."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        custom_stats = {
+            "Total Population": "1,000",
+            "Area": "1.5 sq km",
+            "Density": "667/sq km"
+        }
+        result = create_map(
+            data, column="population",
+            show_stats=True, stats_dict=custom_stats
+        )
+        assert result.format == "png"
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_overlay_points(self, sample_census_block):
+        """Test creating map with point overlays."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        points = [
+            {"lat": 45.515, "lon": -122.675, "name": "Center"},
+            {"lat": 45.520, "lon": -122.680},  # Point without name
+        ]
+        result = create_map(
+            data, column="population",
+            overlay_points=points
+        )
+        assert result.format == "png"
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_with_overlay_boundary(self, sample_census_block, sample_geojson_feature):
+        """Test creating map with boundary overlay."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        result = create_map(
+            data, column="population",
+            overlay_boundary=sample_geojson_feature
+        )
+        assert result.format == "png"
+        assert result.image_data is not None
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_create_map_all_features(self, sample_census_block, sample_geojson_feature):
+        """Test creating map with all new features combined."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        points = [{"lat": 45.515, "lon": -122.675, "name": "Origin"}]
+        custom_stats = {"Count": 1, "Value": 1000}
+
+        result = create_map(
+            data, column="population",
+            title="Full Feature Test",
+            basemap="CartoDB.Voyager",
+            cmap="YlGnBu",
+            overlay_boundary=sample_geojson_feature,
+            overlay_points=points,
+            show_stats=True,
+            stats_dict=custom_stats
+        )
+        assert result.format == "png"
+        assert result.image_data is not None
+        assert len(result.image_data) > 0
+
 
 class TestGetPOI:
     """Test get_poi function."""
