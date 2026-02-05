@@ -547,11 +547,12 @@ def fetch_census_data(
     import os
     api_key = os.environ.get("CENSUS_API_KEY")
 
-    # Build reverse mapping for human-readable names (computed once)
+    # Build reverse mapping: one canonical (shortest) alias per census code
     from collections import defaultdict
-    reverse_mapping = defaultdict(list)
+    _all_aliases = defaultdict(list)
     for name, code in VARIABLE_MAPPING.items():
-        reverse_mapping[code].append(name)
+        _all_aliases[code].append(name)
+    primary_alias = {code: min(names, key=len) for code, names in _all_aliases.items()}
 
     # Group GEOIDs by tract (state + county + tract = first 11 digits)
     # This allows us to use wildcard queries to fetch all block groups per tract
@@ -647,11 +648,10 @@ def fetch_census_data(
                                 except (ValueError, TypeError):
                                     geoid_data[header] = row[j]
 
-                        # Map census codes to human-readable names
+                        # Map census codes to canonical human-readable name
                         for var_code, value in list(geoid_data.items()):
-                            if var_code in reverse_mapping:
-                                for alias in reverse_mapping[var_code]:
-                                    geoid_data[alias] = value
+                            if var_code in primary_alias:
+                                geoid_data[primary_alias[var_code]] = value
 
                         tract_results[row_geoid] = geoid_data
 
