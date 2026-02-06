@@ -808,10 +808,111 @@ def _create_shapefile_export(
     )
 
 
+def _filter_pois_by_polygon(
+    pois: list[dict[str, Any]], polygon
+) -> list[dict[str, Any]]:
+    """Filter POIs to only those contained within a polygon.
+
+    Parameters
+    ----------
+    pois : list of dict
+        POI dicts with ``lat`` and ``lon`` keys.
+    polygon : shapely.geometry.Polygon
+        Search area boundary.
+
+    Returns
+    -------
+    list of dict
+        POIs whose coordinates fall inside *polygon*.
+    """
+    from shapely.geometry import Point
+
+    kept = []
+    for poi in pois:
+        if polygon.contains(Point(poi["lon"], poi["lat"])):
+            kept.append(poi)
+    if len(kept) < len(pois):
+        logger.debug(
+            "Spatial filter removed %d POIs outside polygon",
+            len(pois) - len(kept),
+        )
+    return kept
+
+
+def _calculate_travel_times(
+    pois: list[dict[str, Any]],
+    origin: tuple[float, float],
+    travel_mode: str = "drive",
+) -> None:
+    """Compute actual travel time/distance from origin to each POI via Valhalla matrix API.
+
+    Updates each POI dict in-place with ``travel_time_minutes`` and
+    ``travel_distance_km`` fields.
+
+    Parameters
+    ----------
+    pois : list of dict
+        POI dicts with ``lat`` and ``lon`` keys.
+    origin : tuple of float
+        ``(latitude, longitude)`` of the origin point.
+    travel_mode : str
+        One of ``'drive'``, ``'walk'``, ``'bike'``.
+    """
+    if not pois:
+        return
+
+    from .isochrone.backends import get_backend
+
+    backend = get_backend()
+    router = backend._get_router()
+    profile = {"drive": "auto", "walk": "pedestrian", "bike": "bicycle"}[travel_mode]
+
+    # routingpy uses (lon, lat) format
+    origin_loc = [origin[1], origin[0]]
+    poi_locs = [[p["lon"], p["lat"]] for p in pois]
+
+    BATCH_SIZE = 50
+    for batch_start in range(0, len(pois), BATCH_SIZE):
+        batch_end = min(batch_start + BATCH_SIZE, len(pois))
+        batch_locs = [origin_loc] + poi_locs[batch_start:batch_end]
+        destinations = list(range(1, len(batch_locs)))
+
+        try:
+            result = router.matrix(
+                locations=batch_locs,
+                profile=profile,
+                sources=[0],
+                destinations=destinations,
+            )
+
+            for i, poi_idx in enumerate(range(batch_start, batch_end)):
+                duration = result.durations[0][i]
+                distance = result.distances[0][i] if result.distances else None
+                if duration is not None:
+                    pois[poi_idx]["travel_time_minutes"] = round(duration / 60, 1)
+                else:
+                    pois[poi_idx]["travel_time_minutes"] = None
+                if distance is not None:
+                    pois[poi_idx]["travel_distance_km"] = round(distance / 1000, 2)
+                else:
+                    pois[poi_idx]["travel_distance_km"] = None
+
+        except Exception as exc:
+            logger.warning(
+                "Valhalla matrix call failed for batch %d-%d, "
+                "falling back to geodesic distance: %s",
+                batch_start, batch_end, exc,
+            )
+            for poi_idx in range(batch_start, batch_end):
+                pois[poi_idx]["travel_time_minutes"] = None
+                pois[poi_idx]["travel_distance_km"] = None
+
+
 def get_poi(
     location: str | tuple[float, float],
     categories: list[str] | None = None,
     travel_time: int | None = None,
+    travel_mode: str = "drive",
     limit: int = 100,
     validate_coords: bool = True
 ) -> list[dict[str, Any]]:
@@ -836,8 +937,14 @@ def get_poi(
         Default is None (all categories).
     travel_time : int, optional
         Travel time in minutes for boundary (uses driving).
-        If provided, finds POIs within isochrone.
-        If None, uses 5km radius. Default is None.
+        If provided, finds POIs within isochrone and computes
+        actual travel time/distance via Valhalla matrix API.
+        Results are sorted by ``travel_time_minutes``.
+        If None, uses 5km radius and sorts by geodesic
+        ``distance_km``. Default is None.
+    travel_mode : {'drive', 'walk', 'bike'}, optional
+        Mode of transportation used when *travel_time* is given.
+        Default is 'drive'.
     limit : int, optional
         Maximum number of POIs to return. Default is 100.
     validate_coords : bool, optional
@@ -846,14 +953,17 @@ def get_poi(
     Returns
     -------
     list of dict
-        POIs sorted by distance, each containing:
+        POIs sorted by distance/travel time, each containing:
         - 'name': POI name
         - 'category': POI category
         - 'lat': Latitude
         - 'lon': Longitude
-        - 'distance_km': Distance from origin
-        - 'address': Address if available
+        - 'distance_km': Geodesic (straight-line) distance from origin
+        - 'address': Address string or None
         - 'tags': Additional OSM tags
+        When *travel_time* is provided, each dict also includes:
+        - 'travel_time_minutes': Actual routed travel time
+        - 'travel_distance_km': Actual routed distance
 
     Examples
     --------
@@ -896,22 +1006,33 @@ def get_poi(
     # Query POIs
     pois = query_pois(search_area, categories)
 
+    # Post-query spatial containment filter (safety net)
+    pois = _filter_pois_by_polygon(pois, search_area)
+
     # Validate and filter POIs if requested
     if validate_coords:
         pois = _validate_and_filter_pois(pois)
 
-    # Calculate distances
+    # Always compute geodesic distance
     _calculate_poi_distances(pois, coords, validate_coords)
-
-    # Sort by distance
-    pois.sort(
-        key=lambda x: x["distance_km"]
-        if x["distance_km"] is not None else float('inf')
-    )
 
     # Filter out invalid distances if validating
     if validate_coords:
         pois = [p for p in pois if p["distance_km"] != float('inf')]
+
+    if travel_time is not None:
+        # Compute actual travel times and sort by them
+        _calculate_travel_times(pois, coords, travel_mode)
+        pois.sort(
+            key=lambda x: x["travel_time_minutes"]
+            if x["travel_time_minutes"] is not None else float('inf')
+        )
+    else:
+        # Sort by geodesic distance
+        pois.sort(
+            key=lambda x: x["distance_km"]
+            if x["distance_km"] is not None else float('inf')
+        )
 
     # Return limited results
     return pois[:limit]
@@ -940,7 +1061,7 @@ def _create_search_area(coords: tuple[float, float], travel_time: int | None):
 
     lat, lon = coords
 
-    if travel_time:
+    if travel_time is not None:
         iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode="drive")
         return shape(iso["geometry"])
     else:
@@ -1025,7 +1146,7 @@ def _calculate_poi_distances(
         poi_coords = (poi["lat"], poi["lon"])
         try:
             poi["distance_km"] = geodesic(origin, poi_coords).kilometers
-        except (ValueError, Exception) as e:
+        except (ValueError, TypeError) as e:
             logger.debug(f"Could not calculate distance for POI: {e}")
             if validate_coords:
                 poi["distance_km"] = float('inf')
