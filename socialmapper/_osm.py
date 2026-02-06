@@ -25,6 +25,17 @@ logger = logging.getLogger(__name__)
 # Module-level Overpass response cache
 _overpass_cache = BoundedCache(maxsize=64)
 
+# Pre-built reverse lookup for O(1) category determination
+# Maps (osm_key, value_lowercase) -> category name
+_OSM_TAG_TO_CATEGORY: dict[tuple[str, str], str] = {}
+_OSM_KEYS = ["amenity", "shop", "leisure", "tourism", "healthcare", "office"]
+for _cat, _values in POI_CATEGORY_MAPPING.items():
+    for _val in _values:
+        # Each value maps to an OSM key via OSM_KEY_MAPPINGS (built below)
+        # We don't know the key yet, so index by value alone for all keys
+        for _key in _OSM_KEYS:
+            _OSM_TAG_TO_CATEGORY[(_key, _val.lower())] = _cat
+
 
 # OSM key mappings for building Overpass queries
 # Maps OSM tag values to their key=value format for Overpass API
@@ -502,20 +513,16 @@ def determine_category(tags: dict[str, str]) -> str:
     >>> determine_category(tags)
     'shopping'
     """
-    # Check OSM tag values against POI_CATEGORY_MAPPING
-    osm_keys = ["amenity", "shop", "leisure", "tourism", "healthcare", "office"]
-
-    for osm_key in osm_keys:
+    # O(1) lookup using pre-built reverse dict
+    for osm_key in _OSM_KEYS:
         if osm_key in tags:
             tag_value = tags[osm_key].lower()
-
-            # Check each category's values
-            for category, values in POI_CATEGORY_MAPPING.items():
-                if tag_value in [v.lower() for v in values]:
-                    return category
+            category = _OSM_TAG_TO_CATEGORY.get((osm_key, tag_value))
+            if category is not None:
+                return category
 
     # If no match, return raw OSM tag value for transparency
-    for osm_key in osm_keys:
+    for osm_key in _OSM_KEYS:
         if osm_key in tags:
             return tags[osm_key]
 

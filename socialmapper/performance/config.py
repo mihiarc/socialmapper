@@ -90,7 +90,8 @@ class PerformanceConfig(BaseModel):
         default=5,
         ge=1,
         le=100,
-        description="Maximum size of network graph cache in GB"
+        description="Deprecated: network cache no longer used (Valhalla-only). Kept for config compat.",
+        deprecated=True,
     )
     geocoding_cache_size_mb: int = Field(
         default=500,

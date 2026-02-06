@@ -25,11 +25,6 @@ from .config import PerformanceConfig
 
 logger = logging.getLogger(__name__)
 
-# Global cache instances
-_census_cache: dc.Cache | None = None
-_geocoding_cache: dc.Cache | None = None
-
-
 class CacheManager:
     """Unified cache manager for all SocialMapper caching needs.
 
@@ -74,8 +69,9 @@ class CacheManager:
 
         self.config = config
 
-        # Get base cache directory from environment
-        base_cache_dir = os.environ.get('SOCIALMAPPER_CACHE_DIR', 'cache')
+        # Get base cache directory from environment or use XDG-style default
+        default_cache_dir = str(Path.home() / ".cache" / "socialmapper")
+        base_cache_dir = os.environ.get('SOCIALMAPPER_CACHE_DIR', default_cache_dir)
         self._base_path = Path(base_cache_dir)
 
         # Initialize caches
@@ -515,22 +511,8 @@ def get_cache_stats() -> dict[str, Any]:
     >>> for cache_type, cache_stats in stats.items():
     ...     print(f"{cache_type}: {cache_stats['size_mb']:.2f} MB")
     """
-    stats: dict[str, Any] = {}
-
-    # Add census and geocoding stats if caches exist
-    if _census_cache is not None:
-        stats["census"] = {
-            "size_mb": _census_cache.volume() / (1024 * 1024),
-            "count": len(_census_cache)
-        }
-
-    if _geocoding_cache is not None:
-        stats["geocoding"] = {
-            "size_mb": _geocoding_cache.volume() / (1024 * 1024),
-            "count": len(_geocoding_cache)
-        }
-
-    return stats
+    manager = CacheManager()
+    return manager.get_stats()
 
 
 # Module-level convenience functions for cache administration
