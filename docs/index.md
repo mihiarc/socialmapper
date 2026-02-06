@@ -85,6 +85,7 @@ See the [API Reference](api-reference.md) for full documentation.
 - Identify service gaps in the Great Plains, Mountain West, and rural South
 - Understand the true service area of rural towns, hospitals, and schools
 - [Read the full guide →](rural-community-mapping.md)
+- [Try the notebook →](notebooks/08-rural-community-mapping.ipynb)
 
 ## Why SocialMapper?
 

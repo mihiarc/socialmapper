@@ -524,6 +524,7 @@ uv run pytest
 ## Documentation
 
 - [Rural Community Mapping](docs/rural-community-mapping.md) - Defining communities by travel patterns in rural America
+- [Rural Community Mapping Notebook](docs/notebooks/08-rural-community-mapping.ipynb) - Capstone tutorial using all 8 API functions on western Kansas towns
 - [API Reference](docs/api-reference.md) - Complete function documentation
 - [Contributing](CONTRIBUTING.md) - How to contribute
 

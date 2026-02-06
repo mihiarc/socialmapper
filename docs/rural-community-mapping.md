@@ -287,6 +287,7 @@ SocialMapper makes these communities visible.
 
 ## Related Resources
 
+- **Rural community mapping notebook**: [Notebook 08](notebooks/08-rural-community-mapping.ipynb) is a capstone tutorial that applies every technique in this guide to three western Kansas towns (Hays, Dodge City, Liberal), using all 8 SocialMapper API functions.
 - **Tutorial notebooks**: The [tutorial series](notebooks/) uses small towns as examples -- Bozeman, MT; Boone, NC; Staunton, VA; Charlottesville, VA -- demonstrating these techniques at scale.
 - **Census variables reference**: See [census-variables.md](reference/census-variables.md) for the full list of demographic variables available for community profiling.
 - **API reference**: See [api-reference.md](api-reference.md) for complete function signatures and parameters.
