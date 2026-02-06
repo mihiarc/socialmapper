@@ -49,25 +49,46 @@ class TestNormalizeVariableNames:
     """Test normalize_variable_names mapping."""
 
     def test_known_name_population(self):
-        result = normalize_variable_names(["population"])
-        assert "B01003_001E" in result
+        codes, compounds = normalize_variable_names(["population"])
+        assert "B01003_001E" in codes
+        assert compounds == {}
 
     def test_known_name_median_income(self):
-        result = normalize_variable_names(["median_income"])
-        assert "B19013_001E" in result
+        codes, compounds = normalize_variable_names(["median_income"])
+        assert "B19013_001E" in codes
 
     def test_census_code_passthrough(self):
-        result = normalize_variable_names(["B01003_001E"])
-        assert result == ["B01003_001E"]
+        codes, compounds = normalize_variable_names(["B01003_001E"])
+        assert codes == ["B01003_001E"]
 
     def test_unknown_name_passthrough(self):
-        result = normalize_variable_names(["some_unknown_var"])
-        assert result == ["some_unknown_var"]
+        codes, compounds = normalize_variable_names(["some_unknown_var"])
+        assert codes == ["some_unknown_var"]
 
     def test_mixed_names_and_codes(self):
-        result = normalize_variable_names(["population", "B19013_001E"])
-        assert "B01003_001E" in result
-        assert "B19013_001E" in result
+        codes, compounds = normalize_variable_names(["population", "B19013_001E"])
+        assert "B01003_001E" in codes
+        assert "B19013_001E" in codes
+
+    def test_compound_variable_poverty(self):
+        codes, compounds = normalize_variable_names(["poverty"])
+        assert "C17002_002E" in codes
+        assert "C17002_003E" in codes
+        assert "poverty" in compounds
+        assert compounds["poverty"] == ["C17002_002E", "C17002_003E"]
+
+    def test_compound_with_simple(self):
+        codes, compounds = normalize_variable_names(["population", "poverty"])
+        assert "B01003_001E" in codes
+        assert "C17002_002E" in codes
+        assert "C17002_003E" in codes
+        assert "poverty" in compounds
+
+    def test_compound_deduplication(self):
+        codes, compounds = normalize_variable_names(["poverty", "poverty_population"])
+        # Both map to same components; codes should be deduplicated
+        assert codes.count("C17002_002E") == 1
+        assert codes.count("C17002_003E") == 1
 
 
 class TestBoundedCache:

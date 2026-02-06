@@ -258,8 +258,8 @@ def get_census_data(
             "Census variables must be a non-empty list of variable names"
         )
 
-    # Normalize variable names
-    var_codes = normalize_variable_names(variables)
+    # Normalize variable names (may expand compound variables)
+    var_codes, compounds = normalize_variable_names(variables)
 
     # Determine location type
     if isinstance(location, dict):
@@ -278,6 +278,19 @@ def get_census_data(
 
     # Fetch census data
     data = fetch_census_data(geoids, var_codes, year)
+
+    # Post-process: compute compound variables (e.g. poverty = sum of two codes)
+    if compounds:
+        for geoid_data in data.values():
+            for friendly_name, components in compounds.items():
+                values = [geoid_data.get(c) for c in components]
+                if all(v is not None for v in values):
+                    geoid_data[friendly_name] = sum(values)
+                else:
+                    geoid_data[friendly_name] = None
+                # Remove component codes from output
+                for c in components:
+                    geoid_data.pop(c, None)
 
     # Return consistent structure - always {geoid: {variable: value}}
     return CensusDataResult(

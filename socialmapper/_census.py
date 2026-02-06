@@ -111,7 +111,7 @@ def validate_fips_code(fips_code: str, expected_length: int, code_type: str = "F
     return fips_code
 
 
-# Variable name mappings
+# Variable name mappings (single Census API code per friendly name)
 VARIABLE_MAPPING = {
     'population': 'B01003_001E',
     'total_population': 'B01003_001E',
@@ -127,8 +127,6 @@ VARIABLE_MAPPING = {
     'black_population': 'B02001_003E',
     'asian_population': 'B02001_005E',
     'hispanic_population': 'B03002_012E',
-    'poverty': 'B17001_002E',
-    'poverty_population': 'B17001_002E',
     'bachelors_degree': 'B15003_022E',
     'high_school': 'B15003_017E',
     'households_with_vehicle': 'B08201_001E',  # Total households (subtract no_vehicle)
@@ -137,15 +135,25 @@ VARIABLE_MAPPING = {
     'median_rent': 'B25064_001E',
 }
 
+# Variables computed as sums of multiple Census API codes.
+# The B17001 poverty table is NOT available at block group level;
+# the C17002 ratio-of-income-to-poverty table IS.  Summing the
+# "under 0.50" and "0.50 to 0.99" buckets gives total population
+# below 100 % of the federal poverty level.
+COMPOUND_VARIABLES: dict[str, list[str]] = {
+    'poverty': ['C17002_002E', 'C17002_003E'],
+    'poverty_population': ['C17002_002E', 'C17002_003E'],
+}
 
-def normalize_variable_names(variables: list[str]) -> list[str]:
+
+def normalize_variable_names(variables: list[str]) -> tuple[list[str], dict[str, list[str]]]:
     """
     Convert human-readable variable names to census codes.
 
     Maps common demographic variable names to their corresponding
     Census Bureau API variable codes (e.g., 'population' to
-    'B01003_001E'). If a variable is already a census code,
-    it is returned unchanged.
+    'B01003_001E'). Compound variables (like 'poverty') are expanded
+    into their component codes.
 
     Parameters
     ----------
@@ -156,17 +164,19 @@ def normalize_variable_names(variables: list[str]) -> list[str]:
 
     Returns
     -------
-    list of str
-        List of census variable codes corresponding to the input variables.
-        Unknown variables are kept as-is with a warning logged.
+    tuple of (list[str], dict[str, list[str]])
+        A 2-tuple:
+        - List of census variable codes to fetch from the API.
+        - Dict mapping compound friendly names to their component codes.
+          Empty if no compound variables were requested.
 
     Examples
     --------
     >>> normalize_variable_names(['population', 'median_income'])
-    ['B01003_001E', 'B19013_001E']
+    (['B01003_001E', 'B19013_001E'], {})
 
-    >>> normalize_variable_names(['B01003_001E', 'housing_units'])
-    ['B01003_001E', 'B25001_001E']
+    >>> normalize_variable_names(['population', 'poverty'])
+    (['B01003_001E', 'C17002_002E', 'C17002_003E'], {'poverty': ['C17002_002E', 'C17002_003E']})
 
     Notes
     -----
@@ -174,21 +184,36 @@ def normalize_variable_names(variables: list[str]) -> list[str]:
     underscores during the mapping process.
     """
     normalized = []
+    compounds: dict[str, list[str]] = {}
 
     for var in variables:
         # Check if already a census code (has underscore and starts with letter)
         if '_' in var and var[0].isalpha() and var[0].isupper():
             normalized.append(var)
-        else:
-            # Try to map from human-readable name
-            mapped = VARIABLE_MAPPING.get(var.lower().replace(' ', '_'))
-            if mapped:
-                normalized.append(mapped)
-            else:
-                logger.warning(f"Unknown variable '{var}', keeping as-is")
-                normalized.append(var)
+            continue
 
-    return normalized
+        key = var.lower().replace(' ', '_')
+
+        # Check compound variables first (e.g., poverty = sum of two codes)
+        if key in COMPOUND_VARIABLES:
+            components = COMPOUND_VARIABLES[key]
+            compounds[key] = components
+            normalized.extend(components)
+        elif key in VARIABLE_MAPPING:
+            normalized.append(VARIABLE_MAPPING[key])
+        else:
+            logger.warning(f"Unknown variable '{var}', keeping as-is")
+            normalized.append(var)
+
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    deduped = []
+    for code in normalized:
+        if code not in seen:
+            seen.add(code)
+            deduped.append(code)
+
+    return deduped, compounds
 
 
 def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
@@ -666,7 +691,12 @@ def fetch_census_data(
                         for j, header in enumerate(headers):
                             if header in variables:
                                 try:
-                                    geoid_data[header] = float(row[j]) if row[j] else None
+                                    val = float(row[j]) if row[j] else None
+                                    # Census API uses large negative sentinels
+                                    # for unavailable data (-666666666, etc.)
+                                    if val is not None and val <= -666666666:
+                                        val = None
+                                    geoid_data[header] = val
                                 except (ValueError, TypeError):
                                     geoid_data[header] = row[j]
 
