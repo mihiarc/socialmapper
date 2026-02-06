@@ -29,6 +29,7 @@ Unlike alternatives that require assembling 3-5 separate libraries, SocialMapper
 - **Transit Equity Analysis** - Identify communities underserved by public resources
 - **Food Desert Research** - Map grocery store accessibility and demographic patterns
 - **Healthcare Access Studies** - Analyze hospital and clinic reachability
+- **Rural Community Definition** - Define communities by travel patterns, not county lines ([learn more](docs/rural-community-mapping.md))
 - **Urban Planning** - Quick, defensible accessibility analysis without GIS expertise
 - **Policy Research** - Reproducible workflows with comprehensive documentation
 
@@ -522,6 +523,7 @@ uv run pytest
 
 ## Documentation
 
+- [Rural Community Mapping](docs/rural-community-mapping.md) - Defining communities by travel patterns in rural America
 - [API Reference](docs/api-reference.md) - Complete function documentation
 - [Contributing](CONTRIBUTING.md) - How to contribute
 
