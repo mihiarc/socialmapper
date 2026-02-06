@@ -50,33 +50,13 @@ print(f"Population within 15 minutes: {total_pop:,}")
 
 ## Get Started
 
-<div class="grid cards" markdown>
+Install SocialMapper and start analyzing:
 
--   :material-download:{ .lg .middle } **Installation**
+```bash
+pip install socialmapper
+```
 
-    ---
-
-    Install SocialMapper in minutes
-
-    [:octicons-arrow-right-24: Installation guide](getting-started/installation.md)
-
--   :material-book-open-variant:{ .lg .middle } **Tutorials**
-
-    ---
-
-    Learn from step-by-step tutorials
-
-    [:octicons-arrow-right-24: View tutorials](tutorials/index.md)
-
--   :material-help-circle:{ .lg .middle } **Get Help**
-
-    ---
-
-    Documentation and support
-
-    [:octicons-arrow-right-24: User guide](user-guide/index.md)
-
-</div>
+See the [API Reference](api-reference.md) for full documentation.
 
 ## Common Use Cases
 

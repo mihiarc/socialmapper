@@ -106,11 +106,6 @@ copyright: MIT License - https://github.com/mihiarc/socialmapper
 nav:
   - Home: index.md
 
-  - Getting Started:
-    - Overview: getting-started/index.md
-    - Installation: getting-started/installation.md
-    - Quick Start: getting-started/quick-start.md
-
   - Reference:
     - API Reference: api-reference.md
     - Census Variables: reference/census-variables.md
@@ -118,6 +113,5 @@ nav:
     - Best Practices: migration-guide.md
 
   - Resources:
-    - Examples: https://github.com/mihiarc/socialmapper/tree/main/examples
     - GitHub: https://github.com/mihiarc/socialmapper
     - PyPI: https://pypi.org/project/socialmapper/

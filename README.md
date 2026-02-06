@@ -72,8 +72,6 @@ print(f"Found {len(libraries)} libraries")
 iso = create_isochrone("Portland, OR", travel_time=15, travel_mode="walk")
 ```
 
-**[📖 Quick Start Guide](docs/quick-start.md)**
-
 ### Real-World Example
 
 **Total Population Within 15-Minute Walk of Libraries in Fuquay-Varina, NC**
@@ -524,7 +522,6 @@ uv run pytest
 
 ## Documentation
 
-- [Quick Start Guide](docs/quick-start.md) - Get started in 2 minutes
 - [API Reference](docs/api-reference.md) - Complete function documentation
 - [Contributing](CONTRIBUTING.md) - How to contribute
 
