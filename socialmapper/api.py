@@ -558,6 +558,8 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
         return gpd.GeoDataFrame(data, geometry="geometry", crs="EPSG:4326")
 
     elif isinstance(data, gpd.GeoDataFrame):
+        if data.crs is None:
+            return data.set_crs("EPSG:4326")
         return data
 
     else:
@@ -636,7 +638,7 @@ def _create_image_map(
             )
 
     image_data = generate_choropleth_map(
-        gdf, column, title, save_path, format=export_format,
+        gdf, column, title, save_path, output_format=export_format,
         basemap=basemap, cmap=cmap, overlay_boundary=overlay_boundary_gdf,
         overlay_points=overlay_points, show_stats=show_stats,
         stats_dict=stats_dict
@@ -1430,9 +1432,9 @@ def generate_report(
     # Generate report
     return create_analysis_report(
         analysis_data,
-        format,
-        template,
-        include_maps
+        output_format=format,
+        template=template,
+        include_maps=include_maps,
     )
 
 

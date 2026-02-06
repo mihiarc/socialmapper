@@ -60,7 +60,7 @@ def generate_choropleth_map(
     column: str,
     title: str | None = None,
     save_path: str | None = None,
-    format: str = "png",
+    output_format: str = "png",
     basemap: str | None = DEFAULT_BASEMAP,
     cmap: str | None = None,
     overlay_boundary: gpd.GeoDataFrame | None = None,
@@ -87,7 +87,7 @@ def generate_choropleth_map(
     save_path : str, optional
         File path to save the map. If None, returns bytes, by default
         None.
-    format : str, optional
+    output_format : str, optional
         Output image format ('png', 'pdf', or 'svg'), by default 'png'.
     basemap : str, optional
         Basemap provider name. Options include:
@@ -152,160 +152,176 @@ def generate_choropleth_map(
     fig, ax = plt.subplots(1, 1, figsize=MAP_FIGURE_SIZE)
     fig.set_facecolor(MAP_FACECOLOR)
 
-    # Remove axis frame but keep for scale bar calculation
-    ax.set_axis_off()
+    try:
+        # Remove axis frame but keep for scale bar calculation
+        ax.set_axis_off()
 
-    # Get data for coloring
-    data = gdf[column].values
+        # Get data for coloring
+        data = gdf[column].values
 
-    # Handle missing data
-    if isinstance(data[0], int | float):
-        valid_data = data[~np.isnan(data)]
-    else:
-        valid_data = data
-
-    # Determine colormap
-    if cmap is not None:
-        selected_cmap = cmap
-    elif len(valid_data) == 0:
-        selected_cmap = None
-    elif isinstance(valid_data[0], int | float):
-        vmin, vmax = valid_data.min(), valid_data.max()
-        if vmin < 0 and vmax > 0:
-            selected_cmap = DEFAULT_DIVERGING_CMAP
+        # Handle empty data
+        if len(data) == 0:
+            logger.warning(f"No data in column '{column}', rendering blank map")
+            gdf_plot.plot(
+                ax=ax,
+                color='lightgray',
+                edgecolor=CHOROPLETH_EDGE_COLOR,
+                linewidth=CHOROPLETH_EDGE_WIDTH,
+                alpha=CHOROPLETH_ALPHA,
+            )
+            valid_data = data
         else:
-            selected_cmap = DEFAULT_CHOROPLETH_CMAP
-    else:
-        selected_cmap = DEFAULT_CATEGORICAL_CMAP
+            # Handle missing data
+            if isinstance(data[0], int | float):
+                valid_data = data[~np.isnan(data)]
+            else:
+                valid_data = data
 
-    # Plot the choropleth
-    if len(valid_data) == 0:
-        logger.warning(f"No valid data in column '{column}'")
-        gdf_plot.plot(
-            ax=ax,
-            color='lightgray',
-            edgecolor=CHOROPLETH_EDGE_COLOR,
-            linewidth=CHOROPLETH_EDGE_WIDTH,
-            alpha=CHOROPLETH_ALPHA,
-        )
-    elif isinstance(valid_data[0], int | float):
-        # Numeric data - use gradient
-        vmin, vmax = valid_data.min(), valid_data.max()
-
-        if vmin < 0 and vmax > 0:
-            # Diverging data
-            norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+        # Determine colormap
+        if cmap is not None:
+            selected_cmap = cmap
+        elif len(valid_data) == 0:
+            selected_cmap = None
+        elif isinstance(valid_data[0], int | float):
+            vmin, vmax = valid_data.min(), valid_data.max()
+            if vmin < 0 and vmax > 0:
+                selected_cmap = DEFAULT_DIVERGING_CMAP
+            else:
+                selected_cmap = DEFAULT_CHOROPLETH_CMAP
         else:
-            # Sequential data
-            norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+            selected_cmap = DEFAULT_CATEGORICAL_CMAP
 
-        # Plot choropleth with enhanced styling
-        gdf_plot.plot(
-            column=column,
-            ax=ax,
-            cmap=selected_cmap,
-            norm=norm,
-            edgecolor=CHOROPLETH_EDGE_COLOR,
-            linewidth=CHOROPLETH_EDGE_WIDTH,
-            alpha=CHOROPLETH_ALPHA,
-            legend=True,
-            legend_kwds={
-                'label': column.replace('_', ' ').title(),
-                'orientation': 'vertical',
-                'shrink': 0.8,
-                'format': mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'),
-            }
-        )
-    else:
-        # Categorical data
-        unique_values = gdf[column].unique()
-        n_colors = len(unique_values)
+        # Plot the choropleth (skip if empty data already rendered above)
+        if len(data) > 0:
+            if len(valid_data) == 0:
+                logger.warning(f"No valid data in column '{column}'")
+                gdf_plot.plot(
+                    ax=ax,
+                    color='lightgray',
+                    edgecolor=CHOROPLETH_EDGE_COLOR,
+                    linewidth=CHOROPLETH_EDGE_WIDTH,
+                    alpha=CHOROPLETH_ALPHA,
+                )
+            elif isinstance(valid_data[0], int | float):
+                # Numeric data - use gradient
+                vmin, vmax = valid_data.min(), valid_data.max()
 
-        # Create color map
-        colors = plt.cm.get_cmap(selected_cmap)(np.linspace(0, 1, n_colors))
-        color_map = {val: colors[i] for i, val in enumerate(unique_values)}
+                if vmin < 0 and vmax > 0:
+                    # Diverging data
+                    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+                else:
+                    # Sequential data
+                    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
-        # Plot with categorical colors
-        gdf_plot_cat = gdf_plot.copy()
-        gdf_plot_cat['_plot_color'] = gdf[column].map(color_map)
-        gdf_plot_cat.plot(
-            ax=ax,
-            color=gdf_plot_cat['_plot_color'],
-            edgecolor=CHOROPLETH_EDGE_COLOR,
-            linewidth=CHOROPLETH_EDGE_WIDTH,
-            alpha=CHOROPLETH_ALPHA,
-        )
+                # Plot choropleth with enhanced styling
+                gdf_plot.plot(
+                    column=column,
+                    ax=ax,
+                    cmap=selected_cmap,
+                    norm=norm,
+                    edgecolor=CHOROPLETH_EDGE_COLOR,
+                    linewidth=CHOROPLETH_EDGE_WIDTH,
+                    alpha=CHOROPLETH_ALPHA,
+                    legend=True,
+                    legend_kwds={
+                        'label': column.replace('_', ' ').title(),
+                        'orientation': 'vertical',
+                        'shrink': 0.8,
+                        'format': mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'),
+                    }
+                )
+            else:
+                # Categorical data
+                unique_values = gdf[column].unique()
+                n_colors = len(unique_values)
 
-        # Add legend
-        patches = [
-            Patch(color=color, label=str(val))
-            for val, color in color_map.items()
-        ]
-        ax.legend(
-            handles=patches,
-            loc='best',
-            title=column.replace('_', ' ').title()
-        )
+                # Create color map
+                colors = plt.cm.get_cmap(selected_cmap)(np.linspace(0, 1, n_colors))
+                color_map = {val: colors[i] for i, val in enumerate(unique_values)}
 
-    # Add basemap if requested
-    if use_basemap:
-        try:
-            provider = _get_basemap_provider(basemap)
-            cx.add_basemap(ax, source=provider, alpha=BASEMAP_ALPHA, zorder=-1)
-        except Exception as e:
-            logger.warning(f"Could not add basemap: {e}")
+                # Plot with categorical colors
+                gdf_plot_cat = gdf_plot.copy()
+                gdf_plot_cat['_plot_color'] = gdf[column].map(color_map)
+                gdf_plot_cat.plot(
+                    ax=ax,
+                    color=gdf_plot_cat['_plot_color'],
+                    edgecolor=CHOROPLETH_EDGE_COLOR,
+                    linewidth=CHOROPLETH_EDGE_WIDTH,
+                    alpha=CHOROPLETH_ALPHA,
+                )
 
-    # Add overlay boundary if provided
-    if overlay_boundary is not None:
-        _add_overlay_boundary(ax, overlay_boundary, use_basemap)
+                # Add legend
+                patches = [
+                    Patch(color=color, label=str(val))
+                    for val, color in color_map.items()
+                ]
+                ax.legend(
+                    handles=patches,
+                    loc='best',
+                    title=column.replace('_', ' ').title()
+                )
 
-    # Add overlay points if provided
-    if overlay_points:
-        _add_overlay_points(ax, overlay_points, use_basemap)
+        # Add basemap if requested
+        if use_basemap:
+            try:
+                provider = _get_basemap_provider(basemap)
+                cx.add_basemap(ax, source=provider, alpha=BASEMAP_ALPHA, zorder=-1)
+            except Exception as e:
+                logger.warning(f"Could not add basemap: {e}")
 
-    # Add stats box if requested
-    if show_stats:
-        _add_stats_box(ax, gdf, column, stats_dict)
+        # Add overlay boundary if provided
+        if overlay_boundary is not None:
+            _add_overlay_boundary(ax, overlay_boundary, use_basemap)
 
-    # Add title
-    if title:
-        plt.title(
-            title,
-            fontsize=TITLE_FONTSIZE,
-            fontweight='bold',
-            color=TITLE_COLOR,
-            pad=20,
-        )
+        # Add overlay points if provided
+        if overlay_points:
+            _add_overlay_points(ax, overlay_points, use_basemap)
 
-    # Add north arrow (using original CRS extent for proper positioning)
-    add_north_arrow(ax)
+        # Add stats box if requested
+        if show_stats:
+            _add_stats_box(ax, gdf, column, stats_dict)
 
-    # Add scale bar (using plot GeoDataFrame for proper units)
-    add_scale_bar(ax, gdf_plot, use_web_mercator=use_basemap)
+        # Add title
+        if title:
+            plt.title(
+                title,
+                fontsize=TITLE_FONTSIZE,
+                fontweight='bold',
+                color=TITLE_COLOR,
+                pad=20,
+            )
 
-    # Adjust layout with better margins
-    plt.subplots_adjust(left=0.02, right=0.98, top=0.94, bottom=0.04)
-    plt.tight_layout()
+        # Add north arrow (using original CRS extent for proper positioning)
+        add_north_arrow(ax)
 
-    # Save or return bytes
-    if save_path:
-        plt.savefig(
-            save_path, format=format, dpi=MAP_DPI,
-            bbox_inches='tight', facecolor=fig.get_facecolor(),
-        )
-        plt.close()
-        logger.info(f"Map saved to {save_path}")
-        return None
-    else:
-        # Return as bytes
-        buf = io.BytesIO()
-        plt.savefig(
-            buf, format=format, dpi=MAP_DPI,
-            bbox_inches='tight', facecolor=fig.get_facecolor(),
-        )
-        plt.close()
-        buf.seek(0)
-        return buf.read()
+        # Add scale bar (using plot GeoDataFrame for proper units)
+        add_scale_bar(ax, gdf_plot, use_web_mercator=use_basemap)
+
+        # Layout
+        plt.tight_layout(pad=1.5)
+
+        # Save or return bytes
+        if save_path:
+            plt.savefig(
+                save_path, format=output_format, dpi=MAP_DPI,
+                bbox_inches='tight', facecolor=fig.get_facecolor(),
+            )
+            plt.close(fig)
+            logger.info(f"Map saved to {save_path}")
+            return None
+        else:
+            # Return as bytes
+            buf = io.BytesIO()
+            plt.savefig(
+                buf, format=output_format, dpi=MAP_DPI,
+                bbox_inches='tight', facecolor=fig.get_facecolor(),
+            )
+            plt.close(fig)
+            buf.seek(0)
+            return buf.read()
+    except Exception:
+        plt.close(fig)
+        raise
 
 
 def _get_basemap_provider(basemap: str):

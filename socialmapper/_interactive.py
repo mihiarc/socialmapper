@@ -100,7 +100,12 @@ def generate_interactive_map(
     import numpy as np
 
     # Ensure WGS84 for Leaflet
-    gdf_wgs = gdf.to_crs(epsg=4326) if gdf.crs and gdf.crs.to_epsg() != 4326 else gdf
+    if gdf.crs is None:
+        gdf_wgs = gdf.set_crs(epsg=4326)
+    elif gdf.crs.to_epsg() != 4326:
+        gdf_wgs = gdf.to_crs(epsg=4326)
+    else:
+        gdf_wgs = gdf
 
     # Determine map center and bounds
     bounds = gdf_wgs.total_bounds  # minx, miny, maxx, maxy
@@ -278,11 +283,12 @@ def _add_boundary_layer(
     folium : module
         The folium module.
     """
-    boundary_wgs = (
-        boundary_gdf.to_crs(epsg=4326)
-        if boundary_gdf.crs and boundary_gdf.crs.to_epsg() != 4326
-        else boundary_gdf
-    )
+    if boundary_gdf.crs is None:
+        boundary_wgs = boundary_gdf.set_crs(epsg=4326)
+    elif boundary_gdf.crs.to_epsg() != 4326:
+        boundary_wgs = boundary_gdf.to_crs(epsg=4326)
+    else:
+        boundary_wgs = boundary_gdf
 
     # Convert dash style: matplotlib "--" -> Leaflet dash array
     dash_array = "8 6" if OVERLAY_BOUNDARY_STYLE == "--" else None

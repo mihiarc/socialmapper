@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 def create_analysis_report(
     data: dict[str, Any],
-    format: str = "html",
+    output_format: str = "html",
     template: str = "default",
     include_maps: bool = True,
 ) -> str | bytes:
@@ -19,7 +19,7 @@ def create_analysis_report(
     ----------
     data : dict
         Analysis results from API functions.
-    format : str
+    output_format : str
         Output format ('html' or 'pdf').
     template : str
         Report template name.
@@ -31,9 +31,14 @@ def create_analysis_report(
     str or bytes
         HTML string or PDF bytes.
     """
-    if format == "pdf":
+    if template != "default":
+        logger.warning(f"Template '{template}' is not supported, using 'default'")
+    if not include_maps:
+        logger.warning("include_maps=False is not yet supported, maps will be included")
+
+    if output_format == "pdf":
         raise NotImplementedError(
-            "PDF report generation is not yet supported. Use format='html' instead."
+            "PDF report generation is not yet supported. Use output_format='html' instead."
         )
 
     return _render_html_report(data, template, include_maps)
