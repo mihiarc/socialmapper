@@ -471,12 +471,12 @@ class TestGetPOI:
 
         assert isinstance(pois, list)
         # Should find some POIs in Portland
-        if len(pois) > 0:
-            poi = pois[0]
-            assert "name" in poi or "category" in poi
-            assert "lat" in poi
-            assert "lon" in poi
-            assert "distance_km" in poi
+        assert len(pois) > 0, "Expected POIs in downtown Portland"
+        poi = pois[0]
+        assert "name" in poi or "category" in poi
+        assert "lat" in poi
+        assert "lon" in poi
+        assert "distance_km" in poi
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -504,6 +504,10 @@ class TestGetPOI:
         )
 
         assert isinstance(pois, list)
+        assert len(pois) > 0, "Expected POIs within 10-min drive of Portland"
+        for poi in pois:
+            assert "travel_time_minutes" in poi, "travel_time_minutes field missing"
+            assert "travel_distance_km" in poi, "travel_distance_km field missing"
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -511,10 +515,10 @@ class TestGetPOI:
         """Test that POIs are sorted by distance."""
         pois = get_poi(portland_coords, limit=20)
 
-        if len(pois) >= 2:
-            distances = [p["distance_km"] for p in pois if p.get("distance_km") is not None]
-            # Should be sorted ascending
-            assert distances == sorted(distances)
+        assert len(pois) >= 2, "Expected at least 2 POIs for distance sort check"
+        distances = [p["distance_km"] for p in pois if p.get("distance_km") is not None]
+        # Should be sorted ascending
+        assert distances == sorted(distances)
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -548,17 +552,17 @@ class TestGetPOI:
         pois = get_poi(portland_coords, travel_time=10, limit=30)
         assert isinstance(pois, list)
 
-        if len(pois) > 0:
-            # Recreate the isochrone to verify containment
-            iso = create_isochrone(portland_coords, travel_time=10)
-            polygon = shape(iso["geometry"])
+        assert len(pois) > 0, "Expected POIs within 10-min isochrone"
+        # Recreate the isochrone to verify containment
+        iso = create_isochrone(portland_coords, travel_time=10)
+        polygon = shape(iso["geometry"])
 
-            for poi in pois:
-                point = Point(poi["lon"], poi["lat"])
-                assert polygon.contains(point) or polygon.touches(point), (
-                    f"POI '{poi.get('name')}' at ({poi['lat']}, {poi['lon']}) "
-                    f"is outside the isochrone"
-                )
+        for poi in pois:
+            point = Point(poi["lon"], poi["lat"])
+            assert polygon.contains(point) or polygon.touches(point), (
+                f"POI '{poi.get('name')}' at ({poi['lat']}, {poi['lon']}) "
+                f"is outside the isochrone"
+            )
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -567,17 +571,17 @@ class TestGetPOI:
         pois = get_poi(portland_coords, travel_time=10, limit=20)
         assert isinstance(pois, list)
 
-        if len(pois) > 0:
-            for poi in pois:
-                assert "travel_time_minutes" in poi
-                assert "travel_distance_km" in poi
+        assert len(pois) > 0, "Expected POIs within 10-min isochrone"
+        for poi in pois:
+            assert "travel_time_minutes" in poi
+            assert "travel_distance_km" in poi
 
-            # Results should be sorted by travel_time_minutes (None at end)
-            travel_times = [
-                p["travel_time_minutes"] for p in pois
-                if p["travel_time_minutes"] is not None
-            ]
-            assert travel_times == sorted(travel_times)
+        # Results should be sorted by travel_time_minutes (None at end)
+        travel_times = [
+            p["travel_time_minutes"] for p in pois
+            if p["travel_time_minutes"] is not None
+        ]
+        assert travel_times == sorted(travel_times)
 
     @pytest.mark.external
     @pytest.mark.slow
@@ -586,16 +590,16 @@ class TestGetPOI:
         pois = get_poi(portland_coords, limit=20)
         assert isinstance(pois, list)
 
-        if len(pois) >= 2:
-            distances = [
-                p["distance_km"] for p in pois
-                if p.get("distance_km") is not None
-            ]
-            assert distances == sorted(distances)
+        assert len(pois) >= 2, "Expected at least 2 POIs for distance sort check"
+        distances = [
+            p["distance_km"] for p in pois
+            if p.get("distance_km") is not None
+        ]
+        assert distances == sorted(distances)
 
-            # travel_time_minutes should NOT be present
-            for poi in pois:
-                assert "travel_time_minutes" not in poi
+        # travel_time_minutes should NOT be present
+        for poi in pois:
+            assert "travel_time_minutes" not in poi
 
     @pytest.mark.external
     @pytest.mark.slow
