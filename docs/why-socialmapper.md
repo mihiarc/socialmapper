@@ -144,6 +144,11 @@ Identify communities underserved by public transportation or other public resour
 
 **Example:** Which neighborhoods have no library within a 15-minute walk?
 
+### Rural Community Definition
+Define communities by where people actually go -- not by county lines. In the Great Plains, Mountain West, and rural South, county boundaries are administrative artifacts that fail to capture how people group themselves around the towns where they shop, go to school, and get healthcare. SocialMapper's travel-time isochrones produce community boundaries shaped by the real road network. [Read the full guide](rural-community-mapping.md).
+
+**Example:** How many people live within a 20-minute drive of a small Kansas town, and what services can they reach?
+
 ### Food Desert Research
 Map grocery store accessibility and analyze demographic patterns of underserved areas.
 
