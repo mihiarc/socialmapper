@@ -195,14 +195,9 @@ demo.quick_start("Portland, OR")
 
 ### Slow Isochrone Generation
 
-Use the Valhalla backend (default) for fast results:
+SocialMapper uses the Valhalla routing engine which is fast (1-2 seconds):
 ```python
-iso = create_isochrone(location, backend="valhalla")  # ~1-2 seconds
-```
-
-Or explicitly use NetworkX for offline capability:
-```python
-iso = create_isochrone(location, backend="networkx")  # ~5-15 seconds
+iso = create_isochrone(location)  # ~1-2 seconds via Valhalla
 ```
 
 ### Rate Limiting

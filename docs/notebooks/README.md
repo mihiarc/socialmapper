@@ -33,7 +33,7 @@ To run these notebooks locally:
 
 ```bash
 # Install Jupyter and SocialMapper
-pip install jupyter socialmapper[routing]
+pip install jupyter socialmapper
 
 # Start Jupyter
 jupyter notebook
@@ -41,11 +41,10 @@ jupyter notebook
 
 ## API Keys
 
-For full functionality, set your API keys:
+For full functionality, set your Census API key:
 
 ```python
 os.environ["CENSUS_API_KEY"] = "your-key"
-os.environ["ORS_API_KEY"] = "your-key"  # Optional
 ```
 
 Get a free Census API key at: https://api.census.gov/data/key_signup.html
@@ -53,7 +52,7 @@ Get a free Census API key at: https://api.census.gov/data/key_signup.html
 ## Requirements
 
 - Python 3.10+
-- SocialMapper with routing extras
-- Folium (for interactive maps)
+- SocialMapper
+- Folium (for interactive maps): `pip install socialmapper[interactive]`
 
 All dependencies are installed automatically in the first cell of each notebook.

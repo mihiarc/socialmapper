@@ -1,7 +1,7 @@
 """Unit tests for isochrone routing backends.
 
-These tests validate the backend protocol implementation and basic functionality.
-Integration tests with real APIs are in test_routing_integration.py.
+These tests validate the Valhalla backend protocol implementation and basic
+functionality. Integration tests with real APIs are in test_routing_integration.py.
 """
 
 import pytest
@@ -9,10 +9,8 @@ import pytest
 from socialmapper.isochrone.backends import (
     IsochroneBackend,
     IsochroneResult,
-    NetworkXBackend,
+    ValhallaBackend,
     get_backend,
-    get_backend_info,
-    list_available_backends,
 )
 
 
@@ -53,75 +51,18 @@ class TestIsochroneResult:
         assert result.metadata is None
 
 
-class TestNetworkXBackend:
-    """Test NetworkXBackend implementation."""
+class TestValhallaBackend:
+    """Test ValhallaBackend implementation."""
 
     def test_backend_name(self):
-        """Test backend name is 'networkx'."""
-        backend = NetworkXBackend()
-        assert backend.name == "networkx"
-
-    def test_is_available(self):
-        """Test NetworkXBackend availability check."""
-        backend = NetworkXBackend()
-        # Should be available since networkx and osmnx are dependencies
-        assert backend.is_available() is True
+        """Test backend name is 'valhalla'."""
+        backend = ValhallaBackend()
+        assert backend.name == "valhalla"
 
     def test_implements_protocol(self):
-        """Test NetworkXBackend implements IsochroneBackend protocol."""
-        backend = NetworkXBackend()
-        # Check it's runtime checkable
+        """Test ValhallaBackend implements IsochroneBackend protocol."""
+        backend = ValhallaBackend()
         assert isinstance(backend, IsochroneBackend)
-
-
-class TestBackendFactory:
-    """Test backend factory functions."""
-
-    def test_get_backend_networkx(self):
-        """Test getting networkx backend explicitly."""
-        backend = get_backend("networkx")
-        assert backend.name == "networkx"
-        assert isinstance(backend, NetworkXBackend)
-
-    def test_get_backend_unknown(self):
-        """Test getting unknown backend raises ValueError."""
-        with pytest.raises(ValueError, match="Unknown backend"):
-            get_backend("unknown_backend")
-
-    def test_list_available_backends(self):
-        """Test listing available backends."""
-        available = list_available_backends()
-
-        assert isinstance(available, list)
-        # NetworkX should always be available
-        assert "networkx" in available
-
-    def test_get_backend_info(self):
-        """Test getting backend info."""
-        info = get_backend_info()
-
-        assert isinstance(info, dict)
-        assert "networkx" in info
-
-        networkx_info = info["networkx"]
-        assert "available" in networkx_info
-        assert "requires_api_key" in networkx_info
-        assert "description" in networkx_info
-
-        # NetworkX doesn't require API key
-        assert networkx_info["requires_api_key"] is False
-
-    def test_get_backend_auto_selects(self):
-        """Test auto backend selection returns something."""
-        backend = get_backend("auto")
-
-        assert backend is not None
-        assert hasattr(backend, "name")
-        assert hasattr(backend, "create_isochrone")
-
-
-class TestRoutingAPIBackends:
-    """Test routing API backend classes."""
 
     def test_valhalla_backend_import(self):
         """Test ValhallaBackend can be imported."""
@@ -130,60 +71,25 @@ class TestRoutingAPIBackends:
         backend = ValhallaBackend()
         assert backend.name == "valhalla"
 
-    def test_ors_backend_import(self):
-        """Test ORSBackend can be imported."""
-        from socialmapper.isochrone.backends import ORSBackend
 
-        backend = ORSBackend()
-        assert backend.name == "ors"
+class TestBackendFactory:
+    """Test backend factory functions."""
 
-    def test_osrm_backend_import(self):
-        """Test OSRMBackend can be imported."""
-        from socialmapper.isochrone.backends import OSRMBackend
+    def test_get_backend_valhalla(self):
+        """Test getting valhalla backend explicitly."""
+        backend = get_backend("valhalla")
+        assert backend.name == "valhalla"
+        assert isinstance(backend, ValhallaBackend)
 
-        backend = OSRMBackend()
-        assert backend.name == "osrm"
-
-    def test_graphhopper_backend_import(self):
-        """Test GraphHopperBackend can be imported."""
-        from socialmapper.isochrone.backends import GraphHopperBackend
-
-        backend = GraphHopperBackend()
-        assert backend.name == "graphhopper"
-
-    def test_api_backends_without_key_not_available(self):
-        """Test API backends requiring keys report unavailable without them."""
-        from socialmapper.isochrone.backends import GraphHopperBackend, ORSBackend, OSRMBackend
-
-        # These should report unavailable without API keys configured
-        # (unless env vars are set, which is fine for CI)
-        ors = ORSBackend()
-        osrm = OSRMBackend()
-        gh = GraphHopperBackend()
-
-        # Just verify they don't crash - availability depends on env vars
-        assert isinstance(ors.is_available(), bool)
-        assert isinstance(osrm.is_available(), bool)
-        assert isinstance(gh.is_available(), bool)
-
-
-class TestCreateIsochroneBackendParameter:
-    """Test create_isochrone API with backend parameter."""
-
-    def test_create_isochrone_accepts_backend_parameter(self):
-        """Test that create_isochrone accepts backend parameter."""
-        from socialmapper import create_isochrone
-        import inspect
-
-        sig = inspect.signature(create_isochrone)
-        params = sig.parameters
-
-        assert "backend" in params
-        assert params["backend"].default == "auto"
-
-    def test_invalid_backend_raises_error(self, portland_coords):
-        """Test that invalid backend raises ValueError."""
-        from socialmapper import create_isochrone
-
+    def test_get_backend_unknown(self):
+        """Test getting unknown backend raises ValueError."""
         with pytest.raises(ValueError, match="Unknown backend"):
-            create_isochrone(portland_coords, backend="invalid_backend")
+            get_backend("unknown_backend")
+
+    def test_get_backend_auto_selects(self):
+        """Test auto backend selection returns Valhalla."""
+        backend = get_backend("auto")
+
+        assert backend is not None
+        assert backend.name == "valhalla"
+        assert hasattr(backend, "create_isochrone")

@@ -105,65 +105,11 @@ print(f"  Driving: {results['drive']:.1f} km²")
 print(f"\nDriving covers {results['drive']/results['walk']:.0f}x more area than walking")
 ```
 
-## Choosing a Backend
+## Routing Engine
 
-SocialMapper supports multiple routing backends:
+SocialMapper uses the [Valhalla](https://valhalla.github.io/valhalla/) routing engine via the public OpenStreetMap instance. Valhalla is fast (1-2 seconds), free, and requires no API key.
 
-### Valhalla (Default, Recommended)
-
-```python
-# Fast, uses public API, no key required
-isochrone = create_isochrone(
-    location="Chicago, IL",
-    travel_time=15,
-    backend="valhalla"  # Default
-)
-```
-
-**Pros:** Fast (1-2 seconds), free, no API key
-**Cons:** Requires internet connection
-
-### NetworkX (Offline)
-
-```python
-# Slower, but works offline
-isochrone = create_isochrone(
-    location="Chicago, IL",
-    travel_time=15,
-    backend="networkx"
-)
-```
-
-**Pros:** Works offline, full control
-**Cons:** Slower (5-15 seconds), downloads road network
-
-### Other Backends
-
-```python
-# OpenRouteService (requires ORS_API_KEY)
-isochrone = create_isochrone(location, backend="ors")
-
-# GraphHopper (requires GRAPHHOPPER_API_KEY)
-isochrone = create_isochrone(location, backend="graphhopper")
-
-# Mapbox OSRM (requires MAPBOX_API_KEY)
-isochrone = create_isochrone(location, backend="osrm")
-```
-
-### Checking Available Backends
-
-```python
-from socialmapper.isochrone.backends import list_available_backends, get_backend_info
-
-# See which backends are ready to use
-print("Available backends:", list_available_backends())
-
-# Get detailed info
-info = get_backend_info()
-for name, details in info.items():
-    status = "Ready" if details['available'] else "Needs setup"
-    print(f"  {name}: {status}")
-```
+You can point to a custom Valhalla deployment by setting the `VALHALLA_URL` environment variable.
 
 ## Working with Isochrone Results
 
@@ -342,21 +288,11 @@ gdf.to_file("la_isochrone.shp")
 
 ## Performance Tips
 
-1. **Use Valhalla for speed** - Default backend, 10-100x faster than NetworkX
+1. **Cache results** - Isochrones don't change often; save them locally
 
-2. **Cache results** - Isochrones don't change often; save them locally
+2. **Batch similar requests** - Group requests to the same region
 
-3. **Batch similar requests** - Group requests to the same region
-
-4. **Use appropriate travel times** - Longer times = larger networks = slower processing
-
-```python
-# Fast: Valhalla backend
-iso = create_isochrone(location, backend="valhalla")  # ~1-2 sec
-
-# Slower: NetworkX (but works offline)
-iso = create_isochrone(location, backend="networkx")  # ~5-15 sec
-```
+3. **Use appropriate travel times** - Longer times = larger polygons = more processing
 
 ## Next Steps
 

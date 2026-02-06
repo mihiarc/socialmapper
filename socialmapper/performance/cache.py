@@ -390,15 +390,13 @@ class CacheManager:
         >>> stats['summary']['total_size_mb']
         45.3
         """
-        from ..isochrone.cache import get_cache_stats as get_network_stats
-
         stats = {
             "summary": {
                 "total_size_mb": 0,
                 "total_items": 0,
                 "last_updated": datetime.now().isoformat(),
             },
-            "network_cache": self._get_network_cache_stats(get_network_stats),
+            "network_cache": {"size_mb": 0, "item_count": 0, "status": "removed"},
             "geocoding_cache": {
                 "size_mb": self._geocoding_cache.volume() / (1024 * 1024),
                 "item_count": len(self._geocoding_cache),
@@ -421,43 +419,19 @@ class CacheManager:
 
         return stats
 
-    def _get_network_cache_stats(self, get_network_stats) -> dict[str, Any]:
-        """Get statistics for network routing cache."""
-        try:
-            cache_stats = get_network_stats()
-            return {
-                "size_mb": cache_stats.get("size_mb", 0),
-                "item_count": cache_stats.get("count", 0),
-                "status": "active" if cache_stats.get("count", 0) > 0 else "empty",
-                "location": str(self._base_path / "networks"),
-            }
-        except (OSError, KeyError, ValueError, AttributeError) as e:
-            logger.error(f"Failed to get network cache stats: {e}")
-            return {"size_mb": 0, "item_count": 0, "status": "error", "error": str(e)}
-
     def clear_network_cache(self) -> dict[str, Any]:
-        """Clear the network routing cache.
+        """Clear the network routing cache (no-op, network cache removed).
 
         Returns
         -------
         dict
             Dictionary with 'success', 'message', 'cleared_size_mb'.
         """
-        try:
-            from ..isochrone.cache import clear_cache as clear_network
-            from ..isochrone.cache import get_cache_stats as get_network_stats
-
-            stats_before = get_network_stats()
-            clear_network()
-
-            return {
-                "success": True,
-                "message": "Network cache cleared successfully",
-                "cleared_size_mb": stats_before.get("size_mb", 0),
-            }
-        except (OSError, KeyError, ValueError, AttributeError) as e:
-            logger.error(f"Failed to clear network cache: {e}")
-            return {"success": False, "error": str(e)}
+        return {
+            "success": True,
+            "message": "Network cache no longer used (Valhalla-only)",
+            "cleared_size_mb": 0,
+        }
 
     def clear_all_caches(self) -> dict[str, Any]:
         """Clear all cache subsystems.
@@ -527,8 +501,7 @@ class CacheManager:
 def get_cache_stats() -> dict[str, Any]:
     """Get global cache statistics.
 
-    Convenience function to get statistics from all active caches
-    including network graph cache from isochrone module.
+    Convenience function to get statistics from all active caches.
 
     Returns
     -------
@@ -542,11 +515,7 @@ def get_cache_stats() -> dict[str, Any]:
     >>> for cache_type, cache_stats in stats.items():
     ...     print(f"{cache_type}: {cache_stats['size_mb']:.2f} MB")
     """
-    from ..isochrone.cache import get_cache_stats as get_network_stats
-
-    stats = {
-        "network": get_network_stats()
-    }
+    stats: dict[str, Any] = {}
 
     # Add census and geocoding stats if caches exist
     if _census_cache is not None:
