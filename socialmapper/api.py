@@ -1001,7 +1001,7 @@ def get_poi(
     lat, lon = coords
 
     # Create search area
-    search_area = _create_search_area(coords, travel_time)
+    search_area = _create_search_area(coords, travel_time, travel_mode)
 
     # Query POIs
     pois = query_pois(search_area, categories)
@@ -1038,7 +1038,11 @@ def get_poi(
     return pois[:limit]
 
 
-def _create_search_area(coords: tuple[float, float], travel_time: int | None):
+def _create_search_area(
+    coords: tuple[float, float],
+    travel_time: int | None,
+    travel_mode: str = "drive",
+):
     """
     Generate geographic search boundary.
 
@@ -1051,6 +1055,8 @@ def _create_search_area(coords: tuple[float, float], travel_time: int | None):
         (latitude, longitude) center point.
     travel_time : int, optional
         Travel time in minutes for isochrone boundary.
+    travel_mode : str, optional
+        Mode of transportation for isochrone. Default is 'drive'.
 
     Returns
     -------
@@ -1062,7 +1068,7 @@ def _create_search_area(coords: tuple[float, float], travel_time: int | None):
     lat, lon = coords
 
     if travel_time is not None:
-        iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode="drive")
+        iso = create_isochrone((lat, lon), travel_time=travel_time, travel_mode=travel_mode)
         return shape(iso["geometry"])
     else:
         from .constants import DEFAULT_SEARCH_RADIUS_KM
