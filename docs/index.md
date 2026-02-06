@@ -80,6 +80,12 @@ See the [API Reference](api-reference.md) for full documentation.
 - Study retail accessibility
 - Support grant applications with data
 
+### Rural Community Mapping
+- Define communities by travel patterns instead of county lines
+- Identify service gaps in the Great Plains, Mountain West, and rural South
+- Understand the true service area of rural towns, hospitals, and schools
+- [Read the full guide →](rural-community-mapping.md)
+
 ## Why SocialMapper?
 
 - **Free and Open Source** - No licensing fees or restrictions
