@@ -245,10 +245,12 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
     """
     # Check area-level cache first
     cache_key = _geometry_cache_key(geometry)
+    import copy
+
     cached = _block_groups_for_area_cache.get(cache_key)
     if cached is not None:
         logger.debug(f"Cache hit for block groups area query ({len(cached)} block groups)")
-        return cached
+        return copy.deepcopy(cached)
 
     from ._geocoding import get_census_geography
 
@@ -355,8 +357,8 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
 
     logger.info(f"Found {len(result)} block groups in area (from {len(counties)} counties)")
 
-    # Cache the result
-    _block_groups_for_area_cache.set(cache_key, result)
+    # Cache the result (deep copy to prevent aliasing)
+    _block_groups_for_area_cache.set(cache_key, copy.deepcopy(result))
 
     return result
 
@@ -418,27 +420,46 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         # Use TIGERweb Tracts_Blocks query service (efficient, no large downloads)
         url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
 
-        params = {
-            "where": f"STATE='{validated_state}' AND COUNTY='{validated_county}'",
-            "outFields": "GEOID,STATE,COUNTY,TRACT,BLKGRP",
-            "outSR": "4326",
-            "f": "geojson"
-        }
-
         logger.debug(f"Querying block groups for state {state_fips}, county {county_fips}")
         session = get_http_session()
-        response = session.get(url, params=params, timeout=CENSUS_API_TIMEOUT)
-        response.raise_for_status()
 
-        if response.status_code == 204 or not response.content:
-            logger.warning(f"Empty TIGERweb response for {state_fips}-{county_fips}")
-            return []
+        # Paginate through all results
+        all_features = []
+        result_offset = 0
+        page_size = 2000
 
-        data = response.json()
-        features = data.get("features", [])
+        while True:
+            params = {
+                "where": f"STATE='{validated_state}' AND COUNTY='{validated_county}'",
+                "outFields": "GEOID,STATE,COUNTY,TRACT,BLKGRP",
+                "outSR": "4326",
+                "f": "geojson",
+                "resultRecordCount": page_size,
+                "resultOffset": result_offset,
+                "returnExceededTransferLimit": "true",
+            }
+
+            response = session.get(url, params=params, timeout=CENSUS_API_TIMEOUT)
+            response.raise_for_status()
+
+            if response.status_code == 204 or not response.content:
+                logger.warning(f"Empty TIGERweb response for {state_fips}-{county_fips}")
+                break
+
+            data = response.json()
+            features = data.get("features", [])
+            all_features.extend(features)
+
+            # Check if there are more results
+            exceeded = data.get("properties", {}).get("exceededTransferLimit", False) if "properties" in data else data.get("exceededTransferLimit", False)
+            if not exceeded or len(features) < page_size:
+                break
+
+            result_offset += len(features)
+            logger.debug(f"TIGERweb pagination: fetched {len(all_features)} features so far")
 
         result = []
-        for feature in features:
+        for feature in all_features:
             props = feature.get("properties", {})
             geom = feature.get("geometry")
 
@@ -455,7 +476,8 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
         logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
 
         # Cache the result
-        _tiger_block_group_cache.set(tiger_cache_key, result)
+        import copy
+        _tiger_block_group_cache.set(tiger_cache_key, copy.deepcopy(result))
 
         return result
 

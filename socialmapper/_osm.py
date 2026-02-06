@@ -1,5 +1,6 @@
 """Internal OpenStreetMap/POI query utilities for SocialMapper."""
 
+import copy
 import hashlib
 import logging
 import time
@@ -328,7 +329,7 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
     cached = _overpass_cache.get(cache_key)
     if cached is not None:
         logger.debug("Overpass cache hit (%d elements)", len(cached))
-        return cached
+        return copy.deepcopy(cached)
 
     last_error = None
 
@@ -345,7 +346,7 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
                 data = response.json()
                 elements = data.get("elements", [])
                 logger.info(f"Overpass query returned {len(elements)} elements")
-                _overpass_cache.set(cache_key, elements)
+                _overpass_cache.set(cache_key, copy.deepcopy(elements))
                 return elements
             elif response.status_code == HTTP_RATE_LIMITED:
                 from .exceptions import RateLimitError
