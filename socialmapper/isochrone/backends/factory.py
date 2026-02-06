@@ -5,7 +5,6 @@ isochrone backend.
 """
 
 import logging
-import os
 from typing import Any
 
 from .base import IsochroneBackend
@@ -24,8 +23,7 @@ def get_backend(
     ----------
     backend_name : str, optional
         Backend name. Only "auto" and "valhalla" are accepted.
-        Can also be set via SOCIALMAPPER_ROUTING_BACKEND environment
-        variable. Default is "auto".
+        Default is "auto".
 
     **kwargs : Any
         Additional arguments passed to the backend constructor.
@@ -52,11 +50,6 @@ def get_backend(
 
     >>> backend = get_backend("valhalla", base_url="http://localhost:8002")
     """
-    # Check environment variable for default
-    if backend_name == "auto":
-        backend_name = os.environ.get("SOCIALMAPPER_ROUTING_BACKEND", "auto")
-
-    # Normalize backend name
     backend_name = backend_name.lower().strip()
 
     if backend_name not in ("auto", "valhalla"):

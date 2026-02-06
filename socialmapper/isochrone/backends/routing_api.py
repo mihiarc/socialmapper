@@ -104,6 +104,16 @@ class ValhallaBackend(BaseIsochroneBackend):
             self._router = Valhalla(base_url=self.base_url, timeout=self.timeout)
         return self._router
 
+    def get_router(self):
+        """Get the routingpy router instance (public API).
+
+        Returns
+        -------
+        routingpy.Valhalla
+            The underlying Valhalla router.
+        """
+        return self._get_router()
+
     def create_isochrone(
         self,
         lat: float,

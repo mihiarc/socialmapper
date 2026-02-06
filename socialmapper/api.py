@@ -866,7 +866,7 @@ def _calculate_travel_times(
     from .isochrone.backends import get_backend
 
     backend = get_backend()
-    router = backend._get_router()
+    router = backend.get_router()
     profile = {"drive": "auto", "walk": "pedestrian", "bike": "bicycle"}[travel_mode]
 
     # routingpy uses (lon, lat) format

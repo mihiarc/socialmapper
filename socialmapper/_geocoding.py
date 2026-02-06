@@ -14,6 +14,8 @@ get_census_geography : Reverse geocode to census geography IDs
 
 import json
 import logging
+import threading
+import time
 
 import requests
 
@@ -31,6 +33,10 @@ logger = logging.getLogger(__name__)
 
 # In-memory cache for census geography lookups, keyed by rounded coords (bounded LRU)
 _geocoding_cache: BoundedCache = BoundedCache(maxsize=1024)
+
+# Nominatim rate limiting: minimum 1 second between requests (usage policy)
+_nominatim_lock = threading.Lock()
+_last_nominatim_call: float = 0.0
 
 
 def geocode_location(address: str) -> tuple[float, float] | None:
@@ -90,6 +96,14 @@ def geocode_location(address: str) -> tuple[float, float] | None:
     headers = {
         "User-Agent": USER_AGENT
     }
+
+    # Enforce Nominatim rate limit (1 request per second)
+    global _last_nominatim_call
+    with _nominatim_lock:
+        elapsed = time.monotonic() - _last_nominatim_call
+        if elapsed < 1.0:
+            time.sleep(1.0 - elapsed)
+        _last_nominatim_call = time.monotonic()
 
     try:
         response = session.get(
