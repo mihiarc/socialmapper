@@ -892,6 +892,8 @@ def _calculate_travel_times(
     travel_mode : str
         One of ``'drive'``, ``'walk'``, ``'bike'``.
     """
+    import time
+
     if not pois:
         return
 
@@ -906,37 +908,64 @@ def _calculate_travel_times(
     poi_locs = [[p["lon"], p["lat"]] for p in pois]
 
     BATCH_SIZE = 50
+    MAX_RETRIES = 3
+    BASE_DELAY = 1.0  # seconds between batches / initial retry delay
+
     for batch_start in range(0, len(pois), BATCH_SIZE):
         batch_end = min(batch_start + BATCH_SIZE, len(pois))
         batch_locs = [origin_loc] + poi_locs[batch_start:batch_end]
         destinations = list(range(1, len(batch_locs)))
 
-        try:
-            result = router.matrix(
-                locations=batch_locs,
-                profile=profile,
-                sources=[0],
-                destinations=destinations,
-            )
+        # Pause between batches to respect rate limits on public Valhalla
+        if batch_start > 0:
+            time.sleep(BASE_DELAY)
 
-            for i, poi_idx in enumerate(range(batch_start, batch_end)):
-                duration = result.durations[0][i]
-                distance = result.distances[0][i] if result.distances else None
-                if duration is not None:
-                    pois[poi_idx]["travel_time_minutes"] = round(duration / 60, 1)
-                else:
-                    pois[poi_idx]["travel_time_minutes"] = None
-                if distance is not None:
-                    pois[poi_idx]["travel_distance_km"] = round(distance / 1000, 2)
-                else:
-                    pois[poi_idx]["travel_distance_km"] = None
+        success = False
+        for attempt in range(MAX_RETRIES):
+            try:
+                result = router.matrix(
+                    locations=batch_locs,
+                    profile=profile,
+                    sources=[0],
+                    destinations=destinations,
+                )
 
-        except Exception as exc:
-            logger.warning(
-                "Valhalla matrix call failed for batch %d-%d, "
-                "falling back to geodesic distance: %s",
-                batch_start, batch_end, exc,
-            )
+                for i, poi_idx in enumerate(range(batch_start, batch_end)):
+                    duration = result.durations[0][i]
+                    distance = result.distances[0][i] if result.distances else None
+                    if duration is not None:
+                        pois[poi_idx]["travel_time_minutes"] = round(duration / 60, 1)
+                    else:
+                        pois[poi_idx]["travel_time_minutes"] = None
+                    if distance is not None:
+                        pois[poi_idx]["travel_distance_km"] = round(distance / 1000, 2)
+                    else:
+                        pois[poi_idx]["travel_distance_km"] = None
+
+                success = True
+                break
+
+            except Exception as exc:
+                exc_str = str(exc)
+                is_rate_limit = "429" in exc_str or "content-type" in exc_str.lower()
+                if is_rate_limit and attempt < MAX_RETRIES - 1:
+                    delay = BASE_DELAY * (2 ** (attempt + 1))
+                    logger.info(
+                        "Rate limited on batch %d-%d (attempt %d/%d), "
+                        "retrying in %.1fs",
+                        batch_start, batch_end, attempt + 1, MAX_RETRIES, delay,
+                    )
+                    time.sleep(delay)
+                    continue
+
+                logger.warning(
+                    "Valhalla matrix call failed for batch %d-%d "
+                    "after %d attempt(s), falling back to no travel data: %s",
+                    batch_start, batch_end, attempt + 1, exc,
+                )
+                break
+
+        if not success:
             for poi_idx in range(batch_start, batch_end):
                 pois[poi_idx]["travel_time_minutes"] = None
                 pois[poi_idx]["travel_distance_km"] = None
