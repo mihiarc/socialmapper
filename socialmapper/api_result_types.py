@@ -83,7 +83,7 @@ class MapResult(BaseModel):
 
     Attributes
     ----------
-    format : {'png', 'pdf', 'svg', 'geojson', 'shapefile'}
+    format : {'png', 'pdf', 'svg', 'geojson', 'shapefile', 'html'}
         The export format used for the map.
     image_data : bytes, optional
         Raw image bytes for PNG, PDF, or SVG formats. Only
@@ -92,6 +92,9 @@ class MapResult(BaseModel):
     geojson_data : dict, optional
         GeoJSON FeatureCollection dict when format is 'geojson'
         and save_path is None. Default is None.
+    html_content : str, optional
+        HTML string for interactive Leaflet/folium maps when
+        format is 'html' and save_path is None. Default is None.
     file_path : Path, optional
         Absolute path to the saved file when save_path is
         provided. Default is None.
@@ -114,6 +117,12 @@ class MapResult(BaseModel):
     >>> result.geojson_data['type']
     'FeatureCollection'
 
+    >>> # Create interactive HTML map
+    >>> result = create_map(census_blocks, "population",
+    ...                    export_format="html")
+    >>> 'leaflet' in result.html_content.lower()
+    True
+
     >>> # Save to file, get path back
     >>> result = create_map(census_blocks, "population",
     ...                    save_path="output.png")
@@ -122,14 +131,16 @@ class MapResult(BaseModel):
 
     Notes
     -----
-    Exactly one of image_data, geojson_data, or file_path will be
-    populated based on the export_format and save_path parameters.
-    Use the format field to determine which field contains data.
+    Exactly one of image_data, geojson_data, html_content, or
+    file_path will be populated based on the export_format and
+    save_path parameters. Use the format field to determine which
+    field contains data.
     """
 
-    format: Literal["png", "pdf", "svg", "geojson", "shapefile"]
+    format: Literal["png", "pdf", "svg", "geojson", "shapefile", "html"]
     image_data: bytes | None = None
     geojson_data: dict | None = None
+    html_content: str | None = None
     file_path: Path | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 

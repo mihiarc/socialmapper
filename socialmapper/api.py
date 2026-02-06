@@ -421,8 +421,9 @@ def create_map(
     save_path : str, optional
         Path to save the map file. If provided, the result will
         include the absolute path. Default is None.
-    export_format : {'png', 'pdf', 'svg', 'geojson', 'shapefile'}, optional
-        Output format for the map. Default is 'png'.
+    export_format : {'png', 'pdf', 'svg', 'geojson', 'shapefile', 'html'}, optional
+        Output format for the map. Use 'html' for interactive Leaflet
+        maps (requires ``socialmapper[interactive]``). Default is 'png'.
     basemap : str, optional
         Basemap provider name for image formats. Options include:
         - 'CartoDB.Voyager' (default): Clean, light basemap
@@ -533,6 +534,13 @@ def create_map(
         return _create_image_map(
             gdf, column, title, save_path, export_format, metadata,
             basemap=basemap, cmap=cmap, overlay_boundary=overlay_boundary,
+            overlay_points=overlay_points, show_stats=show_stats,
+            stats_dict=stats_dict
+        )
+    elif export_format == "html":
+        return _create_html_map(
+            gdf, column, title, save_path, metadata,
+            basemap=basemap, overlay_boundary=overlay_boundary,
             overlay_points=overlay_points, show_stats=show_stats,
             stats_dict=stats_dict
         )
@@ -689,6 +697,85 @@ def _create_image_map(
             format=export_format,
             image_data=image_data,
             metadata=metadata
+        )
+
+
+def _create_html_map(
+    gdf: gpd.GeoDataFrame,
+    column: str,
+    title: str | None,
+    save_path: str | None,
+    metadata: dict[str, Any],
+    basemap: str | None = "CartoDB.Voyager",
+    overlay_boundary: dict | gpd.GeoDataFrame | None = None,
+    overlay_points: list[dict] | None = None,
+    show_stats: bool = False,
+    stats_dict: dict | None = None,
+) -> MapResult:
+    """Generate an interactive HTML map using folium.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        Geographic data to visualize.
+    column : str
+        Column name to visualize.
+    title : str, optional
+        Map title.
+    save_path : str, optional
+        File path for saving HTML.
+    metadata : dict
+        Metadata about the map.
+    basemap : str, optional
+        Basemap provider name.
+    overlay_boundary : dict or GeoDataFrame, optional
+        Boundary geometry to overlay.
+    overlay_points : list of dict, optional
+        Point markers to overlay.
+    show_stats : bool, optional
+        Whether to display statistics panel.
+    stats_dict : dict, optional
+        Custom statistics to display.
+
+    Returns
+    -------
+    MapResult
+        Structured result with html_content or file_path populated.
+    """
+    import geopandas as gpd
+    from shapely.geometry import shape
+
+    from ._interactive import generate_interactive_map
+
+    # Convert overlay_boundary dict to GeoDataFrame if needed
+    overlay_boundary_gdf = None
+    if overlay_boundary is not None:
+        if isinstance(overlay_boundary, gpd.GeoDataFrame):
+            overlay_boundary_gdf = overlay_boundary
+        elif isinstance(overlay_boundary, dict):
+            geom = shape(overlay_boundary.get('geometry', overlay_boundary))
+            overlay_boundary_gdf = gpd.GeoDataFrame(
+                {'geometry': [geom]}, crs="EPSG:4326"
+            )
+
+    html_content = generate_interactive_map(
+        gdf, column, title, save_path,
+        basemap=basemap, overlay_boundary=overlay_boundary_gdf,
+        overlay_points=overlay_points, show_stats=show_stats,
+        stats_dict=stats_dict,
+    )
+
+    if save_path:
+        return MapResult(
+            format="html",
+            file_path=Path(save_path).resolve(),
+            metadata=metadata,
+        )
+    else:
+        return MapResult(
+            format="html",
+            html_content=html_content,
+            metadata=metadata,
         )
 
 

@@ -7,6 +7,7 @@ import contextily as cx
 import geopandas as gpd
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 from matplotlib.patches import Patch
 from pyproj import Transformer
@@ -22,9 +23,18 @@ from .constants import (
     DEFAULT_CATEGORICAL_CMAP,
     DEFAULT_CHOROPLETH_CMAP,
     DEFAULT_DIVERGING_CMAP,
+    LABEL_BG_ALPHA,
+    LABEL_BG_COLOR,
+    LABEL_EDGE_COLOR,
+    LABEL_FONTSIZE,
+    LABEL_PAD,
+    MAP_ACCENT_COLOR,
     MAP_DPI,
+    MAP_FACECOLOR,
     MAP_FIGURE_SIZE,
     METERS_PER_KM,
+    NORTH_ARROW_FONTSIZE,
+    NORTH_ARROW_LINE_WIDTH,
     OVERLAY_BOUNDARY_COLOR,
     OVERLAY_BOUNDARY_STYLE,
     OVERLAY_BOUNDARY_WIDTH,
@@ -32,10 +42,14 @@ from .constants import (
     OVERLAY_POINT_EDGE_COLOR,
     OVERLAY_POINT_EDGE_WIDTH,
     OVERLAY_POINT_SIZE,
+    SCALE_BAR_LINE_WIDTH,
     SCALE_BAR_ROUND_THRESHOLD,
     STATS_BOX_ALPHA,
+    STATS_BOX_BORDER_COLOR,
     STATS_BOX_FONT_FAMILY,
     STATS_BOX_FONTSIZE,
+    TITLE_COLOR,
+    TITLE_FONTSIZE,
 )
 
 logger = logging.getLogger(__name__)
@@ -136,6 +150,7 @@ def generate_choropleth_map(
 
     # Create figure and axis
     fig, ax = plt.subplots(1, 1, figsize=MAP_FIGURE_SIZE)
+    fig.set_facecolor(MAP_FACECOLOR)
 
     # Remove axis frame but keep for scale bar calculation
     ax.set_axis_off()
@@ -197,7 +212,8 @@ def generate_choropleth_map(
             legend_kwds={
                 'label': column.replace('_', ' ').title(),
                 'orientation': 'vertical',
-                'shrink': 0.8
+                'shrink': 0.8,
+                'format': mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'),
             }
         )
     else:
@@ -253,7 +269,13 @@ def generate_choropleth_map(
 
     # Add title
     if title:
-        plt.title(title, fontsize=16, fontweight='bold', pad=20)
+        plt.title(
+            title,
+            fontsize=TITLE_FONTSIZE,
+            fontweight='bold',
+            color=TITLE_COLOR,
+            pad=20,
+        )
 
     # Add north arrow (using original CRS extent for proper positioning)
     add_north_arrow(ax)
@@ -261,19 +283,26 @@ def generate_choropleth_map(
     # Add scale bar (using plot GeoDataFrame for proper units)
     add_scale_bar(ax, gdf_plot, use_web_mercator=use_basemap)
 
-    # Adjust layout
+    # Adjust layout with better margins
+    plt.subplots_adjust(left=0.02, right=0.98, top=0.94, bottom=0.04)
     plt.tight_layout()
 
     # Save or return bytes
     if save_path:
-        plt.savefig(save_path, format=format, dpi=MAP_DPI, bbox_inches='tight')
+        plt.savefig(
+            save_path, format=format, dpi=MAP_DPI,
+            bbox_inches='tight', facecolor=fig.get_facecolor(),
+        )
         plt.close()
         logger.info(f"Map saved to {save_path}")
         return None
     else:
         # Return as bytes
         buf = io.BytesIO()
-        plt.savefig(buf, format=format, dpi=MAP_DPI, bbox_inches='tight')
+        plt.savefig(
+            buf, format=format, dpi=MAP_DPI,
+            bbox_inches='tight', facecolor=fig.get_facecolor(),
+        )
         plt.close()
         buf.seek(0)
         return buf.read()
@@ -407,9 +436,15 @@ def _add_overlay_points(
                     (x, y),
                     xytext=(10, 10),
                     textcoords='offset points',
-                    fontsize=9,
+                    fontsize=LABEL_FONTSIZE,
                     fontweight='bold',
-                    zorder=6
+                    zorder=6,
+                    bbox={
+                        'boxstyle': f'round,pad={LABEL_PAD}',
+                        'facecolor': LABEL_BG_COLOR,
+                        'alpha': LABEL_BG_ALPHA,
+                        'edgecolor': LABEL_EDGE_COLOR,
+                    },
                 )
     except Exception as e:
         logger.warning(f"Could not add overlay points: {e}")
@@ -465,7 +500,7 @@ def _add_stats_box(
             boxstyle='round,pad=0.5',
             facecolor='white',
             alpha=STATS_BOX_ALPHA,
-            edgecolor='gray'
+            edgecolor=STATS_BOX_BORDER_COLOR,
         )
         ax.text(
             0.02, 0.98,
@@ -512,13 +547,14 @@ def add_north_arrow(ax):
         xytext=(x, y - arrow_length),
         arrowprops={
             "arrowstyle": '->,head_width=0.3,head_length=0.3',
-            "lw": 2,
-            "color": 'black'
+            "lw": NORTH_ARROW_LINE_WIDTH,
+            "color": MAP_ACCENT_COLOR,
         },
         ha='center',
         va='bottom',
-        fontsize=14,
-        fontweight='bold'
+        fontsize=NORTH_ARROW_FONTSIZE,
+        fontweight='bold',
+        color=MAP_ACCENT_COLOR,
     )
 
 
@@ -603,13 +639,21 @@ def add_scale_bar(ax, gdf: gpd.GeoDataFrame, use_web_mercator: bool = False):
         x_end = x_start + scale_length
 
         # Draw scale bar
-        ax.plot([x_start, x_end], [y, y], 'k-', linewidth=3)
+        bar_color = MAP_ACCENT_COLOR
+        lw = SCALE_BAR_LINE_WIDTH
+        ax.plot([x_start, x_end], [y, y], color=bar_color, linewidth=lw)
         if use_web_mercator:
             tick_height = (bounds[3] - bounds[1]) * 0.01
         else:
             tick_height = scale_length * 0.01
-        ax.plot([x_start, x_start], [y - tick_height, y + tick_height], 'k-', linewidth=3)
-        ax.plot([x_end, x_end], [y - tick_height, y + tick_height], 'k-', linewidth=3)
+        ax.plot(
+            [x_start, x_start], [y - tick_height, y + tick_height],
+            color=bar_color, linewidth=lw,
+        )
+        ax.plot(
+            [x_end, x_end], [y - tick_height, y + tick_height],
+            color=bar_color, linewidth=lw,
+        )
 
         # Add label
         ax.text(
@@ -618,7 +662,8 @@ def add_scale_bar(ax, gdf: gpd.GeoDataFrame, use_web_mercator: bool = False):
             label,
             ha='center',
             va='top',
-            fontsize=10
+            fontsize=10,
+            color=bar_color,
         )
 
     except (ValueError, TypeError, AttributeError) as e:

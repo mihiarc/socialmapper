@@ -58,6 +58,9 @@ dev = [
 routing = [
     "routingpy>=1.3.0",  # Unified interface to Valhalla, OSRM, ORS routing APIs
 ]
+interactive = [
+    "folium>=0.17.0",  # Interactive Leaflet maps for HTML export
+]
 
 [project.urls]
 "Homepage" = "https://github.com/mihiarc/socialmapper"

@@ -16,7 +16,7 @@ DEFAULT_EXPORT_FORMAT = "png"
 DEFAULT_CENSUS_YEAR = 2023
 
 # Export formats
-VALID_EXPORT_FORMATS = ["png", "pdf", "svg", "geojson", "shapefile"]
+VALID_EXPORT_FORMATS = ["png", "pdf", "svg", "geojson", "shapefile", "html"]
 IMAGE_EXPORT_FORMATS = ["png", "pdf", "svg"]
 
 # Coordinate boundaries
@@ -96,27 +96,46 @@ METERS_PER_KM = 1000  # Meters per kilometer
 DEFAULT_BASEMAP = "CartoDB.Voyager"  # Clean, light basemap for choropleths
 DEFAULT_CHOROPLETH_CMAP = "YlGnBu"  # Blue-green gradient for sequential data
 DEFAULT_DIVERGING_CMAP = "RdBu_r"  # Red-blue for diverging data
-DEFAULT_CATEGORICAL_CMAP = "Set3"  # Distinct colors for categorical data
+DEFAULT_CATEGORICAL_CMAP = "Set2"  # Richer saturation for categorical data
 MAP_FIGURE_SIZE = (14, 12)  # Width, height in inches
-MAP_DPI = 150  # Output resolution
-CHOROPLETH_EDGE_COLOR = "white"  # Subtle boundary lines
-CHOROPLETH_EDGE_WIDTH = 0.6  # Line width for polygon edges
+MAP_DPI = 200  # Output resolution
+MAP_FACECOLOR = "#fafafa"  # Subtle off-white figure background
+CHOROPLETH_EDGE_COLOR = "#cccccc"  # Soft gray boundary lines
+CHOROPLETH_EDGE_WIDTH = 0.4  # Line width for polygon edges
 CHOROPLETH_ALPHA = 0.85  # Transparency for choropleth layer
 BASEMAP_ALPHA = 0.5  # Transparency for basemap (so choropleth shows through)
 
+# Title styling
+TITLE_FONTSIZE = 18  # Larger title for impact
+TITLE_COLOR = "#1a1a2e"  # Dark navy for titles
+
 # Overlay styling
-OVERLAY_BOUNDARY_COLOR = "#e74c3c"  # Red for boundary overlays (e.g., isochrones)
+OVERLAY_BOUNDARY_COLOR = "#d63384"  # Modern magenta-pink for boundary overlays
 OVERLAY_BOUNDARY_WIDTH = 3  # Line width for overlay boundaries
 OVERLAY_BOUNDARY_STYLE = "--"  # Dashed line style
-OVERLAY_POINT_COLOR = "#e74c3c"  # Red for point markers
+OVERLAY_POINT_COLOR = "#d63384"  # Magenta-pink for point markers
 OVERLAY_POINT_SIZE = 150  # Marker size for overlay points
 OVERLAY_POINT_EDGE_COLOR = "white"  # White edge around markers
 OVERLAY_POINT_EDGE_WIDTH = 2  # Edge width for markers
 
+# Point label styling
+LABEL_BG_COLOR = "white"  # Background color for label halo
+LABEL_BG_ALPHA = 0.8  # Transparency for label background
+LABEL_EDGE_COLOR = "none"  # No border on label box
+LABEL_FONTSIZE = 9  # Font size for point labels
+LABEL_PAD = 0.3  # Padding inside label box
+
 # Stats box styling
 STATS_BOX_ALPHA = 0.95  # Background opacity
 STATS_BOX_FONTSIZE = 11  # Font size for stats text
-STATS_BOX_FONT_FAMILY = "monospace"  # Font family for alignment
+STATS_BOX_FONT_FAMILY = "sans-serif"  # Clean sans-serif font
+STATS_BOX_BORDER_COLOR = "#d0d0d0"  # Lighter border
+
+# North arrow / scale bar styling
+MAP_ACCENT_COLOR = "#333333"  # Dark gray for decorations (arrows, scale bar)
+NORTH_ARROW_FONTSIZE = 12  # Slightly smaller north arrow label
+NORTH_ARROW_LINE_WIDTH = 1.5  # Thinner arrow line
+SCALE_BAR_LINE_WIDTH = 2  # Thinner scale bar line
 
 # Web Mercator CRS for basemap compatibility
 CRS_WEB_MERCATOR = "EPSG:3857"

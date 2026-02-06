@@ -348,6 +348,117 @@ class TestCreateMap:
         assert result.image_data is not None
         assert len(result.image_data) > 0
 
+    def test_create_map_html(self, sample_census_block):
+        """Test creating an interactive HTML map."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        result = create_map(data, column="population", export_format="html")
+
+        assert result.format == "html"
+        assert result.html_content is not None
+        assert isinstance(result.html_content, str)
+        assert "leaflet" in result.html_content.lower()
+
+    def test_create_map_html_with_title(self, sample_census_block):
+        """Test that title appears in HTML map content."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        result = create_map(
+            data, column="population",
+            title="Test Population Map",
+            export_format="html",
+        )
+
+        assert result.format == "html"
+        assert "Test Population Map" in result.html_content
+
+    def test_create_map_html_with_overlays(self, sample_census_block, sample_geojson_feature):
+        """Test HTML map with boundary and point overlays."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        points = [
+            {"lat": 45.515, "lon": -122.675, "name": "Center"},
+            {"lat": 45.520, "lon": -122.680},
+        ]
+
+        result = create_map(
+            data, column="population",
+            export_format="html",
+            overlay_boundary=sample_geojson_feature,
+            overlay_points=points,
+        )
+
+        assert result.format == "html"
+        assert result.html_content is not None
+        assert "Center" in result.html_content
+
+    def test_create_map_html_with_stats(self, sample_census_block):
+        """Test HTML map with statistics panel."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        custom_stats = {
+            "Total Population": "1,000",
+            "Area": "1.5 sq km",
+        }
+        result = create_map(
+            data, column="population",
+            export_format="html",
+            show_stats=True,
+            stats_dict=custom_stats,
+        )
+
+        assert result.format == "html"
+        assert "Total Population" in result.html_content
+        assert "1,000" in result.html_content
+
+    def test_create_map_html_save_to_file(self, sample_census_block, tmp_path):
+        """Test saving HTML map to file."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        output_file = tmp_path / "test_map.html"
+        result = create_map(
+            data, column="population",
+            export_format="html",
+            save_path=str(output_file),
+        )
+
+        assert result.format == "html"
+        assert result.file_path is not None
+        assert result.file_path.exists()
+        content = result.file_path.read_text()
+        assert "leaflet" in content.lower()
+
+    def test_create_map_html_all_features(self, sample_census_block, sample_geojson_feature):
+        """Test HTML map with all features combined."""
+        data = [sample_census_block]
+        data[0]["population"] = 1000
+
+        points = [{"lat": 45.515, "lon": -122.675, "name": "Origin"}]
+        custom_stats = {"Count": "1", "Value": "1,000"}
+
+        result = create_map(
+            data, column="population",
+            title="Full Interactive Test",
+            basemap="CartoDB.Voyager",
+            export_format="html",
+            overlay_boundary=sample_geojson_feature,
+            overlay_points=points,
+            show_stats=True,
+            stats_dict=custom_stats,
+        )
+
+        assert result.format == "html"
+        assert result.html_content is not None
+        assert "Full Interactive Test" in result.html_content
+        assert "Origin" in result.html_content
+        assert "Count" in result.html_content
+        assert "leaflet" in result.html_content.lower()
+
 
 class TestGetPOI:
     """Test get_poi function."""
