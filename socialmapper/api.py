@@ -245,7 +245,18 @@ def get_census_data(
     >>> result.location_type
     'point'
     """
+    from .exceptions import ValidationError
     from ._census import fetch_census_data, normalize_variable_names
+
+    # Validate inputs
+    if not isinstance(year, int) or not (2009 <= year <= 2025):
+        raise ValidationError(
+            f"Census year must be an integer between 2009 and 2025, got {year!r}"
+        )
+    if not variables or not isinstance(variables, list):
+        raise ValidationError(
+            "Census variables must be a non-empty list of variable names"
+        )
 
     # Normalize variable names
     var_codes = normalize_variable_names(variables)
@@ -309,6 +320,12 @@ def _resolve_geoids_from_location(location) -> list[str]:
         blocks = get_census_blocks(polygon=location)
         return [b["geoid"] for b in blocks]
     elif isinstance(location, list):
+        invalid = [g for g in location if not (isinstance(g, str) and len(g) == 12 and g.isdigit())]
+        if invalid:
+            from .exceptions import ValidationError
+            raise ValidationError(
+                f"GEOIDs must be 12-digit numeric strings, got invalid: {invalid[:5]}"
+            )
         return location
     elif isinstance(location, tuple):
         from ._geocoding import get_census_geography

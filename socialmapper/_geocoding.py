@@ -39,7 +39,7 @@ _nominatim_lock = threading.Lock()
 _last_nominatim_call: float = 0.0
 
 
-def geocode_location(address: str) -> tuple[float, float] | None:
+def geocode_location(address: str) -> tuple[float, float]:
     """
     Geocode an address string to coordinates.
 
@@ -55,12 +55,13 @@ def geocode_location(address: str) -> tuple[float, float] | None:
 
     Returns
     -------
-    tuple of float or None
-        Tuple containing (latitude, longitude) in decimal degrees,
-        or None if geocoding fails for all providers.
+    tuple of float
+        Tuple containing (latitude, longitude) in decimal degrees.
 
     Raises
     ------
+    InvalidLocationError
+        If geocoding fails for all providers.
     requests.RequestException
         If network request fails with timeout or connection error.
 

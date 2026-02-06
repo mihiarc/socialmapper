@@ -100,11 +100,11 @@ def validate_travel_time(travel_time: int) -> None:
 
     Raises
     ------
-    ValueError
+    ValidationError
         If travel time is outside valid range.
     """
     if not MIN_TRAVEL_TIME <= travel_time <= MAX_TRAVEL_TIME:
-        raise ValueError(
+        raise ValidationError(
             f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes, "
             f"got {travel_time}"
         )
@@ -121,11 +121,11 @@ def validate_travel_mode(travel_mode: str) -> None:
 
     Raises
     ------
-    ValueError
+    ValidationError
         If travel mode is not supported.
     """
     if travel_mode not in VALID_TRAVEL_MODES:
-        raise ValueError(
+        raise ValidationError(
             f"Travel mode must be one of {VALID_TRAVEL_MODES}, "
             f"got '{travel_mode}'"
         )
@@ -142,11 +142,11 @@ def validate_export_format(export_format: str) -> None:
 
     Raises
     ------
-    ValueError
+    ValidationError
         If export format is not supported.
     """
     if export_format not in VALID_EXPORT_FORMATS:
-        raise ValueError(
+        raise ValidationError(
             f"Export format must be one of {VALID_EXPORT_FORMATS}, "
             f"got '{export_format}'"
         )
@@ -163,11 +163,11 @@ def validate_report_format(report_format: str) -> None:
 
     Raises
     ------
-    ValueError
+    ValidationError
         If report format is not supported.
     """
     if report_format not in VALID_REPORT_FORMATS:
-        raise ValueError(
+        raise ValidationError(
             f"Report format must be one of {VALID_REPORT_FORMATS}, "
             f"got '{report_format}'"
         )
@@ -204,10 +204,10 @@ def validate_location_input(
     ValueError: Must provide either polygon or location
     """
     if polygon is None and location is None:
-        raise ValueError("Must provide either polygon or location")
+        raise ValidationError("Must provide either polygon or location")
 
     if polygon is not None and location is not None:
-        raise ValueError("Provide either polygon or location, not both")
+        raise ValidationError("Provide either polygon or location, not both")
 
 
 def validate_poi_data(pois: list[dict]) -> list[dict]:

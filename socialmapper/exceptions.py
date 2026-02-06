@@ -42,9 +42,12 @@ class SocialMapperError(Exception):
 
 
 
-class ValidationError(SocialMapperError):
+class ValidationError(SocialMapperError, ValueError):
     """
     Exception raised when input validation fails.
+
+    Inherits from both SocialMapperError and ValueError for backward
+    compatibility with code that catches ValueError.
 
     Indicates that user-provided parameters do not meet the required
     criteria for processing. Common causes include invalid coordinate

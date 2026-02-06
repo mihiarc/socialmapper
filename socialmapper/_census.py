@@ -303,15 +303,15 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
                 counties.add(result)
 
     if not counties:
-        logger.warning(
-            f"Could not identify census geography for area at ({centroid.y:.4f}, {centroid.x:.4f}). "
-            f"Possible reasons: "
-            f"1) Location is outside the United States, "
-            f"2) Census Geocoding API is unavailable (network issue), "
-            f"3) Coordinates are in a territory without census data. "
-            f"Try checking your internet connection or using US mainland coordinates."
+        from .exceptions import InvalidLocationError
+        raise InvalidLocationError(
+            f"({centroid.y:.4f}, {centroid.x:.4f})",
+            suggestions=[
+                "Check that coordinates are within the US mainland",
+                "Verify your internet connection (Census API must be reachable)",
+                "Try a nearby location if in a territory without census data",
+            ],
         )
-        return []
 
     logger.info(f"Identified {len(counties)} counties for census block query: {counties}")
 
