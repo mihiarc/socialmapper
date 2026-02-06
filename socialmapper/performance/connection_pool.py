@@ -72,6 +72,10 @@ class ConnectionPoolManager:
         """
         session = requests.Session()
 
+        # Set User-Agent header for all requests
+        from ..constants import USER_AGENT
+        session.headers["User-Agent"] = USER_AGENT
+
         # Configure retry strategy
         retry_strategy = Retry(
             total=3,

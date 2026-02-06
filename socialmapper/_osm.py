@@ -1,5 +1,6 @@
 """Internal OpenStreetMap/POI query utilities for SocialMapper."""
 
+import hashlib
 import logging
 import time
 from typing import Any
@@ -14,10 +15,14 @@ from .constants import (
     OVERPASS_ENDPOINTS,
     OVERPASS_TIMEOUT,
 )
+from .performance.bounded_cache import BoundedCache
 from .performance.connection_pool import get_http_session
 from .poi_categorization import POI_CATEGORY_MAPPING
 
 logger = logging.getLogger(__name__)
+
+# Module-level Overpass response cache
+_overpass_cache = BoundedCache(maxsize=64)
 
 
 # OSM key mappings for building Overpass queries
@@ -204,20 +209,44 @@ def _expand_categories_to_osm_tags(categories: list[str] | None) -> list[str]:
     return list(set(tags))
 
 
+def _polygon_to_overpass_poly(area: Polygon) -> str:
+    """Convert a Shapely polygon to an Overpass ``poly`` filter string.
+
+    Parameters
+    ----------
+    area : shapely.geometry.Polygon
+        Search area polygon in WGS-84 (lon, lat).
+
+    Returns
+    -------
+    str
+        Space-separated ``"lat1 lon1 lat2 lon2 ..."`` string suitable
+        for the Overpass ``(poly:"...")`` filter.
+    """
+    simplified = area.simplify(0.001, preserve_topology=True)
+    coords = list(simplified.exterior.coords)
+    if len(coords) > 50:
+        simplified = area.simplify(0.005, preserve_topology=True)
+        coords = list(simplified.exterior.coords)
+
+    # Drop closing vertex (Overpass auto-closes) and flip lon,lat → lat,lon
+    coords = coords[:-1]
+    return " ".join(f"{lat} {lon}" for lon, lat in coords)
+
+
 def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     """
     Build an Overpass QL query string for POI retrieval.
 
     Constructs a properly formatted Overpass Query Language (QL) string
-    to retrieve POIs within a bounding box. Handles both high-level
-    categories (e.g., 'food_and_drink') and specific OSM values
-    (e.g., 'restaurant').
+    to retrieve POIs within a polygon area using the ``poly`` filter.
+    Handles both high-level categories (e.g., 'food_and_drink') and
+    specific OSM values (e.g., 'restaurant').
 
     Parameters
     ----------
     area : shapely.geometry.Polygon
-        Geographic area polygon used to determine bounding box for
-        the query.
+        Geographic area polygon used as the search boundary.
     categories : list of str, optional
         POI categories to include in query. Supports:
         - High-level categories: 'food_and_drink', 'healthcare', etc.
@@ -237,9 +266,7 @@ def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
     >>> 'amenity=restaurant' in query
     True
     """
-    # Get bounding box
-    bounds = area.bounds  # (minx, miny, maxx, maxy)
-    bbox = f"{bounds[1]},{bounds[0]},{bounds[3]},{bounds[2]}"  # S,W,N,E
+    poly_str = _polygon_to_overpass_poly(area)
 
     # Expand categories to OSM tags
     tags = _expand_categories_to_osm_tags(categories)
@@ -254,15 +281,16 @@ def build_overpass_query(area: Polygon, categories: list[str] | None) -> str:
 
     logger.debug("Building Overpass query with %d tags for categories: %s", len(tags), categories)
 
-    # Build Overpass query
+    # Build Overpass query with poly filter
     query_parts = ["[out:json][timeout:25];("]
 
     for tag in tags:
         # Parse tag into key=value
         if "=" in tag:
             key, value = tag.split("=", 1)
-            query_parts.append(f"node[{key}={value}]({bbox});")
-            query_parts.append(f"way[{key}={value}]({bbox});")
+            query_parts.append(f'node[{key}={value}](poly:"{poly_str}");')
+            query_parts.append(f'way[{key}={value}](poly:"{poly_str}");')
+            query_parts.append(f'relation[{key}={value}](poly:"{poly_str}");')
 
     query_parts.append(");out center;")
 
@@ -295,6 +323,13 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
     >>> isinstance(results, list)
     True
     """
+    # Check cache first
+    cache_key = hashlib.md5(query.encode()).hexdigest()
+    cached = _overpass_cache.get(cache_key)
+    if cached is not None:
+        logger.debug("Overpass cache hit (%d elements)", len(cached))
+        return cached
+
     last_error = None
 
     for endpoint in OVERPASS_ENDPOINTS:
@@ -310,6 +345,7 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
                 data = response.json()
                 elements = data.get("elements", [])
                 logger.info(f"Overpass query returned {len(elements)} elements")
+                _overpass_cache.set(cache_key, elements)
                 return elements
             elif response.status_code == HTTP_RATE_LIMITED:
                 from .exceptions import RateLimitError
@@ -399,7 +435,7 @@ def process_poi_results(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if element["type"] == "node":
             lat = element["lat"]
             lon = element["lon"]
-        elif element["type"] == "way" and "center" in element:
+        elif element["type"] in ("way", "relation") and "center" in element:
             lat = element["center"]["lat"]
             lon = element["center"]["lon"]
         else:
@@ -430,8 +466,7 @@ def process_poi_results(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if "addr:postcode" in tags:
             address_parts.append(tags["addr:postcode"])
 
-        if address_parts:
-            poi["address"] = " ".join(address_parts)
+        poi["address"] = " ".join(address_parts) if address_parts else None
 
         pois.append(poi)
 
