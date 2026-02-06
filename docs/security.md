@@ -29,8 +29,6 @@ Create a `.env` file in your project directory:
 CENSUS_API_KEY=your_api_key_here
 ```
 
-SocialMapper automatically loads `.env` files using python-dotenv.
-
 #### Option 3: Set in Code (Not Recommended for Production)
 
 ```python
@@ -39,20 +37,6 @@ os.environ['CENSUS_API_KEY'] = 'your_api_key_here'
 
 from socialmapper import get_census_data
 # Now census functions will work
-```
-
-## Demo Mode (No API Key Required)
-
-You can explore SocialMapper without any API keys using demo mode:
-
-```python
-from socialmapper import demo
-
-# List available demo cities
-demo.list_available_demos()
-
-# Run analysis with pre-cached data
-result = demo.quick_start("Portland, OR")
 ```
 
 ## Security Best Practices

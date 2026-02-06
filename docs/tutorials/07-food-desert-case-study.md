@@ -67,7 +67,6 @@ for i, store in enumerate(grocery_stores):
             location=(store['lat'], store['lon']),
             travel_time=15,  # 15-minute walk
             travel_mode="walk",
-            backend="valhalla"  # Fast API
         )
 
         polygon = shape(iso['geometry'])

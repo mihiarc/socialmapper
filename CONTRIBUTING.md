@@ -145,8 +145,8 @@ Have an idea to improve SocialMapper? We'd love to hear it! [Open a feature requ
    # Run the test suite
    uv run pytest tests/ -v
 
-   # Run a quick example
-   uv run python -c "from socialmapper import demo; print(demo.quick_start('Portland, OR'))"
+   # Verify imports work
+   uv run python -c "from socialmapper import create_isochrone, get_poi, get_census_data, create_map; print('All imports OK')"
    ```
 
    You're all set! 🎉
@@ -550,7 +550,6 @@ uv run mkdocs serve
 ```
 docs/
 ├── index.md           # Home page
-├── quick-start.md     # Getting started guide
 ├── tutorials/         # Step-by-step tutorials
 ├── reference/         # API reference
 └── contributing.md    # This file

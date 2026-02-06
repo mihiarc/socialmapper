@@ -7,8 +7,8 @@ Welcome to SocialMapper! This section will help you get up and running quickly w
 ### 🚀 [Installation](installation.md)
 Learn how to install SocialMapper on your system.
 
-### ⚡ [Quick Start Guide](quick-start.md) 
-Create your first community analysis in minutes.
+### ⚡ [Tutorials](../tutorials/index.md)
+Step-by-step guides from beginner to advanced.
 
 ## Choose Your Path
 
@@ -17,18 +17,16 @@ Create your first community analysis in minutes.
 **Start here if you're new to Python:**
 
 1. Follow the **[Installation Guide](installation.md)** for setup help
-2. Try the **[Quick Start Guide](quick-start.md)** for your first analysis
-3. Use the **demo module** to explore without API keys
-4. Explore the **[examples](https://github.com/mihiarc/socialmapper/tree/main/examples)**
+2. Try the **[Getting Started Tutorial](../tutorials/01-getting-started.md)** for your first analysis
+3. Work through the **[Tutorial Series](../tutorials/index.md)**
 
 ### I'm a Python Developer
 
 **Jump right in if you're comfortable with Python:**
-    
+
 1. `pip install socialmapper` - Quick installation
 2. Check the **[API Reference](../api-reference.md)** for detailed usage
-3. Review **[examples](https://github.com/mihiarc/socialmapper/tree/main/examples/core)**
-4. Explore advanced features like **[address geocoding](../features/address-geocoding.md)**
+3. Explore advanced features like **[address geocoding](../features/address-geocoding.md)**
 
 ### I'm a Researcher/Analyst
 
@@ -59,7 +57,6 @@ By the end of this section, you'll be able to:
 
 - 📖 Check the **[FAQ](../faq.md)** for common questions
 - 🔧 See **[Troubleshooting](../troubleshooting.md)** for issues
-- 💡 Review **[examples](https://github.com/mihiarc/socialmapper/tree/main/examples)**
 - 🐛 Report bugs on **[GitHub](https://github.com/mihiarc/socialmapper/issues)**
 
 ---

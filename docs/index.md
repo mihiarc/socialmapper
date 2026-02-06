@@ -60,21 +60,13 @@ print(f"Population within 15 minutes: {total_pop:,}")
 
     [:octicons-arrow-right-24: Installation guide](getting-started/installation.md)
 
--   :material-rocket:{ .lg .middle } **Quick Start**
+-   :material-book-open-variant:{ .lg .middle } **Tutorials**
 
     ---
 
-    Your first analysis in 5 minutes
+    Learn from step-by-step tutorials
 
-    [:octicons-arrow-right-24: Quick start tutorial](getting-started/quick-start.md)
-
--   :material-map-marker:{ .lg .middle } **Examples**
-
-    ---
-
-    Learn from practical examples
-
-    [:octicons-arrow-right-24: View examples](https://github.com/mihiarc/socialmapper/tree/main/examples)
+    [:octicons-arrow-right-24: View tutorials](tutorials/index.md)
 
 -   :material-help-circle:{ .lg .middle } **Get Help**
 
@@ -113,7 +105,7 @@ print(f"Population within 15 minutes: {total_pop:,}")
 - **Free and Open Source** - No licensing fees or restrictions
 - **Easy to Use** - Simple 5-function Python API
 - **Reliable Data** - Uses OpenStreetMap and US Census Bureau
-- **Fast** - Optimized caching and efficient algorithms ([see performance guide](performance.md))
+- **Fast** - Valhalla routing returns isochrones in 1-2 seconds with built-in caching
 - **Flexible** - Analyze any location type at any scale
 - **Production Ready** - Comprehensive error handling, retry mechanisms, and monitoring
 

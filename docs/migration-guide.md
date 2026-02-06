@@ -434,5 +434,4 @@ if __name__ == '__main__':
 
 - [API Reference](api-reference.md) - Complete function documentation
 - [Census Variables](reference/census-variables.md) - Available demographic data
-- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - Code examples
 - [User Guide](user-guide/index.md) - In-depth guides

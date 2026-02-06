@@ -9,21 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 📊 Performance Benchmarks
 
-Added comprehensive benchmark tests comparing v1.0 (NetworkX) vs v1.1 (Valhalla) isochrone generation.
-
-#### Key Finding: **90x Average Speedup**
-
-| Metric | NetworkX (v1.0) | Valhalla (v1.1) | Improvement |
-|--------|-----------------|-----------------|-------------|
-| Average Time | 106.5s | 1.18s | **90x faster** |
-| Min Time | 1.4s | 0.47s | 3x faster |
-| Max Time | 360.4s | 3.49s | **103x faster** |
-| Success Rate | 100% | 100% | Equal |
-
-#### Practical Impact
-- Batch processing 100 locations: **3+ hours → ~2 minutes**
-- Consistent sub-2-second response times enable interactive applications
-- For 15-minute isochrones: **~800x speedup** (10-17 min → ~1 second)
+Added comprehensive benchmark test suite for Valhalla isochrone generation.
 
 #### Benchmark Test Suite
 - New `tests/benchmarks/` directory with comprehensive test infrastructure
@@ -42,22 +28,12 @@ Added comprehensive benchmark tests comparing v1.0 (NetworkX) vs v1.1 (Valhalla)
 
 ### ✨ Features
 
-#### **Fast Isochrone Generation with Routing APIs**
-- **New routing backends** for up to 90x faster isochrone generation (benchmarked)
-- **routingpy integration** providing unified access to multiple routing engines:
-  - **Valhalla** (default) - Free public API, no key required
-  - **OSRM** - Open Source Routing Machine
-  - **OpenRouteService** - Requires free API key
-  - **GraphHopper** - Free tier available
-- **Backend selection** via `backend` parameter or `SOCIALMAPPER_ROUTING_BACKEND` env var
-- **Automatic fallback** to NetworkX when external APIs unavailable
+#### **Fast Isochrone Generation with Valhalla**
+- **Valhalla routing engine** for fast isochrone generation (~1-2 seconds)
+- **routingpy integration** for Valhalla API access — free public API, no key required
 
 ```python
-# Use fast Valhalla backend (default)
-iso = create_isochrone("Seattle, WA", travel_time=15, backend="valhalla")
-
-# Or explicitly use offline NetworkX
-iso = create_isochrone("Seattle, WA", travel_time=15, backend="networkx")
+iso = create_isochrone("Seattle, WA", travel_time=15)
 ```
 
 ### 🐛 Bug Fixes
@@ -68,15 +44,6 @@ iso = create_isochrone("Seattle, WA", travel_time=15, backend="networkx")
 ### 📚 Documentation
 
 - **POI category reference table** documenting valid categories
-- **Routing backend documentation** with configuration options
-
-### 🔧 Technical
-
-- **New optional dependency**: `pip install socialmapper[routing]` for fast backends
-- **Environment variables**:
-  - `SOCIALMAPPER_ROUTING_BACKEND` - Default backend selection
-  - `VALHALLA_URL` - Custom Valhalla endpoint
-  - `ORS_API_KEY` - OpenRouteService API key
 
 ---
 

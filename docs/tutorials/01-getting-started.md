@@ -15,75 +15,14 @@ Instead of learning 4+ different libraries and spending hours on setup, you can 
 ## Installation
 
 ```bash
-# Basic installation
 pip install socialmapper
-
-# With fast routing API support (recommended)
-pip install "socialmapper[routing]"
 ```
 
-## Your First Analysis: Demo Mode
-
-The fastest way to explore SocialMapper is demo mode, which uses pre-loaded data for three US cities—no API keys required.
-
-```python
-from socialmapper import demo
-
-# Run a complete accessibility analysis
-result = demo.quick_start("Portland, OR")
-```
-
-This single line:
-1. Creates a 15-minute driving isochrone
-2. Finds public libraries in the area
-3. Retrieves population data for census blocks
-4. Returns a summary of the analysis
-
-### Exploring Demo Results
-
-```python
-from socialmapper import demo
-
-# See what's available
-print(demo.list_available_demos())
-# Output: ['Portland, OR', 'Chapel Hill, NC', 'Durham, NC']
-
-# Run analysis for Portland
-result = demo.quick_start("Portland, OR")
-
-# Access the isochrone (travel-time polygon)
-print(f"Area covered: {result['isochrone']['properties']['area_sq_km']:.1f} km²")
-
-# See libraries found
-print(f"Libraries found: {len(result['libraries'])}")
-
-# Population summary
-print(f"Population in area: {result['population_summary']['total']:,}")
-```
-
-### Demo Data Exploration
-
-```python
-from socialmapper import demo
-
-# Show libraries in Portland
-libraries = demo.show_libraries("Portland, OR")
-for lib in libraries[:5]:
-    print(f"- {lib['name']}: {lib['distance_km']:.2f} km away")
-
-# Analyze food access
-food_analysis = demo.show_food_access("Chapel Hill, NC")
-print(f"Restaurants within reach: {len(food_analysis['restaurants'])}")
-print(f"Grocery stores: {len(food_analysis['grocery_stores'])}")
-```
-
-## Moving Beyond Demo Mode
-
-Once you're comfortable with the concepts, you can use real API calls for any location.
+## Setup
 
 ### Get a Census API Key
 
-For production use, you'll need a free Census API key:
+For census data queries, you'll need a free Census API key:
 
 1. Visit: https://api.census.gov/data/key_signup.html
 2. Fill out the form (takes 30 seconds)
@@ -93,7 +32,7 @@ For production use, you'll need a free Census API key:
 export CENSUS_API_KEY=your_key_here
 ```
 
-### Your First Real Analysis
+### Your First Analysis
 
 ```python
 from socialmapper import create_isochrone, get_poi, get_census_data
@@ -159,23 +98,13 @@ Now that you understand the basics:
 
 ```python
 from socialmapper import (
-    # Core functions
     create_isochrone,
     get_poi,
     get_census_blocks,
     get_census_data,
     create_map,
-
-    # Demo mode
-    demo,
-
-    # Multi-location analysis
     analyze_multiple_pois,
 )
-
-# Check available backends
-from socialmapper.isochrone.backends import list_available_backends
-print(list_available_backends())  # ['valhalla', 'networkx']
 ```
 
 ## Troubleshooting
@@ -185,12 +114,6 @@ print(list_available_backends())  # ['valhalla', 'networkx']
 Set your Census API key:
 ```bash
 export CENSUS_API_KEY=your_key_here
-```
-
-Or use demo mode which doesn't require keys:
-```python
-from socialmapper import demo
-demo.quick_start("Portland, OR")
 ```
 
 ### Slow Isochrone Generation

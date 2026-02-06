@@ -6,8 +6,8 @@ Accessibility analysis—understanding who can reach which community resources�
 
 **A typical workflow requires:**
 - **censusdis** or **census** for demographic data
-- **overpy** for OpenStreetMap POI queries
-- **OSMnx** for routing and isochrones
+- **Overpass API** for OpenStreetMap POI queries
+- **Routing engines** for isochrones
 - **geopandas** for spatial operations
 - **matplotlib** or **folium** for visualization
 - Custom glue code to integrate everything
@@ -109,7 +109,7 @@ Your analysis always reflects current conditions.
 |---------|---------|--------------|
 | Neighborhood analysis | ✅ Advanced | ⚠️ Basic |
 | Temporal analysis | ✅ Yes | ❌ No |
-| Spatial clustering | ✅ Yes | ❌ No |
+| Spatial clustering | ✅ Yes | ⚠️ Basic |
 | Real-time POI data | ❌ No | ✅ Yes |
 | Isochrones | ⚠️ Basic | ✅ Advanced |
 | Learning curve | High | Low |
@@ -224,7 +224,6 @@ print(f"Analysis covers {len(blocks)} census block groups")
 
 - **[Getting Started Tutorial](https://mihiarc.github.io/socialmapper/getting-started/)** - Step-by-step introduction
 - **[API Reference](https://mihiarc.github.io/socialmapper/api-reference/)** - Complete function documentation
-- **[Examples](https://github.com/mihiarc/socialmapper/tree/main/examples)** - Real-world use cases
 - **[Competitive Analysis](competitive-analysis.md)** - Detailed comparison with alternatives
 
 ## Frequently Asked Questions

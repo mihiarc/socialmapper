@@ -10,8 +10,6 @@ Complete reference for all SocialMapper API functions, models, exceptions, and u
   - [get_census_blocks()](#get_census_blocks)
   - [get_census_data()](#get_census_data)
   - [create_map()](#create_map)
-- [Demo Module](#demo-module)
-- [Performance Module](#performance-module)
 - [Result Types](#result-types)
 - [Exception Classes](#exception-classes)
 - [Type Models](#type-models)
@@ -82,10 +80,9 @@ print(f"Walk:  {walk_iso['properties']['area_sq_km']:.2f} km²")
 
 #### Performance Considerations
 
-- **Caching**: Network graphs are cached by location to speed up repeated queries
-- **Travel time**: Larger travel times (>30 minutes) may take longer to compute
-- **Urban areas**: Dense road networks may increase computation time
-- **First run**: Initial isochrone for a new area downloads and processes OSM network data
+- **Speed**: Valhalla routing typically returns isochrones in 1-2 seconds
+- **Travel time**: Larger travel times (>30 minutes) produce larger polygons
+- **Caching**: Isochrone results are cached to speed up repeated queries
 
 #### Common Patterns
 
@@ -647,71 +644,6 @@ The map automatically uses:
 
 ---
 
-## Demo Module
-
-The demo module provides sample data and quick-start functions for exploring SocialMapper without API keys.
-
-### Available Demo Locations
-
-| Location | Description |
-|----------|-------------|
-| `"Portland, OR"` | Rose City with excellent library coverage |
-| `"Chapel Hill, NC"` | College town with strong community amenities |
-| `"Durham, NC"` | Bull City with vibrant food scene |
-
-### Functions
-
-```python
-from socialmapper import demo
-```
-
-#### demo.list_available_demos()
-
-Display all available demo locations in a formatted table.
-
-```python
-demo.list_available_demos()
-```
-
-#### demo.quick_start()
-
-Run complete accessibility analysis with cached demo data.
-
-```python
-result = demo.quick_start(
-    location="Portland, OR",  # Must be one of the available demo locations
-    travel_time=15,           # 5, 10, 15, 20, or 30 minutes
-    travel_mode="drive"       # "drive", "walk", or "bike"
-)
-
-# Returns dict with:
-# - location, isochrone, poi_count, pois
-# - total_population, median_income
-# - census_blocks, area_sq_km
-```
-
-#### demo.show_libraries()
-
-Analyze library accessibility for a demo location.
-
-```python
-result = demo.show_libraries("Chapel Hill, NC", travel_time=15)
-print(f"{result['library_count']} libraries")
-print(f"Serving {result['population_served']:,} people")
-```
-
-#### demo.show_food_access()
-
-Analyze food access for a demo location.
-
-```python
-result = demo.show_food_access("Durham, NC", travel_time=15)
-print(f"{result['grocery_count']} grocery stores")
-print(f"{result['restaurant_count']} restaurants")
-```
-
----
-
 ## Result Types
 
 SocialMapper uses Pydantic models for structured, type-safe results.
@@ -965,9 +897,6 @@ print(socialmapper.__version__)
 
 ## Additional Resources
 
-- [Quick Start Guide](quick-start.md) - Get started in 2 minutes
-- [Performance Guide](performance.md) - Performance optimization tips
-- [Examples](https://github.com/mihiarc/socialmapper/tree/main/examples) - Working code examples
 - [Census Variables](https://api.census.gov/data/2023/acs/acs5/variables.html) - Complete Census variable list
 
 ---

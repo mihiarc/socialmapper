@@ -71,9 +71,8 @@ Before starting, ensure you have:
    ```bash
    pip install socialmapper
    ```
-3. **API Keys** (for production use):
+3. **API Keys** (for census data):
    - Census API key: https://api.census.gov/data/key_signup.html
-   - ORS API key (optional): https://openrouteservice.org/dev/
 
 ## Tutorial Features
 
@@ -85,23 +84,10 @@ Each tutorial includes:
 - **Best practices** - Tips for production use
 - **Next steps** - Links to related tutorials
 
-## Demo Mode
-
-All tutorials work in demo mode without API keys:
-
-```python
-import os
-os.environ["SOCIALMAPPER_DEMO_MODE"] = "true"
-
-from socialmapper import create_isochrone
-iso = create_isochrone("Demo City", travel_time=15)  # Works instantly!
-```
-
 ## Getting Help
 
 - **API Reference**: See the [API Documentation](../api-reference.md)
 - **GitHub Issues**: Report bugs or request features
-- **Examples**: Check the [examples directory](../../examples/)
 
 ## Start Learning
 
