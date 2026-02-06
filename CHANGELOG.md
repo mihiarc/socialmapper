@@ -31,7 +31,6 @@ Added comprehensive benchmark tests comparing v1.0 (NetworkX) vs v1.1 (Valhalla)
 - JSON and CSV export for analysis
 - Run benchmarks: `uv run pytest tests/benchmarks/ -v -s`
 
-See `docs/BENCHMARK_REPORT_v1.0_vs_v1.1.md` for detailed analysis.
 
 ## [1.1.1] - 2025-01-24
 
