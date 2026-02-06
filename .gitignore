@@ -33,6 +33,7 @@ code/cache/
 
 # Jupyter
 *.ipynb
+!docs/notebooks/*.ipynb
 .ipynb_checkpoints/
 
 # OS files

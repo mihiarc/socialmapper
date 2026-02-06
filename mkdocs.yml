@@ -106,6 +106,15 @@ copyright: MIT License - https://github.com/mihiarc/socialmapper
 nav:
   - Home: index.md
 
+  - Tutorials:
+    - Getting Started with Isochrones: notebooks/01-isochrones-getting-started.ipynb
+    - Census Block Groups: notebooks/02-census-block-groups.ipynb
+    - Census Demographics: notebooks/03-census-demographics.ipynb
+    - Choropleth Maps: notebooks/04-choropleth-maps.ipynb
+    - Points of Interest: notebooks/05-points-of-interest.ipynb
+    - Multi-Location Comparison: notebooks/06-multi-location-comparison.ipynb
+    - Complete Analysis Workflow: notebooks/07-complete-analysis-workflow.ipynb
+
   - Reference:
     - API Reference: api-reference.md
     - Census Variables: reference/census-variables.md
