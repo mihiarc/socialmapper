@@ -539,6 +539,74 @@ class TestGetPOI:
         with pytest.raises(ValueError, match="Travel time must be between"):
             get_poi(portland_coords, travel_time=121)
 
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_get_poi_within_search_area(self, portland_coords):
+        """With travel_time, all POIs should fall within the isochrone polygon."""
+        from shapely.geometry import Point, shape
+
+        pois = get_poi(portland_coords, travel_time=10, limit=30)
+        assert isinstance(pois, list)
+
+        if len(pois) > 0:
+            # Recreate the isochrone to verify containment
+            iso = create_isochrone(portland_coords, travel_time=10)
+            polygon = shape(iso["geometry"])
+
+            for poi in pois:
+                point = Point(poi["lon"], poi["lat"])
+                assert polygon.contains(point) or polygon.touches(point), (
+                    f"POI '{poi.get('name')}' at ({poi['lat']}, {poi['lon']}) "
+                    f"is outside the isochrone"
+                )
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_get_poi_travel_time_fields(self, portland_coords):
+        """With travel_time, POIs should have travel_time_minutes and travel_distance_km."""
+        pois = get_poi(portland_coords, travel_time=10, limit=20)
+        assert isinstance(pois, list)
+
+        if len(pois) > 0:
+            for poi in pois:
+                assert "travel_time_minutes" in poi
+                assert "travel_distance_km" in poi
+
+            # Results should be sorted by travel_time_minutes (None at end)
+            travel_times = [
+                p["travel_time_minutes"] for p in pois
+                if p["travel_time_minutes"] is not None
+            ]
+            assert travel_times == sorted(travel_times)
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_get_poi_geodesic_without_travel_time(self, portland_coords):
+        """Without travel_time, POIs sorted by distance_km, no travel_time_minutes field."""
+        pois = get_poi(portland_coords, limit=20)
+        assert isinstance(pois, list)
+
+        if len(pois) >= 2:
+            distances = [
+                p["distance_km"] for p in pois
+                if p.get("distance_km") is not None
+            ]
+            assert distances == sorted(distances)
+
+            # travel_time_minutes should NOT be present
+            for poi in pois:
+                assert "travel_time_minutes" not in poi
+
+    @pytest.mark.external
+    @pytest.mark.slow
+    def test_get_poi_address_field_present(self, portland_coords):
+        """Every POI should have an 'address' key (may be None)."""
+        pois = get_poi(portland_coords, limit=20)
+        assert isinstance(pois, list)
+
+        for poi in pois:
+            assert "address" in poi
+
 
 class TestAPIIntegration:
     """Integration tests combining multiple API functions."""
