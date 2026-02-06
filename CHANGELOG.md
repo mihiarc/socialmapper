@@ -61,22 +61,6 @@ iso = create_isochrone("Seattle, WA", travel_time=15, backend="valhalla")
 iso = create_isochrone("Seattle, WA", travel_time=15, backend="networkx")
 ```
 
-#### **Comprehensive Tutorials**
-- **7-part tutorial series** from beginner to advanced:
-  1. Getting Started - Installation and first analysis
-  2. Isochrone Analysis - Travel-time areas and routing
-  3. Points of Interest - Finding and analyzing POIs
-  4. Census Data - Demographics and population
-  5. Mapping & Visualization - Creating choropleth maps
-  6. Complete Workflow - End-to-end analysis
-  7. Food Desert Case Study - Real-world equity analysis
-
-#### **Google Colab Notebooks**
-- **7 Jupyter notebooks** matching tutorials, ready for Google Colab
-- **One-click launch** with Colab badges
-- **Demo mode** for running without API keys
-- **Interactive examples** with visualizations
-
 ### 🐛 Bug Fixes
 
 - **Fixed multi-county census block selection** for large isochrones spanning county boundaries
@@ -84,8 +68,6 @@ iso = create_isochrone("Seattle, WA", travel_time=15, backend="networkx")
 
 ### 📚 Documentation
 
-- **New tutorials directory** at `docs/tutorials/`
-- **New notebooks directory** at `docs/notebooks/`
 - **POI category reference table** documenting valid categories
 - **Routing backend documentation** with configuration options
 

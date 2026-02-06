@@ -1,21 +1,20 @@
-"""Benchmark runner for comparing isochrone backend performance.
+"""Benchmark runner for isochrone generation performance.
 
-This module provides tools to benchmark v1.0 (NetworkX) vs v1.1 (Valhalla)
-isochrone generation backends.
+This module provides tools to benchmark Valhalla isochrone generation
+across locations, travel times, and travel modes.
 """
 
 import csv
 import json
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from rich.console import Console
 from rich.table import Table
-from shapely.geometry import shape
 
 import socialmapper
 
@@ -24,7 +23,6 @@ import socialmapper
 class BenchmarkResult:
     """Result from a single benchmark run."""
 
-    backend: str
     location: str
     travel_time: int
     travel_mode: str
@@ -65,18 +63,14 @@ TRAVEL_TIMES = [5, 15, 30]  # minutes
 
 TRAVEL_MODES = ["drive", "walk", "bike"]
 
-BACKENDS = ["networkx", "valhalla"]
-
-
 class BenchmarkRunner:
-    """Runs benchmark tests comparing isochrone backends."""
+    """Runs benchmark tests for Valhalla isochrone generation."""
 
     def __init__(
         self,
         locations: list[tuple[str, tuple[float, float]]] | None = None,
         travel_times: list[int] | None = None,
         travel_modes: list[str] | None = None,
-        backends: list[str] | None = None,
     ):
         """Initialize the benchmark runner.
 
@@ -88,19 +82,15 @@ class BenchmarkRunner:
             Travel times in minutes. Defaults to TRAVEL_TIMES.
         travel_modes : list of str, optional
             Travel modes to test. Defaults to TRAVEL_MODES.
-        backends : list of str, optional
-            Backends to benchmark. Defaults to BACKENDS.
         """
         self.locations = locations or LOCATIONS
         self.travel_times = travel_times or TRAVEL_TIMES
         self.travel_modes = travel_modes or TRAVEL_MODES
-        self.backends = backends or BACKENDS
         self.results: list[BenchmarkResult] = []
         self.console = Console()
 
     def run_single_benchmark(
         self,
-        backend: str,
         location_name: str,
         coords: tuple[float, float],
         travel_time: int,
@@ -110,8 +100,6 @@ class BenchmarkRunner:
 
         Parameters
         ----------
-        backend : str
-            Backend name ('networkx', 'valhalla', etc.)
         location_name : str
             Human-readable location name
         coords : tuple
@@ -133,7 +121,6 @@ class BenchmarkRunner:
                 location=coords,
                 travel_time=travel_time,
                 travel_mode=travel_mode,
-                backend=backend,
             )
 
             end_time = time.perf_counter()
@@ -143,7 +130,6 @@ class BenchmarkRunner:
             area_sq_km = result.get("properties", {}).get("area_sq_km")
 
             return BenchmarkResult(
-                backend=backend,
                 location=location_name,
                 travel_time=travel_time,
                 travel_mode=travel_mode,
@@ -158,7 +144,6 @@ class BenchmarkRunner:
             duration = end_time - start_time
 
             return BenchmarkResult(
-                backend=backend,
                 location=location_name,
                 travel_time=travel_time,
                 travel_mode=travel_mode,
@@ -186,8 +171,7 @@ class BenchmarkRunner:
         """
         self.results = []
         total_tests = (
-            len(self.backends)
-            * len(self.locations)
+            len(self.locations)
             * len(self.travel_times)
             * len(self.travel_modes)
         )
@@ -198,72 +182,60 @@ class BenchmarkRunner:
             )
 
         test_num = 0
-        for backend in self.backends:
-            if show_progress:
-                self.console.print(f"[yellow]Testing backend: {backend}[/yellow]")
+        for location_name, coords in self.locations:
+            for travel_time in self.travel_times:
+                for travel_mode in self.travel_modes:
+                    test_num += 1
 
-            for location_name, coords in self.locations:
-                for travel_time in self.travel_times:
-                    for travel_mode in self.travel_modes:
-                        test_num += 1
-
-                        if show_progress:
-                            self.console.print(
-                                f"  [{test_num}/{total_tests}] "
-                                f"{location_name}, {travel_time}min, {travel_mode}...",
-                                end=" ",
-                            )
-
-                        result = self.run_single_benchmark(
-                            backend=backend,
-                            location_name=location_name,
-                            coords=coords,
-                            travel_time=travel_time,
-                            travel_mode=travel_mode,
+                    if show_progress:
+                        self.console.print(
+                            f"  [{test_num}/{total_tests}] "
+                            f"{location_name}, {travel_time}min, {travel_mode}...",
+                            end=" ",
                         )
-                        self.results.append(result)
 
-                        if show_progress:
-                            if result.success:
-                                self.console.print(
-                                    f"[green]{result.duration_seconds}s[/green]"
-                                )
-                            else:
-                                self.console.print(
-                                    f"[red]FAILED: {result.error}[/red]"
-                                )
+                    result = self.run_single_benchmark(
+                        location_name=location_name,
+                        coords=coords,
+                        travel_time=travel_time,
+                        travel_mode=travel_mode,
+                    )
+                    self.results.append(result)
+
+                    if show_progress:
+                        if result.success:
+                            self.console.print(
+                                f"[green]{result.duration_seconds}s[/green]"
+                            )
+                        else:
+                            self.console.print(
+                                f"[red]FAILED: {result.error}[/red]"
+                            )
 
         return self.results
 
-    def get_summary(self) -> dict[str, BenchmarkSummary]:
-        """Calculate summary statistics for each backend.
+    def get_summary(self) -> BenchmarkSummary:
+        """Calculate summary statistics.
 
         Returns
         -------
-        dict
-            Dictionary mapping backend names to BenchmarkSummary objects
+        BenchmarkSummary
+            Aggregated benchmark summary
         """
-        summaries = {}
+        successful = [r for r in self.results if r.success]
+        failed = [r for r in self.results if not r.success]
 
-        for backend in self.backends:
-            backend_results = [r for r in self.results if r.backend == backend]
+        total_time = sum(r.duration_seconds for r in self.results)
+        avg_time = total_time / len(self.results) if self.results else 0
+        success_rate = len(successful) / len(self.results) if self.results else 0
 
-            successful = [r for r in backend_results if r.success]
-            failed = [r for r in backend_results if not r.success]
-
-            total_time = sum(r.duration_seconds for r in backend_results)
-            avg_time = total_time / len(backend_results) if backend_results else 0
-            success_rate = len(successful) / len(backend_results) if backend_results else 0
-
-            summaries[backend] = BenchmarkSummary(
-                total_time=round(total_time, 2),
-                avg_time=round(avg_time, 3),
-                success_rate=round(success_rate, 3),
-                successful_count=len(successful),
-                failed_count=len(failed),
-            )
-
-        return summaries
+        return BenchmarkSummary(
+            total_time=round(total_time, 2),
+            avg_time=round(avg_time, 3),
+            success_rate=round(success_rate, 3),
+            successful_count=len(successful),
+            failed_count=len(failed),
+        )
 
     def create_report(self) -> BenchmarkReport:
         """Create a complete benchmark report.
@@ -273,31 +245,15 @@ class BenchmarkRunner:
         BenchmarkReport
             Complete report with metadata, summary, and results
         """
-        summaries = self.get_summary()
+        summary = self.get_summary()
 
-        # Calculate speedup factor (networkx / valhalla)
-        speedup_factor = None
-        if "networkx" in summaries and "valhalla" in summaries:
-            valhalla_avg = summaries["valhalla"].avg_time
-            if valhalla_avg > 0:
-                speedup_factor = round(
-                    summaries["networkx"].avg_time / valhalla_avg,
-                    1
-                )
-
-        # Build summary dict
-        summary_dict = {}
-        for backend, s in summaries.items():
-            summary_dict[backend] = {
-                "total_time": s.total_time,
-                "avg_time": s.avg_time,
-                "success_rate": s.success_rate,
-                "successful_count": s.successful_count,
-                "failed_count": s.failed_count,
-            }
-
-        if speedup_factor:
-            summary_dict["speedup_factor"] = speedup_factor
+        summary_dict = {
+            "total_time": summary.total_time,
+            "avg_time": summary.avg_time,
+            "success_rate": summary.success_rate,
+            "successful_count": summary.successful_count,
+            "failed_count": summary.failed_count,
+        }
 
         return BenchmarkReport(
             metadata={
@@ -307,7 +263,6 @@ class BenchmarkRunner:
                 "locations": [name for name, _ in self.locations],
                 "travel_times": self.travel_times,
                 "travel_modes": self.travel_modes,
-                "backends": self.backends,
             },
             summary=summary_dict,
             results=[asdict(r) for r in self.results],
@@ -359,7 +314,6 @@ class BenchmarkRunner:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         fieldnames = [
-            "backend",
             "location",
             "travel_time",
             "travel_mode",
@@ -379,35 +333,21 @@ class BenchmarkRunner:
 
     def print_summary(self) -> None:
         """Print a rich summary table to the console."""
-        summaries = self.get_summary()
+        summary = self.get_summary()
 
-        # Create summary table
         table = Table(title="Benchmark Summary")
-        table.add_column("Backend", style="cyan")
         table.add_column("Total Time (s)", justify="right")
         table.add_column("Avg Time (s)", justify="right")
         table.add_column("Success Rate", justify="right")
         table.add_column("Successful", justify="right", style="green")
         table.add_column("Failed", justify="right", style="red")
 
-        for backend, summary in summaries.items():
-            table.add_row(
-                backend,
-                f"{summary.total_time:.2f}",
-                f"{summary.avg_time:.3f}",
-                f"{summary.success_rate * 100:.1f}%",
-                str(summary.successful_count),
-                str(summary.failed_count),
-            )
+        table.add_row(
+            f"{summary.total_time:.2f}",
+            f"{summary.avg_time:.3f}",
+            f"{summary.success_rate * 100:.1f}%",
+            str(summary.successful_count),
+            str(summary.failed_count),
+        )
 
         self.console.print(table)
-
-        # Print speedup factor if available
-        if "networkx" in summaries and "valhalla" in summaries:
-            valhalla_avg = summaries["valhalla"].avg_time
-            if valhalla_avg > 0:
-                speedup = summaries["networkx"].avg_time / valhalla_avg
-                self.console.print(
-                    f"\n[bold green]Speedup factor (Valhalla vs NetworkX): "
-                    f"{speedup:.1f}x faster[/bold green]"
-                )

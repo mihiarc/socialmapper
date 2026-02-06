@@ -80,7 +80,6 @@ Have an idea to improve SocialMapper? We'd love to hear it! [Open a feature requ
 ### 🔬 Share Use Cases
 - Write about how you use SocialMapper
 - Share analysis results
-- Contribute example notebooks
 
 ## Getting Started
 
@@ -553,45 +552,8 @@ docs/
 ├── index.md           # Home page
 ├── quick-start.md     # Getting started guide
 ├── tutorials/         # Step-by-step tutorials
-├── api/              # API reference
-├── examples/         # Code examples
-└── contributing.md   # This file
-```
-
-### Adding Examples
-
-Place example scripts in `examples/` and notebooks in `examples/notebooks/`:
-
-```python
-#!/usr/bin/env python
-"""
-Example: Analyzing Library Accessibility in Portland
-
-This script demonstrates how to:
-1. Find all libraries in a city
-2. Calculate 15-minute walking areas
-3. Analyze demographics of served populations
-"""
-
-from socialmapper import get_poi, create_isochrone, get_census_data
-
-def main():
-    # Find libraries in Portland
-    libraries = get_poi("Portland, OR", "library")
-    print(f"Found {len(libraries)} libraries")
-
-    # Create walking isochrones
-    for lib in libraries[:3]:  # First 3 for demo
-        iso = create_isochrone(
-            (lib['lat'], lib['lon']),
-            travel_time=15,
-            travel_mode="walk"
-        )
-        print(f"Library: {lib['name']}")
-        print(f"Area covered: {iso['properties']['area_sq_km']:.2f} km²")
-
-if __name__ == "__main__":
-    main()
+├── reference/         # API reference
+└── contributing.md    # This file
 ```
 
 ## Release Process
