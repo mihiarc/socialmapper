@@ -89,7 +89,7 @@ class ConnectionPoolManager:
             pool_connections=self.config.http_pool_connections,
             pool_maxsize=self.config.http_pool_maxsize,
             max_retries=retry_strategy,
-            pool_block=False
+            pool_block=True
         )
 
         # Mount adapter for both HTTP and HTTPS

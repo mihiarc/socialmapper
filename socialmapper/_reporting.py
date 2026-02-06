@@ -1,6 +1,7 @@
 """Internal reporting utilities for SocialMapper."""
 
 import logging
+from html import escape
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -52,16 +53,16 @@ def _render_html_report(
         meta = data["metadata"]
         sections.append("<h2>Analysis Parameters</h2><ul>")
         for key, value in meta.items():
-            sections.append(f"<li><strong>{key}</strong>: {value}</li>")
+            sections.append(f"<li><strong>{escape(str(key))}</strong>: {escape(str(value))}</li>")
         sections.append("</ul>")
 
     if "locations" in data:
         sections.append(f"<h2>Locations Analyzed ({len(data['locations'])})</h2>")
         for loc_data in data["locations"]:
-            loc_name = loc_data.get("location", "Unknown")
+            loc_name = escape(str(loc_data.get("location", "Unknown")))
             sections.append(f"<h3>{loc_name}</h3>")
             if "error" in loc_data:
-                sections.append(f"<p class='error'>Error: {loc_data['error']}</p>")
+                sections.append(f"<p class='error'>Error: {escape(str(loc_data['error']))}</p>")
             elif "aggregated" in loc_data:
                 sections.append("<table border='1'><tr><th>Variable</th><th>Total</th><th>Mean</th></tr>")
                 for var, stats in loc_data["aggregated"].items():
@@ -71,15 +72,15 @@ def _render_html_report(
                         mean = f"{mean:,.1f}"
                     if isinstance(total, (int, float)):
                         total = f"{total:,.0f}"
-                    sections.append(f"<tr><td>{var}</td><td>{total}</td><td>{mean}</td></tr>")
+                    sections.append(f"<tr><td>{escape(str(var))}</td><td>{escape(str(total))}</td><td>{escape(str(mean))}</td></tr>")
                 sections.append("</table>")
 
     if "comparison" in data:
         sections.append("<h2>Comparison</h2>")
         for var, comp in data["comparison"].items():
-            sections.append(f"<h3>{var}</h3>")
-            sections.append(f"<p>Highest: {comp.get('highest', 'N/A')}</p>")
-            sections.append(f"<p>Lowest: {comp.get('lowest', 'N/A')}</p>")
+            sections.append(f"<h3>{escape(str(var))}</h3>")
+            sections.append(f"<p>Highest: {escape(str(comp.get('highest', 'N/A')))}</p>")
+            sections.append(f"<p>Lowest: {escape(str(comp.get('lowest', 'N/A')))}</p>")
 
     if "census_data" in data and isinstance(data["census_data"], dict):
         cd = data["census_data"]

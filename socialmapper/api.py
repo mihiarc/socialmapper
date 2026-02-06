@@ -486,6 +486,8 @@ def create_map(
         return _create_geojson_export(gdf, save_path, metadata)
     elif export_format == "shapefile":
         return _create_shapefile_export(gdf, save_path, metadata)
+    else:
+        raise ValueError(f"Unsupported export format: {export_format}")
 
 
 def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:

@@ -117,7 +117,7 @@ class PerformanceConfig(BaseModel):
         description="Number of connection pool instances"
     )
     http_pool_maxsize: int = Field(
-        default=10,
+        default=12,
         ge=1,
         le=100,
         description="Maximum connections per pool"
@@ -237,7 +237,7 @@ def get_performance_config(
             "census_cache_size_mb": 250,
             "cache_ttl_hours": 168,  # 7 days
             "http_pool_connections": 10,
-            "http_pool_maxsize": 10,
+            "http_pool_maxsize": 12,
             "http_timeout_seconds": 30,
             "batch_size_census": 50,
             "batch_size_geocoding": 100,

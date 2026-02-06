@@ -8,6 +8,7 @@ dependency: ``pip install socialmapper[interactive]``
 from __future__ import annotations
 
 import logging
+from html import escape
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -363,7 +364,7 @@ def _add_title_element(interactive_map, title: str) -> None:
         color: #1a1a2e;
         box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         pointer-events: none;
-    ">{title}</div>
+    ">{escape(title)}</div>
     """
 
     interactive_map.get_root().html.add_child(Element(title_html))
@@ -412,8 +413,8 @@ def _add_stats_panel(
 
     # Build table rows
     rows = "".join(
-        f"<tr><td style='padding:2px 8px;font-weight:600;'>{k}</td>"
-        f"<td style='padding:2px 8px;'>{v}</td></tr>"
+        f"<tr><td style='padding:2px 8px;font-weight:600;'>{escape(str(k))}</td>"
+        f"<td style='padding:2px 8px;'>{escape(str(v))}</td></tr>"
         for k, v in stats.items()
     )
 
