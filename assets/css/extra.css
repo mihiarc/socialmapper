@@ -1,0 +1,138 @@
+/* SocialMapper Custom Styles */
+
+/* Brand colors and improvements */
+:root {
+  --sm-primary: #2196F3;
+  --sm-accent: #03A9F4;
+  --sm-success: #4CAF50;
+  --sm-warning: #FF9800;
+  --sm-error: #F44336;
+}
+
+/* Enhance code blocks */
+.highlight {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Style the feature cards */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.feature-card {
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--md-default-bg-color);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  color: var(--sm-primary);
+}
+
+/* Enhance badges and buttons */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.badge-success {
+  background-color: var(--sm-success);
+  color: white;
+}
+
+.badge-info {
+  background-color: var(--sm-accent);
+  color: white;
+}
+
+/* Style navigation tabs */
+.md-tabs__link {
+  font-weight: 500;
+}
+
+/* Enhance tables */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-default-fg-color--lightest);
+  font-weight: 600;
+}
+
+/* Code block improvements */
+.md-typeset .highlight .gp {
+  user-select: none;
+}
+
+/* Custom admonition styles */
+.md-typeset .admonition.tip {
+  border-color: var(--sm-success);
+}
+
+.md-typeset .admonition.warning {
+  border-color: var(--sm-warning);
+}
+
+/* Improve inline code */
+.md-typeset code {
+  background-color: var(--md-code-bg-color);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+}
+
+/* Footer improvements */
+.md-footer {
+  background-color: var(--md-default-bg-color--dark);
+}
+
+/* Logo and header */
+.md-header__title {
+  font-weight: 600;
+}
+
+/* Button styles for call-to-action */
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--sm-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--sm-accent);
+  transform: translateY(-1px);
+}
+
+/* Responsive improvements */
+@media screen and (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] {
+  .feature-card {
+    border-color: var(--md-default-fg-color--lightest);
+  }
+} 
