@@ -103,5 +103,5 @@ def parse_csv_pois(
             skipped_count, len(df),
         )
 
-    logger.info(f"Imported {len(pois)} POIs from {csv_path}")
+    logger.info("Imported %d POIs from %s", len(pois), csv_path)
     return pois

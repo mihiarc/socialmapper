@@ -202,7 +202,7 @@ def normalize_variable_names(variables: list[str]) -> tuple[list[str], dict[str,
         elif key in VARIABLE_MAPPING:
             normalized.append(VARIABLE_MAPPING[key])
         else:
-            logger.warning(f"Unknown variable '{var}', keeping as-is")
+            logger.warning("Unknown variable '%s', keeping as-is", var)
             normalized.append(var)
 
     # Deduplicate while preserving order
@@ -274,7 +274,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
 
     cached = _block_groups_for_area_cache.get(cache_key)
     if cached is not None:
-        logger.debug(f"Cache hit for block groups area query ({len(cached)} block groups)")
+        logger.debug("Cache hit for block groups area query (%d block groups)", len(cached))
         return copy.deepcopy(cached)
 
     from ._geocoding import get_census_geography
@@ -305,7 +305,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             (maxy, maxx),  # NE corner
         ])
     except Exception as e:
-        logger.warning(f"Could not sample boundary points: {e}")
+        logger.warning("Could not sample boundary points: %s", e)
 
     # Collect unique state/county combinations using parallel geocoding
     counties: set[tuple[str, str]] = set()
@@ -317,7 +317,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             if geo_info:
                 return (geo_info["state_fips"], geo_info["county_fips"])
         except Exception as e:
-            logger.debug(f"Could not get geography for ({lat:.4f}, {lon:.4f}): {e}")
+            logger.debug("Could not get geography for (%.4f, %.4f): %s", lat, lon, e)
         return None
 
     with ThreadPoolExecutor(max_workers=6) as executor:
@@ -338,7 +338,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             ],
         )
 
-    logger.info(f"Identified {len(counties)} counties for census block query: {counties}")
+    logger.info("Identified %d counties for census block query: %s", len(counties), counties)
 
     # Fetch block groups from ALL identified counties
     all_block_groups = []
@@ -346,9 +346,9 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
         try:
             block_groups = fetch_tiger_block_groups(state_fips, county_fips)
             all_block_groups.extend(block_groups)
-            logger.debug(f"Fetched {len(block_groups)} block groups from {state_fips}-{county_fips}")
+            logger.debug("Fetched %d block groups from %s-%s", len(block_groups), state_fips, county_fips)
         except Exception as e:
-            logger.warning(f"Failed to fetch block groups for {state_fips}-{county_fips}: {e}")
+            logger.warning("Failed to fetch block groups for %s-%s: %s", state_fips, county_fips, e)
             continue
 
     # Filter to those that intersect the geometry (with deduplication)
@@ -380,7 +380,7 @@ def fetch_block_groups_for_area(geometry: Polygon) -> list[dict[str, Any]]:
             bg["area_sq_km"] = area_sq_km
             result.append(bg)
 
-    logger.info(f"Found {len(result)} block groups in area (from {len(counties)} counties)")
+    logger.info("Found %d block groups in area (from %d counties)", len(result), len(counties))
 
     # Cache the result (deep copy to prevent aliasing)
     _block_groups_for_area_cache.set(cache_key, copy.deepcopy(result))
@@ -438,14 +438,14 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
     tiger_cache_key = f"{validated_state}:{validated_county}"
     cached = _tiger_block_group_cache.get(tiger_cache_key)
     if cached is not None:
-        logger.debug(f"Cache hit for TIGER block groups {state_fips}-{county_fips} ({len(cached)} groups)")
+        logger.debug("Cache hit for TIGER block groups %s-%s (%d groups)", state_fips, county_fips, len(cached))
         return cached
 
     try:
         # Use TIGERweb Tracts_Blocks query service (efficient, no large downloads)
         url = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/1/query"
 
-        logger.debug(f"Querying block groups for state {state_fips}, county {county_fips}")
+        logger.debug("Querying block groups for state %s, county %s", state_fips, county_fips)
         session = get_http_session()
 
         # Paginate through all results
@@ -468,7 +468,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
             response.raise_for_status()
 
             if response.status_code == 204 or not response.content:
-                logger.warning(f"Empty TIGERweb response for {state_fips}-{county_fips}")
+                logger.warning("Empty TIGERweb response for %s-%s", state_fips, county_fips)
                 break
 
             data = response.json()
@@ -481,7 +481,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
                 break
 
             result_offset += len(features)
-            logger.debug(f"TIGERweb pagination: fetched {len(all_features)} features so far")
+            logger.debug("TIGERweb pagination: fetched %d features so far", len(all_features))
 
         result = []
         for feature in all_features:
@@ -498,7 +498,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
                     "geometry": geom
                 })
 
-        logger.debug(f"Fetched {len(result)} block groups for {state_fips}-{county_fips}")
+        logger.debug("Fetched %d block groups for %s-%s", len(result), state_fips, county_fips)
 
         # Cache the result
         import copy
@@ -525,7 +525,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
             str(e)
         ) from e
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error(f"Failed to parse block groups for {state_fips}-{county_fips}: {e}")
+        logger.error("Failed to parse block groups for %s-%s: %s", state_fips, county_fips, e)
         from .exceptions import DataError
         raise DataError(f"Failed to parse census block groups response: {e}") from e
 
@@ -609,7 +609,7 @@ def fetch_census_data(
     for geoid in geoids:
         # Validate GEOID format: must be 12 digits
         if not re.match(r'^[0-9]{12}$', geoid):
-            logger.warning(f"Skipping invalid GEOID format: {geoid}")
+            logger.warning("Skipping invalid GEOID format: %s", geoid)
             continue
 
         tract_key = geoid[:11]  # State (2) + County (3) + Tract (6)
@@ -640,7 +640,7 @@ def fetch_census_data(
                 for row_geoid, geoid_data in cached_tract_data.items():
                     if row_geoid in target_geoids:
                         result[row_geoid] = geoid_data
-                logger.debug(f"Disk cache hit for census tract {tract_key}")
+                logger.debug("Disk cache hit for census tract %s", tract_key)
                 continue
 
             # Use wildcard to fetch ALL block groups in this tract at once
@@ -660,7 +660,7 @@ def fetch_census_data(
                 total_api_calls += 1
 
                 if response.status_code == 204 or not response.content:
-                    logger.warning(f"Empty Census API response for tract {tract_key}")
+                    logger.warning("Empty Census API response for tract %s", tract_key)
                     continue
 
                 data = response.json()
@@ -718,11 +718,11 @@ def fetch_census_data(
             except requests.HTTPError as e:
                 if e.response is not None and e.response.status_code == HTTP_FORBIDDEN:
                     from .exceptions import MissingAPIKeyError
-                    logger.error(f"Census API authentication failed for tract {tract_key}")
+                    logger.error("Census API authentication failed for tract %s", tract_key)
                     raise MissingAPIKeyError("Census") from e
                 elif e.response is not None and e.response.status_code == HTTP_RATE_LIMITED:
                     from .exceptions import RateLimitError
-                    logger.warning(f"Census API rate limit exceeded for tract {tract_key}")
+                    logger.warning("Census API rate limit exceeded for tract %s", tract_key)
                     raise RateLimitError("Census API") from e
                 else:
                     from .exceptions import InvalidAPIResponseError
@@ -734,14 +734,14 @@ def fetch_census_data(
                     ) from e
             except requests.Timeout as e:
                 from .exceptions import NetworkError
-                logger.warning(f"Census API request timed out for tract {tract_key}")
+                logger.warning("Census API request timed out for tract %s", tract_key)
                 raise NetworkError("Census API", "Request timed out") from e
             except requests.RequestException as e:
                 from .exceptions import NetworkError
-                logger.warning(f"Network error fetching census data for tract {tract_key}: {e}")
+                logger.warning("Network error fetching census data for tract %s: %s", tract_key, e)
                 raise NetworkError("Census API", str(e)) from e
             except (json.JSONDecodeError, KeyError, ValueError) as e:
-                logger.warning(f"Failed to parse census data for tract {tract_key}: {e}")
+                logger.warning("Failed to parse census data for tract %s: %s", tract_key, e)
                 from .exceptions import DataError
                 raise DataError(f"Failed to parse census API response: {e}") from e
 

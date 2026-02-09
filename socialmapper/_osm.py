@@ -356,38 +356,38 @@ def execute_overpass_query(query: str) -> list[dict[str, Any]]:
             if response.status_code == HTTP_OK:
                 data = response.json()
                 elements = data.get("elements", [])
-                logger.info(f"Overpass query returned {len(elements)} elements")
+                logger.info("Overpass query returned %d elements", len(elements))
                 _overpass_cache.set(cache_key, copy.deepcopy(elements))
                 return elements
             elif response.status_code == HTTP_RATE_LIMITED:
                 from .exceptions import RateLimitError
-                logger.warning(f"Overpass endpoint {endpoint} returned rate limit")
+                logger.warning("Overpass endpoint %s returned rate limit", endpoint)
                 last_error = RateLimitError("OpenStreetMap Overpass API")
             elif response.status_code >= HTTP_SERVER_ERROR:
                 from .exceptions import InvalidAPIResponseError
-                logger.warning(f"Overpass endpoint {endpoint} returned server error {response.status_code}")
+                logger.warning("Overpass endpoint %s returned server error %d", endpoint, response.status_code)
                 last_error = InvalidAPIResponseError(
                     "OpenStreetMap Overpass API",
                     status_code=response.status_code
                 )
             else:
-                logger.warning(f"Overpass endpoint {endpoint} returned status {response.status_code}")
+                logger.warning("Overpass endpoint %s returned status %d", endpoint, response.status_code)
 
         except requests.exceptions.Timeout:
             from .exceptions import NetworkError
-            logger.warning(f"Overpass endpoint {endpoint} timed out")
+            logger.warning("Overpass endpoint %s timed out", endpoint)
             last_error = NetworkError("OpenStreetMap Overpass API", "Request timed out")
         except requests.exceptions.ConnectionError as e:
             from .exceptions import NetworkError
-            logger.warning(f"Overpass endpoint {endpoint} connection error: {e}")
+            logger.warning("Overpass endpoint %s connection error: %s", endpoint, e)
             last_error = NetworkError("OpenStreetMap Overpass API", str(e))
         except requests.exceptions.RequestException as e:
             from .exceptions import NetworkError
-            logger.warning(f"Overpass endpoint {endpoint} request error: {e}")
+            logger.warning("Overpass endpoint %s request error: %s", endpoint, e)
             last_error = NetworkError("OpenStreetMap Overpass API", str(e))
         except (ValueError, KeyError) as e:
             from .exceptions import DataError
-            logger.warning(f"Overpass endpoint {endpoint} returned invalid data: {e}")
+            logger.warning("Overpass endpoint %s returned invalid data: %s", endpoint, e)
             last_error = DataError(f"Invalid response from Overpass API: {e}")
 
         # Small delay before trying next endpoint

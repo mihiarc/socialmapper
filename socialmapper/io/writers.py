@@ -23,7 +23,7 @@ def write_csv(
     df = pd.DataFrame(data) if isinstance(data, dict) else data
 
     df.to_csv(filepath, index=False)
-    logger.info(f"Wrote CSV to {filepath} ({len(df)} rows)")
+    logger.info("Wrote CSV to %s (%d rows)", filepath, len(df))
 
 
 def write_parquet(
@@ -34,7 +34,7 @@ def write_parquet(
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     data.to_parquet(filepath, index=False, compression="snappy")
-    logger.info(f"Wrote Parquet to {filepath} ({len(data)} rows)")
+    logger.info("Wrote Parquet to %s (%d rows)", filepath, len(data))
 
 
 def write_geoparquet(
@@ -45,7 +45,7 @@ def write_geoparquet(
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     data.to_parquet(filepath, index=False, compression="snappy")
-    logger.info(f"Wrote GeoParquet to {filepath} ({len(data)} features)")
+    logger.info("Wrote GeoParquet to %s (%d features)", filepath, len(data))
 
 
 def write_geojson(
@@ -57,12 +57,12 @@ def write_geojson(
 
     if isinstance(data, gpd.GeoDataFrame):
         data.to_file(filepath, driver="GeoJSON")
-        logger.info(f"Wrote GeoJSON to {filepath} ({len(data)} features)")
+        logger.info("Wrote GeoJSON to %s (%d features)", filepath, len(data))
     else:
         # Assume it's already a GeoJSON dict
         with filepath.open("w") as f:
             json.dump(data, f, indent=2)
-        logger.info(f"Wrote GeoJSON to {filepath}")
+        logger.info("Wrote GeoJSON to %s", filepath)
 
 
 def write_json(
@@ -75,7 +75,7 @@ def write_json(
     with filepath.open("w") as f:
         json.dump(data, f, indent=2)
 
-    logger.info(f"Wrote JSON to {filepath}")
+    logger.info("Wrote JSON to %s", filepath)
 
 
 def write_map(
@@ -99,7 +99,7 @@ def write_map(
     else:
         raise ValueError(f"Don't know how to save object of type {type(figure)}")
 
-    logger.info(f"Wrote map to {filepath}")
+    logger.info("Wrote map to %s", filepath)
 
 
 def write_html(content: str, filepath: Path, metadata: dict[str, Any] | None = None) -> None:
@@ -110,7 +110,7 @@ def write_html(content: str, filepath: Path, metadata: dict[str, Any] | None = N
     with filepath.open("w", encoding="utf-8") as f:
         f.write(content)
 
-    logger.info(f"Wrote HTML to {filepath}")
+    logger.info("Wrote HTML to %s", filepath)
 
 
 # Registry of writers by file type

@@ -149,7 +149,7 @@ def generate_interactive_map(
     if save_path:
         with open(save_path, "w", encoding="utf-8") as fh:
             fh.write(html_content)
-        logger.info(f"Interactive map saved to {save_path}")
+        logger.info("Interactive map saved to %s", save_path)
 
     return html_content
 

@@ -48,7 +48,7 @@ class AddressCache:
         cache_dir = Path(base_cache_dir) / 'geocoding'
         cache_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Initializing geocoding cache: dir={cache_dir}, ttl={config.cache_ttl_hours}h")
+        logger.info("Initializing geocoding cache: dir=%s, ttl=%dh", cache_dir, config.cache_ttl_hours)
 
         # diskcache handles thread safety, compression, and eviction
         self._cache = dc.Cache(
@@ -93,7 +93,7 @@ class AddressCache:
             result_data["input_address"] = address
             return GeocodingResult(**result_data)
         except (KeyError, TypeError, ValueError) as e:
-            logger.warning(f"Failed to deserialize cached result: {e}")
+            logger.warning("Failed to deserialize cached result: %s", e)
             # Invalid data - remove from cache
             self._cache.delete(cache_key)
             return None

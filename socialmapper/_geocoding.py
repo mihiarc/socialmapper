@@ -117,17 +117,17 @@ def geocode_location(address: str) -> tuple[float, float]:
             result = data[0]
             lat = float(result["lat"])
             lon = float(result["lon"])
-            logger.debug(f"Geocoded '{address}' to ({lat}, {lon})")
+            logger.debug("Geocoded '%s' to (%s, %s)", address, lat, lon)
             return (lat, lon)
 
     except requests.Timeout:
-        logger.warning(f"Nominatim geocoding timed out for '{address}'")
+        logger.warning("Nominatim geocoding timed out for '%s'", address)
         # Try fallback before giving up
     except requests.RequestException as e:
-        logger.warning(f"Nominatim geocoding network error for '{address}': {e}")
+        logger.warning("Nominatim geocoding network error for '%s': %s", address, e)
         # Try fallback before giving up
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.warning(f"Nominatim geocoding failed to parse response for '{address}': {e}")
+        logger.warning("Nominatim geocoding failed to parse response for '%s': %s", address, e)
         # Try fallback before giving up
 
     # Fallback to Census geocoder
@@ -203,15 +203,15 @@ def geocode_with_census(address: str) -> tuple[float, float] | None:
             coords = match["coordinates"]
             lat = coords["y"]
             lon = coords["x"]
-            logger.debug(f"Census geocoded '{address}' to ({lat}, {lon})")
+            logger.debug("Census geocoded '%s' to (%s, %s)", address, lat, lon)
             return (lat, lon)
 
     except requests.Timeout:
-        logger.warning(f"Census geocoding timed out for '{address}'")
+        logger.warning("Census geocoding timed out for '%s'", address)
     except requests.RequestException as e:
-        logger.warning(f"Census geocoding network error for '{address}': {e}")
+        logger.warning("Census geocoding network error for '%s': %s", address, e)
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.warning(f"Census geocoding failed to parse response for '{address}': {e}")
+        logger.warning("Census geocoding failed to parse response for '%s': %s", address, e)
 
     return None
 
@@ -261,7 +261,7 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
     cache_key = f"{round(lat, 4)}:{round(lon, 4)}"
     cached = _geocoding_cache.get(cache_key)
     if cached is not None:
-        logger.debug(f"Cache hit for census geography ({lat:.4f}, {lon:.4f})")
+        logger.debug("Cache hit for census geography (%.4f, %.4f)", lat, lon)
         # Sentinel empty dict means "no result" (distinguish from never-cached)
         return cached if cached != {} else None
 
@@ -313,27 +313,28 @@ def get_census_geography(lat: float, lon: float) -> dict[str, str] | None:
 
         # No geography data returned
         logger.warning(
-            f"Census Geocoding API returned no geography data for ({lat}, {lon}). "
-            f"The location may be outside the US or in a territory without census block data."
+            "Census Geocoding API returned no geography data for (%s, %s). "
+            "The location may be outside the US or in a territory without census block data.",
+            lat, lon,
         )
 
     except requests.Timeout as e:
         from .exceptions import NetworkError
-        logger.warning(f"Census Geocoding API request timed out for ({lat}, {lon})")
+        logger.warning("Census Geocoding API request timed out for (%s, %s)", lat, lon)
         raise NetworkError(
             "Census Geocoding API",
             "Request timed out"
         ) from e
     except requests.RequestException as e:
         from .exceptions import NetworkError
-        logger.warning(f"Network error accessing Census Geocoding API for ({lat}, {lon}): {e}")
+        logger.warning("Network error accessing Census Geocoding API for (%s, %s): %s", lat, lon, e)
         raise NetworkError(
             "Census Geocoding API",
             str(e)
         ) from e
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         from .exceptions import DataError
-        logger.error(f"Failed to parse census geography response for ({lat}, {lon}): {e}")
+        logger.error("Failed to parse census geography response for (%s, %s): %s", lat, lon, e)
         raise DataError(f"Failed to parse census geography response: {e}") from e
 
     # Cache the negative result (empty dict as sentinel)

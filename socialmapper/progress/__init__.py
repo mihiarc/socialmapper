@@ -342,7 +342,7 @@ class ModernProgressTracker:
             # Create new progress bar using Rich
             self.current_pbar = rich_tqdm(total=total_items, desc=f"🚀 {description}", unit="items")
 
-            logger.info(f"Starting stage: {description}")
+            logger.info("Starting stage: %s", description)
 
             return metrics
 
@@ -446,7 +446,7 @@ class ModernProgressTracker:
                 self.current_pbar.close()
                 self.current_pbar = None
 
-                logger.info(f"Completed stage: {description} in {elapsed:.1f}s")
+                logger.info("Completed stage: %s in %.1fs", description, elapsed)
 
     def get_stage_metrics(self, stage: ProcessingStage) -> ProgressMetrics | None:
         """Get metrics for a specific stage."""

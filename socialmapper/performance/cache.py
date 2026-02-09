@@ -207,7 +207,7 @@ class CacheManager:
                 # Check cache
                 cached = self.get_census(cache_key)
                 if cached is not None:
-                    logger.debug(f"Cache hit for {func.__name__}")
+                    logger.debug("Cache hit for %s", func.__name__)
                     return cached
 
                 # Call function and cache result
@@ -293,7 +293,7 @@ class CacheManager:
                 # Check cache
                 cached = self.get_geocoding(cache_key)
                 if cached is not None:
-                    logger.debug(f"Cache hit for {func.__name__}")
+                    logger.debug("Cache hit for %s", func.__name__)
                     return cached
 
                 # Call function and cache result

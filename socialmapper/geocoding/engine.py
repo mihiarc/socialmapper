@@ -71,7 +71,7 @@ class AddressGeocodingEngine:
         cached_result = self.cache.get(address)
         if cached_result:
             self.stats["cache_hits"] += 1
-            logger.debug(f"Cache hit for address: {address.address}")
+            logger.debug("Cache hit for address: %s", address.address)
             return cached_result
 
         # Determine provider order
@@ -86,7 +86,7 @@ class AddressGeocodingEngine:
             provider = self.providers[provider_type]
 
             try:
-                logger.debug(f"Trying provider {provider_type.value} for: {address.address}")
+                logger.debug("Trying provider %s for: %s", provider_type.value, address.address)
                 result = provider.geocode_address(address)
 
                 # Check quality threshold
@@ -99,22 +99,24 @@ class AddressGeocodingEngine:
                     self.cache.put(result)
 
                     logger.info(
-                        f"Successfully geocoded '{address.address}' using {provider_type.value}"
+                        "Successfully geocoded '%s' using %s",
+                        address.address, provider_type.value,
                     )
                     return result
 
                 elif result.success:
                     logger.warning(
-                        f"Result quality {result.quality.value} below threshold for {address.address}"
+                        "Result quality %s below threshold for %s",
+                        result.quality.value, address.address,
                     )
 
                 last_error = result.error_message
 
             except (ValueError, KeyError, TypeError) as e:
-                logger.warning(f"Provider {provider_type.value} data error for {address.address}: {e}")
+                logger.warning("Provider %s data error for %s: %s", provider_type.value, address.address, e)
                 last_error = str(e)
             except (OSError, ConnectionError, TimeoutError) as e:
-                logger.warning(f"Provider {provider_type.value} network error for {address.address}: {e}")
+                logger.warning("Provider %s network error for %s: %s", provider_type.value, address.address, e)
                 last_error = str(e)
 
         # All providers failed

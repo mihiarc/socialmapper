@@ -243,7 +243,7 @@ def get_counties_from_pois(
         lon = poi.get("lon")
 
         if lat is None or lon is None:
-            logger.warning(f"POI missing lat/lon coordinates: {poi}")
+            logger.warning("POI missing lat/lon coordinates: %s", poi)
             continue
 
         try:
@@ -254,7 +254,7 @@ def get_counties_from_pois(
                 if state_fips and county_fips:
                     counties.add((state_fips, county_fips))
         except (ValueError, KeyError, TypeError, OSError, ConnectionError) as e:
-            logger.warning(f"Failed to get geography for POI ({lat}, {lon}): {e}")
+            logger.warning("Failed to get geography for POI (%s, %s): %s", lat, lon, e)
 
     # Note: include_neighbors and neighbor_distance are accepted but
     # county neighbor functionality is not yet implemented

@@ -82,7 +82,7 @@ class OutputTracker:
             self._categories[category] = []
         self._categories[category].append(output_file)
 
-        logger.debug(f"Tracked output file: {output_file.path} ({category}/{file_type})")
+        logger.debug("Tracked output file: %s (%s/%s)", output_file.path, category, file_type)
         return output_file
 
     def get_by_category(self, category: str) -> list[OutputFile]:
@@ -122,7 +122,7 @@ class OutputTracker:
         with manifest_path.open("w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
-        logger.info(f"Saved output manifest to {manifest_path}")
+        logger.info("Saved output manifest to %s", manifest_path)
         return manifest_path
 
     def get_summary(self) -> dict[str, Any]:
@@ -165,7 +165,7 @@ class IOManager:
             for name, path in self.standard_dirs.items():
                 path.mkdir(parents=True, exist_ok=True)
                 self._directories[name] = path
-                logger.debug(f"Created directory: {path}")
+                logger.debug("Created directory: %s", path)
         else:
             # Just create base directory
             self.base_output_dir.mkdir(parents=True, exist_ok=True)
@@ -313,6 +313,6 @@ class IOManager:
                 if f.exists:
                     f.path.unlink()
                     removed_count += 1
-                    logger.debug(f"Removed old file: {f.path}")
+                    logger.debug("Removed old file: %s", f.path)
 
         return removed_count

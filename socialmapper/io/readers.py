@@ -44,7 +44,7 @@ def read_poi_json(filepath: Path) -> dict[str, Any]:
         else:
             raise ValueError("JSON file must contain 'pois' key or be a list")
 
-    logger.info(f"Read {len(data['pois'])} POIs from {filepath}")
+    logger.info("Read %d POIs from %s", len(data["pois"]), filepath)
     return data
 
 
@@ -90,9 +90,9 @@ def read_poi_csv(filepath: Path) -> dict[str, Any]:
                 }
                 pois.append(poi)
             else:
-                logger.warning(f"Skipping row {i} - missing valid coordinates")
+                logger.warning("Skipping row %d - missing valid coordinates", i)
 
-    logger.info(f"Read {len(pois)} POIs from {filepath}")
+    logger.info("Read %d POIs from %s", len(pois), filepath)
     return {"pois": pois}
 
 
@@ -120,7 +120,7 @@ def read_poi_geojson(filepath: Path) -> dict[str, Any]:
         }
         pois.append(poi)
 
-    logger.info(f"Read {len(pois)} POIs from {filepath}")
+    logger.info("Read %d POIs from %s", len(pois), filepath)
     return {"pois": pois}
 
 
@@ -182,7 +182,7 @@ def read_custom_pois(
 
         pois.append(poi)
 
-    logger.info(f"Read {len(pois)} custom POIs from {filepath}")
+    logger.info("Read %d custom POIs from %s", len(pois), filepath)
     return pois
 
 

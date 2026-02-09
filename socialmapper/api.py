@@ -1178,20 +1178,20 @@ def _validate_and_filter_pois(pois: list[dict[str, Any]]) -> list[dict[str, Any]
             if lat == 0 and lon == 0:
                 invalid_count += 1
                 logger.warning(
-                    f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': "
-                    f"at null island (0, 0)"
+                    "Invalid coordinates for POI '%s': at null island (0, 0)",
+                    poi.get("name", "Unknown"),
                 )
                 continue
             valid_pois.append(poi)
         except (ValueError, TypeError, KeyError) as e:
             invalid_count += 1
             logger.warning(
-                f"Invalid coordinates for POI '{poi.get('name', 'Unknown')}': "
-                f"({poi.get('lat')}, {poi.get('lon')}) - {e}"
+                "Invalid coordinates for POI '%s': (%s, %s) - %s",
+                poi.get("name", "Unknown"), poi.get("lat"), poi.get("lon"), e,
             )
 
     if invalid_count > 0:
-        logger.info(f"Filtered out {invalid_count} POIs with invalid coordinates")
+        logger.info("Filtered out %d POIs with invalid coordinates", invalid_count)
 
     return valid_pois
 
@@ -1228,7 +1228,7 @@ def _calculate_poi_distances(
         try:
             poi["distance_km"] = geodesic(origin, poi_coords).kilometers
         except (ValueError, TypeError) as e:
-            logger.debug(f"Could not calculate distance for POI: {e}")
+            logger.debug("Could not calculate distance for POI: %s", e)
             if validate_coords:
                 poi["distance_km"] = float('inf')
             else:
@@ -1329,7 +1329,7 @@ def analyze_multiple_pois(
             }
 
         except (SocialMapperError, ValueError, KeyError, TypeError) as e:
-            logger.error(f"Failed to analyze location {loc}: {e}")
+            logger.error("Failed to analyze location %s: %s", loc, e)
             return {
                 "location": (loc if isinstance(loc, str)
                              else f"{loc[0]:.4f}, {loc[1]:.4f}"),

@@ -161,7 +161,7 @@ def generate_choropleth_map(
 
         # Handle empty data
         if len(data) == 0:
-            logger.warning(f"No data in column '{column}', rendering blank map")
+            logger.warning("No data in column '%s', rendering blank map", column)
             gdf_plot.plot(
                 ax=ax,
                 color='lightgray',
@@ -193,7 +193,7 @@ def generate_choropleth_map(
         # Plot the choropleth (skip if empty data already rendered above)
         if len(data) > 0:
             if len(valid_data) == 0:
-                logger.warning(f"No valid data in column '{column}'")
+                logger.warning("No valid data in column '%s'", column)
                 gdf_plot.plot(
                     ax=ax,
                     color='lightgray',
@@ -266,7 +266,7 @@ def generate_choropleth_map(
                 provider = _get_basemap_provider(basemap)
                 cx.add_basemap(ax, source=provider, alpha=BASEMAP_ALPHA, zorder=-1)
             except Exception as e:
-                logger.warning(f"Could not add basemap: {e}")
+                logger.warning("Could not add basemap: %s", e)
 
         # Add overlay boundary if provided
         if overlay_boundary is not None:
@@ -306,7 +306,7 @@ def generate_choropleth_map(
                 bbox_inches='tight', facecolor=fig.get_facecolor(),
             )
             plt.close(fig)
-            logger.info(f"Map saved to {save_path}")
+            logger.info("Map saved to %s", save_path)
             return None
         else:
             # Return as bytes
@@ -361,7 +361,7 @@ def _get_basemap_provider(basemap: str):
             pass
 
     # Default to CartoDB Voyager
-    logger.warning(f"Unknown basemap '{basemap}', using CartoDB.Voyager")
+    logger.warning("Unknown basemap '%s', using CartoDB.Voyager", basemap)
     return cx.providers.CartoDB.Voyager
 
 
@@ -397,7 +397,7 @@ def _add_overlay_boundary(
             zorder=3
         )
     except Exception as e:
-        logger.warning(f"Could not add overlay boundary: {e}")
+        logger.warning("Could not add overlay boundary: %s", e)
 
 
 def _add_overlay_points(
@@ -462,7 +462,7 @@ def _add_overlay_points(
                     },
                 )
     except Exception as e:
-        logger.warning(f"Could not add overlay points: {e}")
+        logger.warning("Could not add overlay points: %s", e)
 
 
 def _add_stats_box(
@@ -528,7 +528,7 @@ def _add_stats_box(
             zorder=10
         )
     except Exception as e:
-        logger.warning(f"Could not add stats box: {e}")
+        logger.warning("Could not add stats box: %s", e)
 
 
 def add_north_arrow(ax):
@@ -682,7 +682,7 @@ def add_scale_bar(ax, gdf: gpd.GeoDataFrame, use_web_mercator: bool = False):
         )
 
     except (ValueError, TypeError, AttributeError) as e:
-        logger.debug(f"Could not add scale bar: {e}")
+        logger.debug("Could not add scale bar: %s", e)
 
 
 def create_simple_map(data: list, title: str | None = None) -> bytes:

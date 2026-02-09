@@ -83,7 +83,7 @@ class ValhallaBackend(BaseIsochroneBackend):
             # Create router instance
             self._router = Valhalla(base_url=self.base_url, timeout=self.timeout)
             self._available = True
-            logger.debug(f"Valhalla backend available at {self.base_url}")
+            logger.debug("Valhalla backend available at %s", self.base_url)
         except ImportError:
             self._available = False
             logger.info(
@@ -92,7 +92,7 @@ class ValhallaBackend(BaseIsochroneBackend):
             )
         except Exception as e:
             self._available = False
-            logger.warning(f"Valhalla backend unavailable: {e}")
+            logger.warning("Valhalla backend unavailable: %s", e)
 
         return self._available
 
@@ -201,5 +201,5 @@ class ValhallaBackend(BaseIsochroneBackend):
             )
 
         except Exception as e:
-            logger.error(f"Valhalla isochrone generation failed: {e}")
+            logger.error("Valhalla isochrone generation failed: %s", e)
             raise RuntimeError(f"Valhalla isochrone generation failed: {e}") from e

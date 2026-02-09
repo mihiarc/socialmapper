@@ -32,7 +32,7 @@ def create_analysis_report(
         HTML string or PDF bytes.
     """
     if template != "default":
-        logger.warning(f"Template '{template}' is not supported, using 'default'")
+        logger.warning("Template '%s' is not supported, using 'default'", template)
     if not include_maps:
         logger.warning("include_maps=False is not yet supported, maps will be included")
 

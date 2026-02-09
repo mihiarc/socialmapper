@@ -268,6 +268,6 @@ def get_performance_config(
     # Apply overrides
     config_dict.update(overrides)
 
-    logger.info(f"Creating performance configuration with preset='{preset.value}'")
+    logger.info("Creating performance configuration with preset='%s'", preset.value)
 
     return PerformanceConfig(**config_dict)
