@@ -170,12 +170,11 @@ def generate_choropleth_map(
                 alpha=CHOROPLETH_ALPHA,
             )
             valid_data = data
+        # Handle missing data
+        elif isinstance(data[0], int | float):
+            valid_data = data[~np.isnan(data)]
         else:
-            # Handle missing data
-            if isinstance(data[0], int | float):
-                valid_data = data[~np.isnan(data)]
-            else:
-                valid_data = data
+            valid_data = data
 
         # Determine colormap
         if cmap is not None:

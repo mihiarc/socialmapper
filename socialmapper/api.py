@@ -11,7 +11,14 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from .api_result_types import CensusDataResult, MapResult
+from .api_result_types import (
+    CensusDataResult,
+    ClosureScenario,
+    IsolationResult,
+    MapResult,
+    ServiceAccessDetail,
+    ServiceBreakdown,
+)
 
 if TYPE_CHECKING:
     import geopandas as gpd
@@ -245,8 +252,8 @@ def get_census_data(
     >>> result.location_type
     'point'
     """
-    from .exceptions import ValidationError
     from ._census import fetch_census_data, normalize_variable_names
+    from .exceptions import ValidationError
 
     # Validate inputs
     if not isinstance(year, int) or not (2009 <= year <= 2025):
@@ -977,7 +984,9 @@ def get_poi(
     travel_time: int | None = None,
     travel_mode: str = "drive",
     limit: int = 100,
-    validate_coords: bool = True
+    validate_coords: bool = True,
+    *,
+    _search_polygon=None,
 ) -> list[dict[str, Any]]:
     """
     Get points of interest near a location.
@@ -1063,8 +1072,11 @@ def get_poi(
     coords, _ = resolve_coordinates(location)
     lat, lon = coords
 
-    # Create search area
-    search_area = _create_search_area(coords, travel_time, travel_mode)
+    # Use precomputed search polygon if provided, otherwise compute
+    if _search_polygon is not None:
+        search_area = _search_polygon
+    else:
+        search_area = _create_search_area(coords, travel_time, travel_mode)
 
     # Query POIs
     pois = query_pois(search_area, categories)
@@ -1477,6 +1489,320 @@ def generate_report(
         output_format=format,
         template=template,
         include_maps=include_maps,
+    )
+
+
+def _extract_access_detail(
+    pois: list[dict[str, Any]], index: int, category: str
+) -> ServiceAccessDetail:
+    """Extract a ServiceAccessDetail from the POI list at a given index.
+
+    Parameters
+    ----------
+    pois : list of dict
+        Sorted list of POI dicts (by travel_time_minutes).
+    index : int
+        Index into the list to extract.
+    category : str
+        Service category label.
+
+    Returns
+    -------
+    ServiceAccessDetail
+        Populated detail for the POI at *index*, or an empty detail
+        if *index* is out of range.
+    """
+    if index < 0 or index >= len(pois):
+        return ServiceAccessDetail(category=category)
+    poi = pois[index]
+    return ServiceAccessDetail(
+        name=poi.get("name"),
+        category=category,
+        travel_time_minutes=poi.get("travel_time_minutes"),
+        travel_distance_km=poi.get("travel_distance_km"),
+        lat=poi.get("lat"),
+        lon=poi.get("lon"),
+        address=poi.get("address"),
+    )
+
+
+def _filter_by_keywords(
+    pois: list[dict[str, Any]], keywords: list[str]
+) -> list[dict[str, Any]]:
+    """Filter POIs whose name contains any keyword (case-insensitive).
+
+    Parameters
+    ----------
+    pois : list of dict
+        POI dicts with optional ``name`` key.
+    keywords : list of str
+        Substrings to match against POI names.
+
+    Returns
+    -------
+    list of dict
+        POIs whose name matched at least one keyword.
+    """
+    lowered_keywords = [kw.lower() for kw in keywords]
+    kept: list[dict[str, Any]] = []
+    for poi in pois:
+        name = (poi.get("name") or "").lower()
+        if not name:
+            continue
+        if any(kw in name for kw in lowered_keywords):
+            kept.append(poi)
+    return kept
+
+
+def measure_isolation(
+    location: str | tuple[float, float],
+    service_categories: list[str] | None = None,
+    travel_mode: str = "drive",
+    max_search_time: int = 60,
+    include_census: bool = True,
+    grocery_keywords: list[str] | None = None,
+) -> IsolationResult:
+    """Compute a composite isolation score for a location.
+
+    The isolation score equals the **maximum** nearest-service travel
+    time across all requested categories -- the minimum driving time
+    that guarantees access to every essential service.
+
+    Parameters
+    ----------
+    location : str or tuple of float
+        Either ``"City, State"`` for geocoding or ``(lat, lon)`` tuple.
+    service_categories : list of str, optional
+        POI categories to measure. Default is
+        ``["shopping", "education", "healthcare"]``.
+    travel_mode : {'drive', 'walk', 'bike'}, optional
+        Mode of transportation. Default is ``'drive'``.
+    max_search_time : int, optional
+        Maximum isochrone search radius in minutes (1-120).
+        Default is 60.
+    include_census : bool, optional
+        If True, overlay census demographics on the adaptive
+        isochrone. Default is True.
+    grocery_keywords : list of str, optional
+        When provided, POIs in the ``shopping`` category are filtered
+        to those whose name contains any of these keywords
+        (case-insensitive). Useful for isolating grocery stores from
+        general shopping results.
+
+    Returns
+    -------
+    IsolationResult
+        Composite result with per-category breakdowns, closure
+        scenarios, adaptive isochrone, and optional census data.
+
+    Examples
+    --------
+    >>> result = measure_isolation("Liberal, KS")
+    >>> result.isolation_score_minutes  # max of nearest times
+    7.7
+    >>> result.binding_constraint
+    'healthcare'
+    """
+    import math
+    import time
+
+    from .validators import validate_travel_mode, validate_travel_time
+
+    # --- Step 1: Validate inputs ----------------------------------------
+    if service_categories is None:
+        service_categories = ["shopping", "education", "healthcare"]
+
+    validate_travel_time(max_search_time)
+    validate_travel_mode(travel_mode)
+
+    # Validate each category is known
+    from .exceptions import InvalidPOICategoryError
+    from .poi_categorization import POI_CATEGORY_MAPPING
+
+    for cat in service_categories:
+        if cat not in POI_CATEGORY_MAPPING:
+            raise InvalidPOICategoryError(cat, list(POI_CATEGORY_MAPPING.keys()))
+
+    # --- Step 2: Resolve location ----------------------------------------
+    coords, location_name = resolve_coordinates(location)
+
+    logger.info(
+        "measure_isolation: %s (%s) — categories=%s, max_search=%d min",
+        location_name, coords, service_categories, max_search_time,
+    )
+
+    # --- Step 3: Search isochrone ----------------------------------------
+    from shapely.geometry import shape
+
+    search_iso = create_isochrone(coords, travel_time=max_search_time, travel_mode=travel_mode)
+    search_polygon = shape(search_iso["geometry"])
+
+    # --- Step 4: Per-category POI queries --------------------------------
+    category_pois: dict[str, list[dict[str, Any]]] = {}
+
+    for idx, category in enumerate(service_categories):
+        # Rate-limit: 8-second delay between categories (skip first)
+        if idx > 0:
+            logger.info("Waiting 8 s before querying category '%s'…", category)
+            time.sleep(8)
+
+        try:
+            pois = get_poi(
+                coords,
+                categories=[category],
+                travel_time=max_search_time,
+                travel_mode=travel_mode,
+                limit=200,
+                _search_polygon=search_polygon,
+            )
+        except Exception as exc:
+            logger.warning(
+                "POI query failed for category '%s': %s", category, exc
+            )
+            pois = []
+
+        # Apply grocery_keywords filter to shopping category
+        if category == "shopping" and grocery_keywords and pois:
+            pois = _filter_by_keywords(pois, grocery_keywords)
+
+        category_pois[category] = pois
+        logger.info(
+            "  %s: %d POIs found (nearest=%.1f min)",
+            category,
+            len(pois),
+            pois[0]["travel_time_minutes"] if pois and pois[0].get("travel_time_minutes") is not None else float("nan"),
+        )
+
+    # --- Step 5: Compute isolation score ---------------------------------
+    breakdowns: list[ServiceBreakdown] = []
+    nearest_times: list[float] = []
+
+    for category in service_categories:
+        pois = category_pois[category]
+        nearest = _extract_access_detail(pois, 0, category)
+        second_nearest = _extract_access_detail(pois, 1, category) if len(pois) > 1 else None
+
+        breakdown = ServiceBreakdown(
+            category=category,
+            nearest=nearest,
+            second_nearest=second_nearest,
+            poi_count=len(pois),
+        )
+        breakdowns.append(breakdown)
+
+        if nearest.travel_time_minutes is not None:
+            nearest_times.append(nearest.travel_time_minutes)
+
+    # Isolation score = max of nearest times
+    isolation_score: float | None = None
+    binding_constraint: str | None = None
+
+    if nearest_times:
+        isolation_score = max(nearest_times)
+        # Find binding category
+        for bd in breakdowns:
+            if (
+                bd.nearest.travel_time_minutes is not None
+                and bd.nearest.travel_time_minutes == isolation_score
+            ):
+                bd.is_binding = True
+                binding_constraint = bd.category
+                break
+
+    # --- Step 6: Closure scenarios ----------------------------------------
+    closure_scenarios: list[ClosureScenario] = []
+    second_nearest_times: list[float] = []
+
+    for bd in breakdowns:
+        original_time = bd.nearest.travel_time_minutes
+        if bd.second_nearest is not None:
+            new_time = bd.second_nearest.travel_time_minutes
+        else:
+            new_time = None
+
+        increase: float | None = None
+        access_lost = False
+
+        if original_time is not None and new_time is not None:
+            increase = round(new_time - original_time, 1)
+            second_nearest_times.append(new_time)
+        elif original_time is not None and new_time is None:
+            # Only 1 POI — closure means total loss
+            access_lost = True if bd.poi_count == 1 else False
+
+        closure_scenarios.append(ClosureScenario(
+            category=bd.category,
+            original_time_minutes=original_time,
+            new_time_minutes=new_time,
+            time_increase_minutes=increase,
+            access_lost=access_lost,
+        ))
+
+    closure_isolation_score: float | None = None
+    if second_nearest_times:
+        closure_isolation_score = max(second_nearest_times)
+
+    # --- Step 7: Adaptive isochrone --------------------------------------
+    adaptive_iso: dict | None = None
+
+    if isolation_score is not None:
+        adaptive_time = math.ceil(isolation_score)
+        # Clamp to valid range
+        adaptive_time = max(1, min(adaptive_time, 120))
+        if adaptive_time == max_search_time:
+            adaptive_iso = search_iso
+        else:
+            logger.info(
+                "Waiting 2 s before adaptive isochrone (%d min)…", adaptive_time
+            )
+            time.sleep(2)
+            try:
+                adaptive_iso = create_isochrone(
+                    coords, travel_time=adaptive_time, travel_mode=travel_mode
+                )
+            except Exception as exc:
+                logger.warning("Adaptive isochrone failed: %s", exc)
+
+    # --- Step 8: Census overlay ------------------------------------------
+    census_data = None
+    population_affected: int | None = None
+
+    if include_census and adaptive_iso is not None:
+        logger.info("Waiting 1 s before census data query…")
+        time.sleep(1)
+        try:
+            census_data = get_census_data(
+                adaptive_iso,
+                variables=["population", "median_income", "poverty"],
+            )
+            # Sum population across all block groups
+            total_pop = 0
+            for bg_data in census_data.data.values():
+                pop = bg_data.get("population")
+                if pop is not None:
+                    total_pop += int(pop)
+            population_affected = total_pop
+        except Exception as exc:
+            logger.warning("Census data query failed: %s", exc)
+
+    # --- Build result ----------------------------------------------------
+    return IsolationResult(
+        location_name=location_name,
+        coordinates=coords,
+        isolation_score_minutes=isolation_score,
+        binding_constraint=binding_constraint,
+        service_breakdown=breakdowns,
+        closure_scenarios=closure_scenarios,
+        closure_isolation_score_minutes=closure_isolation_score,
+        adaptive_isochrone=adaptive_iso,
+        census_data=census_data,
+        population_affected=population_affected,
+        metadata={
+            "service_categories": service_categories,
+            "travel_mode": travel_mode,
+            "max_search_time": max_search_time,
+            "grocery_keywords": grocery_keywords,
+        },
     )
 
 

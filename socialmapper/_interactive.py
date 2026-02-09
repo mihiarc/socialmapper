@@ -18,7 +18,6 @@ from .constants import (
     OVERLAY_BOUNDARY_COLOR,
     OVERLAY_BOUNDARY_STYLE,
     OVERLAY_BOUNDARY_WIDTH,
-    OVERLAY_POINT_COLOR,
 )
 
 logger = logging.getLogger(__name__)

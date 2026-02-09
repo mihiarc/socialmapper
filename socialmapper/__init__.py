@@ -9,29 +9,35 @@ Core functions for all your spatial analysis needs:
 - analyze_multiple_pois: Compare demographics across locations
 - generate_report: Create analysis reports
 - import_poi_csv: Import POIs from CSV files
+- measure_isolation: Compute composite isolation scores
 """
 
 # Import core API functions
 from .api import (
     analyze_multiple_pois,
-    generate_report,
-    import_poi_csv,
     create_isochrone,
     create_map,
+    generate_report,
     get_census_blocks,
     get_census_data,
     get_poi,
+    import_poi_csv,
+    measure_isolation,
 )
 
 # Import result types
 from .api_result_types import (
     CensusBlock,
     CensusDataResult,
+    ClosureScenario,
     DiscoveredPOI,
     IsochroneResult,
+    IsolationResult,
     MapResult,
     NearbyPOIResult,
     ReportResult,
+    ServiceAccessDetail,
+    ServiceBreakdown,
 )
 
 # Import exceptions
@@ -65,6 +71,7 @@ __all__ = [
     "AnalysisError",
     "CensusBlock",
     "CensusDataResult",
+    "ClosureScenario",
     "ConfigurationError",
     "DataError",
     "DataProcessingError",
@@ -75,12 +82,15 @@ __all__ = [
     "InvalidLocationError",
     "InvalidPOICategoryError",
     "IsochroneResult",
+    "IsolationResult",
     "MapResult",
     "MissingAPIKeyError",
     "NearbyPOIResult",
     "NetworkError",
     "RateLimitError",
     "ReportResult",
+    "ServiceAccessDetail",
+    "ServiceBreakdown",
     "SocialMapperError",
     "ValidationError",
     "VisualizationError",
@@ -92,4 +102,5 @@ __all__ = [
     "get_census_data",
     "get_poi",
     "import_poi_csv",
+    "measure_isolation",
 ]

@@ -330,3 +330,51 @@ class ReportResult(BaseModel):
     content: str | bytes
     file_path: Path | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ServiceAccessDetail(BaseModel):
+    """Single POI access info for one service category."""
+
+    name: str | None = None
+    category: str = ""
+    travel_time_minutes: float | None = None
+    travel_distance_km: float | None = None
+    lat: float | None = None
+    lon: float | None = None
+    address: str | None = None
+
+
+class ServiceBreakdown(BaseModel):
+    """Per-category nearest and second-nearest POI."""
+
+    category: str
+    nearest: ServiceAccessDetail
+    second_nearest: ServiceAccessDetail | None = None
+    poi_count: int = 0
+    is_binding: bool = False
+
+
+class ClosureScenario(BaseModel):
+    """What happens if the nearest POI in a category closes."""
+
+    category: str
+    original_time_minutes: float | None = None
+    new_time_minutes: float | None = None
+    time_increase_minutes: float | None = None
+    access_lost: bool = False
+
+
+class IsolationResult(BaseModel):
+    """Result of measure_isolation() -- composite isolation score."""
+
+    location_name: str
+    coordinates: tuple[float, float]
+    isolation_score_minutes: float | None = None
+    binding_constraint: str | None = None
+    service_breakdown: list[ServiceBreakdown] = Field(default_factory=list)
+    closure_scenarios: list[ClosureScenario] = Field(default_factory=list)
+    closure_isolation_score_minutes: float | None = None
+    adaptive_isochrone: dict | None = None
+    census_data: CensusDataResult | None = None
+    population_affected: int | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)

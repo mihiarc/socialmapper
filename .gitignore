@@ -165,6 +165,9 @@ streamlit.log
 # Benchmark results
 tests/benchmarks/results/
 
+# Academic working papers (private)
+docs/community-boundaries-findings.md
+
 # Claude Code development files
 CLAUDE.md
 .claude/
