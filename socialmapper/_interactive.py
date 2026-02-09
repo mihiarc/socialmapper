@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     import geopandas as gpd
 
 from .constants import (
+    CRS_WGS84_EPSG,
     OVERLAY_BOUNDARY_COLOR,
     OVERLAY_BOUNDARY_STYLE,
     OVERLAY_BOUNDARY_WIDTH,
@@ -100,9 +101,9 @@ def generate_interactive_map(
 
     # Ensure WGS84 for Leaflet
     if gdf.crs is None:
-        gdf_wgs = gdf.set_crs(epsg=4326)
-    elif gdf.crs.to_epsg() != 4326:
-        gdf_wgs = gdf.to_crs(epsg=4326)
+        gdf_wgs = gdf.set_crs(epsg=CRS_WGS84_EPSG)
+    elif gdf.crs.to_epsg() != CRS_WGS84_EPSG:
+        gdf_wgs = gdf.to_crs(epsg=CRS_WGS84_EPSG)
     else:
         gdf_wgs = gdf
 
@@ -283,9 +284,9 @@ def _add_boundary_layer(
         The folium module.
     """
     if boundary_gdf.crs is None:
-        boundary_wgs = boundary_gdf.set_crs(epsg=4326)
-    elif boundary_gdf.crs.to_epsg() != 4326:
-        boundary_wgs = boundary_gdf.to_crs(epsg=4326)
+        boundary_wgs = boundary_gdf.set_crs(epsg=CRS_WGS84_EPSG)
+    elif boundary_gdf.crs.to_epsg() != CRS_WGS84_EPSG:
+        boundary_wgs = boundary_gdf.to_crs(epsg=CRS_WGS84_EPSG)
     else:
         boundary_wgs = boundary_gdf
 

@@ -23,6 +23,16 @@ from .api_result_types import (
 if TYPE_CHECKING:
     import geopandas as gpd
     import pandas as pd
+from .constants import (
+    CENSUS_MAX_YEAR,
+    CENSUS_MIN_YEAR,
+    FULL_BLOCK_GROUP_GEOID_LENGTH,
+    ISOLATION_CATEGORY_DELAY,
+    ISOLATION_CENSUS_DELAY,
+    ISOLATION_ISOCHRONE_DELAY,
+    ISOLATION_POI_LIMIT,
+    VALHALLA_MATRIX_BATCH_SIZE,
+)
 from .exceptions import SocialMapperError
 from .helpers import (
     create_circular_geometry,
@@ -256,9 +266,9 @@ def get_census_data(
     from .exceptions import ValidationError
 
     # Validate inputs
-    if not isinstance(year, int) or not (2009 <= year <= 2025):
+    if not isinstance(year, int) or not (CENSUS_MIN_YEAR <= year <= CENSUS_MAX_YEAR):
         raise ValidationError(
-            f"Census year must be an integer between 2009 and 2025, got {year!r}"
+            f"Census year must be an integer between {CENSUS_MIN_YEAR} and {CENSUS_MAX_YEAR}, got {year!r}"
         )
     if not variables or not isinstance(variables, list):
         raise ValidationError(
@@ -340,7 +350,7 @@ def _resolve_geoids_from_location(location) -> list[str]:
         blocks = get_census_blocks(polygon=location)
         return [b["geoid"] for b in blocks]
     elif isinstance(location, list):
-        invalid = [g for g in location if not (isinstance(g, str) and len(g) == 12 and g.isdigit())]
+        invalid = [g for g in location if not (isinstance(g, str) and len(g) == FULL_BLOCK_GROUP_GEOID_LENGTH and g.isdigit())]
         if invalid:
             from .exceptions import ValidationError
             raise ValidationError(
@@ -914,7 +924,7 @@ def _calculate_travel_times(
     origin_loc = [origin[1], origin[0]]
     poi_locs = [[p["lon"], p["lat"]] for p in pois]
 
-    BATCH_SIZE = 50
+    BATCH_SIZE = VALHALLA_MATRIX_BATCH_SIZE
     MAX_RETRIES = 3
     BASE_DELAY = 1.0  # seconds between batches / initial retry delay
 
@@ -1643,8 +1653,8 @@ def measure_isolation(
     for idx, category in enumerate(service_categories):
         # Rate-limit: 8-second delay between categories (skip first)
         if idx > 0:
-            logger.info("Waiting 8 s before querying category '%s'…", category)
-            time.sleep(8)
+            logger.info("Waiting %d s before querying category '%s'…", ISOLATION_CATEGORY_DELAY, category)
+            time.sleep(ISOLATION_CATEGORY_DELAY)
 
         try:
             pois = get_poi(
@@ -1652,7 +1662,7 @@ def measure_isolation(
                 categories=[category],
                 travel_time=max_search_time,
                 travel_mode=travel_mode,
-                limit=200,
+                limit=ISOLATION_POI_LIMIT,
                 _search_polygon=search_polygon,
             )
         except Exception as exc:
@@ -1753,9 +1763,9 @@ def measure_isolation(
             adaptive_iso = search_iso
         else:
             logger.info(
-                "Waiting 2 s before adaptive isochrone (%d min)…", adaptive_time
+                "Waiting %d s before adaptive isochrone (%d min)…", ISOLATION_ISOCHRONE_DELAY, adaptive_time
             )
-            time.sleep(2)
+            time.sleep(ISOLATION_ISOCHRONE_DELAY)
             try:
                 adaptive_iso = create_isochrone(
                     coords, travel_time=adaptive_time, travel_mode=travel_mode
@@ -1768,8 +1778,8 @@ def measure_isolation(
     population_affected: int | None = None
 
     if include_census and adaptive_iso is not None:
-        logger.info("Waiting 1 s before census data query…")
-        time.sleep(1)
+        logger.info("Waiting %d s before census data query…", ISOLATION_CENSUS_DELAY)
+        time.sleep(ISOLATION_CENSUS_DELAY)
         try:
             census_data = get_census_data(
                 adaptive_iso,

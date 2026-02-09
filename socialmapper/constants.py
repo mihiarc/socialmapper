@@ -41,6 +41,9 @@ COORDINATE_PAIR_LENGTH = 2  # Expected length of (lat, lon) coordinate tuples
 
 # Census geography
 FULL_BLOCK_GROUP_GEOID_LENGTH = 12  # 2 state + 3 county + 6 tract + 1 block group
+CENSUS_MIN_YEAR = 2009  # Earliest ACS 5-year data available
+CENSUS_MAX_YEAR = 2025  # Latest supported census year
+CENSUS_MISSING_DATA_SENTINEL = -666666666  # Census API sentinel for unavailable data
 
 # ==========================================
 # HTTP Timeout Constants (seconds)
@@ -159,6 +162,7 @@ NETWORK_MAX_RETRIES = 2  # Max retries for network downloads (isochrone)
 # ==========================================
 CENSUS_BATCH_SIZE = 10  # Number of tracts to process per batch
 CENSUS_BATCH_DELAY = 0.1  # Delay between batches in seconds
+VALHALLA_MATRIX_BATCH_SIZE = 50  # Max destinations per Valhalla matrix request
 
 # ==========================================
 # Overpass API Configuration
@@ -170,11 +174,13 @@ OVERPASS_ENDPOINTS = [
 ]
 OVERPASS_PRIMARY_ENDPOINT = OVERPASS_ENDPOINTS[0]
 OVERPASS_TIMEOUT = 30  # Timeout for individual Overpass requests (not OSMnx)
+OVERPASS_MAX_POLY_VERTICES = 50  # Simplify polygon if more vertices than this
 
 # ==========================================
 # HTTP Status Codes
 # ==========================================
 HTTP_OK = 200
+HTTP_NO_CONTENT = 204
 HTTP_BAD_REQUEST = 400
 HTTP_FORBIDDEN = 403
 HTTP_NOT_FOUND = 404
@@ -192,6 +198,14 @@ TUTORIAL_MAX_TRAVEL_TIME = 60  # Maximum travel time for tutorial examples
 # ==========================================
 US_STATE_ABBREV_LENGTH = 2  # Length of US state abbreviations (e.g., "CA", "NY")
 MIN_INDEX_TUPLE_ELEMENTS = 2  # Minimum elements in OSMnx multi-index tuples
+
+# ==========================================
+# Isolation Analysis Rate Limits (seconds)
+# ==========================================
+ISOLATION_CATEGORY_DELAY = 8  # Delay between per-category POI queries
+ISOLATION_ISOCHRONE_DELAY = 2  # Delay before adaptive isochrone request
+ISOLATION_CENSUS_DELAY = 1  # Delay before census data query
+ISOLATION_POI_LIMIT = 200  # Max POIs per category in isolation analysis
 
 # ==========================================
 # Processing Thresholds

@@ -14,6 +14,7 @@ from .constants import (
     HTTP_RATE_LIMITED,
     HTTP_SERVER_ERROR,
     OVERPASS_ENDPOINTS,
+    OVERPASS_MAX_POLY_VERTICES,
     OVERPASS_TIMEOUT,
 )
 from .performance.bounded_cache import BoundedCache
@@ -237,7 +238,7 @@ def _polygon_to_overpass_poly(area: Polygon) -> str:
     """
     simplified = area.simplify(0.001, preserve_topology=True)
     coords = list(simplified.exterior.coords)
-    if len(coords) > 50:
+    if len(coords) > OVERPASS_MAX_POLY_VERTICES:
         simplified = area.simplify(0.005, preserve_topology=True)
         coords = list(simplified.exterior.coords)
 

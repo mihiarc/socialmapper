@@ -7,6 +7,8 @@ from typing import Any
 
 import pandas as pd
 
+from .constants import MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,19 +75,19 @@ def parse_csv_pois(
             continue
 
         # Validate coordinate ranges
-        if not (-90 <= lat_value <= 90):
+        if not (MIN_LATITUDE <= lat_value <= MAX_LATITUDE):
             skipped_count += 1
             logger.warning(
-                "Row %s: latitude %s out of range [-90, 90], skipping",
-                row_idx, lat_value,
+                "Row %s: latitude %s out of range [%d, %d], skipping",
+                row_idx, lat_value, MIN_LATITUDE, MAX_LATITUDE,
             )
             continue
 
-        if not (-180 <= lon_value <= 180):
+        if not (MIN_LONGITUDE <= lon_value <= MAX_LONGITUDE):
             skipped_count += 1
             logger.warning(
-                "Row %s: longitude %s out of range [-180, 180], skipping",
-                row_idx, lon_value,
+                "Row %s: longitude %s out of range [%d, %d], skipping",
+                row_idx, lon_value, MIN_LONGITUDE, MAX_LONGITUDE,
             )
             continue
 

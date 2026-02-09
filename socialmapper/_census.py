@@ -14,7 +14,9 @@ from shapely.geometry import Polygon, shape
 from .constants import (
     CENSUS_API_TIMEOUT,
     CENSUS_BATCH_SIZE,
+    CENSUS_MISSING_DATA_SENTINEL,
     HTTP_FORBIDDEN,
+    HTTP_NO_CONTENT,
     HTTP_RATE_LIMITED,
 )
 from .performance.bounded_cache import BoundedCache
@@ -467,7 +469,7 @@ def fetch_tiger_block_groups(state_fips: str, county_fips: str) -> list[dict[str
             response = session.get(url, params=params, timeout=CENSUS_API_TIMEOUT)
             response.raise_for_status()
 
-            if response.status_code == 204 or not response.content:
+            if response.status_code == HTTP_NO_CONTENT or not response.content:
                 logger.warning("Empty TIGERweb response for %s-%s", state_fips, county_fips)
                 break
 
@@ -659,7 +661,7 @@ def fetch_census_data(
                 response.raise_for_status()
                 total_api_calls += 1
 
-                if response.status_code == 204 or not response.content:
+                if response.status_code == HTTP_NO_CONTENT or not response.content:
                     logger.warning("Empty Census API response for tract %s", tract_key)
                     continue
 
@@ -694,7 +696,7 @@ def fetch_census_data(
                                     val = float(row[j]) if row[j] else None
                                     # Census API uses large negative sentinels
                                     # for unavailable data (-666666666, etc.)
-                                    if val is not None and val <= -666666666:
+                                    if val is not None and val <= CENSUS_MISSING_DATA_SENTINEL:
                                         val = None
                                     geoid_data[header] = val
                                 except (ValueError, TypeError):

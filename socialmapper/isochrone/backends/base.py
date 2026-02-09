@@ -9,6 +9,16 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
+from socialmapper.constants import (
+    COORDINATE_PAIR_LENGTH,
+    MAX_LATITUDE,
+    MAX_LONGITUDE,
+    MAX_TRAVEL_TIME,
+    MIN_LATITUDE,
+    MIN_LONGITUDE,
+    MIN_TRAVEL_TIME,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -147,10 +157,10 @@ class BaseIsochroneBackend:
         ValueError
             If coordinates are out of valid range.
         """
-        if not -90 <= lat <= 90:
-            raise ValueError(f"Latitude must be between -90 and 90, got {lat}")
-        if not -180 <= lon <= 180:
-            raise ValueError(f"Longitude must be between -180 and 180, got {lon}")
+        if not MIN_LATITUDE <= lat <= MAX_LATITUDE:
+            raise ValueError(f"Latitude must be between {MIN_LATITUDE} and {MAX_LATITUDE}, got {lat}")
+        if not MIN_LONGITUDE <= lon <= MAX_LONGITUDE:
+            raise ValueError(f"Longitude must be between {MIN_LONGITUDE} and {MAX_LONGITUDE}, got {lon}")
 
     def _validate_travel_time(self, travel_time: int) -> None:
         """Validate travel time value.
@@ -165,8 +175,8 @@ class BaseIsochroneBackend:
         ValueError
             If travel time is out of valid range.
         """
-        if not 1 <= travel_time <= 120:
-            raise ValueError(f"Travel time must be between 1 and 120 minutes, got {travel_time}")
+        if not MIN_TRAVEL_TIME <= travel_time <= MAX_TRAVEL_TIME:
+            raise ValueError(f"Travel time must be between {MIN_TRAVEL_TIME} and {MAX_TRAVEL_TIME} minutes, got {travel_time}")
 
     def _validate_travel_mode(self, travel_mode: str) -> None:
         """Validate travel mode value.
@@ -260,7 +270,7 @@ class BaseIsochroneBackend:
             # Need to wrap in another list for GeoJSON Polygon format
             if geometry and isinstance(geometry[0], (list, tuple)):
                 # Check if first element is a coordinate pair or a ring
-                if len(geometry[0]) == 2 and isinstance(geometry[0][0], (int, float)):
+                if len(geometry[0]) == COORDINATE_PAIR_LENGTH and isinstance(geometry[0][0], (int, float)):
                     # It's a single ring of coordinates
                     return {
                         "type": "Polygon",
