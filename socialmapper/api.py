@@ -598,6 +598,25 @@ def _convert_data_to_geodataframe(data) -> gpd.GeoDataFrame:
         )
 
 
+def _to_boundary_gdf(overlay_boundary):
+    """Convert an overlay boundary to GeoDataFrame if needed."""
+    if overlay_boundary is None:
+        return None
+
+    import geopandas as gpd
+
+    if isinstance(overlay_boundary, gpd.GeoDataFrame):
+        return overlay_boundary
+
+    if isinstance(overlay_boundary, dict):
+        from shapely.geometry import shape
+
+        geom = shape(overlay_boundary.get("geometry", overlay_boundary))
+        return gpd.GeoDataFrame({"geometry": [geom]}, crs="EPSG:4326")
+
+    return None
+
+
 def _create_image_map(
     gdf: gpd.GeoDataFrame,
     column: str,
@@ -650,22 +669,9 @@ def _create_image_map(
     MapResult
         Structured result with image_data or file_path populated.
     """
-    import geopandas as gpd
-    from shapely.geometry import shape
-
     from ._visualization import generate_choropleth_map
 
-    # Convert overlay_boundary dict to GeoDataFrame if needed
-    overlay_boundary_gdf = None
-    if overlay_boundary is not None:
-        if isinstance(overlay_boundary, gpd.GeoDataFrame):
-            overlay_boundary_gdf = overlay_boundary
-        elif isinstance(overlay_boundary, dict):
-            # Convert GeoJSON dict to GeoDataFrame
-            geom = shape(overlay_boundary.get('geometry', overlay_boundary))
-            overlay_boundary_gdf = gpd.GeoDataFrame(
-                {'geometry': [geom]}, crs="EPSG:4326"
-            )
+    overlay_boundary_gdf = _to_boundary_gdf(overlay_boundary)
 
     image_data = generate_choropleth_map(
         gdf, column, title, save_path, output_format=export_format,
@@ -731,21 +737,9 @@ def _create_html_map(
     MapResult
         Structured result with html_content or file_path populated.
     """
-    import geopandas as gpd
-    from shapely.geometry import shape
-
     from ._interactive import generate_interactive_map
 
-    # Convert overlay_boundary dict to GeoDataFrame if needed
-    overlay_boundary_gdf = None
-    if overlay_boundary is not None:
-        if isinstance(overlay_boundary, gpd.GeoDataFrame):
-            overlay_boundary_gdf = overlay_boundary
-        elif isinstance(overlay_boundary, dict):
-            geom = shape(overlay_boundary.get('geometry', overlay_boundary))
-            overlay_boundary_gdf = gpd.GeoDataFrame(
-                {'geometry': [geom]}, crs="EPSG:4326"
-            )
+    overlay_boundary_gdf = _to_boundary_gdf(overlay_boundary)
 
     html_content = generate_interactive_map(
         gdf, column, title, save_path,

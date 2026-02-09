@@ -5,7 +5,7 @@ predefined presets optimized for different use cases.
 """
 
 import logging
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-class PerformancePreset(str, Enum):
+class PerformancePreset(StrEnum):
     """Predefined performance configuration presets.
 
     Attributes
